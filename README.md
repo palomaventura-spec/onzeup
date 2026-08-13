@@ -23,7 +23,7 @@ GitHub: `palomaventura-spec`
 
 ## 🚀 Versão atual
 
-**v0.9.4.0 — Pilot Ready**
+**v0.9.4.1 — Pilot Ready**
 
 Esta versão consolida a base para testes externos e preparação do ambiente demo.
 
@@ -402,3 +402,14 @@ GitHub:
 ---
 
 **ONZEUP — O futuro do futebol começa na base.**
+
+
+## v0.9.4.1 — Ecosystem Landing
+- landing reposicionada como ecossistema Clube → Família → Atleta
+- exemplo demonstrativo real do ONZE Player com imagem autorizada
+- seção para operações de base em escala
+- planos comerciais previstos após o piloto
+- Programa Clube Parceiro
+- FAQ comercial
+- CTAs de demo e piloto reforçados
+- aviso explícito de que a imagem demonstrativa não representa parceria institucional com o clube retratado

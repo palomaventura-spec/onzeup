@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.9.4.1 — Ecosystem + ONZE Player Premium
+- landing comercial reposicionada para Clube → Família → Atleta
+- imagem demonstrativa do Gustavo no ONZE Player
+- seção de escala para grandes operações de base
+- planos previstos: Base, Pro e Clube
+- Programa Clube Parceiro / piloto
+- FAQ comercial
+- reforço da separação entre ficha administrativa e perfil familiar
+
+
 ## v0.9.4.0 — Pilot Ready
 - storage persistente preparado com Vercel Blob
 - upload com feedback de sucesso/erro
