@@ -141,31 +141,31 @@ export default async function GuardianPortal({
                 </div>
 
                 <div className="form">
-                  <label>Nome completo <small className="field-help">Este será o nome principal no perfil público.</small><input name="name" required defaultValue={selected?.name || ""} placeholder="Ex.: Gustavo Aguiar" /></label>
-                  <label>Apelido / nome esportivo <small className="field-help">Opcional. Aparece abaixo do nome completo.</small><input name="nickname" defaultValue={selected?.nickname || ""} placeholder="Ex.: G9" /></label>
-                  <label>Endereço público <small className="field-help">Ex.: gustavo-aguiar</small><input name="slug" defaultValue={selected?.slug || ""} placeholder="gustavo-aguiar" /></label>
+                  <label>Nome completo <small className="field-help">Este será o nome principal no perfil público.</small><input name="name" required defaultValue={selected?.name || ""} placeholder="Ex.: João Silva" /></label>
+                  <label>Apelido / nome esportivo <small className="field-help">Opcional. Aparece abaixo do nome completo.</small><input name="nickname" defaultValue={selected?.nickname || ""} placeholder="Ex.: JS10" /></label>
+                  <label>Endereço público <small className="field-help">Ex.: joao-silva</small><input name="slug" defaultValue={selected?.slug || ""} placeholder="joao-silva" /></label>
 
                   <div className="two-field-row">
-                    <label>Ano de nascimento<input name="birthYear" type="number" defaultValue={selected?.birthYear || ""} placeholder="2018" /></label>
-                    <label>Nacionalidade<input name="nationality" defaultValue={selected?.nationality || ""} placeholder="Brasil • Portugal" /></label>
+                    <label>Ano de nascimento<input name="birthYear" type="number" defaultValue={selected?.birthYear || ""} placeholder="2015" /></label>
+                    <label>Nacionalidade<input name="nationality" defaultValue={selected?.nationality || ""} placeholder="Brasil" /></label>
                   </div>
 
                   <div className="two-field-row">
-                    <label>Posição principal<input name="position" defaultValue={selected?.position || ""} placeholder="Atacante" /></label>
-                    <label>Posição secundária<input name="secondaryPosition" defaultValue={selected?.secondaryPosition || ""} placeholder="Pivô" /></label>
+                    <label>Posição principal<input name="position" defaultValue={selected?.position || ""} placeholder="Meia" /></label>
+                    <label>Posição secundária<input name="secondaryPosition" defaultValue={selected?.secondaryPosition || ""} placeholder="Ala" /></label>
                   </div>
 
                   <div className="two-field-row">
-                    <label>Altura<input name="height" defaultValue={selected?.height || ""} placeholder="1,34 m" /></label>
-                    <label>Peso<input name="weight" defaultValue={selected?.weight || ""} placeholder="28 kg" /></label>
+                    <label>Altura<input name="height" defaultValue={selected?.height || ""} placeholder="1,42 m" /></label>
+                    <label>Peso<input name="weight" defaultValue={selected?.weight || ""} placeholder="36 kg" /></label>
                   </div>
 
                   <div className="two-field-row">
-                    <label>Pé dominante<input name="dominantFoot" defaultValue={selected?.dominantFoot || ""} placeholder="Direito" /></label>
-                    <label>Clube atual<input name="currentClub" defaultValue={selected?.currentClub || ""} placeholder="Nome do clube" /></label>
+                    <label>Pé dominante<input name="dominantFoot" defaultValue={selected?.dominantFoot || ""} placeholder="Direito ou Esquerdo" /></label>
+                    <label>Clube atual<input name="currentClub" defaultValue={selected?.currentClub || ""} placeholder="Ex.: Clube Exemplo" /></label>
                   </div>
 
-                  <label>Instagram<input name="instagram" defaultValue={selected?.instagram || ""} placeholder="@perfil" /></label>
+                  <label>Instagram<input name="instagram" defaultValue={selected?.instagram || ""} placeholder="@atletaexemplo" /></label>
                   <label>Template
                     <select name="template" defaultValue={selected?.template || "PREMIUM_DARK"}>
                       <option value="PREMIUM_DARK">Premium Dark</option>
@@ -186,20 +186,20 @@ export default async function GuardianPortal({
                   <p className="muted">Opcional. Preencha apenas os números que deseja destacar.</p>
                 </div>
                 <div className="four-field-row">
-                  <label>Jogos<input name="matches" type="number" min="0" defaultValue={selected?.matches || ""} placeholder="62" /></label>
-                  <label>Gols<input name="goals" type="number" min="0" defaultValue={selected?.goals || ""} placeholder="128" /></label>
+                  <label>Jogos<input name="matches" type="number" min="0" defaultValue={selected?.matches || ""} placeholder="24" /></label>
+                  <label>Gols<input name="goals" type="number" min="0" defaultValue={selected?.goals || ""} placeholder="18" /></label>
                   <label>Assistências<input name="assists" type="number" min="0" defaultValue={selected?.assists || ""} placeholder="0" /></label>
-                  <label>Títulos / artilharias<input name="titles" type="number" min="0" defaultValue={selected?.titles || ""} placeholder="2" /></label>
+                  <label>Títulos / artilharias<input name="titles" type="number" min="0" defaultValue={selected?.titles || ""} placeholder="1" /></label>
                 </div>
               </section>
 
               <section className="player-editor-section">
                 <div className="two-field-row">
                   <label>Carreira — uma linha por passagem
-                    <textarea name="careerHistory" rows={6} defaultValue={selected?.careerHistory || ""} placeholder={"2026 — atual | Botafogo\n2025 | Arouca Futsal"} />
+                    <textarea name="careerHistory" rows={6} defaultValue={selected?.careerHistory || ""} placeholder={"2026 — atual | Clube Exemplo\n2025 | Projeto Esportivo"} />
                   </label>
                   <label>Conquistas — uma por linha
-                    <textarea name="achievements" rows={6} defaultValue={selected?.achievements || ""} placeholder={"Artilheiro Campeonato X\nCampeão Torneio Y"} />
+                    <textarea name="achievements" rows={6} defaultValue={selected?.achievements || ""} placeholder={"Destaque do torneio\nCampeão regional"} />
                   </label>
                 </div>
               </section>

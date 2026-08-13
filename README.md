@@ -434,3 +434,19 @@ Landing
 O perfil real usado como referência visual na landing não é carregado dentro da conta demo.
 
 A conta demo de Clube continua sendo compartilhada.
+
+
+## v0.9.4.3
+A criação de perfil demo agora usa somente exemplos fictícios e genéricos. A imagem/dados do Gustavo permanecem apenas na landing como referência visual autorizada.
+
+
+## v1.0.0 — MVP Comercial
+A ONZEUP sai da comunicação de piloto e entra em posicionamento comercial.
+
+### Planos de lançamento
+- Base — R$ 49,90/mês
+- Pro — R$ 99,90/mês
+- Clube — R$ 179,90/mês
+
+### ONZEUP Parceiros
+A plataforma pode conceder acesso cortesia a escolinhas, projetos e clubes escolhidos estrategicamente pela ONZEUP. A condição de parceiro é independente dos planos comerciais públicos.

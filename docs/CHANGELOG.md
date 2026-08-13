@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.0.0 — MVP Comercial
+- landing reposicionada de piloto para produto comercial
+- CTA principal direcionado aos planos
+- plano Base reduzido para R$ 49,90/mês
+- plano Pro definido em R$ 99,90/mês
+- plano Clube definido em R$ 179,90/mês
+- programa piloto substituído por ONZEUP Parceiros
+- possibilidade de acesso cortesia para organizações selecionadas
+- textos comerciais revisados para evitar promessas de recursos fora do MVP
+- FAQ atualizada para demonstração antes da contratação
+
+
+## v0.9.4.3 — Neutral Demo Placeholders
+- removidos exemplos baseados no Gustavo da tela de criação demo
+- placeholders substituídos por dados genéricos fictícios
+- experiência de criação do ONZE Player totalmente neutra
+
+
 ## v0.9.4.2 — Isolated ONZE Player Demo
 - botão Player cria uma sessão temporária individual e vazia
 - visitante cria o próprio perfil fictício durante o teste

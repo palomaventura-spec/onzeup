@@ -14,7 +14,7 @@ const modules = [
 const faqs = [
   ["Preciso de WhatsApp Business?", "Não. Na versão atual, a ONZEUP abre o WhatsApp com a mensagem pronta. A plataforma não lê mensagens e não exige WhatsApp Business."],
   ["O ONZE Player é do clube?", "Não. O clube controla a ficha administrativa do atleta e a família controla o ONZE Player. Os dois podem ser conectados por vínculo verificado."],
-  ["Posso testar antes de contratar?", "Sim. Durante a fase atual, a ONZEUP está selecionando organizações para o programa piloto sem custo."],
+  ["Posso conhecer antes de contratar?", "Sim. Você pode acessar os ambientes demonstrativos do ONZEUP Clube e do ONZE Player antes de escolher um plano."],
   ["O site do clube precisa ser atualizado separadamente?", "Não. Categorias, elenco, comissão, jogos e resultados cadastrados no painel alimentam automaticamente o site público da organização."],
 ];
 
@@ -32,7 +32,7 @@ export default function Home() {
         </nav>
         <div>
           <Link className="marketing-login" href="/login">Entrar</Link>
-          <a className="marketing-cta small" href="#piloto">Participar do piloto</a>
+          <a className="marketing-cta small" href="#planos">Ver planos</a>
         </div>
       </header>
 
@@ -47,7 +47,7 @@ export default function Home() {
             </p>
 
             <div className="marketing-actions">
-              <a className="marketing-cta" href="#piloto">Quero participar do piloto</a>
+              <a className="marketing-cta" href="#planos">Começar com a ONZEUP</a>
               <a className="marketing-ghost" href="#ecossistema">Conhecer a ONZEUP ↓</a>
             </div>
 
@@ -261,39 +261,39 @@ export default function Home() {
 
       <section className="ecosystem-section pricing-section" id="planos">
         <div className="marketing-wrap">
-          <span className="marketing-kicker">PLANOS PREVISTOS APÓS O PILOTO</span>
+          <span className="marketing-kicker">PLANOS ONZEUP</span>
           <h2>Uma solução que cresce<br/>junto com a organização.</h2>
 
           <div className="pricing-grid">
             <article>
               <small>BASE</small>
-              <h3>R$ 79,90<span>/mês</span></h3>
-              <p>Para projetos e escolinhas menores.</p>
-              <ul><li>Até 3 categorias</li><li>Até 60 atletas</li><li>Agenda, jogos e QTR</li><li>Site público</li><li>Financeiro</li></ul>
+              <h3>R$ 49,90<span>/mês</span></h3>
+              <p>Para projetos, academias e escolinhas que estão começando.</p>
+              <ul><li>Até 3 categorias</li><li>Até 50 atletas</li><li>Agenda, jogos e QTR</li><li>Site público</li><li>Financeiro</li></ul>
             </article>
             <article className="featured">
               <span className="pricing-badge">MAIS ESCOLHIDO</span>
               <small>PRO</small>
-              <h3>R$ 149,90<span>/mês</span></h3>
+              <h3>R$ 99,90<span>/mês</span></h3>
               <p>Para operações de base em crescimento.</p>
-              <ul><li>Até 10 categorias</li><li>Até 200 atletas</li><li>Todos os módulos principais</li><li>Personalização completa</li><li>Relatórios avançados</li></ul>
+              <ul><li>Até 10 categorias</li><li>Até 150 atletas</li><li>Todos os módulos principais</li><li>Personalização completa</li><li>Gestão ampliada da operação</li></ul>
             </article>
             <article>
               <small>CLUBE</small>
-              <h3>R$ 249,90<span>/mês</span></h3>
-              <p>Para estruturas maiores e múltiplas categorias.</p>
-              <ul><li>Categorias ilimitadas</li><li>Atletas ilimitados</li><li>Domínio próprio</li><li>Suporte prioritário</li><li>Recursos avançados</li></ul>
+              <h3>R$ 179,90<span>/mês</span></h3>
+              <p>Para clubes e estruturas com maior volume de atletas.</p>
+              <ul><li>Categorias sem limite comercial</li><li>Atletas sem limite comercial</li><li>Domínio próprio</li><li>Suporte prioritário</li><li>Acesso aos módulos do plano Clube</li></ul>
             </article>
           </div>
 
-          <p className="pricing-note">Valores planejados para o lançamento comercial e sujeitos a ajustes após o programa piloto.</p>
+          <p className="pricing-note">Planos de lançamento do ONZEUP. Escolha a estrutura que acompanha o tamanho da sua operação.</p>
         </div>
       </section>
 
-      <section className="partner-program" id="piloto">
+      <section className="partner-program" id="parceiros">
         <div className="marketing-wrap partner-program-grid">
           <div>
-            <span className="marketing-kicker">PROGRAMA CLUBE PARCEIRO</span>
+            <span className="marketing-kicker">ONZEUP PARCEIROS</span>
             <h2>Ajude a construir<br/>o futuro da gestão da base.</h2>
             <p>
               Estamos selecionando organizações para testar a ONZEUP em operação real,
@@ -302,16 +302,16 @@ export default function Home() {
           </div>
 
           <div className="partner-card">
-            <span>PILOTO</span>
-            <h3>Acesso sem custo durante o programa.</h3>
+            <span>PARCERIA</span>
+            <h3>Acesso cortesia para parceiros selecionados.</h3>
             <ul>
-              <li>Implantação assistida</li>
-              <li>Acesso aos principais módulos</li>
-              <li>Canal direto para feedback</li>
-              <li>Correções e evolução durante o piloto</li>
-              <li>Sem obrigação de contratação ao término</li>
+              <li>Condição especial definida pela ONZEUP</li>
+              <li>Acesso aos módulos acordados na parceria</li>
+              <li>Canal direto com a equipe ONZEUP</li>
+              <li>Participação na evolução da plataforma</li>
+              <li>Parcerias avaliadas individualmente</li>
             </ul>
-            <a href="mailto:palomaventura@gmail.com?subject=Programa%20Piloto%20ONZEUP">Quero conversar sobre parceria →</a>
+            <a href="mailto:palomaventura@gmail.com?subject=Parceria%20ONZEUP">Quero ser parceiro ONZEUP →</a>
           </div>
         </div>
       </section>
@@ -335,7 +335,7 @@ export default function Home() {
       <footer className="marketing-footer ecosystem-footer">
         <div className="marketing-wrap">
           <div><b>ONZE<span>UP</span></b><p>O FUTURO DO FUTEBOL COMEÇA NA BASE.</p></div>
-          <div><Link href="/login">Entrar</Link><a href="#piloto">Programa piloto</a></div>
+          <div><Link href="/login">Entrar</Link><a href="#parceiros">ONZEUP Parceiros</a></div>
         </div>
       </footer>
     </main>
