@@ -1,0 +1,112 @@
+import ImageUpload from "@/components/ImageUpload";
+import Link from "next/link";
+import { requireOrganizationUser } from "@/lib/auth";
+import { updateOrganization } from "./actions";
+import ModuleTour from "@/components/help/ModuleTour";
+
+export default async function OrganizationPage() {
+  const user = await requireOrganizationUser();
+  const org = user.organization!;
+
+  return (
+    <>
+      <div className="page-head">
+        <ModuleTour module="organizacao" />
+        <div>
+          <h1>Organização</h1>
+          <p className="muted">Edite os dados que alimentam o site público da sua organização.</p>
+        </div>
+        <Link className="btn" href={`/o/${org.slug}`} target="_blank">Ver site público</Link>
+      </div>
+
+      <section className="card">
+        <form className="form" action={updateOrganization}>
+          <label>
+            Nome interno
+            <input name="name" defaultValue={org.name} required />
+          </label>
+
+          <label>
+            Nome público
+            <input name="publicName" defaultValue={org.publicName ?? ""} placeholder="Nome exibido no site" />
+          </label>
+
+          <label>
+            Sobre
+            <textarea name="description" rows={5} defaultValue={org.description ?? ""} />
+          </label>
+
+          <ImageUpload name="logoUrl" label="Logo (JPEG/PNG/WEBP)" defaultValue={org.logoUrl} />
+
+          <ImageUpload name="coverUrl" label="Capa (JPEG/PNG/WEBP)" defaultValue={org.coverUrl} />
+
+          <label>Cor principal<input name="accentColor" type="color" defaultValue={org.accentColor ?? "#9DDB16"} /></label>
+          <label>Cor secundária<input name="secondaryColor" type="color" defaultValue={org.secondaryColor ?? "#FFFFFF"} /></label>
+          <label>Fundo do site<input name="publicBackground" type="color" defaultValue={org.publicBackground ?? "#080B0C"} /></label>
+          <label>Tema do site<select name="publicTheme" defaultValue={org.publicTheme}><option value="DARK">Escuro</option><option value="LIGHT">Claro</option><option value="CUSTOM">Personalizado</option></select></label>
+          <label>Chave Pix<input name="pixKey" defaultValue={org.pixKey ?? ""} placeholder="CPF, CNPJ, e-mail, telefone ou aleatória" /></label>
+
+          <label>
+            Telefone
+            <input name="phone" defaultValue={org.phone ?? ""} />
+          </label>
+
+          <label>
+            WhatsApp
+            <input name="whatsapp" defaultValue={org.whatsapp ?? ""} />
+          </label>
+
+          <label>
+            E-mail
+            <input name="email" type="email" defaultValue={org.email ?? ""} />
+          </label>
+
+          <label>
+            Instagram
+            <input name="instagram" defaultValue={org.instagram ?? ""} placeholder="@seuperfil" />
+          </label>
+
+          <label>
+            Endereço
+            <input name="address" defaultValue={org.address ?? ""} />
+          </label>
+
+          <label>
+            Cidade
+            <input name="city" defaultValue={org.city ?? ""} />
+          </label>
+
+          <label>
+            Estado
+            <input name="state" defaultValue={org.state ?? ""} />
+          </label>
+
+          <hr style={{borderColor:"var(--line)", width:"100%"}} />
+          <h3>Seções públicas</h3>
+
+          <label className="check">
+            <input name="showAthletesPublicly" type="checkbox" defaultChecked={org.showAthletesPublicly} />
+            Exibir atletas no site
+          </label>
+
+          <label className="check">
+            <input name="showStaffPublicly" type="checkbox" defaultChecked={org.showStaffPublicly} />
+            Exibir comissão técnica
+          </label>
+
+          <label className="check">
+            <input name="showTrainingsPublicly" type="checkbox" defaultChecked={org.showTrainingsPublicly} />
+            Exibir horários de treino
+          </label>
+
+          <label className="check">
+            <input name="showMatchesPublicly" type="checkbox" defaultChecked={org.showMatchesPublicly} />
+            Exibir jogos e resultados
+          </label>
+
+          <button type="submit">Salvar organização</button>
+        </form>
+      </section>
+    </>
+  );
+}

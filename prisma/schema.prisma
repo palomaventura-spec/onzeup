@@ -1,0 +1,396 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  COORDINATOR
+  GUARDIAN
+}
+
+enum OrganizationType {
+  CLUB
+  SCHOOL
+  PROJECT
+  ACADEMY
+  PERSONAL_TRAINING
+}
+
+enum SportType {
+  FOOTBALL
+  FUTSAL
+  BOTH
+}
+
+enum MatchStatus {
+  SCHEDULED
+  FINISHED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum CallUpStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
+enum ChargeType {
+  MONTHLY_FEE
+  REFEREE_FEE
+  TOURNAMENT
+  UNIFORM
+  TRAVEL
+  EVENT
+  OTHER
+}
+
+enum ChargeStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum IntegrationStatus {
+  DISCONNECTED
+  PENDING
+  CONNECTED
+  ERROR
+}
+
+enum PlanCode {
+  STARTER
+  PRO
+  BUSINESS
+}
+
+model Organization {
+  id                  String              @id @default(cuid())
+  name                String
+  publicName          String?
+  type                OrganizationType
+  sport               SportType           @default(BOTH)
+  slug                String              @unique
+  description         String?
+  logoUrl             String?
+  coverUrl            String?
+  accentColor         String?             @default("#9DDB16")
+  secondaryColor      String?             @default("#FFFFFF")
+  publicBackground    String?             @default("#080B0C")
+  publicTheme         String              @default("DARK")
+  panelTheme          String              @default("DARK")
+  pixKey              String?
+  phone               String?
+  whatsapp            String?
+  email               String?
+  instagram           String?
+  address             String?
+  city                String?
+  state               String?
+  timezone            String              @default("America/Sao_Paulo")
+  active              Boolean             @default(true)
+  showAthletesPublicly Boolean             @default(true)
+  showStaffPublicly    Boolean             @default(true)
+  showTrainingsPublicly Boolean            @default(true)
+  showMatchesPublicly  Boolean             @default(true)
+  customDomain        String?              @unique
+  domainVerified      Boolean              @default(false)
+  whatsappStatus      IntegrationStatus    @default(DISCONNECTED)
+  whatsappPhone       String?
+  paymentStatus       IntegrationStatus    @default(DISCONNECTED)
+  paymentProvider     String?
+  onboardingCompleted Boolean             @default(false)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  users               User[]
+  categories          Category[]
+  staffMembers        StaffMember[]
+  athletes            Athlete[]
+  trainingSchedules   TrainingSchedule[]
+  matches             Match[]
+  callUps             CallUp[]
+  charges             Charge[]
+  subscription        Subscription?
+  qtrs                Qtr[]
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         UserRole      @default(COORDINATOR)
+  active       Boolean       @default(true)
+  organizationId String?
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sessions     Session[]
+  guardianProfile GuardianProfile?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([organizationId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Category {
+  id             String       @id @default(cuid())
+  name           String
+  birthYear      Int?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athletes       Athlete[]
+  staffMembers   StaffMember[]
+  trainingSchedules TrainingSchedule[]
+  matches        Match[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model StaffMember {
+  id             String       @id @default(cuid())
+  name           String
+  roleTitle      String
+  photoUrl       String?
+  bio            String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  categoryId     String?
+  category       Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([categoryId])
+}
+
+model Athlete {
+  id             String       @id @default(cuid())
+  name           String
+  nickname       String?
+  jerseyNumber   Int?
+  position       String?
+  dominantFoot   String?
+  birthYear      Int?
+  photoUrl       String?
+  active         Boolean      @default(true)
+
+  guardianName   String?
+  guardianPhone  String?
+  guardianEmail  String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  categoryId     String?
+  category       Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  callUps         CallUp[]
+  charges         Charge[]
+  playerLinks     PlayerAthleteLink[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([categoryId])
+  @@index([name])
+}
+
+model TrainingSchedule {
+  id             String       @id @default(cuid())
+  weekday        Int
+  startTime      String
+  endTime        String
+  location       String?
+  notes          String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([categoryId])
+}
+
+model Match {
+  id             String       @id @default(cuid())
+  competition    String?
+  opponent       String
+  startsAt       DateTime
+  location       String?
+  homeAway       String?
+  status         MatchStatus  @default(SCHEDULED)
+  goalsFor       Int?
+  goalsAgainst   Int?
+  notes          String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  callUps         CallUp[]
+  charges         Charge[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, startsAt])
+  @@index([categoryId, startsAt])
+}
+
+model CallUp {
+  id             String       @id @default(cuid())
+  status         CallUpStatus @default(PENDING)
+  sentAt         DateTime?
+  respondedAt    DateTime?
+  notes          String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  matchId        String
+  match          Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  athleteId      String
+  athlete        Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([matchId, athleteId])
+  @@index([organizationId])
+  @@index([matchId])
+  @@index([athleteId])
+}
+
+model Charge {
+  id             String       @id @default(cuid())
+  type           ChargeType
+  title          String
+  description    String?
+  amountCents    Int
+  dueDate        DateTime
+  status         ChargeStatus @default(PENDING)
+  paidAt         DateTime?
+  paymentMethod  String?
+  externalId     String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  athleteId      String
+  athlete        Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  matchId        String?
+  match          Match?       @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([athleteId])
+  @@index([matchId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Subscription {
+  id             String             @id @default(cuid())
+  plan           PlanCode           @default(STARTER)
+  status         SubscriptionStatus @default(TRIAL)
+  trialEnds      DateTime?
+  organizationId String             @unique
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+
+model GuardianProfile {
+  id        String @id @default(cuid())
+  userId    String @unique
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
+  players   PlayerProfile[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PlayerProfile {
+  id          String @id @default(cuid())
+  slug        String @unique
+  name        String
+  nickname    String?
+  birthYear   Int?
+  position    String?
+  dominantFoot String?
+  height      String?
+  weight      String?
+  nationality String?
+  secondaryPosition String?
+  currentClub String?
+  photoUrl    String?
+  coverUrl    String?
+  bio         String?
+  instagram   String?
+  matches     Int?
+  goals       Int?
+  assists     Int?
+  titles      Int?
+  careerHistory String?
+  achievements String?
+  videos      String?
+  gallery     String?
+  template    String @default("PREMIUM_DARK")
+  isPublic    Boolean @default(false)
+  guardianId  String
+  guardian    GuardianProfile @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  athleteLinks PlayerAthleteLink[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([guardianId])
+}
+
+model PlayerAthleteLink {
+  id String @id @default(cuid())
+  playerId String
+  player PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  athleteId String
+  athlete Athlete @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  verified Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@unique([playerId, athleteId])
+}
+
+model Qtr {
+  id String @id @default(cuid())
+  title String
+  weekStart DateTime
+  dataJson String
+  published Boolean @default(false)
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([organizationId, weekStart])
+  @@index([organizationId, weekStart])
+}
