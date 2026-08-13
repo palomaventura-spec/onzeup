@@ -86,7 +86,7 @@ export default async function GuardianPortal({
                 </div>
                 <section>
                   <strong>{player.nickname || player.name}</strong>
-                  <small>{player.position || "Atleta"}</small>
+                  <small>{player.position || "Atleta"} • {player.plan === "PREMIUM" ? "Premium" : "Free"}</small>
                 </section>
                 <b>→</b>
               </Link>
@@ -110,13 +110,14 @@ export default async function GuardianPortal({
               <div>
                 <span className="page-eyebrow">{selected ? "EDITAR PERFIL" : "NOVO PERFIL"}</span>
                 <h2>{selected ? (selected.nickname || selected.name) : "Criar ONZE Player"}</h2>
+                {selected ? <span className={`player-plan-badge ${selected.plan === "PREMIUM" ? "premium" : "free"}`}>{selected.plan === "PREMIUM" ? "★ PREMIUM" : "FREE"}</span> : null}
               </div>
               <div className="player-editor-actions">
                 <span className={`publication-status ${selected?.isPublic ? "public" : "private"}`}>
                   {selected?.isPublic ? "● Público" : "● Privado"}
                 </span>
                 <PlayerActions
-                  url={selected ? `/player/${selected.slug}` : "#"}
+                  url={selected ? `https://players.onzeup.com.br/${selected.slug}` : "#"}
                   enabled={Boolean(selected?.isPublic)}
                 />
               </div>
@@ -165,7 +166,16 @@ export default async function GuardianPortal({
                     <label>Clube atual<input name="currentClub" defaultValue={selected?.currentClub || ""} placeholder="Ex.: Clube Exemplo" /></label>
                   </div>
 
-                  <label>Instagram<input name="instagram" defaultValue={selected?.instagram || ""} placeholder="@atletaexemplo" /></label>
+                  <div className="two-field-row">
+                    <label>Instagram <small className="field-help">Cole @usuario ou o link completo.</small><input name="instagram" defaultValue={selected?.instagram || ""} placeholder="@atletaexemplo" /></label>
+                    <label>Site externo <small className="field-help">Opcional.</small><input name="websiteUrl" type="url" defaultValue={selected?.websiteUrl || ""} placeholder="https://..." /></label>
+                  </div>
+                  <label>Plano
+                    <select name="plan" defaultValue={selected?.plan || "FREE"}>
+                      <option value="FREE">ONZE Player Free</option>
+                      <option value="PREMIUM">ONZE Player Premium</option>
+                    </select>
+                  </label>
                   <label>Template
                     <select name="template" defaultValue={selected?.template || "PREMIUM_DARK"}>
                       <option value="PREMIUM_DARK">Premium Dark</option>
@@ -206,7 +216,8 @@ export default async function GuardianPortal({
 
               <div className="two-field-row">
                 <label>Vídeos — um link por linha
-                  <textarea name="videos" rows={6} defaultValue={selected?.videos || ""} placeholder="https://youtube.com/..." />
+                  <small className="field-help">{selected?.plan === "PREMIUM" ? "Premium: vários vídeos." : "Free: o primeiro link será utilizado."}</small>
+                  <textarea name="videos" rows={6} defaultValue={selected?.videos || ""} placeholder={"https://youtube.com/watch?v=...\nhttps://youtu.be/..."} />
                 </label>
                 <label>Galeria — uma URL de imagem por linha
                   <textarea name="gallery" rows={6} defaultValue={selected?.gallery || ""} placeholder="https://..." />
@@ -220,6 +231,7 @@ export default async function GuardianPortal({
                   <small>Permite que o perfil seja acessado pelo endereço /player/...</small>
                 </span>
               </label>
+<label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público ONZE Players</span></label>
 
               <div className="actions">
                 <button type="submit">Salvar perfil</button>
@@ -230,6 +242,21 @@ export default async function GuardianPortal({
                 ) : null}
               </div>
             </form>
+
+            {selected ? (
+              <section className="player-preview-card">
+                <div>
+                  <span className="page-eyebrow">PRÉ-VISUALIZAÇÃO</span>
+                  <h3>Veja como o perfil aparece para o público.</h3>
+                  <p className="muted">O mesmo painel atende Free e Premium. O layout público muda conforme o plano.</p>
+                </div>
+                <div>
+                  <Link className="btn-secondary" href={`/exemplos/player-free`} target="_blank">Modelo Free ↗</Link>
+                  <Link className="btn-secondary" href={`/exemplos/player-premium`} target="_blank">Modelo Premium ↗</Link>
+                  {selected.isPublic ? <a className="btn" href={`https://players.onzeup.com.br/${selected.slug}`} target="_blank">Abrir perfil publicado ↗</a> : null}
+                </div>
+              </section>
+            ) : null}
 
             {selected ? (
               <section className="player-club-links">

@@ -41,8 +41,8 @@ export default async function PilotPage() {
     <>
       <div className="page-head">
         <div>
-          <span className="page-eyebrow">PILOT READY</span>
-          <h1>Preparação para o piloto</h1>
+          <span className="page-eyebrow">ATIVO</span>
+          <h1>Configuração da conta</h1>
           <p className="muted">
             Checklist técnico e operacional antes de publicar o ambiente externo.
           </p>

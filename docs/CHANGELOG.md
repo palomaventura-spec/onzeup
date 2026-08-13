@@ -1,5 +1,144 @@
 # Changelog
 
+## v1.2.5 — UI Polish Consolidated
+- corrige acabamento do botão Explorar atletas
+- aplica o mesmo padrão visual no Coach
+- equaliza altura e espaçamento dos CTAs principais e secundários
+- melhora hover e responsividade dos botões
+- corrige acabamento dos botões Personalizar site e Abrir site público
+- preserva todas as correções de routing/schema/login da v1.2.4
+
+
+## v1.2.4 — Routing + Schema Cleanup
+- roteamento de subdomínios reforçado por middleware e rewrites por Host
+- `players.onzeup.com.br` força o portal Player
+- `coach.onzeup.com.br` força o portal Coach
+- suporte local a `players.localhost` e `coach.localhost`
+- removida a última referência visível a "ecossistema"
+- adicionado `npm run db:sync` para sincronizar Prisma e banco
+- mantém `websiteUrl` no PlayerProfile
+
+
+## v1.2.3 — Player Real Account + Premium Showcase
+- cria conta modelo real do Gustavo no seed
+- cria perfis Gustavo Free e Premium na mesma conta de responsável
+- dashboard identifica plano Free/Premium
+- adiciona link opcional de Instagram e site externo
+- Free limita publicação a 1 vídeo
+- Premium aceita vários vídeos
+- perfil público passa a renderizar layout Premium real conforme plano
+- vídeos Premium ganham thumbnails e embeds
+- Premium recebe carreira, conquistas, galeria e links sociais
+- adiciona preview Free/Premium no painel da família
+
+
+## v1.2.2 — Player Showcase + Auth Fixes
+- remove Ecossistema/Piloto da experiência comercial
+- corrige Explorar Players
+- cria exemplos Gustavo Free e Premium
+- corrige sobreposição Free x Premium
+- corrige botão Personalizar site
+- remove menu Piloto do dashboard
+- adiciona COACH ao UserRole
+- implementa recuperação e redefinição de senha
+
+
+## v1.2.1 — Commercial Routing + Independent Portals
+- landing principal mantém identidade ONZEUP e remove linguagem "Ecossistema"
+- bloco comercial passa a apresentar Club + Player + Coach
+- ONZEUP Coach ganha CTA e navegação na landing
+- `players.onzeup.com.br` ganha home própria e catálogo de atletas
+- `coach.onzeup.com.br` ganha home própria e catálogo profissional
+- middleware reforçado com leitura de `x-forwarded-host`
+- Player e Coach não reutilizam a landing principal
+- cadastros permanecem centralizados em `onzeup.com.br`
+- perfis públicos mantêm URLs limpas nos respectivos subdomínios
+
+
+## v1.2.0 — ONZEUP Ecosystem Commercial
+- ecossistema comercial Club + Player + Coach
+- ONZEUP Coach Free lançado
+- cadastro e editor profissional Coach
+- catálogo `coach.onzeup.com.br`
+- perfil público `coach.onzeup.com.br/[slug]`
+- middleware separa Player e Coach sem conflito de slugs
+- landing passa a apresentar Coach
+- Club mantém trial comercial de 15 dias
+- Player mantém Free/Premium
+- limpeza de linguagem piloto/demo na experiência do cliente
+- novo model `CoachProfile`
+
+
+## v1.1.6 — Club Onboarding + Clean Dashboard
+- cadastro Club cria sessão e segue direto para onboarding
+- onboarding inicial com dados públicos, modalidade, cidade, cor, categoria e treino
+- categoria e treino opcionais são criados automaticamente
+- dashboard exige onboarding concluído
+- dashboard inicial redesenhado, limpo e orientado a ações
+- informações cadastradas aparecem imediatamente no painel
+- contador de dias restantes do trial
+- checklist comercial de configuração
+- site público destacado desde o primeiro acesso
+- removida linguagem residual de ambiente demo
+
+
+## v1.1.4 — Players Directory Flow
+- landing principal preservada visualmente
+- Club CTA confirmado para `/cadastro-clube`
+- `players.onzeup.com.br` abre diretamente o catálogo público
+- portal ONZE Players ganha CTA de cadastro gratuito
+- catálogo recebe hero, busca, cards e seção "Como funciona"
+- estado vazio convida os primeiros atletas a se cadastrar
+- perfis continuam em `players.onzeup.com.br/[slug]`
+
+
+## v1.1.3 — Players Subdomain + Commercial Flow
+- `players.onzeup.com.br` passa a abrir o catálogo ONZE Players
+- perfis públicos passam ao padrão `players.onzeup.com.br/[slug]`
+- links de compartilhamento usam o subdomínio Players
+- fluxo demo de Clube removido
+- ONZEUP Club passa para cadastro comercial com 15 dias grátis
+- nova rota `/cadastro-clube`
+- trial criado no banco com validade de 15 dias
+- cadastro de Clube preparado para confirmação de e-mail
+- login sem mensagens ou lógica de demonstração
+- landing atualizada para Club trial + Player Free
+- `/players` permanece como fallback local para desenvolvimento
+
+
+## v1.1.2 — Demo Club + Clean Auth
+- demo Clube passa a se autocriar/recuperar ao clicar
+- demo Clube não depende mais de seed manual para abrir
+- removido definitivamente fluxo demo do ONZE Player
+- bloqueio de autofill antigo na tela de cadastro do responsável
+- tela de login sem demonstrações e sem formulários aninhados
+- busca e remoção de referências literais a Leximóvel no código/documentação
+- feedback de erro específico para falha do demo Clube
+
+
+## v1.1.1 — Player Free Fixes
+- corrigido conflito entre `/atletas` interno e catálogo público
+- catálogo público agora usa `/players`
+- removidos formulários aninhados no login
+- retirada demonstração Player da tela de autenticação
+- CTA "Criar ONZE Player grátis" conectado ao cadastro real
+- seção ONZEUP Parceiros reposicionada comercialmente
+
+
+## v1.1.0 — ONZE Player Free
+- entrada comercial real para famílias
+- removido fluxo demo do CTA de criação gratuita
+- cadastro de responsável
+- estrutura de verificação de e-mail
+- plano Player FREE
+- catálogo público de atletas
+- URLs públicas na raiz do domínio
+- controles de publicação e catálogo
+- limite de 1 vídeo YouTube no Free
+- Super Admin preparado para gestão de Players
+- estrutura de Premium e cortesia no banco
+
+
 ## v1.0.0 — MVP Comercial
 - landing reposicionada de piloto para produto comercial
 - CTA principal direcionado aos planos

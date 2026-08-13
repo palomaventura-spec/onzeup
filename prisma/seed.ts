@@ -218,12 +218,107 @@ async function main() {
     }
   }
 
+
+  // ONZE Player model account — Gustavo
+  const gustavoHash = await bcrypt.hash("G9OnzeUp2026!", 10);
+  const gustavoGuardian = await prisma.user.upsert({
+    where: { email: "gustavo.model@onzeup.com.br" },
+    update: {
+      name: "Responsável Gustavo",
+      passwordHash: gustavoHash,
+      role: UserRole.GUARDIAN,
+      organizationId: null,
+      active: true,
+      accountStatus: "ACTIVE"
+    },
+    create: {
+      name: "Responsável Gustavo",
+      email: "gustavo.model@onzeup.com.br",
+      passwordHash: gustavoHash,
+      role: UserRole.GUARDIAN,
+      active: true,
+      accountStatus: "ACTIVE"
+    }
+  });
+
+  const gustavoGuardianProfile = await prisma.guardianProfile.upsert({
+    where: { userId: gustavoGuardian.id },
+    update: {},
+    create: { userId: gustavoGuardian.id }
+  });
+
+  const gustavoCommon = {
+    name: "Gustavo Aguiar",
+    nickname: "G9",
+    birthYear: 2018,
+    position: "Atacante",
+    secondaryPosition: "Pivô",
+    dominantFoot: "Direito",
+    height: "1,34 m",
+    weight: "28 kg",
+    nationality: "Brasil • Portugal",
+    modality: "Campo + Futsal",
+    categoryLabel: "Sub-9",
+    currentClub: "Botafogo",
+    photoUrl: "/marketing/gustavo-onze-player.jpg",
+    coverUrl: "/marketing/gustavo-onze-player.jpg",
+    bio: "Atleta de futebol e futsal com perfil ofensivo, presença de área, movimentação e regularidade em competições de base.",
+    matches: 62,
+    goals: 128,
+    titles: 2,
+    careerHistory: "2026 — atual | Botafogo | Futebol e Futsal\n2025 | Arouca Futsal",
+    achievements: "Artilharia em competição estadual\nArtilharia em torneio de base\nParticipação em competições pelo Botafogo",
+    websiteUrl: "https://www.gustavoaguiarg9.online/",
+    guardianId: gustavoGuardianProfile.id,
+    isPublic: true
+  };
+
+  await prisma.playerProfile.upsert({
+    where: { slug: "gustavo-aguiar-free" },
+    update: {
+      ...gustavoCommon,
+      plan: "FREE",
+      template: "FREE_CLEAN",
+      directoryVisible: false,
+      videos: null,
+      gallery: null
+    },
+    create: {
+      ...gustavoCommon,
+      slug: "gustavo-aguiar-free",
+      plan: "FREE",
+      template: "FREE_CLEAN",
+      directoryVisible: false
+    }
+  });
+
+  await prisma.playerProfile.upsert({
+    where: { slug: "gustavo-aguiar" },
+    update: {
+      ...gustavoCommon,
+      plan: "PREMIUM",
+      template: "PREMIUM_DARK",
+      directoryVisible: true,
+      isComplimentary: true,
+      complimentaryReason: "Perfil modelo oficial ONZEUP"
+    },
+    create: {
+      ...gustavoCommon,
+      slug: "gustavo-aguiar",
+      plan: "PREMIUM",
+      template: "PREMIUM_DARK",
+      directoryVisible: true,
+      isComplimentary: true,
+      complimentaryReason: "Perfil modelo oficial ONZEUP"
+    }
+  });
+
   await prisma.user.upsert({
-    where: { email: "superadmin@onzeup.com.br" },
+    where: { email: "onzeupfutebolbase@gmail.com" },
     update: {},
     create: {
-      name: "Super Admin OnzeUp",
-      email: "superadmin@onzeup.com.br",
+      name: "Admin ONZEUP",
+      email: "onzeupfutebolbase@gmail.com",
       passwordHash,
       role: UserRole.SUPER_ADMIN
     }

@@ -69,20 +69,30 @@ export async function savePlayer(formData: FormData) {
     weight: clean(formData.get("weight")) || null,
     nationality: clean(formData.get("nationality")) || null,
     secondaryPosition: clean(formData.get("secondaryPosition")) || null,
+    modality: clean(formData.get("modality")) || null,
+    categoryLabel: clean(formData.get("categoryLabel")) || null,
+    jerseyNumber: Number(clean(formData.get("jerseyNumber"))) || null,
     photoUrl: clean(formData.get("photoUrl")) || null,
     coverUrl: clean(formData.get("coverUrl")) || null,
     bio: clean(formData.get("bio")) || null,
     instagram: clean(formData.get("instagram")) || null,
+    websiteUrl: clean(formData.get("websiteUrl")) || null,
     matches: Number(clean(formData.get("matches"))) || null,
     goals: Number(clean(formData.get("goals"))) || null,
     assists: Number(clean(formData.get("assists"))) || null,
     titles: Number(clean(formData.get("titles"))) || null,
     careerHistory: clean(formData.get("careerHistory")) || null,
     achievements: clean(formData.get("achievements")) || null,
-    videos: clean(formData.get("videos")) || null,
+    videos: (() => {
+      const all = clean(formData.get("videos")).split(/\r?\n/).map(v => v.trim()).filter(Boolean);
+      const plan = clean(formData.get("plan")) || "FREE";
+      return (plan === "PREMIUM" ? all : all.slice(0, 1)).join("\n") || null;
+    })(),
     gallery: clean(formData.get("gallery")) || null,
-    template: clean(formData.get("template")) || "PREMIUM_DARK",
+    template: clean(formData.get("template")) || "FREE_CLEAN",
+    plan: clean(formData.get("plan")) || "FREE",
     isPublic: formData.get("isPublic") === "on",
+    directoryVisible: formData.get("directoryVisible") === "on",
   };
 
   if (id) {
@@ -98,6 +108,8 @@ export async function savePlayer(formData: FormData) {
 
   revalidatePath("/responsavel");
   revalidatePath(`/player/${slug}`);
+  revalidatePath(`/${slug}`);
+  revalidatePath("/players");
 }
 
 export async function deletePlayer(formData: FormData) {

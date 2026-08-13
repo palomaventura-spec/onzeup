@@ -14,19 +14,22 @@ const modules = [
 const faqs = [
   ["Preciso de WhatsApp Business?", "Não. Na versão atual, a ONZEUP abre o WhatsApp com a mensagem pronta. A plataforma não lê mensagens e não exige WhatsApp Business."],
   ["O ONZE Player é do clube?", "Não. O clube controla a ficha administrativa do atleta e a família controla o ONZE Player. Os dois podem ser conectados por vínculo verificado."],
-  ["Posso conhecer antes de contratar?", "Sim. Você pode acessar os ambientes demonstrativos do ONZEUP Clube e do ONZE Player antes de escolher um plano."],
+  ["Posso conhecer antes de contratar?", "Sim. O ONZEUP Club oferece 15 dias grátis e o ONZE Player possui uma versão gratuita permanente, ambos sem cartão no cadastro inicial."],
   ["O site do clube precisa ser atualizado separadamente?", "Não. Categorias, elenco, comissão, jogos e resultados cadastrados no painel alimentam automaticamente o site público da organização."],
 ];
 
 export default function Home() {
+  const playersUrl = process.env.NODE_ENV === "development" ? "/players" : (process.env.NEXT_PUBLIC_PLAYERS_URL || "https://players.onzeup.com.br");
+
   return (
     <main className="ecosystem-home">
       <header className="ecosystem-nav">
         <Link href="/" className="marketing-brand">ONZE<span>UP</span></Link>
         <nav>
-          <a href="#ecossistema">Ecossistema</a>
           <a href="#clubes">Clubes</a>
           <a href="#player">ONZE Player</a>
+          <a href={playersUrl}>Players</a>
+          <a href="https://coach.onzeup.com.br">Coach</a>
           <a href="#planos">Planos</a>
           <a href="#faq">FAQ</a>
         </nav>
@@ -48,18 +51,14 @@ export default function Home() {
 
             <div className="marketing-actions">
               <a className="marketing-cta" href="#planos">Começar com a ONZEUP</a>
-              <a className="marketing-ghost" href="#ecossistema">Conhecer a ONZEUP ↓</a>
+              <a className="marketing-ghost" href="#plataforma">Conhecer a ONZEUP ↓</a>
             </div>
 
             <div className="demo-entry-row">
-              <form action="/api/auth/demo" method="post">
-                <input type="hidden" name="type" value="club" />
-                <button type="submit">⚽ Testar ONZEUP Clube</button>
-              </form>
-              <form action="/api/auth/demo" method="post">
-                <input type="hidden" name="type" value="player" />
-                <button type="submit">★ Criar um Player de teste</button>
-              </form>
+              <Link className="club-trial-hero-cta" href="/cadastro-clube">
+                ⚽ Testar grátis por 15 dias
+              </Link>
+              <Link className="player-free-hero-cta" href="/cadastro">★ Criar ONZE Player grátis</Link>
             </div>
           </div>
 
@@ -102,7 +101,44 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="ecosystem-strip" id="ecossistema">
+      <section className="product-choice">
+        <div className="marketing-wrap">
+          <span className="marketing-kicker">ESCOLHA SUA ONZEUP</span>
+          <h2>Uma plataforma.<br/>Dois caminhos.</h2>
+          <div className="product-choice-grid">
+            <article>
+              <small>PARA ORGANIZAÇÕES</small><h3>ONZEUP CLUB</h3>
+              <p>Gestão de categorias, atletas, comissão, treinos, jogos, comunicação e financeiro.</p>
+              <Link className="marketing-cta" href="/cadastro-clube">Começar 15 dias grátis</Link>
+              <a className="marketing-ghost" href="#planos">Conhecer planos →</a>
+              <span>15 dias grátis • sem cartão</span>
+            </article>
+
+          <article className="marketing-product-card coach-product-card">
+            <span className="marketing-kicker">ONZEUP COACH</span>
+            <h3>Presença profissional para quem desenvolve atletas.</h3>
+            <p>
+              Treinadores, auxiliares, scouts e profissionais podem organizar
+              experiência, clubes, licenças, formação, metodologia e conquistas.
+            </p>
+            <div className="marketing-product-actions">
+              <Link className="marketing-cta" href="/cadastro-coach">Criar perfil Coach grátis</Link>
+              <a className="marketing-ghost" href="https://coach.onzeup.com.br">Explorar Coaches →</a>
+            </div>
+            <span>Grátis no lançamento</span>
+          </article>
+            <article className="player-choice">
+              <small>PARA FAMÍLIAS E ATLETAS</small><h3>ONZE PLAYER</h3>
+              <p>Crie gratuitamente a identidade esportiva digital do atleta e compartilhe sua trajetória.</p>
+              <Link className="marketing-cta" href="/cadastro">Criar ONZE Player grátis</Link>
+              <Link className="marketing-ghost" href={playersUrl}>Explorar Players →</Link>
+              <span>Grátis • sem cartão</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="ecosystem-strip" id="plataforma">
         <div className="marketing-wrap ecosystem-three-paths">
           <article>
             <span>01</span>
@@ -221,12 +257,19 @@ export default function Home() {
               de uniforme ou referência esportiva não representa parceria institucional
               entre a ONZEUP e o clube retratado.
             </p>
+            <div className="marketing-actions player-example-actions">
+              <Link className="marketing-cta dark" href="/cadastro">Criar ONZE Player grátis</Link>
+              <Link className="marketing-ghost dark polished-secondary-link" href="/exemplos/player-free">Ver exemplo Free</Link>
+              <Link className="marketing-ghost dark polished-secondary-link" href="/exemplos/player-premium">Ver exemplo Premium</Link>
+            </div>
 
             <div className="marketing-actions">
-              <form action="/api/auth/demo" method="post">
-                <input type="hidden" name="type" value="player" />
-                <button className="marketing-cta dark" type="submit">Criar meu Player de teste</button>
-              </form>
+              <Link className="marketing-cta dark" href="/cadastro">
+                Criar ONZE Player grátis
+              </Link>
+              <Link className="marketing-ghost dark" href={playersUrl}>
+                Explorar ONZE Players →
+              </Link>
             </div>
           </div>
         </div>
@@ -234,7 +277,7 @@ export default function Home() {
 
       <section className="ecosystem-section connection-section">
         <div className="marketing-wrap">
-          <span className="marketing-kicker">UM ECOSSISTEMA, CONTROLES SEPARADOS</span>
+          <span className="marketing-kicker">UMA PLATAFORMA, CONTROLES SEPARADOS</span>
           <h2>Conectados sem misturar propriedade dos dados.</h2>
 
           <div className="connection-grid">
@@ -259,7 +302,34 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="ecosystem-section pricing-section" id="planos">
+      
+      <section className="player-plan-comparison">
+        <div className="marketing-wrap">
+          <span className="marketing-kicker">FREE X PREMIUM</span>
+          <div className="marketing-title-row">
+            <h2>Veja a diferença<br/>antes de escolher.</h2>
+            <p>O Free entrega uma presença esportiva objetiva. O Premium transforma o perfil em um verdadeiro site esportivo personalizado.</p>
+          </div>
+          <div className="player-plan-comparison-grid">
+            <article>
+              <small>ONZE PLAYER FREE</small>
+              <h3>R$ 0</h3>
+              <p>Perfil esportivo essencial para começar.</p>
+              <ul><li>Foto principal</li><li>Dados esportivos</li><li>Estatísticas básicas</li><li>Trajetória</li><li>1 vídeo YouTube</li><li>Link compartilhável</li></ul>
+              <Link className="marketing-ghost dark polished-secondary-link" href="/exemplos/player-free">Ver Gustavo no Free →</Link>
+            </article>
+            <article className="premium">
+              <span className="pricing-badge">PREMIUM</span>
+              <small>ONZE PLAYER PREMIUM</small>
+              <h3>R$ 29,90<span>/mês</span></h3>
+              <p>Um site esportivo completo para destacar a trajetória do atleta.</p>
+              <ul><li>Hero e capa premium</li><li>Números em destaque</li><li>Trajetória por temporadas</li><li>Conquistas</li><li>Galeria</li><li>Vários vídeos</li><li>Visual profissional</li></ul>
+              <Link className="marketing-cta dark" href="/exemplos/player-premium">Ver Gustavo no Premium →</Link>
+            </article>
+          </div>
+        </div>
+      </section>
+<section className="ecosystem-section pricing-section" id="planos">
         <div className="marketing-wrap">
           <span className="marketing-kicker">PLANOS ONZEUP</span>
           <h2>Uma solução que cresce<br/>junto com a organização.</h2>
@@ -286,7 +356,10 @@ export default function Home() {
             </article>
           </div>
 
-          <p className="pricing-note">Planos de lançamento do ONZEUP. Escolha a estrutura que acompanha o tamanho da sua operação.</p>
+          <p className="pricing-note">Planos de lançamento do ONZEUP. Todos começam com 15 dias grátis.</p>
+          <div className="marketing-actions pricing-actions">
+            <Link className="marketing-cta" href="/cadastro-clube">Começar 15 dias grátis</Link>
+          </div>
         </div>
       </section>
 
@@ -303,13 +376,13 @@ export default function Home() {
 
           <div className="partner-card">
             <span>PARCERIA</span>
-            <h3>Acesso cortesia para parceiros selecionados.</h3>
+            <h3>Benefícios exclusivos para parceiros ONZEUP.</h3>
             <ul>
-              <li>Condição especial definida pela ONZEUP</li>
-              <li>Acesso aos módulos acordados na parceria</li>
+              <li>Condições comerciais diferenciadas</li>
+              <li>Acesso aos módulos definidos na parceria</li>
               <li>Canal direto com a equipe ONZEUP</li>
-              <li>Participação na evolução da plataforma</li>
-              <li>Parcerias avaliadas individualmente</li>
+              <li>Relacionamento direto com a ONZEUP</li>
+              <li>Condições avaliadas individualmente</li>
             </ul>
             <a href="mailto:palomaventura@gmail.com?subject=Parceria%20ONZEUP">Quero ser parceiro ONZEUP →</a>
           </div>

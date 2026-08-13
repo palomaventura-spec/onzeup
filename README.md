@@ -450,3 +450,90 @@ A ONZEUP sai da comunicação de piloto e entra em posicionamento comercial.
 
 ### ONZEUP Parceiros
 A plataforma pode conceder acesso cortesia a escolinhas, projetos e clubes escolhidos estrategicamente pela ONZEUP. A condição de parceiro é independente dos planos comerciais públicos.
+
+
+## v1.1.0 — ONZE Player Free
+
+Primeira versão comercial do produto familiar:
+- CTA real "Criar ONZE Player grátis"
+- cadastro de responsável
+- conta preparada para verificação de e-mail
+- perfil FREE
+- URL pública `onzeup.com.br/[slug]`
+- 1 vídeo YouTube no Free
+- catálogo `/atletas`
+- opt-in independente para catálogo
+- página pública esportiva redesenhada
+- Super Admin passa a listar Players
+- schema preparado para FREE/PREMIUM e cortesias
+- conta administrativa principal: `onzeupfutebolbase@gmail.com`
+
+> O envio transacional de confirmação de e-mail depende da configuração do domínio no provedor de e-mail e será conectado sem necessidade de caixa postal paga.
+
+
+## v1.1.1 — Player Free Fixes
+
+Correções consolidadas:
+- catálogo público movido de `/atletas` para `/players`
+- `/atletas` permanece reservado à gestão interna de atletas dos clubes
+- correção do erro de formulários aninhados na tela de login
+- remoção do ONZE Player Demo do login
+- login comercial com CTA para cadastro real do ONZE Player Free
+- linguagem de ONZEUP Parceiros atualizada para posicionamento comercial
+- links do catálogo e revalidação atualizados para `/players`
+
+
+## v1.1.2 — Demo Club + Clean Auth
+
+O botão "Testar ONZEUP Clube" agora garante automaticamente a existência da
+organização e do coordenador fictícios antes de criar a sessão. O ONZE Player
+não possui mais conta demo editável: usuários reais entram pelo cadastro Free.
+
+O formulário de cadastro usa `autocomplete` apropriado para reduzir o
+preenchimento automático de credenciais antigas salvas no navegador.
+
+
+## v1.1.3 — Players Subdomain + Commercial Flow
+
+### URLs
+- `onzeup.com.br` — ecossistema / ONZEUP Club
+- `players.onzeup.com.br` — catálogo público ONZE Players
+- `players.onzeup.com.br/[slug]` — perfil público
+- `/players` — fallback de desenvolvimento local
+- `/cadastro-clube` — início do trial comercial de 15 dias
+- `/cadastro` — cadastro gratuito do ONZE Player
+
+### Variável recomendada
+```env
+NEXT_PUBLIC_PLAYERS_URL=https://players.onzeup.com.br
+```
+
+A confirmação de e-mail continua preparada no banco e será conectada ao provedor transacional após a verificação do domínio remetente.
+
+
+## v1.1.4 — Players Directory Flow
+
+Fluxo oficial:
+
+```text
+onzeup.com.br
+→ landing principal
+
+onzeup.com.br/cadastro-clube
+→ ONZEUP Club / teste grátis de 15 dias
+
+onzeup.com.br/cadastro
+→ ONZE Player Free / cadastro real
+
+players.onzeup.com.br
+→ catálogo público de atletas
+
+players.onzeup.com.br/[slug]
+→ perfil público individual
+```
+
+
+## v1.2.5 — UI Polish
+
+A versão consolida as correções visuais dos CTAs dos portais Player e Coach e
+mantém as correções de subdomínio, banco e autenticação das versões anteriores.

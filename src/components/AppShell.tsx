@@ -30,7 +30,6 @@ export default async function AppShell({ children }: { children: React.ReactNode
           <Link href="/financeiro">Financeiro</Link>
           <Link href="/integracoes">Integrações</Link>
           <Link href="/ajuda">Ajuda</Link>
-          <Link href="/piloto">Piloto</Link>
           <Link href="/configuracoes">Configurações</Link>
         </nav>
 

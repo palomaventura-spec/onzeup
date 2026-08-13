@@ -13,6 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin">Visão geral</Link>
           <Link href="/admin/organizacoes">Organizações</Link>
           <Link href="/admin/planos">Planos</Link>
+          <Link href="/admin/players">ONZE Players</Link>
           <Link href="/dashboard">Voltar ao app</Link>
         </nav>
       </aside>
