@@ -33,3 +33,4 @@ No Vercel configurar:
 - `BLOB_READ_WRITE_TOKEN`
 
 Depois validar `/piloto` antes de apontar o domínio.
+"# onzeup" 
