@@ -16,10 +16,10 @@ export default function LoginPage() {
             </form>
             <form action="/api/auth/demo" method="post">
               <input type="hidden" name="type" value="player" />
-              <button className="btn-secondary" type="submit">Testar ONZE Player</button>
+              <button className="btn-secondary" type="submit">Criar Player de teste</button>
             </form>
           </div>
-          <small>Não é necessário informar e-mail ou senha para a demonstração.</small>
+          <small>Clube: entra na conta demo. Player: abre uma sessão temporária vazia para você criar um perfil de teste.</small>
         </div>
       </form>
     </main>

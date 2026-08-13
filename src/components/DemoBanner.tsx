@@ -11,7 +11,7 @@ export default function DemoBanner({
       <p>
         {kind === "club"
           ? "Você está no Clube Demo OnzeUp, uma organização fictícia separada de qualquer clube real ou cadastrado nos testes."
-          : "Você está testando uma conta familiar fictícia do ONZE Player. Não use dados pessoais reais."}
+          : "Esta é uma sessão temporária de demonstração. Crie um perfil fictício para testar o ONZE Player. Não use dados pessoais reais."}
       </p>
       <Link href="/">Voltar ao site</Link>
     </div>

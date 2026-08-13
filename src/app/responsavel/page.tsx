@@ -51,7 +51,7 @@ export default async function GuardianPortal({
 
   return (
     <main className="guardian-portal">
-      {user.email === "responsavel@onzeup.com.br" ? <DemoBanner kind="player" /> : null}
+      {user.email.startsWith("demo-player-") ? <DemoBanner kind="player" /> : null}
       <header className="guardian-portal-nav">
         <Link href="/responsavel" className="player-brand">ONZE<span>UP</span> <b>PLAYER</b></Link>
         <div>

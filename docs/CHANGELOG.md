@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.9.4.2 — Isolated ONZE Player Demo
+- botão Player cria uma sessão temporária individual e vazia
+- visitante cria o próprio perfil fictício durante o teste
+- removido redirecionamento para o perfil demo pré-preenchido
+- Gustavo permanece somente como exemplo visual na landing
+- onboarding específico para teste do Player
+
+
 ## v0.9.4.1 — Ecosystem + ONZE Player Premium
 - landing comercial reposicionada para Clube → Família → Atleta
 - imagem demonstrativa do Gustavo no ONZE Player

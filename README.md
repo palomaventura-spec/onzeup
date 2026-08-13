@@ -413,3 +413,24 @@ GitHub:
 - FAQ comercial
 - CTAs de demo e piloto reforçados
 - aviso explícito de que a imagem demonstrativa não representa parceria institucional com o clube retratado
+
+
+## v0.9.4.2 — Isolated ONZE Player Demo
+
+O botão de demonstração do ONZE Player não usa mais um perfil pré-preenchido compartilhado.
+
+Novo fluxo:
+
+```text
+Landing
+→ Criar um Player de teste
+→ sessão temporária individual
+→ área familiar vazia
+→ criar atleta fictício
+→ publicar
+→ visualizar perfil público
+```
+
+O perfil real usado como referência visual na landing não é carregado dentro da conta demo.
+
+A conta demo de Clube continua sendo compartilhada.

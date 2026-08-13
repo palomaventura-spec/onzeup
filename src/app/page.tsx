@@ -58,7 +58,7 @@ export default function Home() {
               </form>
               <form action="/api/auth/demo" method="post">
                 <input type="hidden" name="type" value="player" />
-                <button type="submit">★ Testar ONZE Player</button>
+                <button type="submit">★ Criar um Player de teste</button>
               </form>
             </div>
           </div>
@@ -196,7 +196,7 @@ export default function Home() {
       <section className="ecosystem-player-showcase" id="player">
         <div className="marketing-wrap player-showcase-grid">
           <div className="player-showcase-photo">
-            <img src="/marketing/gustavo-onze-player.png" alt="Exemplo demonstrativo de ONZE Player" />
+            <img src="/marketing/gustavo-onze-player.jpg" alt="Exemplo demonstrativo de ONZE Player" />
             <span>EXEMPLO DEMONSTRATIVO</span>
           </div>
 
@@ -225,7 +225,7 @@ export default function Home() {
             <div className="marketing-actions">
               <form action="/api/auth/demo" method="post">
                 <input type="hidden" name="type" value="player" />
-                <button className="marketing-cta dark" type="submit">Testar ONZE Player</button>
+                <button className="marketing-cta dark" type="submit">Criar meu Player de teste</button>
               </form>
             </div>
           </div>

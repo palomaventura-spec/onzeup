@@ -739,3 +739,25 @@ linear-gradient(180deg,#0d141b,#05080c);background-size:cover;background-positio
 .ecosystem-footer>div{display:flex;align-items:center;justify-content:space-between}.ecosystem-footer>div>div:last-child{display:flex;gap:20px}.ecosystem-footer a{font-size:10px;color:#9bea00}
 @media(max-width:900px){.ecosystem-nav nav{display:none}.ecosystem-hero-grid,.player-showcase-grid,.partner-program-grid,.scale-copy{grid-template-columns:1fr}.ecosystem-hero h1{font-size:55px}.ecosystem-hero-visual{margin-top:25px}.ecosystem-three-paths{grid-template-columns:1fr}.ecosystem-three-paths i{transform:rotate(90deg);justify-self:center}.connection-grid{grid-template-columns:1fr}.connection-grid>b{transform:rotate(90deg);justify-self:center}.pricing-grid{grid-template-columns:1fr}.pricing-grid article.featured{transform:none}.faq-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.ecosystem-nav{width:calc(100% - 28px)}.ecosystem-nav>div .marketing-login{display:none}.ecosystem-dashboard-body{grid-template-columns:90px 1fr}.ecosystem-player-mini{right:4px}.scale-numbers{grid-template-columns:1fr 1fr}.ecosystem-player-showcase h2,.partner-program h2,.scale-copy h2,.pricing-section h2,.connection-section>div>h2{font-size:39px}.player-showcase-data{grid-template-columns:1fr}.ecosystem-footer>div{display:grid;gap:15px}}
+
+
+/* v0.9.4.2 — isolated ONZE Player demo onboarding */
+.player-demo-onboarding{
+  margin-top:14px;
+  max-width:680px;
+  display:grid;
+  gap:4px;
+  padding:12px 14px;
+  border:1px solid #425600;
+  background:#172300;
+  border-radius:11px;
+}
+.player-demo-onboarding strong{
+  color:var(--green);
+  font-size:11px;
+}
+.player-demo-onboarding span{
+  color:#b7c39f;
+  font-size:10px;
+  line-height:1.5;
+}
