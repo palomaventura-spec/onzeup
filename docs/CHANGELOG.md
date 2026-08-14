@@ -1,5 +1,51 @@
 # Changelog
 
+## v1.2.9 — Uniform Premium Video Gallery
+- remove o destaque gigante do primeiro vídeo
+- todos os vídeos Premium usam exatamente a mesma proporção 16:9
+- 2 vídeos por linha em desktop/tablet
+- 1 vídeo por linha em telas menores
+- novos vídeos entram automaticamente na grade
+- mantém o player do YouTube e títulos
+
+
+## v1.2.8a — Example Route Fix
+- elimina página Premium estática antiga
+- /exemplos/player-premium redireciona para o perfil real gustavo-aguiar
+- /exemplos/player-free redireciona para o perfil real gustavo-aguiar-free
+- landing e catálogo usam os perfis reais como demonstração
+- evita divergência entre demo e perfil público no futuro
+
+
+## v1.2.8 — Premium Complete Redesign
+- redesenha completamente o miolo do perfil Premium
+- elimina faixas vazias e rótulos simples
+- cria seções editoriais com numeração grande
+- vídeos passam a usar players reais, sem caixas falsas
+- perfil ganha grade de dados esportivos
+- trajetória vira timeline visual
+- conquistas viram cards
+- Player/Coach routing preservados
+
+
+## v1.2.7 — Coach Routing Fix
+- botão Explorar Coach passa a usar rota interna /coaches
+- cadastro e login do Coach usam rotas internas confiáveis
+- cards do catálogo Coach usam /coach-profile/[slug]
+- adiciona alias /coach -> /coaches
+- mantém compatibilidade com coach.onzeup.com.br via middleware
+- não altera Player Premium
+
+
+## v1.2.6 — Premium Editorial Redesign
+- redesenha numeração e títulos das seções Premium
+- troca rótulos simples por navegação editorial visual
+- remove duplicação visual de thumbnail + iframe nos vídeos
+- cria vitrine de vídeos com player único por card
+- melhora hierarquia de carreira e conquistas
+- reforça aparência de site esportivo Premium
+
+
 ## v1.2.5 — UI Polish Consolidated
 - corrige acabamento do botão Explorar atletas
 - aplica o mesmo padrão visual no Coach

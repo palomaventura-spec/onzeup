@@ -251,8 +251,8 @@ export default async function GuardianPortal({
                   <p className="muted">O mesmo painel atende Free e Premium. O layout público muda conforme o plano.</p>
                 </div>
                 <div>
-                  <Link className="btn-secondary" href={`/exemplos/player-free`} target="_blank">Modelo Free ↗</Link>
-                  <Link className="btn-secondary" href={`/exemplos/player-premium`} target="_blank">Modelo Premium ↗</Link>
+                  <Link className="btn-secondary" href="/gustavo-aguiar-free" target="_blank">Modelo Free ↗</Link>
+                  <Link className="btn-secondary" href="/gustavo-aguiar" target="_blank">Modelo Premium ↗</Link>
                   {selected.isPublic ? <a className="btn" href={`https://players.onzeup.com.br/${selected.slug}`} target="_blank">Abrir perfil publicado ↗</a> : null}
                 </div>
               </section>

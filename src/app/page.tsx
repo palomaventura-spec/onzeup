@@ -29,7 +29,7 @@ export default function Home() {
           <a href="#clubes">Clubes</a>
           <a href="#player">ONZE Player</a>
           <a href={playersUrl}>Players</a>
-          <a href="https://coach.onzeup.com.br">Coach</a>
+          <a href="/coaches">Coach</a>
           <a href="#planos">Planos</a>
           <a href="#faq">FAQ</a>
         </nav>
@@ -123,7 +123,7 @@ export default function Home() {
             </p>
             <div className="marketing-product-actions">
               <Link className="marketing-cta" href="/cadastro-coach">Criar perfil Coach grátis</Link>
-              <a className="marketing-ghost" href="https://coach.onzeup.com.br">Explorar Coaches →</a>
+              <a className="marketing-ghost" href="/coaches">Explorar Coaches →</a>
             </div>
             <span>Grátis no lançamento</span>
           </article>
@@ -259,8 +259,8 @@ export default function Home() {
             </p>
             <div className="marketing-actions player-example-actions">
               <Link className="marketing-cta dark" href="/cadastro">Criar ONZE Player grátis</Link>
-              <Link className="marketing-ghost dark polished-secondary-link" href="/exemplos/player-free">Ver exemplo Free</Link>
-              <Link className="marketing-ghost dark polished-secondary-link" href="/exemplos/player-premium">Ver exemplo Premium</Link>
+              <Link className="marketing-ghost dark polished-secondary-link" href="/gustavo-aguiar-free">Ver exemplo Free</Link>
+              <Link className="marketing-ghost dark polished-secondary-link" href="/gustavo-aguiar">Ver exemplo Premium</Link>
             </div>
 
             <div className="marketing-actions">
@@ -316,7 +316,7 @@ export default function Home() {
               <h3>R$ 0</h3>
               <p>Perfil esportivo essencial para começar.</p>
               <ul><li>Foto principal</li><li>Dados esportivos</li><li>Estatísticas básicas</li><li>Trajetória</li><li>1 vídeo YouTube</li><li>Link compartilhável</li></ul>
-              <Link className="marketing-ghost dark polished-secondary-link" href="/exemplos/player-free">Ver Gustavo no Free →</Link>
+              <Link className="marketing-ghost dark polished-secondary-link" href="/gustavo-aguiar-free">Ver Gustavo no Free →</Link>
             </article>
             <article className="premium">
               <span className="pricing-badge">PREMIUM</span>
@@ -324,7 +324,7 @@ export default function Home() {
               <h3>R$ 29,90<span>/mês</span></h3>
               <p>Um site esportivo completo para destacar a trajetória do atleta.</p>
               <ul><li>Hero e capa premium</li><li>Números em destaque</li><li>Trajetória por temporadas</li><li>Conquistas</li><li>Galeria</li><li>Vários vídeos</li><li>Visual profissional</li></ul>
-              <Link className="marketing-cta dark" href="/exemplos/player-premium">Ver Gustavo no Premium →</Link>
+              <Link className="marketing-cta dark" href="/gustavo-aguiar">Ver Gustavo no Premium →</Link>
             </article>
           </div>
         </div>

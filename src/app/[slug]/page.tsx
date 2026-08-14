@@ -87,46 +87,139 @@ export default async function PublicPlayer({params}:{params:Promise<{slug:string
     </main>;
   }
 
+
   const heroImage=player.coverUrl||player.photoUrl;
-  return <main className="premium-player-live">
-    <nav className="premium-live-nav">
+
+  return <main className="premium-athlete-site">
+    <nav className="premium-topbar">
       <a href="https://players.onzeup.com.br" className="player-brand">ONZE<span>UP</span> <b>PLAYER</b></a>
-      <div>
-        <a href="#carreira">Carreira</a><a href="#videos">Vídeos</a><a href="#conquistas">Conquistas</a>
+      <div className="premium-nav-links">
+        <a href="#perfil">Perfil</a>
+        <a href="#trajetoria">Trajetória</a>
+        <a href="#videos">Vídeos</a>
+        <a href="#conquistas">Conquistas</a>
         {insta?<a href={insta} target="_blank" rel="noreferrer">Instagram ↗</a>:null}
-        {player.websiteUrl?<a href={player.websiteUrl} target="_blank" rel="noreferrer">Site ↗</a>:null}
       </div>
     </nav>
 
-    <section className="premium-live-hero">
-      {heroImage?<img src={heroImage} alt={player.name}/>:null}<div className="premium-live-overlay"/>
-      <div className="premium-live-copy"><span>ONZE PLAYER PREMIUM</span><h1>{player.name.toUpperCase()}</h1>{player.nickname?<h2>{player.nickname}</h2>:null}<p>{[player.position,player.secondaryPosition,player.currentClub,player.birthYear].filter(Boolean).join(" • ")}</p>
-        {videos[0]?<a href="#videos" className="btn">▶ Ver melhores momentos</a>:null}
+    <section className="premium-hero-modern">
+      {heroImage?<img src={heroImage} alt={player.name}/>:null}
+      <div className="premium-hero-shade"/>
+      <div className="premium-hero-inner">
+        <div className="premium-hero-copy">
+          <span className="premium-kicker">ONZE PLAYER PREMIUM</span>
+          <h1>{player.name.toUpperCase()}</h1>
+          {player.nickname?<strong>{player.nickname}</strong>:null}
+          <p>{[player.position,player.secondaryPosition,player.currentClub,player.birthYear].filter(Boolean).join(" • ")}</p>
+          <div className="premium-hero-actions">
+            {videos[0]?<a href="#videos" className="btn">▶ Assistir melhores momentos</a>:null}
+            {insta?<a className="premium-outline-btn" href={insta} target="_blank" rel="noreferrer">Instagram ↗</a>:null}
+          </div>
+        </div>
       </div>
     </section>
 
-    <section className="premium-live-numbers">
-      {player.matches!=null?<article><strong>{player.matches}</strong><span>Jogos oficiais</span></article>:null}
-      {player.goals!=null?<article><strong>{player.goals}</strong><span>Gols oficiais</span></article>:null}
-      {player.titles!=null?<article><strong>{player.titles}</strong><span>Conquistas</span></article>:null}
-      {player.matches&&player.goals!=null?<article><strong>{(player.goals/player.matches).toFixed(2).replace(".",",")}</strong><span>Gols por jogo</span></article>:null}
+    <section className="premium-stats-strip">
+      {player.matches!=null?<article><small>JOGOS OFICIAIS</small><strong>{player.matches}</strong></article>:null}
+      {player.goals!=null?<article><small>GOLS OFICIAIS</small><strong>{player.goals}</strong></article>:null}
+      {player.titles!=null?<article><small>CONQUISTAS</small><strong>{player.titles}</strong></article>:null}
+      {player.matches&&player.goals!=null?<article><small>GOLS / JOGO</small><strong>{(player.goals/player.matches).toFixed(2).replace(".",",")}</strong></article>:null}
     </section>
 
-    <section className="premium-live-intro">
-      <div><span>01 — PERFIL</span></div>
-      <div><h2>Identidade esportiva.</h2><p>{player.bio||"Perfil esportivo em atualização."}</p>
-        <div className="premium-player-tags">{[player.modality,player.position,player.secondaryPosition,player.dominantFoot,player.nationality].filter(Boolean).map((x,i)=><span key={i}>{x}</span>)}</div>
+    <section className="premium-editorial-block light" id="perfil">
+      <aside className="premium-section-mark">
+        <span>01</span>
+        <small>PERFIL</small>
+      </aside>
+      <div className="premium-section-body">
+        <span className="premium-eyebrow">IDENTIDADE ESPORTIVA</span>
+        <h2>Quem é o atleta.</h2>
+        <p className="premium-lead">{player.bio||"Perfil esportivo em atualização."}</p>
+        <div className="premium-info-grid">
+          {player.modality?<article><small>Modalidade</small><strong>{player.modality}</strong></article>:null}
+          {player.position?<article><small>Posição</small><strong>{player.position}{player.secondaryPosition?` / ${player.secondaryPosition}`:""}</strong></article>:null}
+          {player.dominantFoot?<article><small>Pé dominante</small><strong>{player.dominantFoot}</strong></article>:null}
+          {player.nationality?<article><small>Nacionalidade</small><strong>{player.nationality}</strong></article>:null}
+          {player.height?<article><small>Altura</small><strong>{player.height}</strong></article>:null}
+          {player.currentClub?<article><small>Clube atual</small><strong>{player.currentClub}</strong></article>:null}
+        </div>
       </div>
     </section>
 
-    {history.length?<section className="premium-live-section dark" id="carreira"><div><span>02 — CARREIRA</span></div><div><h2>Trajetória.</h2><div className="premium-live-career">{history.map((x,i)=><article key={i}><b>{String(i+1).padStart(2,"0")}</b><strong>{x}</strong></article>)}</div></div></section>:null}
+    {history.length?<section className="premium-editorial-block dark" id="trajetoria">
+      <aside className="premium-section-mark">
+        <span>02</span>
+        <small>TRAJETÓRIA</small>
+      </aside>
+      <div className="premium-section-body">
+        <span className="premium-eyebrow">CARREIRA</span>
+        <h2>A história em movimento.</h2>
+        <div className="premium-timeline">
+          {history.map((x,i)=><article key={i}>
+            <span>{String(i+1).padStart(2,"0")}</span>
+            <div><strong>{x}</strong></div>
+          </article>)}
+        </div>
+      </div>
+    </section>:null}
 
-    {videos.length?<section className="premium-live-section light" id="videos"><div><span>03 — MOMENTOS</span></div><div><h2>Em campo.</h2><div className="premium-live-videos">{videos.map((v,i)=>{const emb=youtubeEmbed(v);const thumb=youtubeThumb(v);return emb?<article key={i}><div style={thumb?{backgroundImage:`url(${thumb})`}:{}}><span>▶</span></div><h3>{i===0?"Melhores momentos":`Vídeo ${i+1}`}</h3><iframe src={emb} title={`${player.name} vídeo ${i+1}`} allowFullScreen/></article>:null})}</div></div></section>:null}
+    {videos.length?<section className="premium-editorial-block light" id="videos">
+      <aside className="premium-section-mark">
+        <span>03</span>
+        <small>VÍDEOS</small>
+      </aside>
+      <div className="premium-section-body">
+        <span className="premium-eyebrow">MELHORES MOMENTOS</span>
+        <h2>Veja o atleta em ação.</h2>
+        <p className="premium-lead">Gols, jogadas e momentos que mostram características, evolução e presença em jogo.</p>
+        <div className={`premium-media-grid ${videos.length===1?"one":""}`}>
+          {videos.map((v,i)=>{const emb=youtubeEmbed(v);return emb?<article className={i===0?"featured":""} key={i}>
+            <div className="premium-youtube-frame">
+              <iframe src={emb} title={`${player.name} vídeo ${i+1}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen/>
+            </div>
+            <div className="premium-media-caption">
+              <span>{i===0?"DESTAQUE":`VÍDEO ${String(i+1).padStart(2,"0")}`}</span>
+              <strong>{i===0?"Melhores momentos":`Vídeo ${i+1}`}</strong>
+            </div>
+          </article>:null})}
+        </div>
+      </div>
+    </section>:null}
 
-    {achievements.length?<section className="premium-live-section dark" id="conquistas"><div><span>04 — CONQUISTAS</span></div><div><h2>Marcos da trajetória.</h2><div className="premium-live-achievements">{achievements.map((x,i)=><article key={i}><b>{String(i+1).padStart(2,"0")}</b><strong>{x}</strong></article>)}</div></div></section>:null}
+    {achievements.length?<section className="premium-editorial-block dark" id="conquistas">
+      <aside className="premium-section-mark">
+        <span>04</span>
+        <small>CONQUISTAS</small>
+      </aside>
+      <div className="premium-section-body">
+        <span className="premium-eyebrow">DESTAQUES</span>
+        <h2>Marcos da trajetória.</h2>
+        <div className="premium-achievement-grid">
+          {achievements.map((x,i)=><article key={i}>
+            <span>{String(i+1).padStart(2,"0")}</span>
+            <strong>{x}</strong>
+          </article>)}
+        </div>
+      </div>
+    </section>:null}
 
-    {gallery.length?<section className="premium-live-gallery"><span>GALERIA</span><h2>Momentos que contam a história.</h2><div>{gallery.map((url,i)=><img src={url} alt={`${player.name} ${i+1}`} key={i}/>)}</div></section>:null}
+    {gallery.length?<section className="premium-gallery-modern">
+      <span className="premium-eyebrow">GALERIA</span>
+      <h2>Momentos que contam a história.</h2>
+      <div>{gallery.map((url,i)=><img src={url} alt={`${player.name} ${i+1}`} key={i}/>)}</div>
+    </section>:null}
 
-    <section className="premium-live-footer"><div><span>ONZE PLAYER PREMIUM</span><h2>{player.name}</h2><p>{[player.position,player.currentClub].filter(Boolean).join(" • ")}</p></div><div>{insta?<a className="btn-secondary" href={insta} target="_blank" rel="noreferrer">Instagram ↗</a>:null}{player.websiteUrl?<a className="btn-secondary" href={player.websiteUrl} target="_blank" rel="noreferrer">Site oficial ↗</a>:null}<PlayerPublicActions name={player.name}/></div></section>
+    <section className="premium-footer-modern">
+      <div>
+        <span className="premium-kicker">ONZE PLAYER PREMIUM</span>
+        <h2>{player.name}</h2>
+        <p>{[player.position,player.currentClub].filter(Boolean).join(" • ")}</p>
+      </div>
+      <div className="premium-footer-actions">
+        {insta?<a className="premium-outline-btn dark" href={insta} target="_blank" rel="noreferrer">Instagram ↗</a>:null}
+        {player.websiteUrl?<a className="premium-outline-btn dark" href={player.websiteUrl} target="_blank" rel="noreferrer">Site ↗</a>:null}
+        <PlayerPublicActions name={player.name}/>
+      </div>
+    </section>
   </main>;
 }

@@ -29,14 +29,14 @@ export default async function CoachesHome({
   return (
     <main className="players-standalone coach-standalone">
       <header className="standalone-nav">
-        <a href="https://coach.onzeup.com.br" className="player-brand">
+        <a href="/coaches" className="player-brand">
           ONZE<span>UP</span> <b>COACH</b>
         </a>
         <nav>
           <a href="#profissionais">Profissionais</a>
           <a href="#como-funciona">Como funciona</a>
-          <a href="https://onzeup.com.br/login">Entrar</a>
-          <a className="btn" href="https://onzeup.com.br/cadastro-coach">Criar perfil grátis</a>
+          <a href="/login">Entrar</a>
+          <a className="btn" href="/cadastro-coach">Criar perfil grátis</a>
         </nav>
       </header>
 
@@ -49,7 +49,7 @@ export default async function CoachesHome({
             conquistas em um perfil profissional esportivo.
           </p>
           <div className="players-hero-actions">
-            <a className="btn" href="https://onzeup.com.br/cadastro-coach">Criar perfil Coach grátis</a>
+            <a className="btn" href="/cadastro-coach">Criar perfil Coach grátis</a>
             <a className="players-secondary-cta" href="#profissionais">Explorar profissionais ↓</a>
           </div>
           <small>Grátis no lançamento • sem cartão</small>
@@ -66,7 +66,7 @@ export default async function CoachesHome({
             <li>Conquistas e vídeo</li>
             <li>Instagram, LinkedIn e contato</li>
           </ul>
-          <a className="btn" href="https://onzeup.com.br/cadastro-coach">Cadastre-se conosco →</a>
+          <a className="btn" href="/cadastro-coach">Cadastre-se conosco →</a>
         </aside>
       </section>
 
@@ -83,7 +83,7 @@ export default async function CoachesHome({
 
         <div className="directory-grid">
           {coaches.map((c) => (
-            <a href={`https://coach.onzeup.com.br/${c.slug}`} className="directory-player-card" key={c.id}>
+            <a href={`/coach-profile/${c.slug}`} className="directory-player-card" key={c.id}>
               <div>
                 {c.photoUrl ? <img src={c.photoUrl} alt={c.name} /> : <span>{c.name.slice(0,2).toUpperCase()}</span>}
               </div>
@@ -99,7 +99,7 @@ export default async function CoachesHome({
               <span className="page-eyebrow">PRIMEIROS PERFIS</span>
               <h2>Profissionais publicados aparecerão aqui.</h2>
               <p>Crie seu perfil profissional gratuitamente e faça parte do lançamento da ONZEUP.</p>
-              <a className="btn" href="https://onzeup.com.br/cadastro-coach">Criar Coach grátis</a>
+              <a className="btn" href="/cadastro-coach">Criar Coach grátis</a>
             </div>
           ) : null}
         </div>
