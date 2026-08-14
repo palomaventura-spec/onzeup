@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.3.3 — Player Videos + PIX Manual
+- Free do Gustavo usa 1 vídeo real
+- Premium do Gustavo usa os 4 vídeos fornecidos
+- mantém grade Premium uniforme 16:9
+- adiciona checkout PIX manual sem gateway
+- gera PIX Copia e Cola e QR Code a partir da chave configurada
+- registra pedido e status PENDING/PAID/CANCELLED
+- Super Admin confirma PIX e ativa Premium por 30 dias
+- adiciona página Admin de pagamentos PIX
+- adiciona CTA de upgrade Premium no painel da família
+
+
 ## v1.3.2 — Gustavo Official Player Model
 - landing ONZEUP Player passa a usar o perfil real do Gustavo como modelo oficial Premium
 - card-modelo lê nome, foto e números do banco

@@ -11,6 +11,7 @@ import {
   saveGuardianProfile,
   savePlayer,
 } from "./actions";
+import { createPlayerPremiumPix } from "@/app/checkout/actions";
 
 export default async function GuardianPortal({
   searchParams,
@@ -123,6 +124,21 @@ export default async function GuardianPortal({
               </div>
             </div>
 
+            {selected && selected.plan !== "PREMIUM" ? (
+              <section className="player-upgrade-card">
+                <div>
+                  <span className="page-eyebrow">UPGRADE PARA PREMIUM</span>
+                  <h3>Transforme o perfil em um site esportivo completo.</h3>
+                  <p>Vários vídeos, galeria, conquistas e visual Premium. Pagamento via PIX.</p>
+                </div>
+                <form action={createPlayerPremiumPix}>
+                  <input type="hidden" name="playerId" value={selected.id} />
+                  <strong>R$ 29,90/mês</strong>
+                  <button className="btn">Assinar Premium via PIX</button>
+                </form>
+              </section>
+            ) : null}
+
             <form className="player-editor-form" action={savePlayer}>
               {selected ? <input type="hidden" name="id" value={selected.id} /> : null}
 
@@ -170,11 +186,10 @@ export default async function GuardianPortal({
                     <label>Instagram <small className="field-help">Cole @usuario ou o link completo.</small><input name="instagram" defaultValue={selected?.instagram || ""} placeholder="@atletaexemplo" /></label>
                     <label>Site externo <small className="field-help">Opcional.</small><input name="websiteUrl" type="url" defaultValue={selected?.websiteUrl || ""} placeholder="https://..." /></label>
                   </div>
-                  <label>Plano
-                    <select name="plan" defaultValue={selected?.plan || "FREE"}>
-                      <option value="FREE">ONZEUP Player Free</option>
-                      <option value="PREMIUM">ONZEUP Player Premium</option>
-                    </select>
+                  <input type="hidden" name="plan" value={selected?.plan || "FREE"} />
+                  <label>Plano atual
+                    <input value={selected?.plan === "PREMIUM" ? "ONZEUP Player Premium" : "ONZEUP Player Free"} readOnly />
+                    <small className="field-help">O upgrade para Premium é ativado após a confirmação do pagamento.</small>
                   </label>
                   <label>Template
                     <select name="template" defaultValue={selected?.template || "PREMIUM_DARK"}>

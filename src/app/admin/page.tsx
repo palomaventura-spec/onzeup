@@ -5,11 +5,12 @@ function money(cents: number) {
 }
 
 export default async function AdminHome() {
-  const [organizations, activeSubs, athletes, charges] = await Promise.all([
+  const [organizations, activeSubs, athletes, charges, pendingPix] = await Promise.all([
     prisma.organization.count(),
     prisma.subscription.count({ where: { status: "ACTIVE" } }),
     prisma.athlete.count(),
     prisma.charge.aggregate({ where: { status: "PAID" }, _sum: { amountCents: true } }),
+    prisma.payment.count({ where: { status: "PENDING" } }),
   ]);
 
   return (

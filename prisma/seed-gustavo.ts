@@ -70,7 +70,7 @@ async function main() {
       plan: "FREE",
       template: "FREE_CLEAN",
       directoryVisible: false,
-      videos: null,
+      videos: "https://youtu.be/LT4pTFW0O_k",
       gallery: null,
     },
     create: {
@@ -79,6 +79,7 @@ async function main() {
       plan: "FREE",
       template: "FREE_CLEAN",
       directoryVisible: false,
+      videos: "https://youtu.be/LT4pTFW0O_k",
     },
   });
 
@@ -88,6 +89,7 @@ async function main() {
       ...common,
       plan: "PREMIUM",
       template: "PREMIUM_DARK",
+      videos: "https://youtu.be/LT4pTFW0O_k\nhttps://youtu.be/kDZu3B9m6Yo\nhttps://youtu.be/b8PhpMC0ma8\nhttps://youtu.be/ULRKMnTMh7U",
       directoryVisible: true,
       isComplimentary: true,
       complimentaryReason: "Perfil modelo oficial ONZEUP",
@@ -98,6 +100,7 @@ async function main() {
       slug: "gustavo-aguiar",
       plan: "PREMIUM",
       template: "PREMIUM_DARK",
+      videos: "https://youtu.be/LT4pTFW0O_k\nhttps://youtu.be/kDZu3B9m6Yo\nhttps://youtu.be/b8PhpMC0ma8\nhttps://youtu.be/ULRKMnTMh7U",
       directoryVisible: true,
       isComplimentary: true,
       complimentaryReason: "Perfil modelo oficial ONZEUP",

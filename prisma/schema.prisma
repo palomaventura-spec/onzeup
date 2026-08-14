@@ -77,6 +77,17 @@ enum PlanCode {
   BUSINESS
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum PaymentProduct {
+  PLAYER_PREMIUM_MONTHLY
+  PLAYER_FEATURED_ANNUAL
+}
+
 model Organization {
   id                  String              @id @default(cuid())
   name                String
@@ -146,6 +157,7 @@ model User {
 
   @@index([organizationId])
   coachProfile        CoachProfile?
+  payments            Payment[]
 
 }
 
@@ -385,6 +397,7 @@ model PlayerProfile {
   guardianId  String
   guardian    GuardianProfile @relation(fields: [guardianId], references: [id], onDelete: Cascade)
   athleteLinks PlayerAthleteLink[]
+  payments     Payment[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   @@index([guardianId])
@@ -481,4 +494,28 @@ model CoachProfile {
   @@index([directoryVisible, isPublic])
   @@index([roleTitle])
   @@index([currentClub])
+}
+
+model Payment {
+  id                String         @id @default(cuid())
+  userId            String
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playerId          String?
+  player            PlayerProfile? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  product           PaymentProduct
+  status            PaymentStatus  @default(PENDING)
+  method            String         @default("PIX")
+  amountCents       Int
+  pixTxid           String         @unique
+  pixPayload        String?
+  pixKeySnapshot    String?
+  note              String?
+  confirmedAt       DateTime?
+  confirmedByUserId String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@index([playerId])
 }
