@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.3.4 — Super Admin Login Fix
+- cria /admin/login real
+- login administrativo usa a autenticação existente com bloqueio para SUPER_ADMIN
+- SUPER_ADMIN redireciona automaticamente para /admin
+- cria Central ONZEUP em /admin
+- adiciona seed:admin independente para criar/resetar conta administrativa
+- limpa sessões antigas do Super Admin ao executar seed:admin
+- mantém Player, Coach, Club e PIX da v1.3.3
+
+
 ## v1.3.3 — Player Videos + PIX Manual
 - Free do Gustavo usa 1 vídeo real
 - Premium do Gustavo usa os 4 vídeos fornecidos

@@ -1,6 +1,6 @@
 {
   "name": "onzeup",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +11,8 @@
     "db:studio": "prisma studio",
     "postinstall": "npx prisma generate",
     "seed:gustavo": "tsx prisma/seed-gustavo.ts",
-    "db:sync": "prisma db push && prisma generate"
+    "db:sync": "prisma db push && prisma generate",
+    "seed:admin": "tsx prisma/seed-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

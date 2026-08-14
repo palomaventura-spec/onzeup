@@ -1,7 +1,9 @@
+import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { cancelPayment, confirmPayment } from "./actions";
 function money(c:number){return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(c/100)}
 export default async function AdminPayments(){
+ await requireSuperAdmin();
  const payments=await prisma.payment.findMany({include:{user:true,player:true},orderBy:{createdAt:"desc"},take:200});
  return <><div className="page-head"><div><h1>Pagamentos PIX</h1><p className="muted">Confirmação manual do MVP e ativação de produtos.</p></div><span className="badge">{payments.filter(p=>p.status==="PENDING").length} pendente(s)</span></div>
  <section className="card"><div className="table-wrap"><table className="table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Produto</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>
