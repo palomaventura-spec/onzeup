@@ -17,7 +17,7 @@ export default function PlayerPublicActions({ name }: { name: string }) {
   async function share() {
     if (navigator.share) {
       await navigator.share({
-        title: `${name} • ONZE Player`,
+        title: `${name} • ONZEUP Player`,
         text: `Conheça o perfil esportivo de ${name}.`,
         url: window.location.href,
       });
@@ -46,7 +46,7 @@ export default function PlayerPublicActions({ name }: { name: string }) {
       {qrOpen ? (
         <div className="player-qr-backdrop" onClick={() => setQrOpen(false)}>
           <div className="player-qr-modal" onClick={(e) => e.stopPropagation()}>
-            <span>ONZE PLAYER</span>
+            <span>ONZEUP PLAYER</span>
             <h3>{name}</h3>
             <canvas ref={canvasRef} />
             <p>Escaneie para abrir o perfil esportivo.</p>

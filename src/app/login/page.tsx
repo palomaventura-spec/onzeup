@@ -18,7 +18,7 @@ export default function LoginPage() {
             <span className="page-eyebrow">ACESSO À PLATAFORMA</span>
             <h2>Acesse sua conta ONZEUP</h2>
             <p className="muted">
-              Entre com o e-mail cadastrado na sua organização ou conta de responsável.
+              Entre com seu e-mail ONZEUP. A plataforma identifica automaticamente seu perfil.
             </p>
           </div>
 
@@ -55,20 +55,20 @@ export default function LoginPage() {
           <div className="login-register-box">
             <span>Ainda não possui conta?</span>
             <Link href="/cadastro-clube">ONZEUP Club — 15 dias grátis →</Link>
-            <Link href="/cadastro">ONZE Player — criar grátis →</Link>
+            <Link href="/cadastro">ONZEUP Player — criar grátis →</Link>
+            <Link href="/cadastro-coach">ONZEUP Coach — criar grátis →</Link>
           </div>
         </form>
 
         <aside className="login-side-message">
           <span className="marketing-kicker">ONZEUP</span>
           <h1>
-            Gestão para a base.
+            Club para gestão. Player para atletas.
             <br />
-            Identidade para o atleta.
+            Coach para profissionais.
           </h1>
           <p>
-            Clubes, escolinhas, famílias e atletas conectados em um único
-            plataforma esportivo.
+            Clubes, escolinhas, famílias e atletas conectados em uma única plataforma esportiva.
           </p>
           <Link href="/">Voltar para o site →</Link>
         </aside>

@@ -8,7 +8,7 @@ const modules = [
   { key: "convocacoes", title: "Convocações", text: "WhatsApp básico e controle de confirmações." },
   { key: "financeiro", title: "Financeiro", text: "Mensalidades, Pix manual e baixa de pagamentos." },
   { key: "agenda", title: "Agenda", text: "Treinos e jogos em uma linha do tempo." },
-  { key: "player", title: "ONZE Player", text: "Perfil esportivo administrado exclusivamente pela família." },
+  { key: "player", title: "ONZEUP Player", text: "Perfil esportivo administrado exclusivamente pela família." },
 ];
 
 export default function HelpPage() {

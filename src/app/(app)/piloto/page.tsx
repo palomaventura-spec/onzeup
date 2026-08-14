@@ -69,7 +69,7 @@ export default async function PilotPage() {
       <section className="card pilot-notes">
         <h2>Antes de abrir o domínio</h2>
         <p>
-          Teste Clube e ONZE Player em celular e desktop, confirme uploads, QTR,
+          Teste Clube e ONZEUP Player em celular e desktop, confirme uploads, QTR,
           WhatsApp, site público, permissões e vínculos. No Vercel, configure
           DATABASE_URL, SESSION_SECRET e BLOB_READ_WRITE_TOKEN.
         </p>

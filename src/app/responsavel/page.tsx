@@ -66,7 +66,7 @@ export default async function GuardianPortal({
         <section className="player-welcome">
           <div>
             <span className="page-eyebrow">ÁREA DA FAMÍLIA</span>
-            <h1>ONZE Player</h1>
+            <h1>ONZEUP Player</h1>
             <p>Crie e gerencie o perfil esportivo dos seus filhos. O conteúdo pertence à família.</p>
           </div>
           <Link className="btn" href="/responsavel?new=1">+ Novo perfil</Link>
@@ -109,7 +109,7 @@ export default async function GuardianPortal({
             <div className="player-editor-head">
               <div>
                 <span className="page-eyebrow">{selected ? "EDITAR PERFIL" : "NOVO PERFIL"}</span>
-                <h2>{selected ? (selected.nickname || selected.name) : "Criar ONZE Player"}</h2>
+                <h2>{selected ? (selected.nickname || selected.name) : "Criar ONZEUP Player"}</h2>
                 {selected ? <span className={`player-plan-badge ${selected.plan === "PREMIUM" ? "premium" : "free"}`}>{selected.plan === "PREMIUM" ? "★ PREMIUM" : "FREE"}</span> : null}
               </div>
               <div className="player-editor-actions">
@@ -172,8 +172,8 @@ export default async function GuardianPortal({
                   </div>
                   <label>Plano
                     <select name="plan" defaultValue={selected?.plan || "FREE"}>
-                      <option value="FREE">ONZE Player Free</option>
-                      <option value="PREMIUM">ONZE Player Premium</option>
+                      <option value="FREE">ONZEUP Player Free</option>
+                      <option value="PREMIUM">ONZEUP Player Premium</option>
                     </select>
                   </label>
                   <label>Template
@@ -231,7 +231,7 @@ export default async function GuardianPortal({
                   <small>Permite que o perfil seja acessado pelo endereço /player/...</small>
                 </span>
               </label>
-<label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público ONZE Players</span></label>
+<label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público ONZEUP Players</span></label>
 
               <div className="actions">
                 <button type="submit">Salvar perfil</button>

@@ -12,15 +12,17 @@ export async function registerGuardian(formData:FormData){
   const password=clean(formData.get("password"));
   const confirm=clean(formData.get("confirm"));
   const legal=formData.get("legal")==="on";
+  const ref=clean(formData.get("ref"));
 
   if(!name||!email||password.length<8||password!==confirm||!legal) redirect("/cadastro?erro=dados");
   const exists=await prisma.user.findUnique({where:{email}});
   if(exists) redirect("/cadastro?status=verifique");
 
   const passwordHash=await hash(password,12);
+  const coach = ref ? await prisma.coachProfile.findUnique({where:{slug:ref},select:{id:true}}) : null;
   await prisma.user.create({data:{
     name,email,passwordHash,role:"GUARDIAN",active:false,accountStatus:"PENDING_VERIFICATION",
-    guardianProfile:{create:{phone:phone||null}}
+    guardianProfile:{create:{phone:phone||null,referredByCoachId:coach?.id||null}}
   }});
 
   // v1.1.0 leaves the account pending until transactional email is configured.

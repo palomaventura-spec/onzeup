@@ -91,6 +91,7 @@ async function main() {
       directoryVisible: true,
       isComplimentary: true,
       complimentaryReason: "Perfil modelo oficial ONZEUP",
+      isFeatured: true,
     },
     create: {
       ...common,
@@ -100,6 +101,7 @@ async function main() {
       directoryVisible: true,
       isComplimentary: true,
       complimentaryReason: "Perfil modelo oficial ONZEUP",
+      isFeatured: true,
     },
   });
 

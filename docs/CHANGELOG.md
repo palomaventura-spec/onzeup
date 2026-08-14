@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.3.2 — Gustavo Official Player Model
+- landing ONZEUP Player passa a usar o perfil real do Gustavo como modelo oficial Premium
+- card-modelo lê nome, foto e números do banco
+- CTAs direcionam ao perfil canônico players.onzeup.com.br/gustavo-aguiar
+- adiciona comparação direta Gustavo Free x Premium
+- adiciona atalhos /g9 e /gustavo-g9 para divulgação
+- mantém catálogo e landing Coach da v1.3.1
+
+
+## v1.3.1 — Product Landings + Coach Route Fix
+- corrige Explorar Coach usando rota interna /coaches
+- cria landing comercial exclusiva ONZEUP Player
+- cria landing comercial exclusiva ONZEUP Coach
+- mantém /players e /coaches como diretórios catálogo-first
+- /player redireciona para a landing Player
+- /coach passa a ser a landing Coach
+- Coach subdomain continua apontando para o catálogo /coaches
+- preserva Player Premium e Club da v1.3.0
+
+
+## v1.3.0 — Growth Architecture
+- transforma onzeup.com.br em portal central Player / Coach / Club
+- cria landing comercial independente do ONZEUP Club para club.onzeup.com.br
+- transforma Players e Coaches em catálogos-first
+- adiciona destaques editoriais independentes do Premium
+- Gustavo Premium preparado como primeiro destaque
+- busca Player por nome/clube, categoria, posição e ano
+- busca Coach por nome/clube, função e localização
+- Coach passa a ser gratuito para profissionais
+- cadastro Coach identifica quem administra escolinha/CT/projeto/clube/personal
+- cria dashboard Coach Parceiro com link de indicação e métricas
+- registra Coach de origem nos cadastros Player feitos por convite
+- cria landings /player e /coach sem interferir nos catálogos dos subdomínios
+- mantém Player Premium e galeria uniforme da v1.2.9
+- autenticação compartilhada entre subdomínios oficiais ONZEUP
+- valores definitivos do Club ficam fora desta versão até revisão comercial
+
+
 ## v1.2.9 — Uniform Premium Video Gallery
 - remove o destaque gigante do primeiro vídeo
 - todos os vídeos Premium usam exatamente a mesma proporção 16:9

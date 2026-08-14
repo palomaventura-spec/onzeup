@@ -56,7 +56,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
           </div>
 
           <div className="athlete-identity">
-            <span className="athlete-kicker">ATLETA • ONZE PLAYER</span>
+            <span className="athlete-kicker">ATLETA • ONZEUP PLAYER</span>
             <h1>{player.name}</h1>
             {player.nickname ? <h2>{player.nickname}</h2> : null}
 

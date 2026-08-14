@@ -28,7 +28,7 @@ export default async function PlayerLinksPage() {
     <>
       <div className="page-head">
         <div>
-          <span className="page-eyebrow">ONZE PLAYER ↔ CLUBE</span>
+          <span className="page-eyebrow">ONZEUP PLAYER ↔ CLUBE</span>
           <h1>Vínculos Player</h1>
           <p className="muted">
             A família controla o Player. Você apenas confirma se aquele perfil corresponde ao atleta cadastrado no clube.
@@ -48,7 +48,7 @@ export default async function PlayerLinksPage() {
               <div className="approval-player">
                 {link.player.photoUrl ? <img src={link.player.photoUrl} alt="" /> : <span>{(link.player.nickname || link.player.name).slice(0,2).toUpperCase()}</span>}
                 <section>
-                  <small>ONZE PLAYER</small>
+                  <small>ONZEUP PLAYER</small>
                   <strong>{link.player.nickname || link.player.name}</strong>
                   <p>{link.player.guardian.user.name} • {link.player.guardian.user.email}</p>
                 </section>
@@ -97,7 +97,7 @@ export default async function PlayerLinksPage() {
                 <span>{link.athlete.category?.name || "Sem categoria"}</span>
               </div>
               <Link target="_blank" href={`/player/${link.player.slug}`}>
-                Abrir ONZE Player ↗
+                Abrir ONZEUP Player ↗
               </Link>
             </article>
           ))}

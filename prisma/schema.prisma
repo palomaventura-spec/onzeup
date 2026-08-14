@@ -336,6 +336,8 @@ model GuardianProfile {
   user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
   phone     String?
   players   PlayerProfile[]
+  referredByCoachId String?
+  referredByCoach CoachProfile? @relation("CoachReferrals", fields: [referredByCoachId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -375,6 +377,8 @@ model PlayerProfile {
   complimentaryReason String?
   isPublic    Boolean @default(false)
   directoryVisible Boolean @default(false)
+  isFeatured Boolean @default(false)
+  featuredUntil DateTime?
   modality    String?
   categoryLabel String?
   jerseyNumber Int?
@@ -462,12 +466,17 @@ model CoachProfile {
   instagramUrl     String?
   linkedinUrl      String?
   contactEmail     String?
+  managesOrganization Boolean @default(false)
+  managedOrganizationType OrganizationType?
+  isFeatured       Boolean  @default(false)
+  featuredUntil    DateTime?
   directoryVisible Boolean  @default(true)
   isPublic         Boolean   @default(false)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
   owner            User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  referrals          GuardianProfile[] @relation("CoachReferrals")
 
   @@index([directoryVisible, isPublic])
   @@index([roleTitle])

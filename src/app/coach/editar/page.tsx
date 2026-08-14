@@ -8,7 +8,7 @@ export default async function CoachEdit({searchParams}:{searchParams:Promise<{sa
  const p=await prisma.coachProfile.findUnique({where:{ownerUserId:user.id}});
  if(!p) redirect("/cadastro-coach");
  return <main className="coach-editor">
-  <header><div><span className="page-eyebrow">ONZEUP COACH</span><h1>Meu perfil profissional</h1></div>
+  <header><div><span className="page-eyebrow">ONZEUP COACH</span><h1>Meu perfil profissional</h1><Link href="/coach/dashboard">← Voltar ao dashboard</Link></div>
    {p.isPublic?<a className="btn-secondary" href={`https://coach.onzeup.com.br/${p.slug}`} target="_blank">Ver perfil ↗</a>:null}
   </header>
   {q.salvo?<div className="notice">Perfil atualizado.</div>:null}

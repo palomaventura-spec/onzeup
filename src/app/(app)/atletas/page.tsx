@@ -33,7 +33,7 @@ export default async function AthletesPage() {
         <div>
           <span className="page-eyebrow">ELENCO ADMINISTRATIVO</span>
           <h1>Atletas</h1>
-          <p className="muted">O clube controla este cadastro. O ONZE Player pertence à família.</p>
+          <p className="muted">O clube controla este cadastro. O ONZEUP Player pertence à família.</p>
         </div>
         <div className="actions">
           <span className="badge">{activeCount} ativo(s)</span>

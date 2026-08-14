@@ -15,5 +15,6 @@ export async function POST(req: Request) {
   if (!ok) return NextResponse.redirect(new URL("/login", req.url), 303);
 
   await createSession(user.id);
-  return NextResponse.redirect(new URL(user.role === "GUARDIAN" ? "/responsavel" : "/dashboard", req.url), 303);
+  const destination = user.role === "GUARDIAN" ? "/responsavel" : user.role === "COACH" ? "/coach/dashboard" : "/dashboard";
+  return NextResponse.redirect(new URL(destination, req.url), 303);
 }

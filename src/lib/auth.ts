@@ -17,6 +17,7 @@ export async function createSession(userId: string) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
+    domain: process.env.NODE_ENV === "production" ? ".onzeup.com.br" : undefined,
     expires: expiresAt,
   });
 }
@@ -50,6 +51,7 @@ export async function requireOrganizationUser() {
   const user = await requireUser();
 
   if (user.role === "GUARDIAN") redirect("/responsavel");
+  if (user.role === "COACH") redirect("/coach/dashboard");
   if (user.role === "SUPER_ADMIN" && !user.organizationId) redirect("/admin");
   if (!user.organizationId) redirect("/login");
 

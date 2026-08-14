@@ -65,7 +65,7 @@ export default async function PublicPlayer({params}:{params:Promise<{slug:string
       </header>
       <section className="free-player-hero">
         <div className="free-player-photo">{player.photoUrl?<img src={player.photoUrl} alt={player.name}/>:<span>{player.name.slice(0,2)}</span>}</div>
-        <div><span className="page-eyebrow">ONZE PLAYER • PERFIL ESPORTIVO</span><h1>{player.name}</h1>{player.nickname?<h2>{player.nickname}</h2>:null}
+        <div><span className="page-eyebrow">ONZEUP PLAYER • PERFIL ESPORTIVO</span><h1>{player.name}</h1>{player.nickname?<h2>{player.nickname}</h2>:null}
           <div className="athlete-tags">{player.position?<span>{player.position}</span>:null}{player.secondaryPosition?<span>{player.secondaryPosition}</span>:null}{player.categoryLabel?<span>{player.categoryLabel}</span>:null}{player.nationality?<span>{player.nationality}</span>:null}</div>
         </div>
       </section>
@@ -107,7 +107,7 @@ export default async function PublicPlayer({params}:{params:Promise<{slug:string
       <div className="premium-hero-shade"/>
       <div className="premium-hero-inner">
         <div className="premium-hero-copy">
-          <span className="premium-kicker">ONZE PLAYER PREMIUM</span>
+          <span className="premium-kicker">ONZEUP PLAYER PREMIUM</span>
           <h1>{player.name.toUpperCase()}</h1>
           {player.nickname?<strong>{player.nickname}</strong>:null}
           <p>{[player.position,player.secondaryPosition,player.currentClub,player.birthYear].filter(Boolean).join(" • ")}</p>
@@ -211,7 +211,7 @@ export default async function PublicPlayer({params}:{params:Promise<{slug:string
 
     <section className="premium-footer-modern">
       <div>
-        <span className="premium-kicker">ONZE PLAYER PREMIUM</span>
+        <span className="premium-kicker">ONZEUP PLAYER PREMIUM</span>
         <h2>{player.name}</h2>
         <p>{[player.position,player.currentClub].filter(Boolean).join(" • ")}</p>
       </div>

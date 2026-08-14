@@ -17,7 +17,7 @@ export default function PlayerActions({ url, enabled }: { url: string; enabled: 
     if (!enabled) return;
     const absolute = new URL(url, window.location.origin).toString();
     if (navigator.share) {
-      await navigator.share({ title: "ONZE Player", url: absolute });
+      await navigator.share({ title: "ONZEUP Player", url: absolute });
       return;
     }
     await navigator.clipboard.writeText(absolute);
