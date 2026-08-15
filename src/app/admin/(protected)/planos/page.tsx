@@ -1,3 +1,4 @@
+import { requireSuperAdmin } from "@/lib/auth";
 export default function PlansPage() {
   const plans = [
     {

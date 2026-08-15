@@ -1,7 +1,9 @@
+import { requireSuperAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
 export default async function OrganizationsAdminPage() {
+  await requireSuperAdmin();
   const organizations = await prisma.organization.findMany({
     include: {
       subscription: true,

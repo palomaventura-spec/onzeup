@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.3.6 — Admin Route Guard Fix
+- corrige bloqueio estrutural de /admin/login pelo próprio layout protegido
+- /admin/login e /admin/recuperar-senha passam a ser rotas públicas reais
+- dashboard, pagamentos, planos, organizações e players ficam dentro de route group protegido
+- URLs públicas permanecem iguais porque route groups não alteram o pathname
+- mantém autenticação Admin por ONZEUP_ADMIN_EMAIL/ONZEUP_ADMIN_PASSWORD
+- mantém Player, Coach, Club, PIX e recuperação da v1.3.5
+
+
+## v1.3.5 — Admin Auth + Recovery Fix
+- Super Admin pode autenticar diretamente pelas credenciais do ambiente
+- primeiro login Admin cria/atualiza automaticamente o SUPER_ADMIN no banco
+- remove dependência obrigatória do seed:admin para acesso
+- cria /admin/recuperar-senha com fluxo seguro para redefinir senha via Vercel
+- recuperação de usuários passa a enviar e-mail via Resend quando configurado
+- produção deixa de fingir que enviou e-mail quando o provedor não está configurado
+- mantém Player, Coach, Club, PIX e vídeos da v1.3.4
+
+
 ## v1.3.4 — Super Admin Login Fix
 - cria /admin/login real
 - login administrativo usa a autenticação existente com bloqueio para SUPER_ADMIN

@@ -1,7 +1,9 @@
+import { requireSuperAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminPlayers(){
+  await requireSuperAdmin();
  const players=await prisma.playerProfile.findMany({include:{guardian:{include:{user:true}}},orderBy:{createdAt:"desc"}});
  return <><div className="page-head"><div><h1>ONZEUP Players</h1><p className="muted">Perfis esportivos, planos e responsáveis.</p></div><span className="badge">{players.length} perfis</span></div>
  <section className="card"><div className="table-wrap"><table className="table"><thead><tr><th>Atleta</th><th>Responsável</th><th>Plano</th><th>Visibilidade</th><th>URL</th></tr></thead>

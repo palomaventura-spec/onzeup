@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string }>;
+  searchParams: Promise<{ erro?: string; reset?: string }>;
 }) {
   const query = await searchParams;
 
@@ -25,11 +25,23 @@ export default async function AdminLoginPage({
         <div>
           <span className="page-eyebrow">SUPER ADMIN</span>
           <h2>Entrar na administração</h2>
-          <p className="muted">Use sua conta administrativa ONZEUP.</p>
+          <p className="muted">
+            O acesso utiliza as credenciais administrativas configuradas no ambiente.
+            Acesso administrativo separado do login de Player, Coach e Club.
+          </p>
         </div>
 
         {query.erro ? (
-          <div className="notice error">E-mail ou senha inválidos, ou a conta não possui acesso administrativo.</div>
+          <div className="notice error">
+            E-mail ou senha administrativos inválidos.
+          </div>
+        ) : null}
+
+        {query.reset === "ok" ? (
+          <div className="notice">
+            A senha administrativa é controlada pela configuração segura do sistema.
+            Se você alterou a senha, faça login com a nova credencial.
+          </div>
         ) : null}
 
         <form className="stack" action="/api/auth/login" method="post">
@@ -42,7 +54,7 @@ export default async function AdminLoginPage({
               name="email"
               type="email"
               autoComplete="username"
-              placeholder="admin@onzeup.com.br"
+              placeholder="onzeupfutebolbase@gmail.com"
               required
             />
           </label>
@@ -60,7 +72,10 @@ export default async function AdminLoginPage({
           <button className="btn" type="submit">Entrar no Super Admin</button>
         </form>
 
-        <p className="help"><Link href="/login">← Login de usuários</Link></p>
+        <div className="admin-login-links">
+          <Link href="/admin/recuperar-senha">Esqueci a senha administrativa</Link>
+          <Link href="/login">Login de usuários</Link>
+        </div>
       </section>
     </main>
   );

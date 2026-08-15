@@ -1780,3 +1780,12 @@ linear-gradient(180deg,#0d141b,#05080c);background-size:cover;background-positio
 .admin-shortcuts-v134>a{text-decoration:none;color:inherit}
 .admin-shortcuts-v134>a strong{display:block;margin-top:18px;color:#9ddb16}
 @media(max-width:760px){.admin-shortcuts-v134{grid-template-columns:1fr}}
+
+/* v1.3.5 — Admin auth + recovery */
+.admin-login-links{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}
+.admin-login-links a{font-size:10px;color:#9ddb16;text-decoration:none}
+.admin-recovery-steps{display:grid;gap:10px;margin:24px 0}
+.admin-recovery-steps article{display:grid;grid-template-columns:38px 1fr;gap:12px;padding:16px;border:1px solid #2a3539;border-radius:11px;background:#0c1214}
+.admin-recovery-steps article>b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#9ddb16;color:#071006}
+.admin-recovery-steps article strong{display:block}
+.admin-recovery-steps article p{margin:4px 0 0;color:#8e9ca1;font-size:10px;line-height:1.5}
