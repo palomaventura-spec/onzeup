@@ -21,6 +21,9 @@ export async function createStaffMember(formData: FormData) {
   const categoryId = nullable(formData.get("categoryId"));
   const photoUrl = nullable(formData.get("photoUrl"));
   const bio = nullable(formData.get("bio"));
+  const coachEmail = nullable(formData.get("coachEmail"))?.toLowerCase();
+  const sport = clean(formData.get("sport")) || "BOTH";
+  const canManageCallUps = formData.get("canManageCallUps") === "on";
 
   if (!name || !roleTitle) return;
 
@@ -43,6 +46,55 @@ export async function createStaffMember(formData: FormData) {
     },
   });
 
+  if (coachEmail) {
+    const coach = await prisma.coachProfile.findFirst({
+      where: {
+        owner: { email: { equals: coachEmail, mode: "insensitive" } },
+      },
+      select: { id: true },
+    });
+
+    if (coach) {
+      const existing = await prisma.coachOrganizationAccess.findFirst({
+        where: {
+          coachId: coach.id,
+          organizationId: user.organizationId,
+          categoryId,
+          sport: sport as "FOOTBALL" | "FUTSAL" | "BOTH",
+        },
+        select: { id: true },
+      });
+
+      if (existing) {
+        await prisma.coachOrganizationAccess.update({
+          where: { id: existing.id },
+          data: {
+            roleTitle,
+            active: true,
+            canViewRoster: true,
+            canViewSchedule: true,
+            canViewCallUps: true,
+            canManageCallUps,
+          },
+        });
+      } else {
+        await prisma.coachOrganizationAccess.create({
+          data: {
+            coachId: coach.id,
+            organizationId: user.organizationId,
+            categoryId,
+            sport: sport as "FOOTBALL" | "FUTSAL" | "BOTH",
+            roleTitle,
+            canViewRoster: true,
+            canViewSchedule: true,
+            canViewCallUps: true,
+            canManageCallUps,
+          },
+        });
+      }
+    }
+  }
+
   revalidatePath("/comissao");
 }
 
@@ -54,6 +106,9 @@ export async function updateStaffMember(formData: FormData) {
   const categoryId = nullable(formData.get("categoryId"));
   const photoUrl = nullable(formData.get("photoUrl"));
   const bio = nullable(formData.get("bio"));
+  const coachEmail = nullable(formData.get("coachEmail"))?.toLowerCase();
+  const sport = clean(formData.get("sport")) || "BOTH";
+  const canManageCallUps = formData.get("canManageCallUps") === "on";
 
   if (!id || !name || !roleTitle) return;
 

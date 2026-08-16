@@ -1789,3 +1789,41 @@ linear-gradient(180deg,#0d141b,#05080c);background-size:cover;background-positio
 .admin-recovery-steps article>b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#9ddb16;color:#071006}
 .admin-recovery-steps article strong{display:block}
 .admin-recovery-steps article p{margin:4px 0 0;color:#8e9ca1;font-size:10px;line-height:1.5}
+
+
+/* =========================================================
+   ONZEUP v1.3.8 — Player multi-vínculos + Coach por equipe
+   ========================================================= */
+.player-membership-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.player-membership-chips span{font-size:9px;padding:6px 9px;border:1px solid #334044;border-radius:999px;color:#b8c2c6}
+.player-family-agenda{margin-top:22px;padding:24px;border:1px solid #263236;border-radius:16px;background:#101719}
+.player-agenda-list,.coach-match-list,.coach-access-list{display:grid;gap:9px;margin-top:18px}
+.player-agenda-list article,.coach-match-list article,.coach-access-list article{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:15px;border:1px solid #263236;border-radius:11px;background:#0b1113}
+.player-agenda-list small,.coach-match-list small{color:#9ddb16;font-weight:900}
+.player-agenda-list strong,.coach-match-list strong,.coach-access-list strong{display:block;font-size:15px;margin:4px 0}
+.player-agenda-list p,.coach-match-list p,.coach-access-list p{margin:0;color:#93a0a5}
+.callup-family-status{font-size:9px;text-transform:uppercase;padding:7px 9px;border-radius:999px;border:1px solid #334044}
+.callup-family-status.confirmed{color:#9ddb16;border-color:#6c9710}
+.callup-family-status.declined{color:#ff8b8b}
+.coach-access-card,.coach-callups-card{margin-top:20px}
+.coach-access-list article>div:last-child{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.coach-access-list article span,.coach-access-list article b{font-size:9px;padding:6px 8px;border-radius:999px;background:#172025}
+.coach-access-list article b{background:#233008;color:#9ddb16}
+.coach-callup-detail{max-width:1100px;margin:auto;padding:40px 5vw}
+.coach-callup-athletes{display:grid;gap:8px;margin-top:18px}
+.coach-callup-athletes article{display:grid;grid-template-columns:46px 1fr auto;gap:12px;align-items:center;padding:12px;border-bottom:1px solid #263236}
+.coach-callup-athletes article>div{width:42px;height:42px;border-radius:50%;overflow:hidden;background:#172025;display:grid;place-items:center}
+.coach-callup-athletes img{width:100%;height:100%;object-fit:cover}
+.coach-callup-athletes p{margin:2px 0 0;color:#91a0a5}
+.coach-callup-athletes b{font-size:9px;color:#9ddb16}
+.athlete-memberships-admin{margin-top:22px}
+.membership-admin-list{display:grid;gap:8px;margin:16px 0 22px}
+.membership-admin-list article{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:13px;border:1px solid #263236;border-radius:10px}
+.membership-admin-list small{color:#8d9ba0}
+.membership-admin-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.membership-admin-form button{grid-column:1/-1}
+@media(max-width:760px){
+  .player-agenda-list article,.coach-match-list article,.coach-access-list article{align-items:flex-start;flex-direction:column}
+  .coach-access-list article>div:last-child{justify-content:flex-start}
+  .membership-admin-list article,.membership-admin-form{grid-template-columns:1fr}
+}

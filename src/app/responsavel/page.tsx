@@ -34,6 +34,11 @@ export default async function GuardianPortal({
                 include: {
                   organization: true,
                   category: true,
+                  memberships: {
+                    where: { status: "ACTIVE" },
+                    include: { organization: true, category: true },
+                    orderBy: { createdAt: "asc" },
+                  },
                 },
               },
             },
@@ -49,6 +54,23 @@ export default async function GuardianPortal({
     query.new === "1"
       ? null
       : players.find((player) => player.id === query.player) || players[0] || null;
+
+  const linkedAthleteIds = selected?.athleteLinks.map(link => link.athleteId) || [];
+  const upcomingCallUps = linkedAthleteIds.length
+    ? await prisma.callUp.findMany({
+        where: {
+          athleteId: { in: linkedAthleteIds },
+          match: { startsAt: { gte: new Date() } },
+        },
+        include: {
+          athlete: true,
+          organization: true,
+          match: { include: { category: true } },
+        },
+        orderBy: { match: { startsAt: "asc" } },
+        take: 12,
+      })
+    : [];
 
   return (
     <main className="guardian-portal">
@@ -274,6 +296,37 @@ export default async function GuardianPortal({
             ) : null}
 
             {selected ? (
+              <section className="player-family-agenda">
+                <div className="section-title-row">
+                  <div>
+                    <span className="page-eyebrow">MINHA ROTINA</span>
+                    <h2>Agenda esportiva do atleta</h2>
+                    <p className="muted">Convocações de todas as organizações vinculadas aparecem juntas para a família, sem misturar os dados internos dos clubes.</p>
+                  </div>
+                </div>
+
+                {upcomingCallUps.length ? (
+                  <div className="player-agenda-list">
+                    {upcomingCallUps.map(call => (
+                      <article key={call.id}>
+                        <div>
+                          <small>{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(call.match.startsAt)}</small>
+                          <strong>{call.organization.publicName || call.organization.name}</strong>
+                          <p>{call.match.category.name} • x {call.match.opponent}</p>
+                        </div>
+                        <b className={`callup-family-status ${call.status.toLowerCase()}`}>
+                          {call.status === "CONFIRMED" ? "Confirmado" : call.status === "DECLINED" ? "Não poderá" : "Convocado"}
+                        </b>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted">Nenhuma convocação futura encontrada nos vínculos deste atleta.</p>
+                )}
+              </section>
+            ) : null}
+
+            {selected ? (
               <section className="player-club-links">
                 <div className="section-title-row">
                   <div>
@@ -295,7 +348,20 @@ export default async function GuardianPortal({
                         </div>
                         <section>
                           <strong>{link.athlete.organization.publicName || link.athlete.organization.name}</strong>
-                          <p>{link.athlete.category?.name || "Sem categoria"} • {link.athlete.position || "Atleta"}</p>
+                          {link.athlete.memberships.length ? (
+                            <div className="player-membership-chips">
+                              {link.athlete.memberships.map(membership => (
+                                <span key={membership.id}>
+                                  {membership.sport === "FOOTBALL" ? "Campo" : membership.sport === "FUTSAL" ? "Futsal" : "Campo + Futsal"}
+                                  {" • "}
+                                  {membership.category?.name || membership.teamLabel || "Equipe"}
+                                  {membership.season ? ` • ${membership.season}` : ""}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p>{link.athlete.category?.name || "Sem categoria"} • {link.athlete.position || "Atleta"}</p>
+                          )}
                         </section>
                         <b className={link.verified ? "verified" : ""}>
                           {link.verified ? "Vínculo verificado" : "Aguardando verificação"}

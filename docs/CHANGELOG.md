@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.3.8 — Multi-club Player + Coach Team Access
+- atleta pode ter vários vínculos esportivos por organização, modalidade, categoria e temporada
+- suporta Campo e Futsal simultaneamente no mesmo clube
+- ONZE Player consolida vínculos de organizações diferentes sem compartilhar dados internos entre elas
+- área da família mostra agenda unificada de convocações do atleta
+- ONZE Coach ganha vínculos por organização/categoria/modalidade
+- comissão técnica pode vincular um Coach existente pelo e-mail
+- Coach vê somente jogos/convocações das equipes para as quais possui acesso
+- estrutura já diferencia visualização e futura permissão de gestão de convocações
+
+
+## v1.3.7 — Admin Vercel Build Fix
+- remove route group admin/(protected) para evitar falha de page_client-reference-manifest no deploy Vercel
+- restaura rotas diretas /admin, /admin/pagamentos, /admin/organizacoes, /admin/planos e /admin/players
+- mantém /admin/login e /admin/recuperar-senha públicas
+- cada página administrativa continua protegida diretamente por requireSuperAdmin()
+- mantém autenticação Admin, PIX, Player, Coach e Club da v1.3.6
+
+
 ## v1.3.6 — Admin Route Guard Fix
 - corrige bloqueio estrutural de /admin/login pelo próprio layout protegido
 - /admin/login e /admin/recuperar-senha passam a ser rotas públicas reais

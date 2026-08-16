@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
-import { updateAthlete } from "../actions";
+import { createAthleteMembership, updateAthlete } from "../actions";
 
 export default async function EditAthletePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireOrganizationUser();

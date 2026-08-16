@@ -146,3 +146,46 @@ export async function toggleAthleteStatus(formData: FormData) {
 
   revalidatePath("/atletas");
 }
+
+
+export async function createAthleteMembership(formData: FormData) {
+  const user = await requireOrganizationUser();
+  const athleteId = clean(formData.get("athleteId"));
+  const categoryId = nullable(formData.get("categoryId"));
+  const sport = clean(formData.get("sport")) || "BOTH";
+  const teamLabel = nullable(formData.get("teamLabel"));
+  const competitionType = nullable(formData.get("competitionType"));
+  const season = nullable(formData.get("season"));
+
+  if (!athleteId) return;
+
+  const athlete = await prisma.athlete.findFirst({
+    where: { id: athleteId, organizationId: user.organizationId },
+    select: { id: true },
+  });
+  if (!athlete) return;
+
+  if (categoryId) {
+    const category = await prisma.category.findFirst({
+      where: { id: categoryId, organizationId: user.organizationId },
+      select: { id: true },
+    });
+    if (!category) return;
+  }
+
+  await prisma.athleteMembership.create({
+    data: {
+      athleteId,
+      organizationId: user.organizationId,
+      categoryId,
+      sport: sport as "FOOTBALL" | "FUTSAL" | "BOTH",
+      teamLabel,
+      competitionType,
+      season,
+      verified: true,
+    },
+  });
+
+  revalidatePath("/atletas");
+  revalidatePath(`/atletas/${athleteId}`);
+}

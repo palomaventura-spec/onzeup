@@ -137,6 +137,8 @@ model Organization {
   charges             Charge[]
   subscription        Subscription?
   qtrs                Qtr[]
+  athleteMemberships  AthleteMembership[]
+  coachAccesses       CoachOrganizationAccess[]
 }
 
 model User {
@@ -182,6 +184,8 @@ model Category {
   staffMembers   StaffMember[]
   trainingSchedules TrainingSchedule[]
   matches        Match[]
+  athleteMemberships AthleteMembership[]
+  coachAccesses       CoachOrganizationAccess[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -228,6 +232,7 @@ model Athlete {
   callUps         CallUp[]
   charges         Charge[]
   playerLinks     PlayerAthleteLink[]
+  memberships     AthleteMembership[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -490,10 +495,67 @@ model CoachProfile {
 
   owner            User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   referrals          GuardianProfile[] @relation("CoachReferrals")
+  organizationAccesses CoachOrganizationAccess[]
 
   @@index([directoryVisible, isPublic])
   @@index([roleTitle])
   @@index([currentClub])
+}
+
+
+model AthleteMembership {
+  id             String       @id @default(cuid())
+  athleteId      String
+  athlete        Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  categoryId     String?
+  category       Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  sport          SportType    @default(BOTH)
+  teamLabel      String?
+  competitionType String?
+  season         String?
+  status         String       @default("ACTIVE")
+  verified       Boolean      @default(false)
+  startedAt      DateTime?
+  endedAt        DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([athleteId])
+  @@index([organizationId, categoryId])
+  @@index([status])
+}
+
+model CoachOrganizationAccess {
+  id               String       @id @default(cuid())
+  coachId          String
+  coach            CoachProfile @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  categoryId       String?
+  category         Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  sport            SportType    @default(BOTH)
+  roleTitle        String?
+  active           Boolean      @default(true)
+
+  canViewRoster    Boolean      @default(true)
+  canViewSchedule  Boolean      @default(true)
+  canViewCallUps   Boolean      @default(true)
+  canManageCallUps Boolean      @default(false)
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([coachId, organizationId, categoryId, sport])
+  @@index([coachId, active])
+  @@index([organizationId, categoryId])
 }
 
 model Payment {

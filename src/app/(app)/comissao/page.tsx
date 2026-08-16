@@ -50,6 +50,23 @@ export default async function StaffPage() {
                 ))}
               </select>
             </label>
+            <label>
+              Modalidade
+              <select name="sport" defaultValue="BOTH">
+                <option value="BOTH">Campo + Futsal</option>
+                <option value="FOOTBALL">Futebol de campo</option>
+                <option value="FUTSAL">Futsal</option>
+              </select>
+            </label>
+            <label>
+              E-mail do ONZEUP Coach
+              <input name="coachEmail" type="email" placeholder="coach@email.com" />
+              <small className="field-help">Se o profissional já tiver ONZEUP Coach, este e-mail cria o vínculo de acesso à equipe.</small>
+            </label>
+            <label className="check-row">
+              <input type="checkbox" name="canManageCallUps" />
+              <span>Permitir gerenciar convocações desta categoria</span>
+            </label>
             <ImageUpload name="photoUrl" label="Foto (JPEG/PNG/WEBP)" />
             <label>
               Mini bio
