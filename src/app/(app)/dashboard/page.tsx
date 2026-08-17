@@ -67,7 +67,7 @@ export default async function Dashboard() {
             <div><span className="page-eyebrow">COMECE POR AQUI</span><h2>Seu ONZEUP</h2></div>
           </div>
           <div className="setup-list">
-            <div className="done"><b>✓</b><span><strong>Organização criada</strong><small>{org.publicName || org.name}</small></span></div>
+            <div className="done"><b>✓</b><span><strong>Clube criado</strong><small>{org.publicName || org.name}</small></span></div>
             <div className={categories ? "done" : ""}><b>{categories ? "✓" : "02"}</b><span><strong>Categoria inicial</strong><small>{categories ? categoryList.map(c => c.name).join(", ") : "Cadastre a primeira categoria"}</small></span><Link href="/categorias">Abrir →</Link></div>
             <div className={athletes ? "done" : ""}><b>{athletes ? "✓" : "03"}</b><span><strong>Adicionar atletas</strong><small>{athletes ? `${athletes} atleta(s) ativo(s)` : "Monte seu primeiro elenco"}</small></span><Link href="/atletas">Abrir →</Link></div>
             <div className={staff ? "done" : ""}><b>{staff ? "✓" : "04"}</b><span><strong>Cadastrar comissão</strong><small>{staff ? `${staff} membro(s)` : "Treinadores e equipe"}</small></span><Link href="/comissao">Abrir →</Link></div>
@@ -106,7 +106,7 @@ export default async function Dashboard() {
           <p className="muted">Categorias, elenco, comissão e jogos podem alimentar automaticamente esta página.</p>
         </div>
         <div>
-          <Link className="dashboard-secondary-btn" href="/organizacao">Personalizar site</Link>
+          <Link className="dashboard-secondary-btn" href="/organizacao">Configurar site</Link>
           <Link className="dashboard-primary-btn" href={`/o/${org.slug}`} target="_blank">Abrir site público ↗</Link>
         </div>
       </section>

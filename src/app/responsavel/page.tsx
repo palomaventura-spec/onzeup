@@ -8,10 +8,12 @@ import DemoBanner from "@/components/DemoBanner";
 import {
   deletePlayer,
   linkMatchingClubAthletes,
+  respondToPlayerCallUp,
   saveGuardianProfile,
   savePlayer,
 } from "./actions";
 import { createPlayerPremiumPix } from "@/app/checkout/actions";
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 export default async function GuardianPortal({
   searchParams,
@@ -314,9 +316,29 @@ export default async function GuardianPortal({
                           <strong>{call.organization.publicName || call.organization.name}</strong>
                           <p>{call.match.category.name} • x {call.match.opponent}</p>
                         </div>
-                        <b className={`callup-family-status ${call.status.toLowerCase()}`}>
-                          {call.status === "CONFIRMED" ? "Confirmado" : call.status === "DECLINED" ? "Não poderá" : "Convocado"}
-                        </b>
+                        <div className="player-callup-response">
+                          <b className={`callup-family-status ${call.status.toLowerCase()}`}>
+                            {call.status === "CONFIRMED" ? "Confirmado" : call.status === "DECLINED" ? "Não poderá" : "Convocado"}
+                          </b>
+                          {call.status === "PENDING" ? (
+                            <div className="player-callup-response-actions">
+                              <form action={respondToPlayerCallUp}>
+                                <input type="hidden" name="callUpId" value={call.id} />
+                                <input type="hidden" name="status" value="CONFIRMED" />
+                                <PendingSubmitButton className="btn btn-small" pendingText="Confirmando...">
+                                  Confirmar presença
+                                </PendingSubmitButton>
+                              </form>
+                              <form action={respondToPlayerCallUp}>
+                                <input type="hidden" name="callUpId" value={call.id} />
+                                <input type="hidden" name="status" value="DECLINED" />
+                                <PendingSubmitButton className="btn-secondary btn-small" pendingText="Enviando...">
+                                  Não poderá
+                                </PendingSubmitButton>
+                              </form>
+                            </div>
+                          ) : null}
+                        </div>
                       </article>
                     ))}
                   </div>
@@ -332,10 +354,11 @@ export default async function GuardianPortal({
                   <div>
                     <span className="page-eyebrow">CLUBES</span>
                     <h2>Vínculos esportivos</h2>
+                    <p className="muted">O vínculo parte do ONZEUP Player e só é confirmado após validação da equipe. Um mesmo Player pode estar ligado a vários clubes/modalidades.</p>
                   </div>
                   <form action={linkMatchingClubAthletes}>
                     <input type="hidden" name="playerId" value={selected.id} />
-                    <button className="btn-secondary" type="submit">Buscar vínculo pelo meu e-mail</button>
+                    <button className="btn-secondary" type="submit">Solicitar vínculo com clubes</button>
                   </form>
                 </div>
 
@@ -371,7 +394,7 @@ export default async function GuardianPortal({
                   </div>
                 ) : (
                   <p className="muted">
-                    Nenhum clube vinculado. Se o clube cadastrou o seu e-mail como responsável, use o botão acima para localizar registros compatíveis.
+                    Nenhum clube vinculado. Se uma equipe já cadastrou este atleta usando o seu e-mail como responsável, solicite o vínculo acima. O clube precisa confirmar antes de o vínculo ficar verificado.
                   </p>
                 )}
               </section>

@@ -175,3 +175,42 @@ export async function linkMatchingClubAthletes(formData: FormData) {
 
   revalidatePath("/responsavel");
 }
+
+
+export async function respondToPlayerCallUp(formData: FormData) {
+  const user = await requireUser();
+  if (user.role !== "GUARDIAN") return;
+
+  const guardian = await guardianForUser(user.id);
+  const callUpId = clean(formData.get("callUpId"));
+  const rawStatus = clean(formData.get("status"));
+
+  if (!callUpId || !["CONFIRMED", "DECLINED"].includes(rawStatus)) return;
+
+  const callUp = await prisma.callUp.findFirst({
+    where: {
+      id: callUpId,
+      athlete: {
+        playerLinks: {
+          some: {
+            verified: true,
+            player: { guardianId: guardian.id },
+          },
+        },
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!callUp) return;
+
+  await prisma.callUp.update({
+    where: { id: callUp.id },
+    data: {
+      status: rawStatus as "CONFIRMED" | "DECLINED",
+      respondedAt: new Date(),
+    },
+  });
+
+  revalidatePath("/responsavel");
+}

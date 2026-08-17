@@ -104,6 +104,7 @@ model Organization {
   publicTheme         String              @default("DARK")
   panelTheme          String              @default("DARK")
   pixKey              String?
+  taxId               String?
   phone               String?
   whatsapp            String?
   email               String?

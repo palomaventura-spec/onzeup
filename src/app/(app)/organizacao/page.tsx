@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireOrganizationUser } from "@/lib/auth";
 import { updateOrganization } from "./actions";
 import ModuleTour from "@/components/help/ModuleTour";
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 export default async function OrganizationPage() {
   const user = await requireOrganizationUser();
@@ -13,8 +14,8 @@ export default async function OrganizationPage() {
       <div className="page-head">
         <ModuleTour module="organizacao" />
         <div>
-          <h1>Organização</h1>
-          <p className="muted">Edite os dados que alimentam o site público da sua organização.</p>
+          <h1>Site e Configurações</h1>
+          <p className="muted">Configure os dados do clube e personalize sua página/site público.</p>
         </div>
         <Link className="btn" href={`/o/${org.slug}`} target="_blank">Ver site público</Link>
       </div>
@@ -45,6 +46,7 @@ export default async function OrganizationPage() {
           <label>Fundo do site<input name="publicBackground" type="color" defaultValue={org.publicBackground ?? "#080B0C"} /></label>
           <label>Tema do site<select name="publicTheme" defaultValue={org.publicTheme}><option value="DARK">Escuro</option><option value="LIGHT">Claro</option><option value="CUSTOM">Personalizado</option></select></label>
           <label>Chave Pix<input name="pixKey" defaultValue={org.pixKey ?? ""} placeholder="CPF, CNPJ, e-mail, telefone ou aleatória" /></label>
+          <label>CNPJ <small>(opcional)</small><input name="taxId" defaultValue={org.taxId ?? ""} placeholder="00.000.000/0000-00" /></label>
 
           <label>
             Telefone
@@ -104,7 +106,7 @@ export default async function OrganizationPage() {
             Exibir jogos e resultados
           </label>
 
-          <button type="submit">Salvar organização</button>
+          <PendingSubmitButton pendingText="Salvando configurações...">Salvar configurações</PendingSubmitButton>
         </form>
       </section>
     </>

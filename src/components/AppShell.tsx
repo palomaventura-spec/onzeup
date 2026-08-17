@@ -15,7 +15,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
         <nav className="nav">
           <Link href="/dashboard">Dashboard</Link>
           <Link href="/agenda">Agenda</Link>
-          <Link href="/organizacao">Organização</Link>
+          <Link href="/organizacao">Site e Configurações</Link>
           <Link href="/categorias">Categorias</Link>
           <Link href="/comissao">Comissão</Link>
           <Link href="/atletas">Atletas</Link>

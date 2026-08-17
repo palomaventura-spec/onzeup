@@ -1827,3 +1827,58 @@ linear-gradient(180deg,#0d141b,#05080c);background-size:cover;background-positio
   .coach-access-list article>div:last-child{justify-content:flex-start}
   .membership-admin-list article,.membership-admin-form{grid-template-columns:1fr}
 }
+
+
+/* =========================================================
+   ONZEUP v1.3.9 — Club UX + Player Integration + Loading
+   ========================================================= */
+.onzeup-page-loading{
+  min-height:48vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:8px;
+  padding:55px 24px;
+  background:#0a0f11;
+  color:#fff;
+}
+.onzeup-page-loading strong{font-size:18px;letter-spacing:-.02em}
+.onzeup-page-loading small{color:#859399}
+.onzeup-loading-mark{display:flex;gap:6px;margin-bottom:8px}
+.onzeup-loading-mark span{
+  width:9px;height:9px;border-radius:999px;background:#9ddb16;
+  animation:onzeupLoadingPulse 1s ease-in-out infinite;
+}
+.onzeup-loading-mark span:nth-child(2){animation-delay:.14s}
+.onzeup-loading-mark span:nth-child(3){animation-delay:.28s}
+@keyframes onzeupLoadingPulse{
+  0%,100%{opacity:.25;transform:translateY(0)}
+  50%{opacity:1;transform:translateY(-5px)}
+}
+button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
+.pending-button-content{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.pending-button-spinner{
+  width:13px;height:13px;border-radius:50%;
+  border:2px solid currentColor;border-right-color:transparent;
+  animation:onzeupSpin .65s linear infinite;
+}
+@keyframes onzeupSpin{to{transform:rotate(360deg)}}
+.form-submit-help{margin:-2px 0 0;color:#7f8e93;font-size:9px;line-height:1.5}
+.onboarding-address-field{grid-column:1/-1}
+.onboarding-next-note{
+  padding:16px 18px;border:1px solid #2a363a;border-radius:12px;
+  background:#0d1416;
+}
+.onboarding-next-note strong{display:block;color:#9ddb16;margin-bottom:4px}
+.onboarding-next-note p{margin:0;color:#94a2a7;font-size:10px;line-height:1.6}
+.player-callup-response{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.player-callup-response-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.player-callup-response-actions form{margin:0}
+@media(max-width:760px){
+  .onboarding-address-field{grid-column:auto}
+  .player-callup-response{align-items:flex-start}
+  .player-callup-response-actions{justify-content:flex-start}
+  .player-callup-response-actions button{width:100%}
+}

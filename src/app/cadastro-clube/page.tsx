@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { registerClubTrial } from "./actions";
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 export default async function ClubRegisterPage({
   searchParams,
@@ -115,9 +116,10 @@ export default async function ClubRegisterPage({
             </span>
           </label>
 
-          <button className="btn" type="submit">
+          <PendingSubmitButton className="btn" pendingText="Criando seu ONZEUP Club...">
             Começar 15 dias grátis
-          </button>
+          </PendingSubmitButton>
+          <p className="form-submit-help">Ao enviar, vamos preparar sua conta e abrir a configuração inicial.</p>
         </form>
 
         <p className="help">

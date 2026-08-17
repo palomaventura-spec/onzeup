@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.3.9 — Club UX + Player Integration + Global Loading
+- adiciona loading.tsx global e nos principais ambientes Club, Player, Coach, Admin e catálogos
+- cadastro Club mostra estado 'Criando seu ONZEUP Club...'
+- onboarding Club passa a pedir apenas dados básicos e direciona ao Dashboard
+- remove categoria e primeiro treino da configuração inicial; continuam no onboarding do Dashboard
+- adiciona CNPJ opcional à organização
+- renomeia Organização para Site e Configurações na interface
+- troca exemplo QTR G. Severiano por exemplo neutro Arena Onze / Campo Principal
+- responsável pode confirmar ou recusar convocação diretamente pelo ONZEUP Player
+- WhatsApp continua disponível como canal rápido de convocação
+- reforça fluxo Player -> solicitação de vínculo -> confirmação pelo clube
+- mantém cobranças/taxas e estrutura multi-clube da v1.3.8
+
+
 ## v1.3.8 — Multi-club Player + Coach Team Access
 - atleta pode ter vários vínculos esportivos por organização, modalidade, categoria e temporada
 - suporta Campo e Futsal simultaneamente no mesmo clube

@@ -383,7 +383,7 @@ export default function QtrEditor({
                 <input
                   name="location"
                   defaultValue={currentEvent.location || ""}
-                  placeholder="Ex.: G. Severiano"
+                  placeholder="Ex.: Arena Onze / Campo Principal"
                 />
               </label>
 

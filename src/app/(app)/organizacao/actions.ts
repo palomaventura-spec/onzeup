@@ -26,6 +26,7 @@ export async function updateOrganization(formData: FormData) {
   const publicBackground = clean(formData.get("publicBackground")) || "#080B0C";
   const publicTheme = clean(formData.get("publicTheme")) || "DARK";
   const pixKey = nullable(formData.get("pixKey"));
+  const taxId = nullable(formData.get("taxId"));
   const phone = nullable(formData.get("phone"));
   const whatsapp = nullable(formData.get("whatsapp"));
   const email = nullable(formData.get("email"));
@@ -49,7 +50,7 @@ export async function updateOrganization(formData: FormData) {
       description,
       logoUrl,
       coverUrl,
-      accentColor, secondaryColor, publicBackground, publicTheme, pixKey,
+      accentColor, secondaryColor, publicBackground, publicTheme, pixKey, taxId,
       phone,
       whatsapp,
       email,

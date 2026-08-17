@@ -2,7 +2,7 @@
 
 const modules = [
   { key: "dashboard", title: "Primeiros passos", text: "Visão geral da plataforma e checklist inicial." },
-  { key: "organizacao", title: "Organização e site", text: "Logo, cores, privacidade e site público." },
+  { key: "organizacao", title: "Site e Configurações", text: "Logo, cores, privacidade e site público." },
   { key: "atletas", title: "Atletas do clube", text: "Cadastro do clube x perfil OnzeUp Player." },
   { key: "qtr", title: "QTR", text: "Automático, manual, híbrido e compartilhamento." },
   { key: "convocacoes", title: "Convocações", text: "WhatsApp básico e controle de confirmações." },
