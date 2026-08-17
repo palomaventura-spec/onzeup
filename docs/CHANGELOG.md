@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.3.9.3 — Email Runtime Diagnostics
+- adiciona logs seguros RESEND_CONFIG_MISSING e RESEND_SEND_ATTEMPT
+- logs informam apenas presença/ausência das variáveis; nunca exibem a API key
+- adiciona /api/email-diagnostico para conferir variáveis disponíveis no runtime
+- melhora feedback visual em /esqueci-senha
+- mantém verificação de e-mail e recuperação da v1.3.9.2
+
+
+## v1.3.9.2 — Prisma Email Relation Fix
+- corrige a relação inversa User <-> EmailVerificationToken no Prisma
+- mantém todas as funcionalidades da v1.3.9.1
+
+
+## v1.3.9.1 — Email Verification + Password Reset
+- cadastro Player gera token de verificação válido por 24h
+- envia e-mail real pelo Resend usando o domínio ONZEUP verificado
+- link ativa a conta e grava emailVerifiedAt
+- usuário pendente pode solicitar reenvio do link
+- erro do Resend passa a ser exibido como falha de envio, sem falso positivo
+- recuperação de senha passa a reutilizar o serviço transacional do Resend
+- adiciona Reply-To para onzeupfutebolbase@gmail.com
+- adiciona loading nos botões de cadastro, reenvio e recuperação
+
+
 ## v1.3.9 — Club UX + Player Integration + Global Loading
 - adiciona loading.tsx global e nos principais ambientes Club, Player, Coach, Admin e catálogos
 - cadastro Club mostra estado 'Criando seu ONZEUP Club...'

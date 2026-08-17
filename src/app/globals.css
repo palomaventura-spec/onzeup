@@ -1882,3 +1882,12 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
   .player-callup-response-actions{justify-content:flex-start}
   .player-callup-response-actions button{width:100%}
 }
+
+
+/* v1.3.9.1 — e-mail verification */
+.verification-resend-form{
+  margin-top:16px;
+  padding-top:16px;
+  border-top:1px solid #273236;
+}
+.notice strong{font-weight:900}

@@ -1,6 +1,11 @@
 import Link from "next/link";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ verificacao?: string; senha?: string; erro?: string }>;
+}) {
+  const q = await searchParams;
   return (
     <main className="login login-commercial">
       <div className="login-commercial-wrap">
@@ -21,6 +26,24 @@ export default function LoginPage() {
               Entre com seu e-mail ONZEUP. A plataforma identifica automaticamente seu perfil.
             </p>
           </div>
+
+          {q.verificacao === "ok" ? (
+            <div className="notice">
+              E-mail confirmado. Sua conta está ativa e você já pode entrar.
+            </div>
+          ) : null}
+
+          {q.verificacao === "token-expirado" || q.verificacao === "token-invalido" ? (
+            <div className="notice error">
+              O link de ativação é inválido ou expirou. Volte ao cadastro Player para solicitar um novo link.
+            </div>
+          ) : null}
+
+          {q.senha === "alterada" ? (
+            <div className="notice">
+              Senha alterada com sucesso. Entre com a nova senha.
+            </div>
+          ) : null}
 
           <label>
             E-mail
