@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 const clean = (value: FormDataEntryValue | null) => String(value ?? "").trim();
 
@@ -126,54 +127,113 @@ export async function deletePlayer(formData: FormData) {
   revalidatePath("/responsavel");
 }
 
+
 export async function linkMatchingClubAthletes(formData: FormData) {
   const user = await requireUser();
   if (user.role !== "GUARDIAN") return;
 
   const guardian = await guardianForUser(user.id);
   const playerId = clean(formData.get("playerId"));
-  if (!playerId) return;
+  if (!playerId) redirect("/responsavel?linkStatus=erro");
 
   const player = await prisma.playerProfile.findFirst({
     where: { id: playerId, guardianId: guardian.id },
-    select: { id: true, name: true },
+    select: { id: true, name: true, nickname: true },
   });
-  if (!player) return;
+
+  if (!player) redirect("/responsavel?linkStatus=erro");
 
   const candidates = await prisma.athlete.findMany({
     where: {
       guardianEmail: { equals: user.email, mode: "insensitive" },
       active: true,
     },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      nickname: true,
+      organizationId: true,
+    },
   });
 
-  const normalizedName = player.name.toLowerCase().trim();
-  const sameName = candidates.filter((athlete) =>
-    athlete.name.toLowerCase().includes(normalizedName) ||
-    normalizedName.includes(athlete.name.toLowerCase())
-  );
+  if (!candidates.length) {
+    redirect(`/responsavel?player=${player.id}&linkStatus=nenhum-cadastro`);
+  }
 
-  const targets = sameName.length ? sameName : candidates;
+  const normalize = (value: string | null | undefined) =>
+    String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-  for (const athlete of targets) {
-    await prisma.playerAthleteLink.upsert({
+  const playerName = normalize(player.name);
+  const playerNickname = normalize(player.nickname);
+
+  const samePerson = (athlete: { name: string; nickname: string | null }) => {
+    const athleteName = normalize(athlete.name);
+    const athleteNickname = normalize(athlete.nickname);
+
+    if (playerName && athleteName && playerName === athleteName) return true;
+    if (playerNickname && athleteNickname && playerNickname === athleteNickname) return true;
+
+    const playerTokens = playerName.split(" ").filter(Boolean);
+    const athleteTokens = athleteName.split(" ").filter(Boolean);
+
+    if (
+      playerTokens.length >= 2 &&
+      athleteTokens.length >= 2 &&
+      playerTokens[0] === athleteTokens[0] &&
+      playerTokens[playerTokens.length - 1] === athleteTokens[athleteTokens.length - 1]
+    ) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const matches = candidates.filter(samePerson);
+
+  if (!matches.length) {
+    redirect(`/responsavel?player=${player.id}&linkStatus=sem-correspondencia`);
+  }
+
+  let created = 0;
+
+  for (const athlete of matches) {
+    const existing = await prisma.playerAthleteLink.findUnique({
       where: {
         playerId_athleteId: {
           playerId: player.id,
           athleteId: athlete.id,
         },
       },
-      update: {},
-      create: {
+      select: { id: true },
+    });
+
+    if (existing) continue;
+
+    await prisma.playerAthleteLink.create({
+      data: {
         playerId: player.id,
         athleteId: athlete.id,
         verified: false,
       },
     });
+
+    created += 1;
   }
 
   revalidatePath("/responsavel");
+  revalidatePath("/vinculos-player");
+
+  if (!created) {
+    redirect(`/responsavel?player=${player.id}&linkStatus=ja-solicitado`);
+  }
+
+  redirect(`/responsavel?player=${player.id}&linkStatus=solicitado&count=${created}`);
 }
 
 

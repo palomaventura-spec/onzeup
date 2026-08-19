@@ -1,0 +1,15 @@
+ONZEUP v1.4.1 - PATCH DE CÓDIGO
+
+Este pacote NÃO inclui package.json nem package-lock.json de propósito.
+Você já executou npm install @vercel/blob@latest localmente e essa atualização deve ser preservada.
+
+Copie/substitua as pastas src e docs deste patch sobre o projeto atual.
+
+CMD:
+rmdir /S /Q .next
+npm run build
+git add .
+git commit -m "ONZEUP v1.4.1 - player club linking and landing"
+git push origin main
+
+Não é necessário npx prisma db push nesta atualização.

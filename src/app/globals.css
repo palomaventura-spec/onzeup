@@ -1903,3 +1903,66 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
 .club-games-page-hero{padding:110px 0 55px;background:radial-gradient(circle at 75% 15%,color-mix(in srgb,var(--club-accent) 18%,transparent),transparent 30%)}.club-games-page-hero h1{font-size:clamp(48px,7vw,86px);margin:9px 0 6px;letter-spacing:-.05em}.club-games-page-hero p{color:#95a1aa}.public-games-list{display:grid;gap:10px;margin-top:28px}.public-game-card{display:flex;justify-content:space-between;align-items:center;gap:24px;border:1px solid #26313c;background:color-mix(in srgb,var(--club-bg) 92%,white 8%);border-radius:16px;padding:20px}.public-game-card small{font-size:10px;color:var(--club-accent);font-weight:900;letter-spacing:.08em}.public-game-card h3{font-size:20px;margin:7px 0}.public-game-card h3 em{font-style:normal;color:var(--club-accent)}.public-game-card p{margin:0;color:#8c99a3}.public-game-card>strong{white-space:nowrap;font-size:13px}.public-game-card.result h3 b{background:var(--club-accent);color:#071007;padding:3px 7px;border-radius:6px}
 @media(max-width:900px){.match-carousel-shell{max-width:520px;width:100%}.club-hero.has-cover{background-attachment:scroll}}
 @media(max-width:640px){.match-carousel-shell{padding:18px}.match-carousel-track{margin-left:-18px;margin-right:-18px}.match-carousel-slide{padding-left:18px;padding-right:18px}.match-carousel-arrows{display:none}.public-game-card{align-items:flex-start;flex-direction:column}.public-game-card>strong{white-space:normal}.image-upload-preview.logo{width:120px;height:120px}}
+
+
+/* =========================================================
+   ONZEUP v1.4.1 — Player ↔ Club linking + Player positioning
+   ========================================================= */
+.player-link-status-notice{
+  margin:0 0 18px;
+  padding:16px 18px;
+  border:1px solid #2c393d;
+  border-radius:12px;
+  background:#0d1416;
+}
+.player-link-status-notice strong{display:block;margin-bottom:4px}
+.player-link-status-notice p{margin:0;color:#94a2a7;font-size:10px;line-height:1.6}
+.player-link-status-notice.success{border-color:#5f7f0b;background:#121b08}
+.player-link-status-notice.success strong{color:#9ddb16}
+.player-link-status-notice.warning{border-color:#705d1a;background:#18150b}
+.player-link-status-notice.warning strong{color:#e8c95c}
+.player-link-status-notice.error{border-color:#753030;background:#1a0e0e}
+.player-link-status-notice.error strong{color:#ff8b8b}
+
+.player-independence-section{
+  padding:85px 7vw;
+  background:#0b1113;
+  color:#fff;
+  border-top:1px solid #253034;
+  border-bottom:1px solid #253034;
+}
+.player-independence-copy{max-width:900px}
+.player-independence-copy h2{
+  font-size:clamp(46px,5vw,76px);
+  line-height:.94;
+  letter-spacing:-.055em;
+  margin:12px 0 18px;
+}
+.player-independence-copy p{
+  max-width:760px;
+  color:#9aa7ac;
+  line-height:1.75;
+}
+.player-independence-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin:30px 0 24px;
+}
+.player-independence-grid article{
+  padding:26px;
+  border:1px solid #2b373b;
+  border-radius:15px;
+  background:#111719;
+}
+.player-independence-grid article>span{
+  color:#9ddb16;
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.12em;
+}
+.player-independence-grid h3{font-size:25px;letter-spacing:-.035em;margin:9px 0}
+.player-independence-grid p,
+.player-independence-grid small{color:#95a2a7;line-height:1.65}
+.player-independence-grid small{display:block;margin-top:12px;font-size:9px}
+@media(max-width:760px){.player-independence-grid{grid-template-columns:1fr}}

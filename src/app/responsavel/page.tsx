@@ -18,12 +18,45 @@ import PendingSubmitButton from "@/components/PendingSubmitButton";
 export default async function GuardianPortal({
   searchParams,
 }: {
-  searchParams: Promise<{ player?: string; new?: string }>;
+  searchParams: Promise<{ player?: string; new?: string; linkStatus?: string; count?: string }>;
 }) {
   const user = await requireUser();
   if (user.role !== "GUARDIAN") redirect("/dashboard");
 
   const query = await searchParams;
+
+  const linkStatusMessage =
+    query.linkStatus === "solicitado"
+      ? {
+          type: "success",
+          title: "Solicitação enviada ao clube.",
+          text: `${Number(query.count || 1)} vínculo(s) compatível(is) foi(ram) localizado(s). A equipe precisa confirmar antes de o vínculo ficar ativo.`,
+        }
+      : query.linkStatus === "ja-solicitado"
+        ? {
+            type: "info",
+            title: "Solicitação já existente.",
+            text: "Os vínculos compatíveis já foram solicitados. Aguarde a confirmação da equipe.",
+          }
+        : query.linkStatus === "nenhum-cadastro"
+          ? {
+              type: "warning",
+              title: "Nenhum cadastro do clube encontrado.",
+              text: "Peça à equipe para cadastrar o atleta usando o mesmo e-mail do responsável utilizado nesta conta ONZEUP.",
+            }
+          : query.linkStatus === "sem-correspondencia"
+            ? {
+                type: "warning",
+                title: "Encontramos seu e-mail, mas não o mesmo atleta.",
+                text: "Confirme se o nome do atleta no ONZEUP Player corresponde ao nome usado pelo clube. O sistema não cria vínculos automaticamente apenas pelo e-mail.",
+              }
+            : query.linkStatus === "erro"
+              ? {
+                  type: "error",
+                  title: "Não foi possível buscar os vínculos.",
+                  text: "Atualize a página e tente novamente.",
+                }
+              : null;
 
   const guardian = await prisma.guardianProfile.findUnique({
     where: { userId: user.id },
@@ -147,6 +180,13 @@ export default async function GuardianPortal({
                 />
               </div>
             </div>
+
+            {linkStatusMessage ? (
+              <div className={`player-link-status-notice ${linkStatusMessage.type}`}>
+                <strong>{linkStatusMessage.title}</strong>
+                <p>{linkStatusMessage.text}</p>
+              </div>
+            ) : null}
 
             {selected && selected.plan !== "PREMIUM" ? (
               <section className="player-upgrade-card">
@@ -354,11 +394,13 @@ export default async function GuardianPortal({
                   <div>
                     <span className="page-eyebrow">CLUBES</span>
                     <h2>Vínculos esportivos</h2>
-                    <p className="muted">O vínculo parte do ONZEUP Player e só é confirmado após validação da equipe. Um mesmo Player pode estar ligado a vários clubes/modalidades.</p>
+                    <p className="muted">O perfil pertence ao atleta. O clube é um vínculo da trajetória. Para localizar um cadastro existente, use nesta conta o mesmo e-mail de responsável informado à equipe; o vínculo só é ativado após confirmação do clube.</p>
                   </div>
                   <form action={linkMatchingClubAthletes}>
                     <input type="hidden" name="playerId" value={selected.id} />
-                    <button className="btn-secondary" type="submit">Solicitar vínculo com clubes</button>
+                    <PendingSubmitButton className="btn-secondary" pendingText="Buscando vínculos...">
+                      Buscar vínculos com clubes
+                    </PendingSubmitButton>
                   </form>
                 </div>
 
@@ -394,7 +436,7 @@ export default async function GuardianPortal({
                   </div>
                 ) : (
                   <p className="muted">
-                    Nenhum clube vinculado. Se uma equipe já cadastrou este atleta usando o seu e-mail como responsável, solicite o vínculo acima. O clube precisa confirmar antes de o vínculo ficar verificado.
+                    Nenhum clube vinculado. Se uma equipe ONZEUP já cadastrou este atleta, use o mesmo e-mail do responsável informado ao clube e clique em “Buscar vínculos com clubes”. A equipe confirmará a solicitação antes de ativá-la.
                   </p>
                 )}
               </section>

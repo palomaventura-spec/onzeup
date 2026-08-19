@@ -49,7 +49,7 @@ export default async function PlayerLanding() {
             </a>
           </div>
 
-          <small>Comece grátis. Evolua para Premium quando quiser.</small>
+          <small>Com clube ou sem clube. Comece grátis e evolua para Premium quando quiser.</small>
         </div>
 
         <a
@@ -99,6 +99,45 @@ export default async function PlayerLanding() {
           <a className="btn" href="https://players.onzeup.com.br/gustavo-aguiar">Abrir Gustavo G9 Premium ↗</a>
           <a className="players-secondary-cta" href="https://players.onzeup.com.br/gustavo-aguiar-free">Comparar com Free ↗</a>
         </div>
+      </section>
+
+
+      <section className="player-independence-section">
+        <div className="player-independence-copy">
+          <span className="page-eyebrow">O PERFIL É DO ATLETA</span>
+          <h2>O clube faz parte da trajetória.</h2>
+          <p>
+            Não precisa estar vinculado a uma equipe para criar um ONZEUP Player.
+            Atletas sem clube, de escolinhas, projetos, equipes independentes ou federados
+            podem começar gratuitamente e manter o mesmo perfil ao longo da carreira.
+          </p>
+        </div>
+
+        <div className="player-independence-grid">
+          <article>
+            <span>SEM CLUBE</span>
+            <h3>Comece de onde você está.</h3>
+            <p>
+              Crie o perfil, organize vídeos, números e trajetória agora. Quando houver
+              um novo clube, ele poderá ser acrescentado ao histórico do atleta.
+            </p>
+          </article>
+
+          <article>
+            <span>JÁ JOGA POR UM CLUBE ONZEUP?</span>
+            <h3>Use o mesmo e-mail do responsável.</h3>
+            <p>
+              Se a equipe já cadastrou o atleta no ONZEUP Club, crie a conta do responsável
+              com o mesmo e-mail informado ao clube. Assim o sistema pode localizar o cadastro.
+            </p>
+            <small>
+              O e-mail apenas encontra possíveis correspondências. A família solicita e o clube
+              confirma o vínculo antes de ele ficar ativo.
+            </small>
+          </article>
+        </div>
+
+        <Link className="btn" href="/cadastro">Criar ONZEUP Player grátis →</Link>
       </section>
 
       <section className="product-benefit-section" id="como-funciona">

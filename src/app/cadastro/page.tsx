@@ -115,6 +115,9 @@ export default async function Register({
                 defaultValue=""
                 required
               />
+              <small className="field-help">
+                Atleta já cadastrado por um clube ONZEUP? Use o mesmo e-mail do responsável informado à equipe para facilitar a localização do vínculo.
+              </small>
             </label>
 
             <label>
