@@ -24,12 +24,6 @@ export async function sendTransactionalEmail({
     return { ok: false, error: "RESEND_NOT_CONFIGURED" as const };
   }
 
-  console.log("RESEND_SEND_ATTEMPT", {
-    toDomain: to.includes("@") ? to.split("@").pop() : "invalid",
-    fromConfigured: true,
-    replyToConfigured: Boolean(replyTo),
-    nodeEnv: process.env.NODE_ENV,
-  });
 
   try {
     const response = await fetch("https://api.resend.com/emails", {

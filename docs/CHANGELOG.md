@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.4.0 — Club Public Site + Upload + Games
+- corrige /api/upload com mensagens reais e tratamento de Vercel Blob
+- upload de logo/capa com preview e loading
+- limita server upload a 4 MB para manter margem do limite da Vercel
+- adiciona posição e intensidade de overlay da capa
+- hero público usa a arte do próprio clube de forma mais profissional
+- próximos jogos viram carrossel horizontal com 1 card por vez, swipe, setas e indicadores
+- adiciona botão Ver todos os jogos e página pública completa /o/[slug]/jogos
+- remove rota temporária pública de diagnóstico de e-mail
+
+
 ## v1.3.9.3 — Email Runtime Diagnostics
 - adiciona logs seguros RESEND_CONFIG_MISSING e RESEND_SEND_ATTEMPT
 - logs informam apenas presença/ausência das variáveis; nunca exibem a API key

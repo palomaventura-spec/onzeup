@@ -6,13 +6,17 @@ export default function ImageUpload({
   name,
   defaultValue,
   label,
+  purpose,
+  recommended,
 }: {
   name: string;
   defaultValue?: string | null;
   label: string;
+  purpose?: "logo" | "cover" | "site";
+  recommended?: string;
 }) {
   const [url, setUrl] = useState(defaultValue || "");
-  const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "uploading" | "error" | "success">("idle");
   const [message, setMessage] = useState("");
 
   async function upload(file?: File) {
@@ -23,31 +27,41 @@ export default function ImageUpload({
     try {
       const form = new FormData();
       form.append("file", file);
+      form.append("purpose", purpose || name);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: form,
-      });
-      const json = await response.json();
+      const response = await fetch("/api/upload", { method: "POST", body: form });
+      const text = await response.text();
+      let json: any = {};
+      try { json = JSON.parse(text); } catch { json = {}; }
 
       if (!response.ok || !json.url) {
         setStatus("error");
-        setMessage(json.error || "Não foi possível enviar a imagem.");
+        setMessage(json.error || `Falha no upload (HTTP ${response.status}).`);
         return;
       }
 
       setUrl(json.url);
-      setStatus("idle");
-      setMessage("Imagem carregada com sucesso.");
-    } catch {
+      setStatus("success");
+      setMessage("Imagem enviada. Agora salve as configurações.");
+    } catch (error) {
       setStatus("error");
-      setMessage("Falha de conexão durante o upload.");
+      setMessage("Não foi possível conectar ao serviço de upload.");
     }
   }
 
+  const previewClass = purpose === "cover" ? "image-upload-preview cover" : "image-upload-preview logo";
+
   return (
-    <label className="image-upload-field">
-      {label}
+    <div className="image-upload-field">
+      <label>{label}</label>
+      {recommended ? <small className="help">{recommended}</small> : null}
+      {url ? (
+        <div className={previewClass}>
+          <img src={url} alt="Pré-visualização" />
+        </div>
+      ) : (
+        <div className={`${previewClass} empty`}>Nenhuma imagem definida</div>
+      )}
       <input
         type="file"
         accept="image/jpeg,image/png,image/webp"
@@ -55,9 +69,10 @@ export default function ImageUpload({
         onChange={(event) => upload(event.target.files?.[0])}
       />
       <input type="hidden" name={name} value={url} />
-      {status === "uploading" ? <small className="help">Enviando imagem…</small> : null}
+      {status === "uploading" ? (
+        <small className="uploading-line"><i className="pending-button-spinner" /> Enviando imagem...</small>
+      ) : null}
       {message ? <small className={status === "error" ? "form-error" : "form-success"}>{message}</small> : null}
-      {url ? <small className="help">Arquivo pronto para salvar.</small> : null}
-    </label>
+    </div>
   );
 }

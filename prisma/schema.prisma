@@ -98,6 +98,8 @@ model Organization {
   description         String?
   logoUrl             String?
   coverUrl            String?
+  coverPosition       String              @default("CENTER")
+  coverOverlay        Int                 @default(68)
   accentColor         String?             @default("#9DDB16")
   secondaryColor      String?             @default("#FFFFFF")
   publicBackground    String?             @default("#080B0C")

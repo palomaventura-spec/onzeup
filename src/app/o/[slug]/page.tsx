@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import ClubMatchCarousel from "@/components/ClubMatchCarousel";
 
 function fmtDate(date: Date) {
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(date).replace(".", "");
@@ -24,7 +25,6 @@ export default async function PublicOrganizationPage({ params }: { params: Promi
 
   const publicName = org.publicName || org.name;
   const upcoming = org.matches.filter((m) => m.status === "SCHEDULED");
-  const nextMatch = upcoming[0];
   const results = org.matches.filter((m) => m.status === "FINISHED").reverse();
   const location = [org.city, org.state].filter(Boolean).join(" • ");
   const theme = org.publicTheme === "LIGHT" ? "light" : "dark";
@@ -51,7 +51,10 @@ export default async function PublicOrganizationPage({ params }: { params: Promi
         </div>
       </header>
 
-      <section id="inicio" className="club-hero" style={org.coverUrl ? { backgroundImage: `linear-gradient(90deg,rgba(3,7,11,.94),rgba(3,7,11,.55),rgba(3,7,11,.75)),url(${org.coverUrl})` } : undefined}>
+      <section id="inicio" className={`club-hero ${org.coverUrl ? "has-cover" : ""}`} style={org.coverUrl ? {
+        backgroundImage: `linear-gradient(90deg,rgba(3,7,11,${Math.min(.96, (org.coverOverlay + 18) / 100)}),rgba(3,7,11,${org.coverOverlay / 100}),rgba(3,7,11,${Math.min(.94, (org.coverOverlay + 10) / 100)})),url(${org.coverUrl})`,
+        backgroundPosition: org.coverPosition === "TOP" ? "center top" : org.coverPosition === "BOTTOM" ? "center bottom" : "center center",
+      } : undefined}>
         <div className="club-container club-hero-grid">
           <div className="club-hero-copy">
             <div className="club-eyebrow">FUTEBOL • FUTSAL • FORMAÇÃO</div>
@@ -66,17 +69,20 @@ export default async function PublicOrganizationPage({ params }: { params: Promi
             </div>
           </div>
 
-          {org.showMatchesPublicly && nextMatch && (
-            <aside className="next-match-card">
-              <span className="next-match-label">PRÓXIMO JOGO</span>
-              <div className="next-match-category">{nextMatch.category.name} {nextMatch.competition ? `• ${nextMatch.competition}` : ""}</div>
-              <div className="next-match-versus">
-                <div>{org.logoUrl ? <img src={org.logoUrl} alt="" /> : <b>OU</b>}<strong>{publicName}</strong></div>
-                <span>×</span>
-                <div className="opponent-mark"><b>{nextMatch.opponent.slice(0,2).toUpperCase()}</b><strong>{nextMatch.opponent}</strong></div>
-              </div>
-              <div className="next-match-info"><strong>{fmtDate(nextMatch.startsAt)} • {fmtTime(nextMatch.startsAt)}</strong><span>{nextMatch.location || "Local a definir"}</span></div>
-            </aside>
+          {org.showMatchesPublicly && upcoming.length > 0 && (
+            <ClubMatchCarousel
+              matches={upcoming.map((m) => ({
+                id: m.id,
+                category: m.category.name,
+                competition: m.competition,
+                opponent: m.opponent,
+                startsAt: m.startsAt.toISOString(),
+                location: m.location,
+              }))}
+              clubName={publicName}
+              logoUrl={org.logoUrl}
+              allGamesHref={`/o/${slug}/jogos`}
+            />
           )}
         </div>
       </section>
@@ -101,7 +107,7 @@ export default async function PublicOrganizationPage({ params }: { params: Promi
         {org.showMatchesPublicly && <section id="jogos" className="club-section club-games-section">
           <div className="club-heading"><span>EM CAMPO</span><h2>Jogos & resultados</h2></div>
           <div className="club-games-grid">
-            <div><h3>Próximos jogos</h3><div className="game-list">{upcoming.length ? upcoming.slice(0,4).map(m => <article className="game-row" key={m.id}><div className="game-date"><strong>{fmtDate(m.startsAt)}</strong><span>{fmtTime(m.startsAt)}</span></div><div><small>{m.category.name} • {m.competition || "Jogo"}</small><strong>{publicName} <em>×</em> {m.opponent}</strong><span>{m.location || "Local a definir"}</span></div></article>) : <p className="club-empty">Nenhum próximo jogo cadastrado.</p>}</div></div>
+            <div><div className="club-list-title-row"><h3>Próximos jogos</h3>{upcoming.length > 4 ? <Link href={`/o/${slug}/jogos`}>Ver todos →</Link> : null}</div><div className="game-list">{upcoming.length ? upcoming.slice(0,4).map(m => <article className="game-row" key={m.id}><div className="game-date"><strong>{fmtDate(m.startsAt)}</strong><span>{fmtTime(m.startsAt)}</span></div><div><small>{m.category.name} • {m.competition || "Jogo"}</small><strong>{publicName} <em>×</em> {m.opponent}</strong><span>{m.location || "Local a definir"}</span></div></article>) : <p className="club-empty">Nenhum próximo jogo cadastrado.</p>}</div></div>
             <div><h3>Últimos resultados</h3><div className="game-list">{results.length ? results.slice(0,4).map(m => <article className="result-row" key={m.id}><div><small>{m.category.name} • {fmtDate(m.startsAt)}</small><strong>{publicName} <b>{m.goalsFor ?? 0}</b><em>×</em><b>{m.goalsAgainst ?? 0}</b> {m.opponent}</strong></div></article>) : <p className="club-empty">Nenhum resultado publicado.</p>}</div></div>
           </div>
         </section>}

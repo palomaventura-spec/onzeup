@@ -21,6 +21,9 @@ export async function updateOrganization(formData: FormData) {
   const description = nullable(formData.get("description"));
   const logoUrl = nullable(formData.get("logoUrl"));
   const coverUrl = nullable(formData.get("coverUrl"));
+  const coverPosition = clean(formData.get("coverPosition")) || "CENTER";
+  const overlayRaw = Number(clean(formData.get("coverOverlay")) || "68");
+  const coverOverlay = Math.min(90, Math.max(30, Number.isFinite(overlayRaw) ? overlayRaw : 68));
   const accentColor = clean(formData.get("accentColor")) || "#9DDB16";
   const secondaryColor = clean(formData.get("secondaryColor")) || "#FFFFFF";
   const publicBackground = clean(formData.get("publicBackground")) || "#080B0C";
@@ -50,6 +53,8 @@ export async function updateOrganization(formData: FormData) {
       description,
       logoUrl,
       coverUrl,
+      coverPosition,
+      coverOverlay,
       accentColor, secondaryColor, publicBackground, publicTheme, pixKey, taxId,
       phone,
       whatsapp,

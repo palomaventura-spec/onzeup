@@ -37,9 +37,12 @@ export default async function OrganizationPage() {
             <textarea name="description" rows={5} defaultValue={org.description ?? ""} />
           </label>
 
-          <ImageUpload name="logoUrl" label="Logo (JPEG/PNG/WEBP)" defaultValue={org.logoUrl} />
+          <ImageUpload name="logoUrl" purpose="logo" label="Logo do clube" recommended="JPEG, PNG ou WEBP • até 4 MB. Prefira fundo transparente." defaultValue={org.logoUrl} />
 
-          <ImageUpload name="coverUrl" label="Capa (JPEG/PNG/WEBP)" defaultValue={org.coverUrl} />
+          <ImageUpload name="coverUrl" purpose="cover" label="Arte de capa do site" recommended="JPEG, PNG ou WEBP • até 4 MB. Recomendado: 1920 × 900 px." defaultValue={org.coverUrl} />
+
+          <label>Posição da arte de capa<select name="coverPosition" defaultValue={org.coverPosition}><option value="CENTER">Centralizada</option><option value="TOP">Topo</option><option value="BOTTOM">Parte inferior</option></select></label>
+          <label>Escurecimento da capa <strong>{org.coverOverlay}%</strong><input name="coverOverlay" type="range" min="30" max="90" step="5" defaultValue={org.coverOverlay} /></label>
 
           <label>Cor principal<input name="accentColor" type="color" defaultValue={org.accentColor ?? "#9DDB16"} /></label>
           <label>Cor secundária<input name="secondaryColor" type="color" defaultValue={org.secondaryColor ?? "#FFFFFF"} /></label>
