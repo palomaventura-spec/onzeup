@@ -1,0 +1,12 @@
+/* ONZEUP v1.4.4 — PlayerVideoEditor */
+.player-video-editor{display:grid;gap:18px}
+.player-video-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.player-video-editor-head h3{margin:4px 0 6px}
+.player-video-editor-list{display:grid;gap:14px}
+.player-video-editor-card{display:grid;gap:12px}
+.player-video-editor-number{font-size:12px;font-weight:900;letter-spacing:.16em;color:#9ddb16}
+.player-video-editor-card label{display:grid;gap:7px}
+.player-video-editor-card .actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+@media(max-width:700px){
+  .player-video-editor-head{display:grid}
+}
