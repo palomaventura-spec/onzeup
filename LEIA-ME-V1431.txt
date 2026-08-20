@@ -1,0 +1,29 @@
+ONZEUP v1.4.3.1 — COACH CALL-UPS + SITE PROFISSIONAL
+
+CORREÇÕES:
+1. Coach com canManageCallUps agora pode:
+   - ver atletas ativos da categoria;
+   - selecionar atletas;
+   - adicionar à convocação;
+   - retirar atletas da convocação.
+2. Coach sem permissão continua somente visualizando.
+3. A convocação é a mesma do Club; alterações aparecem para ambos.
+4. Dashboard passa a mostrar "Gerenciar convocação" quando houver permissão.
+5. Todo Coach passa a ter "Meu site profissional" no dashboard.
+6. /coach/meu-site funciona como prévia privada mesmo antes da publicação.
+7. Ao publicar, a página pública continua em /coach-profile/[slug].
+8. Editor Coach sempre mostra "Visualizar meu site".
+
+NÃO HÁ ALTERAÇÃO DE BANCO.
+
+APLICAÇÃO:
+- extraia este ZIP na raiz C:\Users\User\Documents\onzeup
+- substitua os arquivos
+- rode:
+  APLICAR_V1431.cmd
+  npm run build
+
+Se passar:
+  git add .
+  git commit -m "ONZEUP v1.4.3.1 - coach callups and professional site"
+  git push origin main

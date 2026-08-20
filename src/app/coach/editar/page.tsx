@@ -23,10 +23,14 @@ export default async function CoachEdit({
           <h1>Meu site profissional</h1>
           <Link href="/coach/dashboard">← Voltar ao dashboard</Link>
         </div>
-        {p.isPublic ? <Link className="btn-secondary" href={`/coach-profile/${p.slug}`} target="_blank">Ver site ↗</Link> : null}
+        <div className="actions">
+          <Link className="btn-secondary" href="/coach/meu-site">Visualizar meu site ↗</Link>
+          {p.isPublic ? <Link className="btn-secondary" href={`/coach-profile/${p.slug}`} target="_blank">Abrir página pública ↗</Link> : null}
+        </div>
       </header>
 
       {q.salvo ? <div className="notice">Perfil atualizado.</div> : null}
+      {!p.isPublic ? <div className="notice">Seu site existe, mas está em modo privado. Marque “Publicar meu site profissional” abaixo quando quiser liberá-lo.</div> : null}
 
       <form action={saveCoach} className="card coach-form stack">
         <div className="form-grid-2">
@@ -65,8 +69,14 @@ export default async function CoachEdit({
           <label>E-mail profissional<input name="contactEmail" type="email" defaultValue={p.contactEmail || ""}/></label>
         </div>
 
-        <label className="check-row"><input name="isPublic" type="checkbox" defaultChecked={p.isPublic}/><span>Publicar meu site profissional</span></label>
-        <label className="check-row"><input name="directoryVisible" type="checkbox" defaultChecked={p.directoryVisible}/><span>Aparecer no catálogo de treinadores</span></label>
+        <label className="check-row">
+          <input name="isPublic" type="checkbox" defaultChecked={p.isPublic}/>
+          <span>Publicar meu site profissional</span>
+        </label>
+        <label className="check-row">
+          <input name="directoryVisible" type="checkbox" defaultChecked={p.directoryVisible}/>
+          <span>Aparecer no catálogo de treinadores</span>
+        </label>
         <button className="btn">Salvar perfil</button>
       </form>
     </main>
