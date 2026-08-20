@@ -1966,3 +1966,27 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
 .player-independence-grid small{color:#95a2a7;line-height:1.65}
 .player-independence-grid small{display:block;margin-top:12px;font-size:9px}
 @media(max-width:760px){.player-independence-grid{grid-template-columns:1fr}}
+
+/* =========================================================
+   ONZEUP v1.4.2 — Complete tester landings + Coach ↔ Club
+   ========================================================= */
+.coach-linking-landing,.coach-permissions-landing,.club-ecosystem-section,.club-public-site-selling,.player-test-landing{padding:90px 7vw}
+.coach-linking-landing,.club-ecosystem-section,.player-test-landing{background:#0b1113;color:#fff}
+.coach-linking-landing>div:first-child,.club-ecosystem-section>div:first-child,.club-public-site-selling>div:first-child{max-width:840px}
+.coach-linking-landing h2,.coach-permissions-landing h2,.club-ecosystem-section h2,.club-public-site-selling h2,.player-test-landing h2{font-size:clamp(42px,5vw,72px);line-height:.95;letter-spacing:-.055em;margin:12px 0 18px}
+.coach-linking-landing p,.coach-permissions-landing p,.club-ecosystem-section p,.club-public-site-selling p,.player-test-landing p{color:#96a3a8;line-height:1.75;max-width:760px}
+.coach-linking-flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:14px;align-items:center;margin-top:36px}
+.coach-linking-flow article{padding:22px;border:1px solid #2b373b;border-radius:14px;background:#11191c}
+.coach-linking-flow article b{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#9ddb16;color:#071006;margin-bottom:16px}
+.coach-linking-flow article span{display:block;font-size:18px;font-weight:900}.coach-linking-flow article small{color:#849297}.coach-linking-flow i{color:#9ddb16;font-size:24px}
+.coach-permissions-landing{display:grid;grid-template-columns:.9fr 1.1fr;gap:50px;align-items:center;background:#eef1ed;color:#091012}
+.coach-permission-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.coach-permission-grid article{padding:22px;border:1px solid #ccd4cf;border-radius:13px;background:#fff}.coach-permission-grid strong{display:block;font-size:19px;margin-bottom:6px}.coach-permission-grid span{color:#647176;font-size:11px}
+.club-ecosystem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:36px}.club-ecosystem-grid article{padding:26px;border:1px solid #2a363a;border-radius:15px;background:#11191c}.club-ecosystem-grid article>strong{color:#9ddb16;font-size:10px;letter-spacing:.14em}.club-ecosystem-grid h3{font-size:22px;margin:9px 0}
+.club-public-site-selling{display:grid;grid-template-columns:1fr .8fr;gap:50px;align-items:center;background:#eef1ed;color:#091012}
+.club-site-mini-preview{min-height:320px;border-radius:20px;padding:34px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(0deg,rgba(5,10,12,.92),rgba(5,10,12,.15)),radial-gradient(circle at 80% 20%,#3b5a10,#101719);color:#fff;box-shadow:0 30px 70px rgba(0,0,0,.18)}
+.club-site-mini-preview>span{font-size:9px;color:#9ddb16;font-weight:1000;letter-spacing:.16em}.club-site-mini-preview h3{font-size:36px;line-height:.95;letter-spacing:-.04em}.club-site-mini-preview div{display:flex;gap:8px;flex-wrap:wrap}.club-site-mini-preview b{font-size:9px;padding:7px 9px;border:1px solid #526057;border-radius:999px}
+.coach-pending-access-card{margin:22px 0;border-color:#526d08}.coach-invite-actions{display:flex!important;gap:8px;flex-wrap:wrap}.coach-invite-actions form{margin:0}.coach-club-access-explainer{margin-bottom:18px}.coach-access-admin-list{margin-top:20px}
+.player-test-landing{text-align:center}.player-test-landing p{margin:0 auto 24px}.player-test-landing .product-landing-actions{justify-content:center}
+@media(max-width:850px){.coach-linking-flow{grid-template-columns:1fr}.coach-linking-flow i{transform:rotate(90deg);justify-self:center}.coach-permissions-landing,.club-public-site-selling{grid-template-columns:1fr}.club-ecosystem-grid{grid-template-columns:1fr}.coach-permission-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.coach-permission-grid{grid-template-columns:1fr}.coach-linking-landing,.coach-permissions-landing,.club-ecosystem-section,.club-public-site-selling,.player-test-landing{padding:70px 6vw}}

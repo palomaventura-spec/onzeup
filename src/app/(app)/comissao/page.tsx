@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
 import { createStaffMember, deleteStaffMember } from "./actions";
 
-export default async function StaffPage() {
+export default async function StaffPage({ searchParams }: { searchParams: Promise<{ coachInvite?: string }> }) {
   const user = await requireOrganizationUser();
+  const query = await searchParams;
 
-  const [members, categories] = await Promise.all([
+  const [members, categories, coachAccesses] = await Promise.all([
     prisma.staffMember.findMany({
       where: { organizationId: user.organizationId },
       include: { category: true },
@@ -16,6 +17,11 @@ export default async function StaffPage() {
     prisma.category.findMany({
       where: { organizationId: user.organizationId },
       orderBy: { name: "asc" },
+    }),
+    prisma.coachOrganizationAccess.findMany({
+      where: { organizationId: user.organizationId },
+      include: { coach: { include: { owner: true } }, category: true },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -28,6 +34,15 @@ export default async function StaffPage() {
         </div>
         <span className="badge">{members.length} membro(s)</span>
       </div>
+
+      {query.coachInvite === "sent" ? <div className="notice">Convite de vínculo enviado ao ONZEUP Coach. O acesso só será ativado depois que o profissional aceitar.</div> : null}
+      {query.coachInvite === "not-found" ? <div className="notice error">O membro foi adicionado à comissão, mas nenhum ONZEUP Coach foi encontrado com esse e-mail. O profissional pode criar o perfil Coach gratuitamente e depois ser vinculado.</div> : null}
+
+      <section className="card coach-club-access-explainer">
+        <span className="page-eyebrow">ACESSO INDIVIDUAL</span>
+        <h2>Treinador não compartilha o login do clube.</h2>
+        <p className="muted">Informe o mesmo e-mail usado no ONZEUP Coach. O profissional recebe um convite no próprio dashboard e, ao aceitar, acessa somente a equipe/categoria e as permissões liberadas.</p>
+      </section>
 
       <div className="two-col">
         <section className="card">
@@ -61,7 +76,7 @@ export default async function StaffPage() {
             <label>
               E-mail do ONZEUP Coach
               <input name="coachEmail" type="email" placeholder="coach@email.com" />
-              <small className="field-help">Se o profissional já tiver ONZEUP Coach, este e-mail cria o vínculo de acesso à equipe.</small>
+              <small className="field-help">Use o mesmo e-mail da conta ONZEUP Coach. O sistema enviará um convite de vínculo; o acesso não é ativado automaticamente.</small>
             </label>
             <label className="check-row">
               <input type="checkbox" name="canManageCallUps" />
@@ -116,6 +131,29 @@ export default async function StaffPage() {
           )}
         </section>
       </div>
+
+      <section className="card coach-access-admin-list">
+        <div className="section-title-row">
+          <div><span className="page-eyebrow">ONZEUP COACH</span><h2>Acessos vinculados</h2></div>
+          <span className="badge">{coachAccesses.length}</span>
+        </div>
+        {coachAccesses.length ? (
+          <div className="coach-access-list">
+            {coachAccesses.map((access) => (
+              <article key={access.id}>
+                <div>
+                  <strong>{access.coach.professionalName || access.coach.name}</strong>
+                  <p>{access.coach.owner.email} • {access.category?.name || "Todas as categorias"}</p>
+                </div>
+                <div>
+                  <span>{access.roleTitle || "Comissão técnica"}</span>
+                  <b>{access.active ? "Vínculo ativo" : "Aguardando aceite"}</b>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : <p className="muted">Nenhum ONZEUP Coach vinculado a esta organização.</p>}
+      </section>
     </>
   );
 }

@@ -62,7 +62,7 @@ export async function createStaffMember(formData: FormData) {
           categoryId,
           sport: sport as "FOOTBALL" | "FUTSAL" | "BOTH",
         },
-        select: { id: true },
+        select: { id: true, active: true },
       });
 
       if (existing) {
@@ -70,7 +70,7 @@ export async function createStaffMember(formData: FormData) {
           where: { id: existing.id },
           data: {
             roleTitle,
-            active: true,
+            active: false,
             canViewRoster: true,
             canViewSchedule: true,
             canViewCallUps: true,
@@ -96,6 +96,14 @@ export async function createStaffMember(formData: FormData) {
   }
 
   revalidatePath("/comissao");
+
+  if (coachEmail) {
+    const coachExists = await prisma.coachProfile.findFirst({
+      where: { owner: { email: { equals: coachEmail, mode: "insensitive" } } },
+      select: { id: true },
+    });
+    redirect(`/comissao?coachInvite=${coachExists ? "sent" : "not-found"}`);
+  }
 }
 
 export async function updateStaffMember(formData: FormData) {

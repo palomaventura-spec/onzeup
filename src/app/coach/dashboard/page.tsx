@@ -1,8 +1,13 @@
 import Link from "next/link";
 import CopyInviteLink from "@/components/CopyInviteLink";
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import {
+  acceptCoachOrganizationInvite,
+  declineCoachOrganizationInvite,
+} from "./actions";
 
 function fmt(date: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -19,7 +24,12 @@ function sportLabel(sport: string) {
   return "Campo + Futsal";
 }
 
-export default async function CoachDashboard() {
+export default async function CoachDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ vinculo?: string }>;
+}) {
+  const query = await searchParams;
   const user = await requireUser();
   if (user.role !== "COACH") redirect(user.role === "GUARDIAN" ? "/responsavel" : "/dashboard");
 
@@ -33,7 +43,6 @@ export default async function CoachDashboard() {
         take: 8,
       },
       organizationAccesses: {
-        where: { active: true },
         include: { organization: true, category: true },
         orderBy: { createdAt: "asc" },
       },
@@ -42,11 +51,14 @@ export default async function CoachDashboard() {
 
   if (!coach) redirect("/cadastro-coach");
 
-  const accessFilters = coach.organizationAccesses
-    .filter(a => a.canViewCallUps)
-    .map(a => ({
-      organizationId: a.organizationId,
-      ...(a.categoryId ? { categoryId: a.categoryId } : {}),
+  const activeAccesses = coach.organizationAccesses.filter((access) => access.active);
+  const pendingAccesses = coach.organizationAccesses.filter((access) => !access.active);
+
+  const accessFilters = activeAccesses
+    .filter((access) => access.canViewCallUps)
+    .map((access) => ({
+      organizationId: access.organizationId,
+      ...(access.categoryId ? { categoryId: access.categoryId } : {}),
     }));
 
   const matches = accessFilters.length
@@ -65,7 +77,7 @@ export default async function CoachDashboard() {
       })
     : [];
 
-  const invite = `https://onzeup.com.br/convite/${coach.slug}`;
+  const invite = `https://www.onzeup.com.br/convite/${coach.slug}`;
 
   return (
     <main className="coach-partner-dashboard">
@@ -73,27 +85,53 @@ export default async function CoachDashboard() {
         <div>
           <span className="page-eyebrow">ONZEUP COACH</span>
           <h1>Olá, {coach.professionalName || coach.name}.</h1>
-          <p>Seu perfil profissional continua único, mesmo quando você trabalha em mais de uma equipe ou organização.</p>
+          <p>Seu login é individual. Os clubes liberam apenas os acessos das equipes e categorias em que você trabalha.</p>
         </div>
         <Link className="btn-secondary" href="/coach/editar">Editar meu perfil</Link>
       </header>
 
+      {query.vinculo === "aceito" ? <div className="notice">Vínculo aceito. O acesso à equipe já está ativo.</div> : null}
+      {query.vinculo === "recusado" ? <div className="notice">Convite de vínculo recusado.</div> : null}
+
+      {pendingAccesses.length ? (
+        <section className="card coach-pending-access-card">
+          <div className="section-title-row">
+            <div>
+              <span className="page-eyebrow">CONVITES DE VÍNCULO</span>
+              <h2>Clubes querem conectar seu ONZEUP Coach.</h2>
+              <p className="muted">Aceite somente vínculos de organizações e equipes onde você realmente atua.</p>
+            </div>
+            <span className="badge">{pendingAccesses.length} pendente(s)</span>
+          </div>
+
+          <div className="coach-access-list">
+            {pendingAccesses.map((access) => (
+              <article key={access.id}>
+                <div>
+                  <strong>{access.organization.publicName || access.organization.name}</strong>
+                  <p>{access.category?.name || "Todas as categorias"} • {sportLabel(access.sport)}</p>
+                  <small>{access.roleTitle || "Comissão técnica"}</small>
+                </div>
+                <div className="coach-invite-actions">
+                  <form action={acceptCoachOrganizationInvite}>
+                    <input type="hidden" name="accessId" value={access.id} />
+                    <PendingSubmitButton className="btn btn-small" pendingText="Aceitando...">Aceitar vínculo</PendingSubmitButton>
+                  </form>
+                  <form action={declineCoachOrganizationInvite}>
+                    <input type="hidden" name="accessId" value={access.id} />
+                    <PendingSubmitButton className="btn-secondary btn-small" pendingText="Recusando...">Recusar</PendingSubmitButton>
+                  </form>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="coach-dashboard-stats">
-        <article>
-          <small>VÍNCULOS ATIVOS</small>
-          <strong>{coach.organizationAccesses.length}</strong>
-          <span>equipes/categorias conectadas</span>
-        </article>
-        <article>
-          <small>PRÓXIMOS JOGOS</small>
-          <strong>{matches.length}</strong>
-          <span>das equipes às quais você tem acesso</span>
-        </article>
-        <article>
-          <small>ATLETAS INDICADOS</small>
-          <strong>{coach._count.referrals}</strong>
-          <span>cadastros atribuídos ao seu link</span>
-        </article>
+        <article><small>VÍNCULOS ATIVOS</small><strong>{activeAccesses.length}</strong><span>equipes/categorias conectadas</span></article>
+        <article><small>PRÓXIMOS JOGOS</small><strong>{matches.length}</strong><span>das equipes às quais você tem acesso</span></article>
+        <article><small>ATLETAS INDICADOS</small><strong>{coach._count.referrals}</strong><span>cadastros atribuídos ao seu link</span></article>
       </section>
 
       <section className="card coach-access-card">
@@ -101,22 +139,24 @@ export default async function CoachDashboard() {
           <div>
             <span className="page-eyebrow">MINHAS EQUIPES</span>
             <h2>Vínculos profissionais</h2>
+            <p className="muted">Um único login Coach pode ter vínculos com vários clubes, CTs e categorias.</p>
           </div>
         </div>
 
-        {coach.organizationAccesses.length ? (
+        {activeAccesses.length ? (
           <div className="coach-access-list">
-            {coach.organizationAccesses.map(access => (
+            {activeAccesses.map((access) => (
               <article key={access.id}>
                 <div>
                   <strong>{access.organization.publicName || access.organization.name}</strong>
-                  <p>
-                    {access.category?.name || "Todas as categorias"} • {sportLabel(access.sport)}
-                  </p>
+                  <p>{access.category?.name || "Todas as categorias"} • {sportLabel(access.sport)}</p>
                 </div>
                 <div>
                   <span>{access.roleTitle || "Comissão técnica"}</span>
+                  {access.canViewRoster ? <b>Elenco</b> : null}
+                  {access.canViewSchedule ? <b>Agenda</b> : null}
                   {access.canViewCallUps ? <b>Convocações</b> : null}
+                  {access.canManageCallUps ? <b>Gerencia convocação</b> : null}
                 </div>
               </article>
             ))}
@@ -136,7 +176,7 @@ export default async function CoachDashboard() {
 
         {matches.length ? (
           <div className="coach-match-list">
-            {matches.map(match => (
+            {matches.map((match) => (
               <article key={match.id}>
                 <div>
                   <small>{fmt(match.startsAt)}</small>
@@ -145,16 +185,12 @@ export default async function CoachDashboard() {
                 </div>
                 <div>
                   <span>{match.callUps.length} convocado(s)</span>
-                  <Link className="btn-secondary btn-small" href={`/coach/convocacoes/${match.id}`}>
-                    Ver lista →
-                  </Link>
+                  <Link className="btn-secondary btn-small" href={`/coach/convocacoes/${match.id}`}>Ver lista →</Link>
                 </div>
               </article>
             ))}
           </div>
-        ) : (
-          <p className="muted">Nenhum jogo agendado nas equipes vinculadas.</p>
-        )}
+        ) : <p className="muted">Nenhum jogo agendado nas equipes vinculadas.</p>}
       </section>
 
       <div className="coach-dashboard-grid">
@@ -165,12 +201,11 @@ export default async function CoachDashboard() {
           <CopyInviteLink value={invite}/>
           <a className="btn" href={invite} target="_blank">Abrir convite ↗</a>
         </section>
-
         <section className="card coach-club-lead">
           <span className="page-eyebrow">TAMBÉM GERE UMA ESCOLINHA OU CT?</span>
           <h2>Leve sua gestão para o ONZEUP Club.</h2>
           <p>Seu perfil Coach permanece o mesmo; a organização é um contexto separado.</p>
-          <a className="btn" href="https://club.onzeup.com.br">Conhecer ONZEUP Club →</a>
+          <Link className="btn" href="/club">Conhecer ONZEUP Club →</Link>
         </section>
       </div>
     </main>

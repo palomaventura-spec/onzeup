@@ -1,0 +1,15 @@
+ONZEUP v1.4.2 — PATCH
+
+Substitua as pastas src e docs pelo conteúdo deste patch.
+Não substitui package.json nem package-lock.json.
+Não altera o schema Prisma.
+
+Depois rode no CMD:
+  taskkill /F /IM node.exe
+  rmdir /S /Q .next
+  npm run build
+
+Se passar:
+  git add .
+  git commit -m "ONZEUP v1.4.2 - complete landings and coach club links"
+  git push origin main
