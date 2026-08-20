@@ -1,0 +1,24 @@
+ONZEUP v1.4.3 — TESTERS RELEASE
+
+Este ZIP é um PATCH e deve ser extraído na raiz do projeto ONZEUP,
+substituindo os arquivos existentes.
+
+IMPORTANTE:
+1. Faça uma cópia/commit do estado atual antes de aplicar.
+2. Extraia o ZIP na pasta C:\Users\User\Documents\onzeup
+3. Rode APLICAR_V143.cmd
+4. Depois rode:
+   npx prisma validate
+   npx prisma db push
+   npx prisma generate
+   npm run build
+
+A atualização preserva o fluxo Player existente e o upload Vercel Blob já corrigido.
+Ela adiciona:
+- Coach <-> Club bilateral
+- persistência de e-mail do Coach na comissão
+- aprovação pelo clube
+- microsite profissional Coach
+- upload de foto/capa Coach
+- depoimentos Player e Club
+- correção de contraste do FAQ

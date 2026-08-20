@@ -203,6 +203,9 @@ model StaffMember {
   roleTitle      String
   photoUrl       String?
   bio            String?
+  coachEmail     String?
+  sport          SportType    @default(BOTH)
+  canManageCallUps Boolean     @default(false)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   categoryId     String?
@@ -548,6 +551,7 @@ model CoachOrganizationAccess {
 
   sport            SportType    @default(BOTH)
   roleTitle        String?
+  requestedBy      String       @default("CLUB")
   active           Boolean      @default(true)
 
   canViewRoster    Boolean      @default(true)
@@ -586,3 +590,4 @@ model Payment {
   @@index([userId])
   @@index([playerId])
 }
+

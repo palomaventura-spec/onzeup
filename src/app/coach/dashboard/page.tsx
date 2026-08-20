@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import {
   acceptCoachOrganizationInvite,
   declineCoachOrganizationInvite,
+  searchMatchingCoachLinks,
 } from "./actions";
 
 function fmt(date: Date) {
@@ -52,7 +53,12 @@ export default async function CoachDashboard({
   if (!coach) redirect("/cadastro-coach");
 
   const activeAccesses = coach.organizationAccesses.filter((access) => access.active);
-  const pendingAccesses = coach.organizationAccesses.filter((access) => !access.active);
+  const clubInvites = coach.organizationAccesses.filter(
+    (access) => !access.active && access.requestedBy === "CLUB"
+  );
+  const coachRequests = coach.organizationAccesses.filter(
+    (access) => !access.active && access.requestedBy === "COACH"
+  );
 
   const accessFilters = activeAccesses
     .filter((access) => access.canViewCallUps)
@@ -63,10 +69,7 @@ export default async function CoachDashboard({
 
   const matches = accessFilters.length
     ? await prisma.match.findMany({
-        where: {
-          status: "SCHEDULED",
-          OR: accessFilters,
-        },
+        where: { status: "SCHEDULED", OR: accessFilters },
         include: {
           organization: true,
           category: true,
@@ -79,21 +82,47 @@ export default async function CoachDashboard({
 
   const invite = `https://www.onzeup.com.br/convite/${coach.slug}`;
 
+  const messages: Record<string, string> = {
+    aceito: "Vínculo aceito. O acesso à equipe já está ativo.",
+    recusado: "Convite de vínculo recusado.",
+    solicitado: "Encontramos seu cadastro em uma ou mais organizações. A solicitação foi enviada para aprovação do clube.",
+    "ja-solicitado": "Os vínculos encontrados já estão solicitados ou ativos.",
+    "nenhum-cadastro": "Nenhum cadastro de comissão foi encontrado com o mesmo e-mail da sua conta Coach. Confirme com o clube qual e-mail foi informado.",
+  };
+
   return (
     <main className="coach-partner-dashboard">
       <header>
         <div>
           <span className="page-eyebrow">ONZEUP COACH</span>
           <h1>Olá, {coach.professionalName || coach.name}.</h1>
-          <p>Seu login é individual. Os clubes liberam apenas os acessos das equipes e categorias em que você trabalha.</p>
+          <p>Seu login é individual. Clubes liberam apenas os acessos das equipes e categorias em que você trabalha.</p>
         </div>
-        <Link className="btn-secondary" href="/coach/editar">Editar meu perfil</Link>
+        <div className="actions">
+          {coach.isPublic ? <Link className="btn-secondary" href={`/coach-profile/${coach.slug}`}>Ver meu site ↗</Link> : null}
+          <Link className="btn-secondary" href="/coach/editar">Editar meu perfil</Link>
+        </div>
       </header>
 
-      {query.vinculo === "aceito" ? <div className="notice">Vínculo aceito. O acesso à equipe já está ativo.</div> : null}
-      {query.vinculo === "recusado" ? <div className="notice">Convite de vínculo recusado.</div> : null}
+      {query.vinculo && messages[query.vinculo] ? <div className="notice">{messages[query.vinculo]}</div> : null}
 
-      {pendingAccesses.length ? (
+      <section className="card coach-link-search">
+        <div className="matching-copy">
+          <span className="page-eyebrow">VÍNCULO COACH ↔ CLUB</span>
+          <h2>Já foi cadastrado por uma equipe ONZEUP?</h2>
+          <p className="muted">
+            Se o clube cadastrou você na comissão usando o mesmo e-mail desta conta Coach, buscaremos as correspondências.
+            O vínculo não é automático: você solicita e o clube confirma.
+          </p>
+        </div>
+        <form action={searchMatchingCoachLinks}>
+          <PendingSubmitButton className="btn" pendingText="Buscando vínculos...">
+            Buscar vínculos com clubes
+          </PendingSubmitButton>
+        </form>
+      </section>
+
+      {clubInvites.length ? (
         <section className="card coach-pending-access-card">
           <div className="section-title-row">
             <div>
@@ -101,11 +130,11 @@ export default async function CoachDashboard({
               <h2>Clubes querem conectar seu ONZEUP Coach.</h2>
               <p className="muted">Aceite somente vínculos de organizações e equipes onde você realmente atua.</p>
             </div>
-            <span className="badge">{pendingAccesses.length} pendente(s)</span>
+            <span className="badge">{clubInvites.length} pendente(s)</span>
           </div>
 
           <div className="coach-access-list">
-            {pendingAccesses.map((access) => (
+            {clubInvites.map((access) => (
               <article key={access.id}>
                 <div>
                   <strong>{access.organization.publicName || access.organization.name}</strong>
@@ -122,6 +151,29 @@ export default async function CoachDashboard({
                     <PendingSubmitButton className="btn-secondary btn-small" pendingText="Recusando...">Recusar</PendingSubmitButton>
                   </form>
                 </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {coachRequests.length ? (
+        <section className="card">
+          <div className="section-title-row">
+            <div>
+              <span className="page-eyebrow">SOLICITAÇÕES ENVIADAS</span>
+              <h2>Aguardando confirmação das equipes.</h2>
+            </div>
+            <span className="badge">{coachRequests.length}</span>
+          </div>
+          <div className="coach-access-list">
+            {coachRequests.map((access) => (
+              <article key={access.id}>
+                <div>
+                  <strong>{access.organization.publicName || access.organization.name}</strong>
+                  <p>{access.category?.name || "Todas as categorias"} • {sportLabel(access.sport)}</p>
+                </div>
+                <span className="coach-request-status">Aguardando aprovação do clube</span>
               </article>
             ))}
           </div>
@@ -162,18 +214,14 @@ export default async function CoachDashboard({
             ))}
           </div>
         ) : (
-          <p className="muted">Nenhuma organização vinculou seu perfil Coach ainda.</p>
+          <p className="muted">Nenhuma organização vinculada ao seu perfil Coach ainda.</p>
         )}
       </section>
 
       <section className="card coach-callups-card">
         <div className="section-title-row">
-          <div>
-            <span className="page-eyebrow">CONVOCAÇÕES</span>
-            <h2>Próximos jogos das suas equipes</h2>
-          </div>
+          <div><span className="page-eyebrow">CONVOCAÇÕES</span><h2>Próximos jogos das suas equipes</h2></div>
         </div>
-
         {matches.length ? (
           <div className="coach-match-list">
             {matches.map((match) => (
