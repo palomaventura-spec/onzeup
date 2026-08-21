@@ -198,7 +198,7 @@ export default async function GuardianPortal({
                 <form action={createPlayerPremiumPix}>
                   <input type="hidden" name="playerId" value={selected.id} />
                   <strong>R$ 29,90/mês</strong>
-                  <button className="btn">Assinar Premium via PIX</button>
+                  <button className="btn">Assinar Premium</button>
                 </form>
               </section>
             ) : null}
