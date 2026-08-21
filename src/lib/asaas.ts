@@ -15,10 +15,7 @@ function baseUrl() {
   return asaasIsSandbox() ? SANDBOX_API : PRODUCTION_API;
 }
 
-export async function asaasFetch<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+export async function asaasFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${baseUrl()}${path}`, {
     ...init,
     headers: {
@@ -32,23 +29,12 @@ export async function asaasFetch<T>(
 
   const text = await response.text();
   let body: unknown = null;
-
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = text;
-  }
+  try { body = text ? JSON.parse(text) : null; } catch { body = text; }
 
   if (!response.ok) {
-    console.error("ASAAS_API_ERROR", {
-      path,
-      status: response.status,
-      body,
-      sandbox: asaasIsSandbox(),
-    });
+    console.error("ASAAS_API_ERROR", { path, status: response.status, body, sandbox: asaasIsSandbox() });
     throw new Error(`Asaas respondeu ${response.status}.`);
   }
-
   return body as T;
 }
 
@@ -59,51 +45,51 @@ export type AsaasCheckout = {
   externalReference?: string | null;
 };
 
-export type AsaasPayment = {
+export type AsaasSubscription = {
   id: string;
   status?: string | null;
   externalReference?: string | null;
-  checkoutSession?: string | null;
-  subscription?: string | null;
-  value?: number | null;
-  netValue?: number | null;
 };
 
-export type AsaasPaymentList = {
+export type AsaasPayment = {
+  id: string;
+  status?: string | null;
+  subscription?: string | null;
+  externalReference?: string | null;
+};
+
+type AsaasList<T> = {
   object?: string;
   hasMore?: boolean;
   totalCount?: number;
   limit?: number;
   offset?: number;
-  data?: AsaasPayment[];
+  data?: T[];
 };
 
-export async function listAsaasPaymentsByCheckout(checkoutId: string) {
+export async function listAsaasSubscriptionsByExternalReference(externalReference: string) {
   const query = new URLSearchParams({
-    checkoutSession: checkoutId,
+    externalReference,
     limit: "20",
     offset: "0",
   });
-
-  return asaasFetch<AsaasPaymentList>(`/payments?${query.toString()}`, {
+  return asaasFetch<AsaasList<AsaasSubscription>>(`/subscriptions?${query.toString()}`, {
     method: "GET",
   });
+}
+
+export async function listAsaasSubscriptionPayments(subscriptionId: string) {
+  return asaasFetch<AsaasList<AsaasPayment>>(
+    `/subscriptions/${encodeURIComponent(subscriptionId)}/payments`,
+    { method: "GET" },
+  );
 }
 
 function formatAsaasDate(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
   return [
-    date.getFullYear(),
-    "-",
-    pad(date.getMonth() + 1),
-    "-",
-    pad(date.getDate()),
-    " ",
-    pad(date.getHours()),
-    ":",
-    pad(date.getMinutes()),
-    ":",
-    pad(date.getSeconds()),
+    date.getFullYear(), "-", pad(date.getMonth()+1), "-", pad(date.getDate()),
+    " ", pad(date.getHours()), ":", pad(date.getMinutes()), ":", pad(date.getSeconds())
   ].join("");
 }
 
@@ -116,7 +102,6 @@ export async function createAsaasPlayerPremiumCheckout(input: {
 }) {
   const nextDueDate = new Date();
   nextDueDate.setMinutes(nextDueDate.getMinutes() + 5);
-
   const endDate = new Date();
   endDate.setFullYear(endDate.getFullYear() + 10);
 
@@ -132,14 +117,12 @@ export async function createAsaasPlayerPremiumCheckout(input: {
         cancelUrl: input.cancelUrl,
         expiredUrl: input.expiredUrl,
       },
-      items: [
-        {
-          name: "ONZEUP Player Premium",
-          description: `Plano Premium mensal - ${input.playerName}`,
-          quantity: 1,
-          value: 29.9,
-        },
-      ],
+      items: [{
+        name: "ONZEUP Player Premium",
+        description: `Plano Premium mensal - ${input.playerName}`,
+        quantity: 1,
+        value: 29.9,
+      }],
       subscription: {
         cycle: "MONTHLY",
         nextDueDate: formatAsaasDate(nextDueDate),
@@ -148,15 +131,11 @@ export async function createAsaasPlayerPremiumCheckout(input: {
     }),
   });
 
-  if (!checkout.id) {
-    throw new Error("Asaas não retornou o ID do checkout.");
-  }
+  if (!checkout.id) throw new Error("Asaas não retornou o ID do checkout.");
 
   return {
     ...checkout,
-    link:
-      checkout.link ||
-      `https://asaas.com/checkoutSession/show?id=${encodeURIComponent(checkout.id)}`,
+    link: checkout.link || `https://asaas.com/checkoutSession/show?id=${encodeURIComponent(checkout.id)}`,
   };
 }
 
@@ -178,9 +157,7 @@ export function readAsaasData(value?: string | null): AsaasStoredData {
   try {
     const parsed = JSON.parse(value);
     return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
+  } catch { return {}; }
 }
 
 export function writeAsaasData(value: AsaasStoredData) {

@@ -1,0 +1,41 @@
+ONZEUP v1.4.5.2 - ASAAS SUBSCRIPTION SYNC
+
+CORRECAO
+A v1.4.5.1 tentou localizar a cobranca por checkoutSession e recebeu count: 0.
+
+A v1.4.5.2 faz:
+1. Payment.id do ONZEUP (externalReference)
+2. GET /subscriptions?externalReference={Payment.id}
+3. recupera subscription.id
+4. GET /subscriptions/{subscription.id}/payments
+5. procura CONFIRMED / RECEIVED / RECEIVED_IN_CASH
+6. ativa Player PREMIUM / ACTIVE
+
+Nao cria nova cobranca.
+Nao altera Prisma.
+Nao substitui o webhook: ele continua sendo o fluxo principal.
+
+APLICAR
+Extraia na raiz:
+C:\Users\User\Documents\onzeup
+
+Rode:
+APLICAR_V1452.cmd
+npx prisma validate
+npm run build
+
+Se passar:
+git add .
+git commit -m "ONZEUP v1.4.5.2 - recover Asaas recurring payment by subscription"
+git push origin main
+
+TESTE
+Apos Vercel Ready, reabra a pagina de retorno do pagamento ja realizado.
+Nao pague novamente.
+
+LOGS ESPERADOS:
+ASAAS_SYNC_SUBSCRIPTIONS
+ASAAS_SYNC_SUBSCRIPTION_PAYMENTS
+ASAAS_SYNC_PLAYER_PREMIUM_ACTIVATED
+
+Se continuar FREE, envie os dois primeiros logs.

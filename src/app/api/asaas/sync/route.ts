@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import {
-  listAsaasPaymentsByCheckout,
+  listAsaasSubscriptionsByExternalReference,
+  listAsaasSubscriptionPayments,
   readAsaasData,
   writeAsaasData,
 } from "@/lib/asaas";
@@ -10,90 +11,92 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const PAID = new Set(["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"]);
+
 function addMonth(base?: Date | null) {
-  const start =
-    base && base.getTime() > Date.now() ? new Date(base) : new Date();
+  const start = base && base.getTime() > Date.now() ? new Date(base) : new Date();
   start.setMonth(start.getMonth() + 1);
   return start;
 }
 
-const PAID_STATUSES = new Set([
-  "CONFIRMED",
-  "RECEIVED",
-  "RECEIVED_IN_CASH",
-]);
-
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
-
     if (!user || user.role !== "GUARDIAN") {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
-    const body = (await request.json().catch(() => null)) as
-      | { paymentId?: string }
-      | null;
-
+    const body = await request.json().catch(() => null) as { paymentId?: string } | null;
     const paymentId = String(body?.paymentId || "").trim();
-
     if (!paymentId) {
       return NextResponse.json({ error: "paymentId ausente." }, { status: 400 });
     }
 
-    const payment = await prisma.payment.findFirst({
-      where: {
-        id: paymentId,
-        userId: user.id,
-        method: "ASAAS",
-      },
+    const local = await prisma.payment.findFirst({
+      where: { id: paymentId, userId: user.id, method: "ASAAS" },
       include: { player: true },
     });
 
-    if (!payment) {
-      return NextResponse.json(
-        { error: "Pagamento não encontrado." },
-        { status: 404 },
-      );
+    if (!local) {
+      return NextResponse.json({ error: "Pagamento não encontrado." }, { status: 404 });
     }
 
-    const provider = readAsaasData(payment.pixPayload);
+    const saved = readAsaasData(local.pixPayload);
 
-    if (!provider.checkoutId) {
-      return NextResponse.json(
-        { error: "Checkout Asaas não encontrado." },
-        { status: 409 },
-      );
-    }
+    // O checkout foi criado com externalReference = payment.id.
+    // No checkout recorrente, a assinatura criada pelo Asaas pode ser localizada
+    // posteriormente por essa mesma referência externa.
+    const subscriptionsResult =
+      await listAsaasSubscriptionsByExternalReference(local.id);
+    const subscriptions = subscriptionsResult.data || [];
 
-    const result = await listAsaasPaymentsByCheckout(provider.checkoutId);
-    const payments = result.data || [];
-
-    console.info("ASAAS_SYNC_PAYMENTS", {
-      localPaymentId: payment.id,
-      checkoutId: provider.checkoutId,
-      count: payments.length,
-      statuses: payments.map((item) => item.status),
+    console.info("ASAAS_SYNC_SUBSCRIPTIONS", {
+      localPaymentId: local.id,
+      count: subscriptions.length,
+      subscriptions: subscriptions.map((s) => ({
+        id: s.id,
+        status: s.status,
+        externalReference: s.externalReference,
+      })),
     });
 
-    const paidPayment = payments.find((item) =>
-      PAID_STATUSES.has(String(item.status || "").toUpperCase()),
+    const subscription =
+      subscriptions.find((s) => s.externalReference === local.id) ||
+      subscriptions[0];
+
+    if (!subscription?.id) {
+      return NextResponse.json({
+        ok: true,
+        paid: false,
+        reason: "subscription-not-found",
+      });
+    }
+
+    const paymentsResult = await listAsaasSubscriptionPayments(subscription.id);
+    const payments = paymentsResult.data || [];
+
+    console.info("ASAAS_SYNC_SUBSCRIPTION_PAYMENTS", {
+      localPaymentId: local.id,
+      subscriptionId: subscription.id,
+      count: payments.length,
+      statuses: payments.map((p) => p.status),
+    });
+
+    const paidPayment = payments.find((p) =>
+      PAID.has(String(p.status || "").toUpperCase()),
     );
 
     if (!paidPayment) {
       const latest = payments[0];
-
       await prisma.payment.update({
-        where: { id: payment.id },
+        where: { id: local.id },
         data: {
           pixPayload: writeAsaasData({
-            ...provider,
+            ...saved,
+            subscriptionId: subscription.id,
             lastEvent: "MANUAL_SYNC_PENDING",
-            lastPaymentId: latest?.id || provider.lastPaymentId,
-            lastPaymentStatus:
-              latest?.status || provider.lastPaymentStatus,
-            subscriptionId:
-              latest?.subscription || provider.subscriptionId,
+            lastPaymentId: latest?.id || saved.lastPaymentId,
+            lastPaymentStatus: latest?.status || saved.lastPaymentStatus,
           }),
         },
       });
@@ -101,65 +104,61 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ok: true,
         paid: false,
-        statuses: payments.map((item) => item.status),
+        reason: "no-paid-subscription-payment",
+        subscriptionId: subscription.id,
+        statuses: payments.map((p) => p.status),
       });
     }
 
-    const alreadyPaid = payment.status === "PAID";
+    const alreadyPaid = local.status === "PAID";
 
     await prisma.$transaction([
       prisma.payment.update({
-        where: { id: payment.id },
+        where: { id: local.id },
         data: {
           status: "PAID",
-          confirmedAt: payment.confirmedAt || new Date(),
+          confirmedAt: local.confirmedAt || new Date(),
           pixPayload: writeAsaasData({
-            ...provider,
+            ...saved,
             checkoutStatus: "PAID",
-            subscriptionId:
-              paidPayment.subscription || provider.subscriptionId,
-            lastEvent: "MANUAL_SYNC_PAID",
+            subscriptionId: subscription.id,
+            lastEvent: "MANUAL_SUBSCRIPTION_SYNC_PAID",
             lastPaymentId: paidPayment.id,
             lastPaymentStatus: paidPayment.status || "CONFIRMED",
           }),
         },
       }),
-      ...(payment.playerId
-        ? [
-            prisma.playerProfile.update({
-              where: { id: payment.playerId },
-              data: {
-                plan: "PREMIUM",
-                planStatus: "ACTIVE",
-                premiumUntil: alreadyPaid
-                  ? payment.player?.premiumUntil
-                  : addMonth(payment.player?.premiumUntil),
-              },
-            }),
-          ]
-        : []),
+      ...(local.playerId ? [
+        prisma.playerProfile.update({
+          where: { id: local.playerId },
+          data: {
+            plan: "PREMIUM",
+            planStatus: "ACTIVE",
+            premiumUntil: alreadyPaid
+              ? local.player?.premiumUntil
+              : addMonth(local.player?.premiumUntil),
+          },
+        }),
+      ] : []),
     ]);
 
     console.info("ASAAS_SYNC_PLAYER_PREMIUM_ACTIVATED", {
-      localPaymentId: payment.id,
+      localPaymentId: local.id,
+      subscriptionId: subscription.id,
       asaasPaymentId: paidPayment.id,
-      playerId: payment.playerId,
+      playerId: local.playerId,
       status: paidPayment.status,
-      alreadyPaid,
     });
 
     return NextResponse.json({
       ok: true,
       paid: true,
-      status: paidPayment.status,
-      playerId: payment.playerId,
+      subscriptionId: subscription.id,
+      paymentStatus: paidPayment.status,
+      playerId: local.playerId,
     });
   } catch (error) {
-    console.error(
-      "ASAAS_SYNC_ERROR",
-      error instanceof Error ? error.message : error,
-    );
-
+    console.error("ASAAS_SYNC_ERROR", error instanceof Error ? error.message : error);
     return NextResponse.json(
       { error: "Não foi possível sincronizar o pagamento com o Asaas." },
       { status: 502 },
