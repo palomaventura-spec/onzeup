@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import {
-  listAsaasSubscriptionsByExternalReference,
-  listAsaasSubscriptionPayments,
+  getAsaasCheckout,
   readAsaasData,
   writeAsaasData,
 } from "@/lib/asaas";
@@ -11,10 +10,10 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PAID = new Set(["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"]);
-
 function addMonth(base?: Date | null) {
-  const start = base && base.getTime() > Date.now() ? new Date(base) : new Date();
+  const start =
+    base && base.getTime() > Date.now() ? new Date(base) : new Date();
+
   start.setMonth(start.getMonth() + 1);
   return start;
 }
@@ -22,81 +21,70 @@ function addMonth(base?: Date | null) {
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
+
     if (!user || user.role !== "GUARDIAN") {
-      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Não autorizado." },
+        { status: 401 },
+      );
     }
 
-    const body = await request.json().catch(() => null) as { paymentId?: string } | null;
+    const body = (await request.json().catch(() => null)) as
+      | { paymentId?: string }
+      | null;
+
     const paymentId = String(body?.paymentId || "").trim();
+
     if (!paymentId) {
-      return NextResponse.json({ error: "paymentId ausente." }, { status: 400 });
+      return NextResponse.json(
+        { error: "paymentId ausente." },
+        { status: 400 },
+      );
     }
 
     const local = await prisma.payment.findFirst({
-      where: { id: paymentId, userId: user.id, method: "ASAAS" },
+      where: {
+        id: paymentId,
+        userId: user.id,
+        method: "ASAAS",
+      },
       include: { player: true },
     });
 
     if (!local) {
-      return NextResponse.json({ error: "Pagamento não encontrado." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Pagamento não encontrado." },
+        { status: 404 },
+      );
     }
 
     const saved = readAsaasData(local.pixPayload);
 
-    // O checkout foi criado com externalReference = payment.id.
-    // No checkout recorrente, a assinatura criada pelo Asaas pode ser localizada
-    // posteriormente por essa mesma referência externa.
-    const subscriptionsResult =
-      await listAsaasSubscriptionsByExternalReference(local.id);
-    const subscriptions = subscriptionsResult.data || [];
-
-    console.info("ASAAS_SYNC_SUBSCRIPTIONS", {
-      localPaymentId: local.id,
-      count: subscriptions.length,
-      subscriptions: subscriptions.map((s) => ({
-        id: s.id,
-        status: s.status,
-        externalReference: s.externalReference,
-      })),
-    });
-
-    const subscription =
-      subscriptions.find((s) => s.externalReference === local.id) ||
-      subscriptions[0];
-
-    if (!subscription?.id) {
-      return NextResponse.json({
-        ok: true,
-        paid: false,
-        reason: "subscription-not-found",
-      });
+    if (!saved.checkoutId) {
+      return NextResponse.json(
+        { error: "Checkout Asaas não encontrado no pagamento." },
+        { status: 409 },
+      );
     }
 
-    const paymentsResult = await listAsaasSubscriptionPayments(subscription.id);
-    const payments = paymentsResult.data || [];
+    const checkout = await getAsaasCheckout(saved.checkoutId);
+    const status = String(checkout.status || "").toUpperCase();
 
-    console.info("ASAAS_SYNC_SUBSCRIPTION_PAYMENTS", {
+    console.info("ASAAS_SYNC_CHECKOUT_STATUS", {
       localPaymentId: local.id,
-      subscriptionId: subscription.id,
-      count: payments.length,
-      statuses: payments.map((p) => p.status),
+      checkoutId: saved.checkoutId,
+      checkoutStatus: status,
+      externalReference: checkout.externalReference || null,
     });
 
-    const paidPayment = payments.find((p) =>
-      PAID.has(String(p.status || "").toUpperCase()),
-    );
-
-    if (!paidPayment) {
-      const latest = payments[0];
+    if (status !== "PAID") {
       await prisma.payment.update({
         where: { id: local.id },
         data: {
           pixPayload: writeAsaasData({
             ...saved,
-            subscriptionId: subscription.id,
-            lastEvent: "MANUAL_SYNC_PENDING",
-            lastPaymentId: latest?.id || saved.lastPaymentId,
-            lastPaymentStatus: latest?.status || saved.lastPaymentStatus,
+            checkoutStatus: status || saved.checkoutStatus,
+            lastEvent: "MANUAL_CHECKOUT_SYNC_PENDING",
           }),
         },
       });
@@ -104,9 +92,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ok: true,
         paid: false,
-        reason: "no-paid-subscription-payment",
-        subscriptionId: subscription.id,
-        statuses: payments.map((p) => p.status),
+        checkoutStatus: status,
       });
     }
 
@@ -121,46 +107,52 @@ export async function POST(request: Request) {
           pixPayload: writeAsaasData({
             ...saved,
             checkoutStatus: "PAID",
-            subscriptionId: subscription.id,
-            lastEvent: "MANUAL_SUBSCRIPTION_SYNC_PAID",
-            lastPaymentId: paidPayment.id,
-            lastPaymentStatus: paidPayment.status || "CONFIRMED",
+            lastEvent: "MANUAL_CHECKOUT_SYNC_PAID",
           }),
         },
       }),
-      ...(local.playerId ? [
-        prisma.playerProfile.update({
-          where: { id: local.playerId },
-          data: {
-            plan: "PREMIUM",
-            planStatus: "ACTIVE",
-            premiumUntil: alreadyPaid
-              ? local.player?.premiumUntil
-              : addMonth(local.player?.premiumUntil),
-          },
-        }),
-      ] : []),
+
+      ...(local.playerId
+        ? [
+            prisma.playerProfile.update({
+              where: { id: local.playerId },
+              data: {
+                plan: "PREMIUM",
+                planStatus: "ACTIVE",
+                premiumUntil: alreadyPaid
+                  ? local.player?.premiumUntil
+                  : addMonth(local.player?.premiumUntil),
+              },
+            }),
+          ]
+        : []),
     ]);
 
     console.info("ASAAS_SYNC_PLAYER_PREMIUM_ACTIVATED", {
       localPaymentId: local.id,
-      subscriptionId: subscription.id,
-      asaasPaymentId: paidPayment.id,
+      checkoutId: saved.checkoutId,
       playerId: local.playerId,
-      status: paidPayment.status,
+      checkoutStatus: status,
+      alreadyPaid,
     });
 
     return NextResponse.json({
       ok: true,
       paid: true,
-      subscriptionId: subscription.id,
-      paymentStatus: paidPayment.status,
+      checkoutStatus: status,
       playerId: local.playerId,
     });
   } catch (error) {
-    console.error("ASAAS_SYNC_ERROR", error instanceof Error ? error.message : error);
+    console.error(
+      "ASAAS_SYNC_ERROR",
+      error instanceof Error ? error.message : error,
+    );
+
     return NextResponse.json(
-      { error: "Não foi possível sincronizar o pagamento com o Asaas." },
+      {
+        error:
+          "Não foi possível consultar o status do checkout no Asaas.",
+      },
       { status: 502 },
     );
   }

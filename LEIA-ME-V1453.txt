@@ -1,0 +1,51 @@
+ONZEUP v1.4.5.3 - ASAAS CHECKOUT STATUS SYNC
+
+OBJETIVO
+Fechar a ativacao do Premium usando o checkout Asaas ja salvo no Payment.
+
+FLUXO
+Payment ONZEUP
+-> pixPayload.checkoutId
+-> GET /v3/checkouts/{checkoutId}
+-> status PAID
+-> Payment = PAID
+-> Player.plan = PREMIUM
+-> Player.planStatus = ACTIVE
+-> premiumUntil = +1 mes
+
+IMPORTANTE
+- Nao cria nova cobranca.
+- Nao cria nova assinatura.
+- Nao altera Prisma.
+- Webhook continua sendo o mecanismo principal para eventos futuros.
+- Este sync e apenas fallback.
+
+APLICAR
+Extraia na raiz:
+C:\Users\User\Documents\onzeup
+
+Depois:
+APLICAR_V1453.cmd
+npx prisma validate
+npm run build
+
+Se passar:
+git add .
+git commit -m "ONZEUP v1.4.5.3 - sync Asaas checkout paid status"
+git push origin main
+
+TESTE
+1. Espere Vercel Ready.
+2. Abra novamente a URL de retorno do pagamento ja aprovado:
+   /checkout/asaas/retorno?status=success&paymentId=...
+3. Nao pague novamente.
+4. O retorno chama /api/asaas/sync.
+5. Confira se o Player passa de FREE para PREMIUM.
+
+LOGS ESPERADOS
+ASAAS_SYNC_CHECKOUT_STATUS
+ASAAS_SYNC_PLAYER_PREMIUM_ACTIVATED
+
+Se houver erro, envie:
+ASAAS_API_ERROR
+ASAAS_SYNC_ERROR
