@@ -12,10 +12,7 @@ export function mercadoPagoIsTestMode() {
   return token().startsWith("TEST-");
 }
 
-export async function mercadoPagoFetch<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+export async function mercadoPagoFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API}${path}`, {
     ...init,
     headers: {
@@ -28,18 +25,10 @@ export async function mercadoPagoFetch<T>(
 
   const text = await response.text();
   let body: unknown = null;
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = text;
-  }
+  try { body = text ? JSON.parse(text) : null; } catch { body = text; }
 
   if (!response.ok) {
-    console.error("MERCADOPAGO_API_ERROR", {
-      path,
-      status: response.status,
-      body,
-    });
+    console.error("MERCADOPAGO_API_ERROR", { path, status: response.status, body });
     throw new Error(`Mercado Pago respondeu ${response.status}.`);
   }
 
@@ -69,17 +58,16 @@ export async function createPlayerPremiumSubscription(input: {
   playerName: string;
   backUrl: string;
 }) {
-  const payerEmail =
-    mercadoPagoIsTestMode() && process.env.MERCADOPAGO_TEST_PAYER_EMAIL
-      ? process.env.MERCADOPAGO_TEST_PAYER_EMAIL
-      : input.payerEmail;
+  if (mercadoPagoIsTestMode()) {
+    throw new Error("Checkout hospedado desabilitado em TEST. Use o sandbox CardForm.");
+  }
 
   return mercadoPagoFetch<MercadoPagoSubscription>("/preapproval", {
     method: "POST",
     body: JSON.stringify({
       reason: `ONZEUP Player Premium - ${input.playerName}`,
       external_reference: input.externalReference,
-      payer_email: payerEmail,
+      payer_email: input.payerEmail,
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
@@ -92,16 +80,43 @@ export async function createPlayerPremiumSubscription(input: {
   });
 }
 
+export async function createPlayerPremiumSandboxSubscription(input: {
+  payerEmail: string;
+  externalReference: string;
+  playerName: string;
+  backUrl: string;
+  cardTokenId: string;
+}) {
+  if (!mercadoPagoIsTestMode()) {
+    throw new Error("Sandbox só pode ser usado com MERCADOPAGO_ACCESS_TOKEN iniciado por TEST-.");
+  }
+
+  return mercadoPagoFetch<MercadoPagoSubscription>("/preapproval", {
+    method: "POST",
+    headers: { "X-scope": "stage" },
+    body: JSON.stringify({
+      reason: `ONZEUP Player Premium - ${input.playerName}`,
+      external_reference: input.externalReference,
+      payer_email: input.payerEmail,
+      card_token_id: input.cardTokenId,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: "months",
+        transaction_amount: 29.9,
+        currency_id: "BRL",
+      },
+      back_url: input.backUrl,
+      status: "authorized",
+    }),
+  });
+}
+
 export async function getMercadoPagoSubscription(id: string) {
-  return mercadoPagoFetch<MercadoPagoSubscription>(
-    `/preapproval/${encodeURIComponent(id)}`,
-  );
+  return mercadoPagoFetch<MercadoPagoSubscription>(`/preapproval/${encodeURIComponent(id)}`);
 }
 
 export async function getMercadoPagoPayment(id: string) {
-  return mercadoPagoFetch<MercadoPagoPayment>(
-    `/v1/payments/${encodeURIComponent(id)}`,
-  );
+  return mercadoPagoFetch<MercadoPagoPayment>(`/v1/payments/${encodeURIComponent(id)}`);
 }
 
 function safeEqualHex(a: string, b: string) {
@@ -109,9 +124,7 @@ function safeEqualHex(a: string, b: string) {
     const aa = Buffer.from(a, "hex");
     const bb = Buffer.from(b, "hex");
     return aa.length === bb.length && crypto.timingSafeEqual(aa, bb);
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
 export function validateMercadoPagoWebhook(input: {
@@ -124,12 +137,10 @@ export function validateMercadoPagoWebhook(input: {
     console.error("MERCADOPAGO_WEBHOOK_SECRET_MISSING");
     return false;
   }
-
   if (!input.xSignature) return false;
 
   let ts = "";
   let v1 = "";
-
   for (const part of input.xSignature.split(",")) {
     const [rawKey, ...rawValue] = part.split("=");
     const key = rawKey?.trim();
@@ -137,7 +148,6 @@ export function validateMercadoPagoWebhook(input: {
     if (key === "ts") ts = value;
     if (key === "v1") v1 = value;
   }
-
   if (!ts || !v1) return false;
 
   const dataId = input.dataId ? input.dataId.toLowerCase() : "";
@@ -146,16 +156,13 @@ export function validateMercadoPagoWebhook(input: {
   if (input.xRequestId) manifest += `request-id:${input.xRequestId};`;
   manifest += `ts:${ts};`;
 
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(manifest)
-    .digest("hex");
-
+  const expected = crypto.createHmac("sha256", secret).update(manifest).digest("hex");
   return safeEqualHex(expected, v1);
 }
 
 export type StoredProviderData = {
   provider?: "MERCADOPAGO";
+  environment?: "TEST" | "PRODUCTION";
   subscriptionId?: string;
   checkoutUrl?: string;
   subscriptionStatus?: string;
@@ -169,9 +176,7 @@ export function readProviderData(value?: string | null): StoredProviderData {
   try {
     const parsed = JSON.parse(value);
     return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
+  } catch { return {}; }
 }
 
 export function writeProviderData(value: StoredProviderData) {

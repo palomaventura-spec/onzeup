@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import {
   createPlayerPremiumSubscription,
+  mercadoPagoIsTestMode,
   readProviderData,
   writeProviderData,
 } from "@/lib/mercadopago";
@@ -16,18 +17,18 @@ export async function createPlayerPremiumMercadoPago(formData: FormData) {
   if (user.role !== "GUARDIAN") redirect("/responsavel");
 
   const playerId = String(formData.get("playerId") || "");
-  const guardian = await prisma.guardianProfile.findUnique({
-    where: { userId: user.id },
-  });
+  const guardian = await prisma.guardianProfile.findUnique({ where: { userId: user.id } });
   if (!guardian) redirect("/responsavel");
 
-  const player = await prisma.playerProfile.findFirst({
-    where: { id: playerId, guardianId: guardian.id },
-  });
+  const player = await prisma.playerProfile.findFirst({ where: { id: playerId, guardianId: guardian.id } });
   if (!player) redirect("/responsavel");
 
   if (player.plan === "PREMIUM" && player.planStatus === "ACTIVE") {
     redirect(`/responsavel?player=${player.id}`);
+  }
+
+  if (mercadoPagoIsTestMode()) {
+    redirect(`/checkout/mercadopago/sandbox?playerId=${encodeURIComponent(player.id)}`);
   }
 
   const existing = await prisma.payment.findFirst({
@@ -47,7 +48,6 @@ export async function createPlayerPremiumMercadoPago(formData: FormData) {
   }
 
   const localReference = `MP${Date.now()}${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
-
   const payment = existing || await prisma.payment.create({
     data: {
       userId: user.id,
@@ -60,8 +60,7 @@ export async function createPlayerPremiumMercadoPago(formData: FormData) {
     },
   });
 
-  const backUrl =
-    `${APP_URL}/checkout/mercadopago/retorno?paymentId=${encodeURIComponent(payment.id)}`;
+  const backUrl = `${APP_URL}/checkout/mercadopago/retorno?paymentId=${encodeURIComponent(payment.id)}`;
 
   try {
     const subscription = await createPlayerPremiumSubscription({
@@ -71,15 +70,14 @@ export async function createPlayerPremiumMercadoPago(formData: FormData) {
       backUrl,
     });
 
-    if (!subscription.init_point) {
-      throw new Error("Mercado Pago não retornou o link do checkout.");
-    }
+    if (!subscription.init_point) throw new Error("Mercado Pago não retornou o link do checkout.");
 
     await prisma.payment.update({
       where: { id: payment.id },
       data: {
         pixPayload: writeProviderData({
           provider: "MERCADOPAGO",
+          environment: "PRODUCTION",
           subscriptionId: subscription.id,
           checkoutUrl: subscription.init_point,
           subscriptionStatus: subscription.status,
@@ -88,23 +86,14 @@ export async function createPlayerPremiumMercadoPago(formData: FormData) {
       },
     });
 
-    await prisma.playerProfile.update({
-      where: { id: player.id },
-      data: { planStatus: "AWAITING_PAYMENT" },
-    });
-
+    await prisma.playerProfile.update({ where: { id: player.id }, data: { planStatus: "AWAITING_PAYMENT" } });
     redirect(subscription.init_point);
   } catch (error) {
-    console.error(
-      "PLAYER_PREMIUM_MERCADOPAGO_CREATE_ERROR",
-      error instanceof Error ? error.message : error,
-    );
-
+    console.error("PLAYER_PREMIUM_MERCADOPAGO_CREATE_ERROR", error instanceof Error ? error.message : error);
     redirect(`/responsavel?player=${player.id}&paymentStatus=erro`);
   }
 }
 
-// Mantido temporariamente para não quebrar referências antigas.
 export async function createPlayerPremiumPix(formData: FormData) {
   return createPlayerPremiumMercadoPago(formData);
 }
