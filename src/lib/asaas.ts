@@ -59,6 +59,37 @@ export type AsaasCheckout = {
   externalReference?: string | null;
 };
 
+export type AsaasPayment = {
+  id: string;
+  status?: string | null;
+  externalReference?: string | null;
+  checkoutSession?: string | null;
+  subscription?: string | null;
+  value?: number | null;
+  netValue?: number | null;
+};
+
+export type AsaasPaymentList = {
+  object?: string;
+  hasMore?: boolean;
+  totalCount?: number;
+  limit?: number;
+  offset?: number;
+  data?: AsaasPayment[];
+};
+
+export async function listAsaasPaymentsByCheckout(checkoutId: string) {
+  const query = new URLSearchParams({
+    checkoutSession: checkoutId,
+    limit: "20",
+    offset: "0",
+  });
+
+  return asaasFetch<AsaasPaymentList>(`/payments?${query.toString()}`, {
+    method: "GET",
+  });
+}
+
 function formatAsaasDate(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
   return [
@@ -138,6 +169,8 @@ export type AsaasStoredData = {
   subscriptionId?: string;
   processedEventIds?: string[];
   lastEvent?: string;
+  lastPaymentId?: string;
+  lastPaymentStatus?: string;
 };
 
 export function readAsaasData(value?: string | null): AsaasStoredData {
