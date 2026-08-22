@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import ClubPlanStatusCard from "@/components/ClubPlanStatusCard";
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -53,6 +54,8 @@ export default async function Dashboard() {
           </div>
         ) : null}
       </div>
+
+      <ClubPlanStatusCard organizationId={orgId} />
 
       <section className="clean-kpi-grid">
         <Link href="/categorias"><small>CATEGORIAS</small><strong>{categories}</strong><span>{categories ? "Gerenciar categorias →" : "Criar primeira categoria →"}</span></Link>

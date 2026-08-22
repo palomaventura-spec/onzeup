@@ -1,21 +1,26 @@
-ONZEUP v1.4.6.1
+ONZEUP v1.4.7.2 - CLUB BILLING UI
 
-Corrige o erro 400 na criação do Checkout Asaas.
+Objetivo:
+Integrar a assinatura Club ao fluxo real da organização.
 
-Causa:
-A v1.4.6 alterou billingTypes de ["CREDIT_CARD"] para ["PIX","CREDIT_CARD"] no checkout RECURRENT.
-O fluxo recorrente que já havia sido homologado no Sandbox funcionava com CREDIT_CARD.
+Inclui:
+- card "Plano e assinatura" no dashboard;
+- durante o período grátis, botão "Ver planos e assinar";
+- plano ativo mostra nome, periodicidade e data do período atual;
+- pagamento pendente mostra CTA para regularização;
+- menu lateral recebe "Plano e assinatura";
+- Configurações recebe atalho para /planos;
+- remove o DemoBanner do painel Club.
 
-Correção:
-billingTypes: ["CREDIT_CARD"]
-chargeTypes: ["RECURRENT"]
+Não altera o schema Prisma.
+Não altera checkout nem webhook.
 
-O texto continua "Assinatura mensal".
-PIX poderá ser incluído depois por um fluxo próprio, sem quebrar o checkout recorrente já validado.
-
-Depois:
+Depois de aplicar:
 npx prisma validate
+npx prisma generate
 npm run build
+
+Se passar:
 git add -A
-git commit -m "ONZEUP v1.4.6.1 - fix Asaas recurring checkout"
+git commit -m "ONZEUP v1.4.7.2 - integrate Club billing UI"
 git push origin main

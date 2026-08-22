@@ -28,6 +28,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
           <Link href="/vinculos-player">Vínculos Player</Link>
           <Link href="/notificacoes">Notificações</Link>
           <Link href="/financeiro">Financeiro</Link>
+          <Link href="/planos">Plano e assinatura</Link>
           <Link href="/integracoes">Integrações</Link>
           <Link href="/ajuda">Ajuda</Link>
           <Link href="/configuracoes">Configurações</Link>
@@ -38,7 +39,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
         </form>
       </aside>
 
-      <main className="main">{isDemo ? <DemoBanner kind="club" /> : null}{children}</main>
+      <main className="main">{children}</main>
     </div>
   );
 }
