@@ -1,0 +1,15 @@
+ONZEUP v1.4.5.4
+
+Corrige o webhook Asaas para ativar Premium quando PAYMENT_CREATED chega com payment.status=CONFIRMED.
+
+Depois:
+npx prisma validate
+npm run build
+git add .
+git commit -m "ONZEUP v1.4.5.4 - fix confirmed Asaas webhook"
+git push origin main
+
+Após deploy, reenvie o evento PAYMENT_CREATED no Asaas se houver opção.
+Logs esperados:
+ASAAS_WEBHOOK_RECEIVED
+ASAAS_PLAYER_PREMIUM_ACTIVATED

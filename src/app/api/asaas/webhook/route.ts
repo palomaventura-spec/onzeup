@@ -15,10 +15,7 @@ function addMonth(base?: Date | null) {
 type AsaasWebhookBody = {
   id?: string;
   event?: string;
-  checkout?: {
-    id?: string;
-    status?: string;
-  };
+  checkout?: { id?: string; status?: string };
   payment?: {
     id?: string;
     status?: string;
@@ -106,6 +103,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, ignored: "invalid-body" });
     }
 
+    console.info("ASAAS_WEBHOOK_RECEIVED", {
+      eventId: body.id,
+      event: body.event,
+      paymentId: body.payment?.id || null,
+      paymentStatus: body.payment?.status || null,
+      checkoutId: body.checkout?.id || body.payment?.checkoutSession || null,
+      subscriptionId:
+        body.payment?.subscription || body.subscription?.id || null,
+    });
+
     const local = await findLocalPayment(body);
 
     if (!local) {
@@ -115,7 +122,6 @@ export async function POST(request: Request) {
         checkoutId: body.checkout?.id || body.payment?.checkoutSession,
         subscriptionId: body.payment?.subscription || body.subscription?.id,
       });
-
       return NextResponse.json({ ok: true, ignored: "not-found" });
     }
 
@@ -129,6 +135,8 @@ export async function POST(request: Request) {
     processed.add(body.id);
 
     const event = body.event;
+    const paymentStatus = String(body.payment?.status || "").toUpperCase();
+
     const checkoutId =
       body.checkout?.id ||
       body.payment?.checkoutSession ||
@@ -139,34 +147,31 @@ export async function POST(request: Request) {
       body.subscription?.id ||
       previous.subscriptionId;
 
-    const paidEvents = new Set([
-      "CHECKOUT_PAID",
-      "PAYMENT_CONFIRMED",
-      "PAYMENT_RECEIVED",
-    ]);
+    const isPaid =
+      ["CHECKOUT_PAID", "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"].includes(event) ||
+      ["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"].includes(paymentStatus);
 
-    const cancelledEvents = new Set([
-      "CHECKOUT_CANCELED",
-      "CHECKOUT_EXPIRED",
-      "PAYMENT_REFUNDED",
-      "PAYMENT_DELETED",
-    ]);
+    if (isPaid) {
+      const alreadyPaid = local.status === "PAID";
 
-    if (paidEvents.has(event)) {
       await prisma.$transaction([
         prisma.payment.update({
           where: { id: local.id },
           data: {
             status: "PAID",
-            confirmedAt: new Date(),
+            confirmedAt: local.confirmedAt || new Date(),
             pixPayload: writeAsaasData({
               ...previous,
               provider: "ASAAS",
               checkoutId,
               subscriptionId,
-              checkoutStatus: body.checkout?.status || previous.checkoutStatus,
+              checkoutStatus:
+                body.checkout?.status || previous.checkoutStatus || "PAID",
               processedEventIds: Array.from(processed).slice(-50),
               lastEvent: event,
+              lastPaymentId: body.payment?.id || previous.lastPaymentId,
+              lastPaymentStatus:
+                body.payment?.status || previous.lastPaymentStatus,
             }),
           },
         }),
@@ -177,7 +182,9 @@ export async function POST(request: Request) {
                 data: {
                   plan: "PREMIUM",
                   planStatus: "ACTIVE",
-                  premiumUntil: addMonth(local.player?.premiumUntil),
+                  premiumUntil: alreadyPaid
+                    ? local.player?.premiumUntil
+                    : addMonth(local.player?.premiumUntil),
                 },
               }),
             ]
@@ -188,31 +195,12 @@ export async function POST(request: Request) {
         paymentId: local.id,
         playerId: local.playerId,
         event,
+        paymentStatus,
+        checkoutId,
+        subscriptionId,
       });
 
-      return NextResponse.json({ ok: true });
-    }
-
-    if (cancelledEvents.has(event)) {
-      await prisma.payment.update({
-        where: { id: local.id },
-        data: {
-          ...(local.status !== "PAID"
-            ? { status: "CANCELLED" as const }
-            : {}),
-          pixPayload: writeAsaasData({
-            ...previous,
-            provider: "ASAAS",
-            checkoutId,
-            subscriptionId,
-            checkoutStatus: body.checkout?.status || previous.checkoutStatus,
-            processedEventIds: Array.from(processed).slice(-50),
-            lastEvent: event,
-          }),
-        },
-      });
-
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, activated: true });
     }
 
     await prisma.payment.update({
@@ -223,9 +211,11 @@ export async function POST(request: Request) {
           provider: "ASAAS",
           checkoutId,
           subscriptionId,
-          checkoutStatus: body.checkout?.status || previous.checkoutStatus,
           processedEventIds: Array.from(processed).slice(-50),
           lastEvent: event,
+          lastPaymentId: body.payment?.id || previous.lastPaymentId,
+          lastPaymentStatus:
+            body.payment?.status || previous.lastPaymentStatus,
         }),
       },
     });
@@ -236,7 +226,6 @@ export async function POST(request: Request) {
       "ASAAS_WEBHOOK_ERROR",
       error instanceof Error ? error.message : error,
     );
-
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
