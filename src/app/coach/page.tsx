@@ -76,7 +76,7 @@ export default function CoachLanding() {
         <div className="club-faq"><article><h3>O ONZEUP Coach é pago?</h3><p>Não. O perfil Coach é gratuito para profissionais do futebol.</p></article><article><h3>Preciso usar a senha do clube?</h3><p>Não. Cada Coach usa sua própria conta e recebe acessos específicos por vínculo.</p></article><article><h3>Posso trabalhar em mais de um clube?</h3><p>Sim. Um mesmo perfil Coach pode ter vários vínculos independentes.</p></article><article><h3>O clube me cadastrou antes de eu criar o Coach. E agora?</h3><p>Crie o Coach com o mesmo e-mail informado ao clube e use “Buscar vínculos com clubes” no dashboard.</p></article></div>
       </section>
 
-      <section className="product-directory-cta"><span className="page-eyebrow">TESTE AGORA</span><h2>Crie seu ONZEUP Coach.</h2><p>Complete seu site profissional e teste os vínculos com equipes.</p><Link className="btn" href="/cadastro-coach">Criar perfil grátis →</Link></section>
+      <section className="product-directory-cta"><span className="page-eyebrow">COMECE AGORA</span><h2>Crie seu ONZEUP Coach.</h2><p>Complete seu site profissional e teste os vínculos com equipes.</p><Link className="btn" href="/cadastro-coach">Criar perfil grátis →</Link></section>
     </main>
   );
 }

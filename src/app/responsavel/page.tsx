@@ -12,7 +12,7 @@ import {
   saveGuardianProfile,
   savePlayer,
 } from "./actions";
-import { createPlayerPremiumAsaas } from "@/app/checkout/actions";
+import { createPlayerPremiumAsaas, createPlayerPremiumPixAsaas } from "@/app/checkout/actions";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 export default async function GuardianPortal({
@@ -198,7 +198,7 @@ export default async function GuardianPortal({
                 <form action={createPlayerPremiumAsaas}>
                   <input type="hidden" name="playerId" value={selected.id} />
                   <strong>R$ 29,90/mês</strong>
-                  <button className="btn">Assinar Premium</button>
+                  <button className="btn">Assinar com cartao</button></form><form action={createPlayerPremiumPixAsaas}><input type="hidden" name="playerId" value={selected.id} /><button className="btn-secondary">Pagar mensalidade via Pix</button>
                 </form>
               </section>
             ) : null}

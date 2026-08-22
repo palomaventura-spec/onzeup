@@ -47,7 +47,7 @@ export default async function Dashboard() {
         </div>
         {subscription?.status === "TRIAL" && trialDays !== null ? (
           <div className="trial-counter">
-            <small>TESTE GRATUITO</small>
+            <small>PERÃODO GRÃTIS</small>
             <strong>{trialDays}</strong>
             <span>dias restantes</span>
           </div>

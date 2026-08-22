@@ -1,0 +1,22 @@
+ONZEUP v1.4.7 COMMERCIAL RELEASE - PARTE 2
+
+Inclui:
+- webhook Asaas ativando Player e Club;
+- Club mensal/anual associado à Organization;
+- Player com cartão recorrente + Pix mensal;
+- landing principal com preços;
+- landing Club com Essencial/Pro/Elite;
+- limpeza Coach;
+- remove rota pública /piloto;
+- dashboard usa "Período grátis".
+
+IMPORTANTE:
+Pix mensal NÃO é Pix Automático. Ele paga o período corrente.
+Cartão mensal permanece recorrente.
+
+DEPOIS DE APLICAR:
+npx prisma validate
+npx prisma generate
+npm run build
+
+Não faça git push antes de confirmar o build.

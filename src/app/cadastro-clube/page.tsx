@@ -33,7 +33,7 @@ export default async function ClubRegisterPage({
       </section>
 
       <section className="auth-form-card">
-        <span className="page-eyebrow">TESTE GRATUITO</span>
+        <span className="page-eyebrow">PERÃODO GRÃTIS</span>
         <h2>Criar conta ONZEUP Club</h2>
 
         {query.status ? (

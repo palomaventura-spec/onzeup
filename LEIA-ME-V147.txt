@@ -1,0 +1,23 @@
+ONZEUP v1.4.7 COMMERCIAL RELEASE — PARTE 1
+
+Inclui:
+- estrutura comercial Club Essencial/Pro/Elite;
+- mensal e anual;
+- checkout Club: cartão mensal recorrente, Pix mensal por período, anual cartão/Pix;
+- nova página /planos;
+- limpeza global de linguagem "teste" nas interfaces;
+- schema preparado para Payment -> Organization e produtos Club.
+
+IMPORTANTE:
+Pix mensal desta versão NÃO é Pix Automático. O cliente paga a cobrança de cada período.
+Não alteramos o cartão Player já homologado.
+
+Após aplicar:
+npx prisma format
+npx prisma validate
+npx prisma db push
+npx prisma generate
+npm run build
+
+NÃO faça git push ainda. Primeiro valide o build.
+A Parte 2 da v1.4.7 conecta o webhook Club e atualiza as landings após a validação desta base.
