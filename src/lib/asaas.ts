@@ -15,7 +15,10 @@ function baseUrl() {
   return asaasIsSandbox() ? SANDBOX_API : PRODUCTION_API;
 }
 
-export async function asaasFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function asaasFetch<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
   const response = await fetch(`${baseUrl()}${path}`, {
     ...init,
     headers: {
@@ -43,6 +46,7 @@ export async function asaasFetch<T>(path: string, init: RequestInit = {}): Promi
       body,
       sandbox: asaasIsSandbox(),
     });
+
     throw new Error(`Asaas respondeu ${response.status}.`);
   }
 
@@ -90,7 +94,9 @@ export async function createAsaasPlayerPremiumCheckout(input: {
   const checkout = await asaasFetch<AsaasCheckout>("/checkouts", {
     method: "POST",
     body: JSON.stringify({
-      billingTypes: ["PIX", "CREDIT_CARD"],
+      // O Checkout recorrente validado no Sandbox usa cartão de crédito.
+      // PIX será tratado separadamente numa próxima etapa, sem quebrar o fluxo já homologado.
+      billingTypes: ["CREDIT_CARD"],
       chargeTypes: ["RECURRENT"],
       minutesToExpire: 120,
       externalReference: input.externalReference,
@@ -123,7 +129,9 @@ export async function createAsaasPlayerPremiumCheckout(input: {
     ...checkout,
     link:
       checkout.link ||
-      `https://asaas.com/checkoutSession/show?id=${encodeURIComponent(checkout.id)}`,
+      `https://asaas.com/checkoutSession/show?id=${encodeURIComponent(
+        checkout.id,
+      )}`,
   };
 }
 
@@ -142,6 +150,7 @@ export type AsaasStoredData = {
 
 export function readAsaasData(value?: string | null): AsaasStoredData {
   if (!value) return {};
+
   try {
     const parsed = JSON.parse(value);
     return parsed && typeof parsed === "object" ? parsed : {};
