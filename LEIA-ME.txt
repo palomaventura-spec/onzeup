@@ -1,19 +1,24 @@
-ONZEUP v1.4.8.1
+ONZEUP v1.4.8.2
 
-Correção visual/layout:
-- elimina overflow horizontal na tela Jogos;
-- evita faixa/risco horizontal causado pelo layout;
-- corrige espaçamento do menu lateral;
-- posiciona o sino sem criar uma linha no topo;
-- protege tabelas contra estouro de largura.
+Corrige:
+- botão Sair sobreposto no topo do menu;
+- hover de Treinos/Jogos/etc. atravessando a tela inteira;
+- isolamento visual da sidebar;
+- sino sem criar faixa no topo;
+- mantém proteção contra overflow nas telas de jogos.
 
-Não altera banco, pagamentos, webhook ou regras de negócio.
+Não altera:
+- Prisma
+- pagamento
+- webhook
+- planos
+- regras de negócio
 
 Aplicar:
-APLICAR_V1481.cmd
+APLICAR_V1482.cmd
 npm run build
 
 Se passar:
 git add -A
-git commit -m "ONZEUP v1.4.8.1 - fix Club layout overflow"
+git commit -m "ONZEUP v1.4.8.2 - fix sidebar hover and logout"
 git push origin main

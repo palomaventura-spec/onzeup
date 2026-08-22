@@ -2,13 +2,19 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import NotificationBell from "@/components/NotificationBell";
 
-export default async function AppShell({ children }: { children: React.ReactNode }) {
+export default async function AppShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const user = await getCurrentUser();
 
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">ONZE<span>UP</span></div>
+        <div className="brand">
+          ONZE<span>UP</span>
+        </div>
         <div className="muted">O futuro do futebol começa na base.</div>
 
         <nav className="nav club-nav">
@@ -36,8 +42,14 @@ export default async function AppShell({ children }: { children: React.ReactNode
           <Link href="/ajuda">Ajuda</Link>
         </nav>
 
-        <form action="/api/auth/logout" method="post" style={{ marginTop: 28 }}>
-          <button className="btn-secondary" type="submit">Sair</button>
+        <form
+          className="club-logout"
+          action="/api/auth/logout"
+          method="post"
+        >
+          <button className="btn-secondary" type="submit">
+            Sair
+          </button>
         </form>
       </aside>
 
