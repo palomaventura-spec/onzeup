@@ -1,0 +1,102 @@
+/* ONZEUP v1.4.8.1 — layout fixes */
+
+/* evita overflow horizontal nas telas com tabelas, especialmente Jogos */
+.shell,
+.main,
+.two-col,
+.stack,
+.card,
+.table-wrap {
+  min-width: 0;
+}
+
+.main {
+  overflow-x: hidden;
+}
+
+.two-col {
+  width: 100%;
+  max-width: 100%;
+}
+
+.stack {
+  width: 100%;
+  max-width: 100%;
+}
+
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.table {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* melhora o topo do menu lateral */
+.sidebar .brand {
+  margin-bottom: 4px;
+}
+
+.sidebar > .muted {
+  margin-bottom: 22px;
+  line-height: 1.25;
+}
+
+.club-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.club-nav .nav-section {
+  margin: 18px 0 5px;
+  padding: 0 12px;
+  line-height: 1;
+}
+
+.club-nav .nav-section:first-child {
+  margin-top: 0;
+}
+
+.club-nav a {
+  display: block;
+  width: 100%;
+}
+
+/* sino sem criar faixa visual no topo */
+.club-top-actions {
+  position: absolute;
+  top: 18px;
+  right: 28px;
+  min-height: 0;
+  margin: 0;
+  z-index: 5;
+}
+
+.main {
+  position: relative;
+}
+
+/* espaço do conteúdo sem criar uma linha/faixa horizontal */
+.main > .page-head:first-of-type,
+.main > :first-child:not(.club-top-actions) {
+  margin-top: 0;
+}
+
+/* páginas de jogos */
+@media (min-width: 1100px) {
+  .two-col {
+    grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.65fr);
+    align-items: start;
+  }
+}
+
+@media (max-width: 1099px) {
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+}

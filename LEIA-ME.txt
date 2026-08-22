@@ -1,28 +1,19 @@
-ONZEUP v1.4.7.3 - CLUB REDIRECT FIX
+ONZEUP v1.4.8.1
 
-Problema:
-O Asaas criava os checkouts com status 200, mas o navegador nao era enviado ao checkout.
+Correção visual/layout:
+- elimina overflow horizontal na tela Jogos;
+- evita faixa/risco horizontal causado pelo layout;
+- corrige espaçamento do menu lateral;
+- posiciona o sino sem criar uma linha no topo;
+- protege tabelas contra estouro de largura.
 
-Causa:
-redirect(checkout.link) estava dentro de try/catch.
-No Next.js, redirect() usa internamente a excecao NEXT_REDIRECT.
-O catch capturava essa excecao e impedia o redirecionamento correto.
+Não altera banco, pagamentos, webhook ou regras de negócio.
 
-Correcao:
-A criacao e gravacao do checkout permanecem dentro do try/catch.
-O redirect(checkout.link) acontece somente depois do try/catch.
-
-Nao altera:
-- Prisma
-- webhook
-- precos
-- planos
-- Asaas API
-
-Depois:
+Aplicar:
+APLICAR_V1481.cmd
 npm run build
 
 Se passar:
 git add -A
-git commit -m "ONZEUP v1.4.7.3 - fix Club checkout redirect"
+git commit -m "ONZEUP v1.4.8.1 - fix Club layout overflow"
 git push origin main
