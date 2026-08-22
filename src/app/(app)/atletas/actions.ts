@@ -44,6 +44,7 @@ export async function createAthlete(formData: FormData) {
   const photoUrl = nullable(formData.get("photoUrl"));
 
   const guardianName = nullable(formData.get("guardianName"));
+  const guardianRelation = nullable(formData.get("guardianRelation"));
   const guardianPhone = nullable(formData.get("guardianPhone"));
   const guardianEmail = nullable(formData.get("guardianEmail"));
 
@@ -64,6 +65,7 @@ export async function createAthlete(formData: FormData) {
       birthYear,
       photoUrl,
       guardianName,
+      guardianRelation,
       guardianPhone,
       guardianEmail,
       categoryId,
@@ -87,6 +89,7 @@ export async function updateAthlete(formData: FormData) {
   const birthYear = nullableNumber(formData.get("birthYear"));
   const photoUrl = nullable(formData.get("photoUrl"));
   const guardianName = nullable(formData.get("guardianName"));
+  const guardianRelation = nullable(formData.get("guardianRelation"));
   const guardianPhone = nullable(formData.get("guardianPhone"));
   const guardianEmail = nullable(formData.get("guardianEmail"));
   const active = clean(formData.get("active")) === "true";
@@ -109,6 +112,7 @@ export async function updateAthlete(formData: FormData) {
       birthYear,
       photoUrl,
       guardianName,
+      guardianRelation,
       guardianPhone,
       guardianEmail,
       categoryId,

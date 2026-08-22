@@ -33,7 +33,7 @@ export default async function AthletesPage() {
         <div>
           <span className="page-eyebrow">ELENCO ADMINISTRATIVO</span>
           <h1>Atletas</h1>
-          <p className="muted">O clube controla este cadastro. O ONZEUP Player pertence à família.</p>
+          <p className="muted">Cadastre o atleta e o contato da família no mesmo fluxo. O ONZEUP Player continua pertencendo à família.</p>
         </div>
         <div className="actions">
           <span className="badge">{activeCount} ativo(s)</span>
@@ -68,8 +68,9 @@ export default async function AthletesPage() {
             </label>
             <ImageUpload name="photoUrl" label="Foto (JPEG/PNG/WEBP)" />
 
-            <div className="form-divider"><span>Responsável • privado</span></div>
-            <label>Nome do responsável<input name="guardianName" /></label>
+            <div className="form-divider"><span>Família e responsável • dados privados</span></div>
+            <label>Nome do responsável principal<input name="guardianName" placeholder="Nome completo" /></label>
+            <label>Parentesco / relação<input name="guardianRelation" placeholder="Ex.: Mãe, Pai, Avó, Tutor" /></label>
             <label>WhatsApp / telefone<input name="guardianPhone" /></label>
             <label>E-mail<input name="guardianEmail" type="email" /></label>
             <button type="submit">Cadastrar atleta</button>

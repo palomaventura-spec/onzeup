@@ -102,6 +102,11 @@ export default async function EditAthletePage({ params }: { params: Promise<{ id
           </label>
 
           <label>
+            Parentesco / relação
+            <input name="guardianRelation" defaultValue={athlete.guardianRelation ?? ""} placeholder="Ex.: Mãe, Pai, Avó, Tutor" />
+          </label>
+
+          <label>
             WhatsApp / telefone
             <input name="guardianPhone" defaultValue={athlete.guardianPhone ?? ""} />
           </label>

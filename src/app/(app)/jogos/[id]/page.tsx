@@ -19,6 +19,7 @@ export default async function EditMatchPage({ params }: { params: Promise<{ id: 
   const [match, categories] = await Promise.all([
     prisma.match.findFirst({
       where: { id, organizationId: user.organizationId },
+      include: { category: true, callUps: true },
     }),
     prisma.category.findMany({
       where: { organizationId: user.organizationId },
@@ -37,6 +38,15 @@ export default async function EditMatchPage({ params }: { params: Promise<{ id: 
         </div>
         <Link className="btn btn-secondary" href="/jogos">Voltar</Link>
       </div>
+
+      <section className="card match-callup-hub">
+        <div>
+          <span className="page-eyebrow">CONVOCAÇÃO</span>
+          <h2>Atletas convocados: {match.callUps.length}</h2>
+          <p className="muted">Selecione atletas, acompanhe confirmações e envie a convocação deste jogo.</p>
+        </div>
+        <Link className="btn" href={`/convocacoes/${match.id}`}>Gerenciar convocação</Link>
+      </section>
 
       <section className="card">
         <form className="form" action={updateMatch}>

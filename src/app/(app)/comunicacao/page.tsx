@@ -47,9 +47,9 @@ export default async function CommunicationPage() {
     <>
       <div className="page-head">
         <div>
-          <span className="page-eyebrow">MENSAGENS PRONTAS</span>
+          <span className="page-eyebrow">CENTRAL DE COMUNICAÇÃO</span>
           <h1>Comunicação</h1>
-          <p className="muted">Use o WhatsApp básico sem conectar API ou WhatsApp Business.</p>
+          <p className="muted">Centralize convocações, lembretes e comunicados da organização.</p>
         </div>
       </div>
 
@@ -57,7 +57,7 @@ export default async function CommunicationPage() {
         <section className="card">
           <div className="section-title-row">
             <div><span className="page-eyebrow">JOGOS</span><h2>Convocações</h2></div>
-            <Link href="/convocacoes">Gerenciar</Link>
+            <Link href="/jogos">Gerenciar jogos</Link>
           </div>
 
           <div className="comm-list">
@@ -69,7 +69,7 @@ export default async function CommunicationPage() {
                     <strong>× {match.opponent}</strong>
                     <span>{fmt(match.startsAt)} • {match.location || "Local a definir"}</span>
                   </div>
-                  <Link className="btn-secondary btn-small" href={`/convocacoes/${match.id}`}>Abrir</Link>
+                  <Link className="btn-secondary btn-small" href={`/jogos/${match.id}`}>Abrir jogo</Link>
                 </div>
 
                 <div className="comm-recipient-list">

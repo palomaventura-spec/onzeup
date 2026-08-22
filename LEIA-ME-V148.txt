@@ -1,0 +1,28 @@
+ONZEUP v1.4.8 — Club UX Release
+
+Inclui:
+- Planos comerciais redesenhados: cards escuros, mensal/anual e Cartão/Pix.
+- Menu Club reorganizado por Gestão, Futebol, Relacionamento e Administração.
+- Responsáveis removidos do menu e integrados ao cadastro do atleta.
+- Campo parentesco/relação do responsável principal.
+- Convocações removidas do menu e integradas ao fluxo de Jogos.
+- Tela de jogo com acesso direto à convocação.
+- Comunicação aponta para o jogo/convocação correspondente.
+- Notificações saem do menu e viram sino no topo com contador.
+- Rotas antigas continuam existentes para preservar links.
+- Checkout, webhook e preços não são alterados.
+
+Aplicação:
+APLICAR_V148.cmd
+
+Depois:
+npx prisma format
+npx prisma validate
+npx prisma db push
+npx prisma generate
+npm run build
+
+Somente depois de build OK:
+git add -A
+git commit -m "ONZEUP v1.4.8 - Club UX Release"
+git push origin main

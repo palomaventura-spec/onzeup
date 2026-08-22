@@ -84,7 +84,7 @@ ${orgName}`;
             {orgName} × {match.opponent} • {fmt(match.startsAt)}
           </p>
         </div>
-        <Link className="btn btn-secondary" href="/convocacoes">Voltar</Link>
+        <Link className="btn btn-secondary" href={`/jogos/${match.id}`}>Voltar ao jogo</Link>
       </div>
 
       <div className="two-col">

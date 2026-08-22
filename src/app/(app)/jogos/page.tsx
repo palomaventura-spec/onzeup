@@ -25,7 +25,7 @@ export default async function MatchesPage() {
   const [matches, categories] = await Promise.all([
     prisma.match.findMany({
       where: { organizationId: user.organizationId },
-      include: { category: true },
+      include: { category: true, callUps: true },
       orderBy: { startsAt: "asc" },
     }),
     prisma.category.findMany({
@@ -44,7 +44,7 @@ export default async function MatchesPage() {
         <div>
           <h1>Jogos e resultados</h1>
           <p className="muted">
-            Cadastre partidas e publique os resultados da organização.
+            Cadastre partidas, faça convocações e publique resultados no mesmo fluxo.
           </p>
         </div>
         <span className="badge">{matches.length} jogo(s)</span>

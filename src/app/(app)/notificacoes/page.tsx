@@ -57,11 +57,11 @@ export default async function NotificationsPage() {
         <section className="card">
           <div className="section-title-row">
             <div><span className="page-eyebrow">CONVOCAÇÕES</span><h2>Aguardando resposta</h2></div>
-            <Link href="/convocacoes">Abrir módulo</Link>
+            <Link href="/jogos">Abrir jogos</Link>
           </div>
           <div className="notification-list">
             {pendingCallUps.slice(0, 10).map((callUp) => (
-              <Link href={`/convocacoes/${callUp.matchId}`} key={callUp.id}>
+              <Link href={`/jogos/${callUp.matchId}`} key={callUp.id}>
                 <span className="notification-dot warning" />
                 <div>
                   <strong>{callUp.athlete.nickname || callUp.athlete.name}</strong>
@@ -101,7 +101,7 @@ export default async function NotificationsPage() {
           </div>
           <div className="notification-list">
             {upcomingMatches.map((match) => (
-              <Link href={`/convocacoes/${match.id}`} key={match.id}>
+              <Link href={`/jogos/${match.id}`} key={match.id}>
                 <span className="notification-dot info" />
                 <div>
                   <strong>{match.category.name} × {match.opponent}</strong>

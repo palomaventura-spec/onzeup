@@ -234,9 +234,10 @@ model Athlete {
   photoUrl     String?
   active       Boolean @default(true)
 
-  guardianName  String?
-  guardianPhone String?
-  guardianEmail String?
+  guardianName     String?
+  guardianRelation String?
+  guardianPhone    String?
+  guardianEmail    String?
 
   organizationId String
   organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)

@@ -1,8 +1,32 @@
-import {requireOrganizationUser} from "@/lib/auth";
-import {createClubAsaasCheckout} from "@/app/checkout/club/actions";
-const plans=[
- ["ESSENTIAL","Essencial","R$ 49,90","R$ 499","Até 100 atletas"],
- ["PRO","Pro","R$ 99,90","R$ 999","Até 300 atletas"],
- ["ELITE","Elite","R$ 149,90","R$ 1.499","Atletas ilimitados"],
+import { requireOrganizationUser } from "@/lib/auth";
+import ClubPlanCard from "@/components/ClubPlanCard";
+
+const plans = [
+  { plan: "ESSENTIAL" as const, name: "Essencial", monthly: "R$ 49,90", annual: "R$ 499", annualSaving: "Economize R$ 99,80 no ano.", limit: "Até 100 atletas", description: "Para escolinhas, projetos e equipes em crescimento." },
+  { plan: "PRO" as const, name: "Pro", monthly: "R$ 99,90", annual: "R$ 999", annualSaving: "Economize R$ 199,80 no ano.", limit: "Até 300 atletas", description: "Mais capacidade para operações com várias categorias.", featured: true },
+  { plan: "ELITE" as const, name: "Elite", monthly: "R$ 149,90", annual: "R$ 1.499", annualSaving: "Economize R$ 299,80 no ano.", limit: "Atletas ilimitados", description: "Para clubes e estruturas de base com operação ampliada." },
 ];
-export default async function Plans(){await requireOrganizationUser();return <><div className="page-head"><div><span className="page-eyebrow">ONZEUP CLUB</span><h1>Planos e assinatura</h1><p className="muted">Escolha mensal ou anual e a forma de pagamento.</p></div></div><section className="club-plan-preview">{plans.map(([key,name,monthly,annual,limit],i)=><article key={key} className={i===1?"featured":""}><small>{i===1?"MAIS ESCOLHIDO":"ONZEUP CLUB"}</small><h2>{name}</h2><b>{limit}</b><h3>{monthly}<span>/mês</span></h3><form action={createClubAsaasCheckout}><input type="hidden" name="plan" value={key}/><input type="hidden" name="cycle" value="MONTHLY"/><button name="method" value="CARD">Mensal no cartão</button><button name="method" value="PIX">Mensal via Pix</button></form><h3>{annual}<span>/ano</span></h3><small>Economize aproximadamente 2 mensalidades</small><form action={createClubAsaasCheckout}><input type="hidden" name="plan" value={key}/><input type="hidden" name="cycle" value="ANNUAL"/><button name="method" value="CARD">Anual no cartão</button><button name="method" value="PIX">Anual via Pix</button></form></article>)}</section><section className="card"><h2>Pagamento seguro</h2><p className="muted">Cartão mensal com cobrança recorrente. Pix mensal é pago a cada período. Planos anuais liberam 12 meses após a confirmação.</p></section></>;}
+
+export default async function Plans() {
+  await requireOrganizationUser();
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <span className="page-eyebrow">ONZEUP CLUB</span>
+          <h1>Planos e assinatura</h1>
+          <p className="muted">Escolha o plano, a periodicidade e a forma de pagamento.</p>
+        </div>
+      </div>
+
+      <section className="commercial-plans-grid">
+        {plans.map((plan) => <ClubPlanCard key={plan.plan} {...plan} />)}
+      </section>
+
+      <section className="card payment-security-card">
+        <div><span className="page-eyebrow">PAGAMENTO SEGURO</span><h2>Assine do seu jeito</h2></div>
+        <p className="muted">Cartão mensal com cobrança recorrente. Pix mensal é pago a cada período. No anual, a confirmação libera 12 meses de acesso.</p>
+      </section>
+    </>
+  );
+}
