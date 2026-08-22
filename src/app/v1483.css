@@ -1,0 +1,160 @@
+/* ONZEUP v1.4.8.3 — hard reset da sidebar */
+
+/* A sidebar passa a controlar completamente o próprio layout */
+.shell > .sidebar{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  width:240px !important;
+  min-width:240px !important;
+  max-width:240px !important;
+  height:100vh !important;
+  padding:24px 18px !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  position:sticky !important;
+  top:0 !important;
+  z-index:50 !important;
+  contain:paint !important;
+  background:#090e14 !important;
+  border-right:1px solid var(--line) !important;
+}
+
+/* Marca */
+.shell > .sidebar > .brand{
+  display:block !important;
+  position:static !important;
+  margin:0 0 4px !important;
+  padding:0 !important;
+  width:auto !important;
+  font-size:26px !important;
+  line-height:1 !important;
+}
+
+.shell > .sidebar > .muted{
+  display:block !important;
+  position:static !important;
+  margin:0 0 22px !important;
+  padding:0 !important;
+  width:auto !important;
+  line-height:1.25 !important;
+}
+
+/* Navegação: largura limitada EXATAMENTE à sidebar */
+.shell > .sidebar > nav.club-nav{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  gap:2px !important;
+  position:static !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:visible !important;
+  flex:0 0 auto !important;
+}
+
+.shell > .sidebar > nav.club-nav > .nav-section{
+  display:block !important;
+  position:static !important;
+  width:100% !important;
+  max-width:100% !important;
+  margin:20px 0 6px !important;
+  padding:0 12px !important;
+  font-size:10px !important;
+  line-height:1.2 !important;
+  color:#7890a0 !important;
+  letter-spacing:.16em !important;
+  font-weight:900 !important;
+  overflow:hidden !important;
+}
+
+.shell > .sidebar > nav.club-nav > .nav-section:first-child{
+  margin-top:0 !important;
+}
+
+.shell > .sidebar > nav.club-nav > a{
+  display:block !important;
+  position:relative !important;
+  left:auto !important;
+  right:auto !important;
+  top:auto !important;
+  bottom:auto !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  margin:0 !important;
+  padding:11px 12px !important;
+  border-radius:10px !important;
+  background:transparent !important;
+  color:#c5ccd5 !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+  transform:none !important;
+  isolation:isolate !important;
+}
+
+.shell > .sidebar > nav.club-nav > a:hover,
+.shell > .sidebar > nav.club-nav > a:focus-visible{
+  background:#121a23 !important;
+  color:#fff !important;
+}
+
+/* mata qualquer efeito antigo de hover que esteja usando pseudo-elemento */
+.shell > .sidebar > nav.club-nav > a::before,
+.shell > .sidebar > nav.club-nav > a::after{
+  content:none !important;
+  display:none !important;
+}
+
+/* Logout SEMPRE depois de todo o menu */
+.shell > .sidebar > form.club-logout{
+  display:block !important;
+  position:static !important;
+  inset:auto !important;
+  order:999 !important;
+  width:100% !important;
+  max-width:100% !important;
+  margin:24px 0 0 !important;
+  padding:18px 0 0 !important;
+  border-top:1px solid var(--line) !important;
+  transform:none !important;
+  flex:0 0 auto !important;
+}
+
+.shell > .sidebar > form.club-logout > button{
+  display:block !important;
+  position:static !important;
+  width:100% !important;
+  margin:0 !important;
+}
+
+/* Conteúdo principal isolado da sidebar */
+.shell > .main{
+  min-width:0 !important;
+  width:auto !important;
+  overflow-x:hidden !important;
+  position:relative !important;
+  z-index:1 !important;
+}
+
+/* Sino continua independente */
+.shell > .main > .club-top-actions{
+  position:absolute !important;
+  top:18px !important;
+  right:28px !important;
+  width:auto !important;
+  margin:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+}
+
+/* Responsivo */
+@media(max-width:900px){
+  .shell > .sidebar{
+    display:none !important;
+  }
+}

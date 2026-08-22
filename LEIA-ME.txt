@@ -1,24 +1,26 @@
-ONZEUP v1.4.8.2
+ONZEUP v1.4.8.3 — Sidebar Hard Reset
+
+Esta correção NÃO adiciona mais pequenos remendos.
+Ela redefine integralmente o layout da sidebar com seletores específicos.
 
 Corrige:
-- botão Sair sobreposto no topo do menu;
-- hover de Treinos/Jogos/etc. atravessando a tela inteira;
-- isolamento visual da sidebar;
-- sino sem criar faixa no topo;
-- mantém proteção contra overflow nas telas de jogos.
+- marca e texto sobrepostos;
+- botão Sair no meio do menu;
+- hover de Treinos/Jogos atravessando toda a tela;
+- largura da sidebar;
+- isolamento entre menu e conteúdo principal.
 
 Não altera:
-- Prisma
-- pagamento
-- webhook
-- planos
-- regras de negócio
+- pagamentos;
+- webhook;
+- Prisma;
+- regras de negócio.
 
 Aplicar:
-APLICAR_V1482.cmd
+APLICAR_V1483.cmd
 npm run build
 
-Se passar:
+Se o build passar:
 git add -A
-git commit -m "ONZEUP v1.4.8.2 - fix sidebar hover and logout"
+git commit -m "ONZEUP v1.4.8.3 - hard reset Club sidebar"
 git push origin main
