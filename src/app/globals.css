@@ -2006,3 +2006,154 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
 .mp-secure-field{min-height:46px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(255,255,255,.04);padding:11px}.mp-field input,.mp-field select{min-height:46px;width:100%;border-radius:12px}
 .mp-progress{width:100%;height:4px}.mp-sandbox-status{margin:0;padding:12px;border-radius:12px;background:rgba(255,255,255,.06)}
 @media(max-width:640px){.mp-sandbox-grid{grid-template-columns:1fr}.mp-field-wide{grid-column:auto}.mp-product-summary{align-items:flex-start}}
+
+/* ===== ONZEUP v1.4.8.4 SIDEBAR FINAL OVERRIDE ===== */
+.shell > .club-sidebar-final{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  width:240px !important;
+  min-width:240px !important;
+  max-width:240px !important;
+  height:100vh !important;
+  min-height:100vh !important;
+  padding:24px 18px !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  position:sticky !important;
+  top:0 !important;
+  z-index:40 !important;
+  background:#090e14 !important;
+  border-right:1px solid var(--line) !important;
+  contain:paint !important;
+}
+
+.club-sidebar-final .club-sidebar-head{
+  display:block !important;
+  position:static !important;
+  flex:0 0 auto !important;
+  margin:0 0 22px !important;
+  padding:0 !important;
+}
+
+.club-sidebar-final .club-sidebar-head .brand{
+  display:block !important;
+  position:static !important;
+  margin:0 0 5px !important;
+  padding:0 !important;
+  font-size:26px !important;
+  line-height:1 !important;
+}
+
+.club-sidebar-final .club-sidebar-head p{
+  display:block !important;
+  position:static !important;
+  margin:0 !important;
+  padding:0 !important;
+  color:#89929e !important;
+  font-size:14px !important;
+  line-height:1.25 !important;
+}
+
+.club-sidebar-final .club-menu-groups{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:22px !important;
+  width:100% !important;
+  flex:0 0 auto !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.club-sidebar-final .club-menu-group{
+  display:block !important;
+  position:static !important;
+  width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.club-sidebar-final .club-menu-group h3{
+  display:block !important;
+  margin:0 0 7px !important;
+  padding:0 10px !important;
+  color:#7890a0 !important;
+  font-size:10px !important;
+  line-height:1.2 !important;
+  font-weight:900 !important;
+  letter-spacing:.16em !important;
+}
+
+.club-sidebar-final .club-menu-group nav{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:2px !important;
+  width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:visible !important;
+}
+
+.club-sidebar-final .club-menu-group nav a{
+  display:block !important;
+  position:static !important;
+  width:100% !important;
+  max-width:100% !important;
+  margin:0 !important;
+  padding:11px 12px !important;
+  border:0 !important;
+  border-radius:10px !important;
+  background:transparent !important;
+  color:#c5ccd5 !important;
+  font-size:14px !important;
+  line-height:1.2 !important;
+  white-space:normal !important;
+  transform:none !important;
+  box-sizing:border-box !important;
+}
+
+.club-sidebar-final .club-menu-group nav a:hover,
+.club-sidebar-final .club-menu-group nav a:focus-visible{
+  background:#121a23 !important;
+  color:#fff !important;
+}
+
+.club-sidebar-final .club-menu-group nav a::before,
+.club-sidebar-final .club-menu-group nav a::after{
+  content:none !important;
+  display:none !important;
+}
+
+.club-sidebar-final .club-sidebar-logout{
+  display:block !important;
+  position:static !important;
+  inset:auto !important;
+  width:100% !important;
+  margin:24px 0 0 !important;
+  padding:18px 0 0 !important;
+  border-top:1px solid var(--line) !important;
+  transform:none !important;
+  flex:0 0 auto !important;
+}
+
+.club-sidebar-final .club-sidebar-logout button{
+  display:block !important;
+  position:static !important;
+  inset:auto !important;
+  width:100% !important;
+  margin:0 !important;
+  transform:none !important;
+}
+
+.shell > .main{
+  min-width:0 !important;
+  overflow-x:hidden !important;
+}
+
+@media(max-width:900px){
+  .shell > .club-sidebar-final{
+    display:none !important;
+  }
+}
+/* ===== END ONZEUP v1.4.8.4 ===== */
+

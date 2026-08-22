@@ -2,6 +2,44 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import NotificationBell from "@/components/NotificationBell";
 
+const groups = [
+  {
+    title: "GESTÃO",
+    items: [
+      ["/dashboard", "Dashboard"],
+      ["/agenda", "Agenda"],
+      ["/categorias", "Categorias"],
+      ["/comissao", "Comissão"],
+      ["/atletas", "Atletas"],
+    ],
+  },
+  {
+    title: "FUTEBOL",
+    items: [
+      ["/treinos", "Treinos"],
+      ["/jogos", "Jogos"],
+      ["/qtr", "QTR"],
+    ],
+  },
+  {
+    title: "RELACIONAMENTO",
+    items: [
+      ["/comunicacao", "Comunicação"],
+      ["/vinculos-player", "Vínculos Player"],
+    ],
+  },
+  {
+    title: "ADMINISTRAÇÃO",
+    items: [
+      ["/financeiro", "Financeiro"],
+      ["/organizacao", "Site e Configurações"],
+      ["/planos", "Plano e assinatura"],
+      ["/integracoes", "Integrações"],
+      ["/ajuda", "Ajuda"],
+    ],
+  },
+] as const;
+
 export default async function AppShell({
   children,
 }: {
@@ -11,43 +49,45 @@ export default async function AppShell({
 
   return (
     <div className="shell">
-      <aside className="sidebar">
-        <div className="brand">
-          ONZE<span>UP</span>
+      <aside className="sidebar club-sidebar-final">
+        <div className="club-sidebar-head">
+          <div className="brand">
+            ONZE<span>UP</span>
+          </div>
+          <p>O futuro do futebol começa na base.</p>
         </div>
-        <div className="muted">O futuro do futebol começa na base.</div>
 
-        <nav className="nav club-nav">
-          <span className="nav-section">GESTÃO</span>
-          <Link href="/dashboard">Dashboard</Link>
-          <Link href="/agenda">Agenda</Link>
-          <Link href="/categorias">Categorias</Link>
-          <Link href="/comissao">Comissão</Link>
-          <Link href="/atletas">Atletas</Link>
-
-          <span className="nav-section">FUTEBOL</span>
-          <Link href="/treinos">Treinos</Link>
-          <Link href="/jogos">Jogos</Link>
-          <Link href="/qtr">QTR</Link>
-
-          <span className="nav-section">RELACIONAMENTO</span>
-          <Link href="/comunicacao">Comunicação</Link>
-          <Link href="/vinculos-player">Vínculos Player</Link>
-
-          <span className="nav-section">ADMINISTRAÇÃO</span>
-          <Link href="/financeiro">Financeiro</Link>
-          <Link href="/organizacao">Site e Configurações</Link>
-          <Link href="/planos">Plano e assinatura</Link>
-          <Link href="/integracoes">Integrações</Link>
-          <Link href="/ajuda">Ajuda</Link>
-        </nav>
+        <div className="club-menu-groups">
+          {groups.map((group) => (
+            <section className="club-menu-group" key={group.title}>
+              <h3>{group.title}</h3>
+              <nav>
+                {group.items.map(([href, label]) => (
+                  <Link href={href} key={href}>
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            </section>
+          ))}
+        </div>
 
         <form
-          className="club-logout"
+          className="club-sidebar-logout"
           action="/api/auth/logout"
           method="post"
+          style={{
+            position: "static",
+            width: "100%",
+            marginTop: "24px",
+            paddingTop: "18px",
+          }}
         >
-          <button className="btn-secondary" type="submit">
+          <button
+            className="btn-secondary"
+            type="submit"
+            style={{ position: "static", width: "100%", display: "block" }}
+          >
             Sair
           </button>
         </form>
