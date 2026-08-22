@@ -1,22 +1,120 @@
 "use server";
-import {redirect} from "next/navigation";
-import {requireOrganizationUser} from "@/lib/auth";
-import {prisma} from "@/lib/prisma";
-import {asaasIsSandbox,createAsaasClubCheckout,writeAsaasData} from "@/lib/asaas";
-import {CLUB_PLANS,clubPrice,clubProduct,type ClubBillingCycle,type ClubCommercialPlan} from "@/lib/club-plans";
-const APP_URL=(process.env.APP_URL||"https://www.onzeup.com.br").replace(/\/$/,"");
-const isPlan=(v:string):v is ClubCommercialPlan=>["ESSENTIAL","PRO","ELITE"].includes(v);
-const isCycle=(v:string):v is ClubBillingCycle=>["MONTHLY","ANNUAL"].includes(v);
-export async function createClubAsaasCheckout(fd:FormData){
- const u=await requireOrganizationUser();if(!u.organizationId||!u.organization)redirect("/dashboard");
- const plan=String(fd.get("plan")||""),cycle=String(fd.get("cycle")||""),method=String(fd.get("method")||"");
- if(!isPlan(plan)||!isCycle(cycle)||!["CARD","PIX"].includes(method))redirect("/planos?paymentStatus=invalid");
- const cents=clubPrice(plan,cycle),product=clubProduct(plan,cycle),base=`${APP_URL}/checkout/asaas/retorno`;
- const p=await prisma.payment.create({data:{userId:u.id,organizationId:u.organizationId,product,amountCents:cents,method:"ASAAS",pixTxid:`CLUB${Date.now()}`,note:`ONZEUP Club ${CLUB_PLANS[plan].label}`}});
- try{
-  const c=await createAsaasClubCheckout({externalReference:p.id,organizationName:u.organization.publicName||u.organization.name,planLabel:CLUB_PLANS[plan].label,value:cents/100,cycle,method,successUrl:`${base}?status=success&origin=club`,cancelUrl:`${base}?status=cancel&origin=club`,expiredUrl:`${base}?status=expired&origin=club`});
-  if(!c.link)throw new Error("Asaas não retornou o link.");
-  await prisma.payment.update({where:{id:p.id},data:{pixPayload:writeAsaasData({provider:"ASAAS",environment:asaasIsSandbox()?"SANDBOX":"PRODUCTION",checkoutId:c.id,checkoutUrl:c.link,checkoutStatus:c.status||"ACTIVE",processedEventIds:[],paymentMethod:method as any,billingCycle:cycle,commercialPlan:plan})}});
-  redirect(c.link);
- }catch(e){console.error("CLUB_ASAAS_CREATE_ERROR",e instanceof Error?e.message:e);redirect("/planos?paymentStatus=erro");}
+
+import { redirect } from "next/navigation";
+import { requireOrganizationUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import {
+  asaasIsSandbox,
+  createAsaasClubCheckout,
+  writeAsaasData,
+} from "@/lib/asaas";
+import {
+  CLUB_PLANS,
+  clubPrice,
+  clubProduct,
+  type ClubBillingCycle,
+  type ClubCommercialPlan,
+} from "@/lib/club-plans";
+
+const APP_URL = (process.env.APP_URL || "https://www.onzeup.com.br").replace(
+  /\/$/,
+  "",
+);
+
+function isPlan(value: string): value is ClubCommercialPlan {
+  return ["ESSENTIAL", "PRO", "ELITE"].includes(value);
+}
+
+function isCycle(value: string): value is ClubBillingCycle {
+  return ["MONTHLY", "ANNUAL"].includes(value);
+}
+
+export async function createClubAsaasCheckout(formData: FormData) {
+  const user = await requireOrganizationUser();
+
+  if (!user.organizationId || !user.organization) {
+    redirect("/dashboard");
+  }
+
+  const plan = String(formData.get("plan") || "");
+  const cycle = String(formData.get("cycle") || "");
+  const method = String(formData.get("method") || "");
+
+  if (
+    !isPlan(plan) ||
+    !isCycle(cycle) ||
+    !["CARD", "PIX"].includes(method)
+  ) {
+    redirect("/planos?paymentStatus=invalid");
+  }
+
+  const amountCents = clubPrice(plan, cycle);
+  const product = clubProduct(plan, cycle);
+  const returnBase = `${APP_URL}/checkout/asaas/retorno`;
+
+  const payment = await prisma.payment.create({
+    data: {
+      userId: user.id,
+      organizationId: user.organizationId,
+      product,
+      amountCents,
+      method: "ASAAS",
+      pixTxid: `CLUB${Date.now()}${Math.random()
+        .toString(36)
+        .slice(2, 8)}`.toUpperCase(),
+      note: `ONZEUP Club ${CLUB_PLANS[plan].label} ${
+        cycle === "ANNUAL" ? "Anual" : "Mensal"
+      }`,
+    },
+  });
+
+  let checkout;
+
+  try {
+    checkout = await createAsaasClubCheckout({
+      externalReference: payment.id,
+      organizationName:
+        user.organization.publicName || user.organization.name,
+      planLabel: CLUB_PLANS[plan].label,
+      value: amountCents / 100,
+      cycle,
+      method: method as "CARD" | "PIX",
+      successUrl: `${returnBase}?status=success&paymentId=${payment.id}&origin=club`,
+      cancelUrl: `${returnBase}?status=cancel&paymentId=${payment.id}&origin=club`,
+      expiredUrl: `${returnBase}?status=expired&paymentId=${payment.id}&origin=club`,
+    });
+
+    if (!checkout.link) {
+      throw new Error("Asaas não retornou o link do checkout.");
+    }
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        pixPayload: writeAsaasData({
+          provider: "ASAAS",
+          environment: asaasIsSandbox() ? "SANDBOX" : "PRODUCTION",
+          checkoutId: checkout.id,
+          checkoutUrl: checkout.link,
+          checkoutStatus: checkout.status || "ACTIVE",
+          processedEventIds: [],
+          paymentMethod: method as "CARD" | "PIX",
+          billingCycle: cycle,
+          commercialPlan: plan,
+        }),
+      },
+    });
+  } catch (error) {
+    console.error(
+      "CLUB_ASAAS_CREATE_ERROR",
+      error instanceof Error ? error.message : error,
+    );
+
+    redirect("/planos?paymentStatus=erro");
+  }
+
+  // IMPORTANTE:
+  // redirect() do Next.js lança NEXT_REDIRECT internamente.
+  // Por isso ele precisa ficar FORA do try/catch.
+  redirect(checkout.link!);
 }

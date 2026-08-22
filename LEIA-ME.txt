@@ -1,26 +1,28 @@
-ONZEUP v1.4.7.2 - CLUB BILLING UI
+ONZEUP v1.4.7.3 - CLUB REDIRECT FIX
 
-Objetivo:
-Integrar a assinatura Club ao fluxo real da organização.
+Problema:
+O Asaas criava os checkouts com status 200, mas o navegador nao era enviado ao checkout.
 
-Inclui:
-- card "Plano e assinatura" no dashboard;
-- durante o período grátis, botão "Ver planos e assinar";
-- plano ativo mostra nome, periodicidade e data do período atual;
-- pagamento pendente mostra CTA para regularização;
-- menu lateral recebe "Plano e assinatura";
-- Configurações recebe atalho para /planos;
-- remove o DemoBanner do painel Club.
+Causa:
+redirect(checkout.link) estava dentro de try/catch.
+No Next.js, redirect() usa internamente a excecao NEXT_REDIRECT.
+O catch capturava essa excecao e impedia o redirecionamento correto.
 
-Não altera o schema Prisma.
-Não altera checkout nem webhook.
+Correcao:
+A criacao e gravacao do checkout permanecem dentro do try/catch.
+O redirect(checkout.link) acontece somente depois do try/catch.
 
-Depois de aplicar:
-npx prisma validate
-npx prisma generate
+Nao altera:
+- Prisma
+- webhook
+- precos
+- planos
+- Asaas API
+
+Depois:
 npm run build
 
 Se passar:
 git add -A
-git commit -m "ONZEUP v1.4.7.2 - integrate Club billing UI"
+git commit -m "ONZEUP v1.4.7.3 - fix Club checkout redirect"
 git push origin main
