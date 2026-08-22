@@ -12,7 +12,7 @@ import {
   saveGuardianProfile,
   savePlayer,
 } from "./actions";
-import { createPlayerPremiumPix } from "@/app/checkout/actions";
+import { createPlayerPremiumAsaas } from "@/app/checkout/actions";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 export default async function GuardianPortal({
@@ -195,7 +195,7 @@ export default async function GuardianPortal({
                   <h3>Transforme o perfil em um site esportivo completo.</h3>
                   <p>Vários vídeos, galeria, conquistas e visual Premium. Pagamento via PIX.</p>
                 </div>
-                <form action={createPlayerPremiumPix}>
+                <form action={createPlayerPremiumAsaas}>
                   <input type="hidden" name="playerId" value={selected.id} />
                   <strong>R$ 29,90/mês</strong>
                   <button className="btn">Assinar Premium</button>

@@ -15,10 +15,7 @@ function baseUrl() {
   return asaasIsSandbox() ? SANDBOX_API : PRODUCTION_API;
 }
 
-export async function asaasFetch<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+export async function asaasFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${baseUrl()}${path}`, {
     ...init,
     headers: {
@@ -46,7 +43,6 @@ export async function asaasFetch<T>(
       body,
       sandbox: asaasIsSandbox(),
     });
-
     throw new Error(`Asaas respondeu ${response.status}.`);
   }
 
@@ -58,16 +54,7 @@ export type AsaasCheckout = {
   link?: string | null;
   status?: string | null;
   externalReference?: string | null;
-  billingTypes?: string[];
-  chargeTypes?: string[];
 };
-
-export async function getAsaasCheckout(checkoutId: string) {
-  return asaasFetch<AsaasCheckout>(
-    `/checkouts/${encodeURIComponent(checkoutId)}`,
-    { method: "GET" },
-  );
-}
 
 function formatAsaasDate(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -103,7 +90,7 @@ export async function createAsaasPlayerPremiumCheckout(input: {
   const checkout = await asaasFetch<AsaasCheckout>("/checkouts", {
     method: "POST",
     body: JSON.stringify({
-      billingTypes: ["CREDIT_CARD"],
+      billingTypes: ["PIX", "CREDIT_CARD"],
       chargeTypes: ["RECURRENT"],
       minutesToExpire: 120,
       externalReference: input.externalReference,
@@ -115,7 +102,7 @@ export async function createAsaasPlayerPremiumCheckout(input: {
       items: [
         {
           name: "ONZEUP Player Premium",
-          description: `Plano Premium mensal - ${input.playerName}`,
+          description: `Assinatura mensal - ${input.playerName}`,
           quantity: 1,
           value: 29.9,
         },
@@ -136,9 +123,7 @@ export async function createAsaasPlayerPremiumCheckout(input: {
     ...checkout,
     link:
       checkout.link ||
-      `https://asaas.com/checkoutSession/show?id=${encodeURIComponent(
-        checkout.id,
-      )}`,
+      `https://asaas.com/checkoutSession/show?id=${encodeURIComponent(checkout.id)}`,
   };
 }
 
@@ -157,7 +142,6 @@ export type AsaasStoredData = {
 
 export function readAsaasData(value?: string | null): AsaasStoredData {
   if (!value) return {};
-
   try {
     const parsed = JSON.parse(value);
     return parsed && typeof parsed === "object" ? parsed : {};

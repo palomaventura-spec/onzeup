@@ -1,0 +1,37 @@
+ONZEUP v1.4.6 - CLEAN RELEASE
+
+- Mantem o webhook Asaas como fonte de verdade para ativar Premium.
+- Remove /api/asaas/sync e AsaasReturnSync.
+- Remove codigo antigo do Mercado Pago.
+- Troca "Pagamento via PIX" por "Assinatura mensal".
+- Checkout Asaas passa a oferecer PIX e CREDIT_CARD.
+- Remove aliases antigos do checkout.
+- Limpa instaladores APLICAR_V14* antigos da raiz.
+- Nao altera Prisma.
+
+APLICAR
+cd C:\Users\User\Documents\onzeup
+APLICAR_V146_LIMPA.cmd
+
+VALIDAR
+npx prisma validate
+npm run build
+
+SE PASSAR
+git add -A
+git commit -m "ONZEUP v1.4.6 - clean Asaas release"
+git push origin main
+
+TESTE
+1. Aguarde Vercel Ready.
+2. Crie/abra um Player FREE.
+3. Clique Assinar Premium.
+4. No checkout Asaas, valide os meios de pagamento exibidos.
+5. Conclua um pagamento Sandbox.
+6. Logs esperados:
+   POST /api/asaas/webhook 200
+   ASAAS_WEBHOOK_RECEIVED
+   ASAAS_PLAYER_PREMIUM_ACTIVATED
+7. Atualize o Player: deve aparecer PREMIUM.
+
+Mantenha ASAAS_ENV=sandbox ate finalizar a homologacao.
