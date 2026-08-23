@@ -158,7 +158,7 @@ export default async function MatchesPage() {
                               Abrir jogo
                             </Link>
                             <Link className="match-callup-button" href={`/convocacoes/${match.id}`}>
-                              ConvocaÃ§Ã£o <span className="match-callup-count">{match.callUps.length}</span>
+                              {"Convoca\u00e7\u00e3o"} <span className="match-callup-count">{match.callUps.length}</span>
                             </Link>
                             <form className="inline-form" action={deleteMatch}>
                               <input type="hidden" name="id" value={match.id} />

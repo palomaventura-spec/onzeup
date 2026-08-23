@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
+import CallUpSubmitButton from "@/components/CallUpSubmitButton";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
@@ -109,7 +110,7 @@ ${orgName}`;
                 ))}
               </div>
 
-              <button type="submit">Adicionar convocados</button>
+              <CallUpSubmitButton />
             </form>
           )}
 

@@ -12,9 +12,9 @@ export default async function PlayerLanding() {
     position: gustavo?.position || "Atacante",
     secondaryPosition: gustavo?.secondaryPosition || "Pivô",
     currentClub: gustavo?.currentClub || "Botafogo",
-    matches: gustavo?.matches ?? 62,
-    goals: gustavo?.goals ?? 128,
-    titles: gustavo?.titles ?? 2,
+    matches: gustavo?.matches ?? 69,
+    goals: gustavo?.goals ?? 135,
+    titles: gustavo?.titles ?? 3,
   };
 
   return (
