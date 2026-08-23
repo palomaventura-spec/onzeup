@@ -1,6 +1,0 @@
-v1.2.9
-Uniform Premium gallery: 2 columns desktop / 1 mobile / 16:9.
-
-Detected classes:
-card free-video
-premium-media-caption

@@ -52,11 +52,11 @@ export default async function MatchCallUpsPage({
   const athletes = await prisma.athlete.findMany({
     where: {
       organizationId: user.organizationId,
-      categoryId: match.categoryId,
       active: true,
       id: { notIn: Array.from(alreadyCalled) },
     },
-    orderBy: { name: "asc" },
+    include: { category: true },
+    orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
   });
 
   const orgName = user.organization?.publicName || user.organization?.name || "OnzeUp";
