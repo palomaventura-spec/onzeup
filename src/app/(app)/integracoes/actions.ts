@@ -14,33 +14,29 @@ function nullable(value: FormDataEntryValue | null) {
   return v || null;
 }
 
-export async function updateIntegrationSettings(formData: FormData) {
+export async function updateConnectionSettings(formData: FormData) {
   const user = await requireOrganizationUser();
 
   const customDomain = nullable(formData.get("customDomain"));
   const whatsappPhone = nullable(formData.get("whatsappPhone"));
-  const paymentProvider = nullable(formData.get("paymentProvider"));
+  const pixKey = nullable(formData.get("pixKey"));
 
   await prisma.organization.update({
     where: { id: user.organizationId },
     data: {
       customDomain,
+      domainVerified: customDomain ? false : false,
       whatsappPhone,
-      whatsappStatus: whatsappPhone ? IntegrationStatus.PENDING : IntegrationStatus.DISCONNECTED,
-      paymentProvider,
-      paymentStatus: paymentProvider ? IntegrationStatus.PENDING : IntegrationStatus.DISCONNECTED,
-      domainVerified: false,
+      whatsapp: whatsappPhone,
+      whatsappStatus: whatsappPhone
+        ? IntegrationStatus.CONNECTED
+        : IntegrationStatus.DISCONNECTED,
+      pixKey,
+      // paymentProvider/paymentStatus ficam reservados para futura integração automática.
     },
   });
 
   revalidatePath("/integracoes");
-}
-
-export async function markDomainVerified() {
-  const user = await requireOrganizationUser();
-  await prisma.organization.update({
-    where: { id: user.organizationId },
-    data: { domainVerified: true },
-  });
-  revalidatePath("/integracoes");
+  revalidatePath("/financeiro");
+  revalidatePath("/organizacao");
 }

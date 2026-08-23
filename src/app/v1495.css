@@ -1,0 +1,61 @@
+/* ONZEUP v1.4.9.5 — Conexões */
+.connections-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:18px;
+}
+.connection-card{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+.connection-title{
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+}
+.connection-title h2{margin:0 0 4px}
+.connection-icon{
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  flex:0 0 42px;
+  border-radius:12px;
+  background:rgba(157,219,22,.10);
+  font-size:21px;
+}
+.connection-current{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:6px;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+  overflow-wrap:anywhere;
+}
+.connection-current small{
+  font-size:10px;
+  letter-spacing:.12em;
+  font-weight:900;
+  opacity:.65;
+}
+.connection-future{
+  border-style:dashed;
+}
+.connections-save{
+  grid-column:1/-1;
+  display:flex;
+  justify-content:flex-end;
+  padding-bottom:20px;
+}
+.connections-save button{
+  min-width:190px;
+}
+@media(max-width:800px){
+  .connections-grid{grid-template-columns:1fr}
+  .connections-save{justify-content:stretch}
+  .connections-save button{width:100%}
+}
