@@ -1,0 +1,94 @@
+/* =========================================
+   ONZEUP v1.5.0.3
+   QTR — visual polish inspired by approved reference
+   Scope: authenticated Club only
+========================================= */
+
+/* Give the category column enough room to read Sub-8/Sub-10/etc. comfortably */
+.club-app-light .qtr-board{
+  min-width:1180px;
+}
+.club-app-light .qtr-grid{
+  grid-template-columns:170px repeat(7,minmax(132px,1fr)) 34px;
+  gap:10px;
+}
+
+/* Category card */
+.club-app-light .qtr-category-cell{
+  min-height:112px;
+  padding:12px;
+  align-content:center;
+  gap:8px;
+  border-radius:12px;
+  background:#f8fafb;
+}
+.club-app-light .qtr-category-cell select{
+  width:100%;
+  min-height:44px;
+  padding:0 38px 0 14px;
+  border:1px solid #d5dfe4;
+  border-radius:10px;
+  background:#ffffff;
+  color:#101820;
+  font-size:15px;
+  font-weight:900;
+  line-height:1.2;
+}
+.club-app-light .qtr-category-cell select:hover{
+  border-color:#bdcbd2;
+}
+.club-app-light .qtr-category-cell select:focus{
+  outline:none;
+  border-color:#8fd400;
+  box-shadow:0 0 0 3px rgba(143,212,0,.14);
+}
+.club-app-light .qtr-category-cell small{
+  display:block;
+  margin:0;
+  color:#66747d;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.25;
+}
+
+/* Weekly cells: slightly more defined, like a management SaaS */
+.club-app-light .qtr-empty-slot{
+  min-height:112px;
+  border-radius:12px;
+  background:#fbfcfd;
+  border:1px solid #dfe6ea;
+}
+.club-app-light .qtr-empty-slot:hover{
+  background:#f5f8f9;
+  border-color:#cbd6dc;
+}
+
+/* Header alignment */
+.club-app-light .qtr-grid-head{
+  padding-bottom:14px;
+}
+.club-app-light .qtr-category-head,
+.club-app-light .qtr-day-head{
+  font-weight:900;
+  letter-spacing:.06em;
+}
+
+/* Keep controls compact but professional */
+.club-app-light .qtr-mode{
+  min-height:44px;
+  padding:0 18px;
+  border-radius:10px;
+}
+.club-app-light .qtr-week-picker{
+  min-height:46px;
+  border-radius:12px;
+}
+
+/* Mobile/tablet: preserve horizontal scroll instead of squeezing labels */
+@media(max-width:900px){
+  .club-app-light .qtr-board{min-width:1040px}
+  .club-app-light .qtr-grid{
+    grid-template-columns:155px repeat(7,minmax(118px,1fr)) 32px;
+    gap:8px;
+  }
+}

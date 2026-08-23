@@ -1,0 +1,128 @@
+/* ONZEUP v1.4.8.2 — sidebar + hover containment */
+
+/* Sidebar precisa ser um container isolado */
+.sidebar{
+  position:relative;
+  z-index:20;
+  overflow:hidden;
+  min-width:0;
+}
+
+.sidebar .brand{
+  display:block;
+  margin:0 0 4px;
+}
+
+.sidebar > .muted{
+  display:block;
+  margin:0 0 22px;
+  line-height:1.3;
+}
+
+/* Menu organizado sem permitir que hover escape da lateral */
+.club-nav{
+  display:flex !important;
+  flex-direction:column;
+  gap:2px !important;
+  width:100%;
+  max-width:100%;
+  margin-top:0 !important;
+  min-width:0;
+}
+
+.club-nav .nav-section{
+  display:block;
+  width:auto;
+  max-width:100%;
+  margin:18px 0 5px !important;
+  padding:0 12px;
+  overflow:hidden;
+}
+
+.club-nav .nav-section:first-child{
+  margin-top:0 !important;
+}
+
+.club-nav a{
+  position:relative;
+  display:block;
+  flex:none;
+  width:auto !important;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  padding:11px 12px;
+  border-radius:10px;
+  overflow:hidden;
+  isolation:isolate;
+}
+
+.club-nav a:hover,
+.club-nav a:focus-visible{
+  background:#121a23;
+  color:#fff;
+}
+
+/* impede qualquer pseudo-elemento/efeito antigo de atravessar a viewport */
+.club-nav a::before,
+.club-nav a::after{
+  max-width:100%;
+}
+
+/* Logout fica depois do menu, sem sobreposição */
+.sidebar .club-logout{
+  display:block;
+  position:static !important;
+  width:100%;
+  margin:24px 0 0 !important;
+  padding:18px 0 0;
+  border-top:1px solid var(--line);
+}
+
+.sidebar .club-logout button{
+  width:100%;
+  display:block;
+}
+
+/* main nunca recebe o fundo de hover do menu */
+.main{
+  position:relative;
+  z-index:1;
+  overflow-x:hidden;
+  min-width:0;
+}
+
+/* sino não cria faixa horizontal */
+.club-top-actions{
+  position:absolute !important;
+  top:18px !important;
+  right:28px !important;
+  width:auto !important;
+  min-height:0 !important;
+  margin:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  pointer-events:none;
+}
+
+.club-top-actions .notification-bell{
+  pointer-events:auto;
+}
+
+/* tabelas de jogos permanecem confinadas */
+.two-col,
+.stack,
+.card,
+.table-wrap{
+  min-width:0;
+  max-width:100%;
+}
+
+.table-wrap{
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+
+@media(max-width:900px){
+  .sidebar{overflow:visible}
+}

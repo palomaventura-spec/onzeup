@@ -1,0 +1,93 @@
+/* ONZEUP v1.4.9 */
+.club-system-topbar{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  min-height:54px;
+  margin:0 0 8px;
+  padding:0;
+}
+.club-system-topbar .notification-bell{
+  position:relative !important;
+  inset:auto !important;
+  flex:0 0 auto;
+}
+
+.match-callup-button{
+  background:var(--green);
+  color:#071006;
+  border-radius:9px;
+  padding:8px 11px;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.match-callup-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:20px;
+  height:20px;
+  padding:0 6px;
+  margin-left:4px;
+  border-radius:999px;
+  background:#071006;
+  color:var(--green);
+  font-size:10px;
+}
+
+.club-commercial-nav > div{
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+
+@media(max-width:700px){
+  .club-commercial-nav{
+    gap:14px;
+    padding-left:20px !important;
+    padding-right:20px !important;
+  }
+  .club-commercial-nav > nav{display:none}
+  .club-commercial-nav > div{
+    margin-left:auto;
+    gap:14px;
+  }
+  .club-commercial-nav .marketing-login,
+  .club-commercial-nav .marketing-cta.small{
+    white-space:nowrap;
+  }
+
+  .club-problem-strip{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:0 !important;
+    padding:20px 24px !important;
+    overflow:hidden !important;
+  }
+  .club-problem-strip > div{
+    width:100% !important;
+    min-width:0 !important;
+    padding:15px 0 !important;
+    text-align:left !important;
+  }
+  .club-problem-strip > i{
+    display:block !important;
+    width:24px;
+    margin:0 auto;
+    text-align:center;
+    transform:rotate(90deg);
+  }
+  .club-problem-strip .solution{
+    border-top:1px solid rgba(7,16,6,.18);
+  }
+
+  .coach-marketing-nav nav{display:none}
+  .coach-product-hero h1{
+    font-size:clamp(44px,14vw,74px);
+    line-height:.96;
+  }
+  .coach-partner-landing{
+    grid-template-columns:1fr !important;
+  }
+}

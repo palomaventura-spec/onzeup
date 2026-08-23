@@ -1,0 +1,317 @@
+/* ============================================================
+   ONZEUP v1.5.0 — CLUB MANAGEMENT LIGHT UI
+   Escopo exclusivo: .club-app-light
+   Não altera landing pages, perfis públicos ou sites dos clubes.
+   ============================================================ */
+
+.club-app-light{
+  --bg:#f5f7f9;
+  --card:#ffffff;
+  --muted:#66737d;
+  --line:#e2e7eb;
+  --border:#e2e7eb;
+  --green:#9ddb16;
+  --white:#101820;
+  min-height:100vh;
+  background:#f5f7f9;
+  color:#101820;
+}
+
+.club-app-light > .main{
+  background:#f5f7f9;
+  color:#101820;
+}
+
+/* Sidebar */
+.club-app-light.shell > .club-sidebar-final{
+  background:#ffffff !important;
+  border-right:1px solid #e2e7eb !important;
+  box-shadow:4px 0 18px rgba(16,24,32,.025) !important;
+}
+.club-app-light .club-sidebar-final .club-sidebar-head p{color:#7b8790 !important}
+.club-app-light .club-sidebar-final .club-menu-group h3{color:#8a969e !important}
+.club-app-light .club-sidebar-final .club-menu-group nav a{color:#4f5c65 !important}
+.club-app-light .club-sidebar-final .club-menu-group nav a:hover,
+.club-app-light .club-sidebar-final .club-menu-group nav a:focus-visible{
+  background:#f1f5f7 !important;
+  color:#101820 !important;
+}
+.club-app-light .club-sidebar-final .club-sidebar-logout{
+  border-top-color:#e2e7eb !important;
+}
+.club-app-light .club-sidebar-final .club-sidebar-logout button{
+  background:#eef2f4;
+  color:#3f4c55;
+}
+
+/* Topbar */
+.club-app-light .club-system-topbar{
+  min-height:58px;
+  margin:-12px -4px 18px;
+  padding:0 4px 12px;
+  border-bottom:1px solid #e5eaee;
+}
+.club-app-light .notification-bell{
+  border-color:#dfe5e9;
+  background:#ffffff;
+  color:#25313a;
+  box-shadow:0 1px 3px rgba(16,24,32,.06);
+}
+
+/* Typography and surfaces */
+.club-app-light h1,
+.club-app-light h2,
+.club-app-light h3,
+.club-app-light h4,
+.club-app-light strong{color:#101820}
+.club-app-light .muted,
+.club-app-light .help{color:#6f7c85}
+.club-app-light .card{
+  background:#ffffff;
+  border-color:#e2e7eb;
+  color:#101820;
+  box-shadow:0 1px 2px rgba(16,24,32,.025);
+}
+.club-app-light .empty{color:#75818a}
+.club-app-light .page-head{border-color:#e2e7eb}
+
+/* Forms */
+.club-app-light label{color:#46535c}
+.club-app-light input,
+.club-app-light select,
+.club-app-light textarea{
+  background:#ffffff;
+  color:#101820;
+  border-color:#d9e0e5;
+  outline:none;
+}
+.club-app-light input::placeholder,
+.club-app-light textarea::placeholder{color:#9aa5ad}
+.club-app-light input:focus,
+.club-app-light select:focus,
+.club-app-light textarea:focus{
+  border-color:#9ddb16;
+  box-shadow:0 0 0 3px rgba(157,219,22,.13);
+}
+.club-app-light input:disabled,
+.club-app-light select:disabled,
+.club-app-light textarea:disabled{
+  background:#f2f5f6;
+  color:#7f8a92;
+}
+.club-app-light .check input{accent-color:#9ddb16}
+.club-app-light .field-help{color:#748089}
+.club-app-light .form-divider{border-color:#e2e7eb}
+.club-app-light hr{border-color:#e2e7eb !important}
+
+/* Buttons */
+.club-app-light button,
+.club-app-light .btn{
+  box-shadow:none;
+}
+.club-app-light .btn-secondary{
+  background:#eef2f4;
+  color:#34414a;
+  border:1px solid #dde4e8;
+}
+.club-app-light .btn-secondary:hover{background:#e6ecef}
+.club-app-light .btn-danger{
+  background:#fff0f1;
+  color:#b13b47;
+  border:1px solid #f2cdd1;
+}
+
+/* Tables */
+.club-app-light .table-wrap{
+  border:1px solid #e2e7eb;
+  border-radius:14px;
+  background:#fff;
+}
+.club-app-light .table th,
+.club-app-light .table td{border-bottom-color:#e7ebee}
+.club-app-light .table th{
+  background:#f7f9fa;
+  color:#71808a;
+}
+.club-app-light .table td{color:#27333b}
+.club-app-light .table tbody tr:hover{background:#fafcfc}
+
+/* Badges and status */
+.club-app-light .badge{
+  border-color:#dfe5e9;
+  color:#56636c;
+  background:#f5f7f8;
+}
+.club-app-light .status-pending,
+.club-app-light .finance-pending{background:#fff7d9;color:#896a00}
+.club-app-light .status-confirmed,
+.club-app-light .finance-paid{background:#eaf7e8;color:#2d7137}
+.club-app-light .status-declined,
+.club-app-light .finance-overdue{background:#fff0f1;color:#a53b45}
+.club-app-light .finance-cancelled{background:#eef2f4;color:#65717a}
+.club-app-light .success{border-color:#b9dca9}
+
+/* Athletes / callups / private information */
+.club-app-light .athlete-check,
+.club-app-light .private-note,
+.club-app-light .callup-card,
+.club-app-light .integration-card,
+.club-app-light .connection-current,
+.club-app-light .help-concept-grid article,
+.club-app-light .comm-qtr-summary,
+.club-app-light .notification-list>a{
+  background:#f8fafb;
+  border-color:#e1e6ea;
+  color:#27333b;
+}
+.club-app-light .private-note{color:#65727b}
+.club-app-light .callup-main small,
+.club-app-light .callup-meta,
+.club-app-light .integration-card span,
+.club-app-light .integration-card small{color:#75818a}
+
+/* Dashboard */
+.club-app-light .clean-dashboard-hero{border-bottom-color:#e1e6ea}
+.club-app-light .clean-dashboard-hero p{color:#6f7d86}
+.club-app-light .clean-dashboard-panel,
+.club-app-light .clean-site-card{background:#fff}
+.club-app-light .clean-kpi-grid > *{
+  background:#ffffff;
+  border-color:#e2e7eb;
+  box-shadow:0 1px 2px rgba(16,24,32,.02);
+}
+.club-app-light .clean-kpi-grid a{color:#608d00}
+.club-app-light .trial-counter,
+.club-app-light .setup-list > *,
+.club-app-light .simple-training-list > *{border-color:#e2e7eb}
+
+/* Getting started / Help */
+.club-app-light .getting-started{
+  background:#ffffff;
+  border-color:#e1e6ea;
+}
+.club-app-light .getting-started-head p{color:#6f7c85}
+.club-app-light .getting-started-progress{background:#e9edef}
+.club-app-light .getting-started-list a{
+  color:#34414a;
+  border-color:#e0e6e9;
+  background:#f8fafb;
+}
+.club-app-light .getting-started-list a:hover{border-color:#c8d2d8;background:#f3f7f8}
+.club-app-light .check-state{background:#e9eef0;color:#56636c}
+.club-app-light .done .check-state{background:#e4f5df;color:#2d7137}
+.club-app-light .checklist-restore{color:#6c7881;border-color:#cfd7dc}
+.club-app-light .tour-reopen-btn{
+  background:#ffffff;
+  border-color:#dce3e7;
+  color:#5c6972;
+}
+.club-app-light .help-tip-trigger{
+  background:#eef2f4;
+  border-color:#d4dce1;
+  color:#66737d;
+}
+.club-app-light .help-tip-popover{
+  background:#ffffff;
+  border-color:#dce3e7;
+  box-shadow:0 15px 45px rgba(16,24,32,.14);
+}
+.club-app-light .help-tip-popover strong{color:#101820}
+.club-app-light .help-tip-popover>span{color:#65727b}
+
+/* Agenda */
+.club-app-light .agenda-day{border-bottom-color:#e2e7eb}
+.club-app-light .agenda-day-label small,
+.club-app-light .agenda-day-events h2{color:#74818a}
+.club-app-light .agenda-event{
+  background:#ffffff;
+  border-color:#e1e6ea;
+}
+.club-app-light .agenda-event span{color:#6d7982}
+.club-app-light .agenda-shortcuts{border-color:#e2e7eb}
+.club-app-light .agenda-shortcut-group a{
+  background:#ffffff;
+  border-color:#e0e6e9;
+  color:#34414a;
+}
+
+/* Notifications / communication */
+.club-app-light .notification-list p{color:#74818a}
+.club-app-light .notification-list b{color:#87939b}
+.club-app-light .comm-qtr-summary span{color:#71808a}
+.club-app-light .comm-recipient-list,
+.club-app-light .comm-list{color:#27333b}
+
+/* QTR — keep event colors meaningful, lighten the work surface */
+.club-app-light .qtr-week-picker{border-color:#dce3e7;background:#fff}
+.club-app-light .qtr-mode{
+  border-color:#dce3e7;
+  background:#f2f5f6;
+  color:#53616a;
+}
+.club-app-light .qtr-mode.active{border-color:#9bc965;background:#eef8e5;color:#426d16}
+.club-app-light .qtr-grid-head,
+.club-app-light .qtr-row{border-bottom-color:#e3e8eb}
+.club-app-light .qtr-category-head,
+.club-app-light .qtr-day-head{color:#4b5861}
+.club-app-light .qtr-category-cell{
+  background:#f8fafb;
+  border-color:#e0e6e9;
+}
+.club-app-light .qtr-category-cell input{background:transparent;color:#101820;box-shadow:none}
+.club-app-light .qtr-empty-slot{
+  background:#fbfcfc;
+  color:#87929a;
+  border-color:#dfe5e9;
+}
+.club-app-light .qtr-empty-slot:hover{background:#f4f7f8;border-color:#c9d4da}
+.club-app-light .qtr-add-small{border-color:#cbd5da;color:#6d7a83}
+.club-app-light .qtr-legend{color:#59666f}
+.club-app-light .qtr-modal{
+  background:#ffffff;
+  border-color:#dce3e7;
+  color:#101820;
+  box-shadow:0 24px 80px rgba(16,24,32,.22);
+}
+
+/* Connections */
+.club-app-light .connection-current{background:#f8fafb}
+.club-app-light .connection-future{border-color:#ccd5da}
+
+/* Misc admin blocks that had dark hardcoded backgrounds */
+.club-app-light .player-agenda-list article,
+.club-app-light .coach-match-list article,
+.club-app-light .coach-access-list article{
+  background:#f8fafb;
+  border-color:#e1e6ea;
+}
+.club-app-light .player-agenda-list p,
+.club-app-light .coach-match-list p,
+.club-app-light .coach-access-list p{color:#6f7c85}
+
+/* Mobile: existing behavior is preserved; only colors change. */
+@media(max-width:900px){
+  .club-app-light > .main{background:#f5f7f9}
+  .club-app-light .club-system-topbar{margin-top:-6px}
+}
+
+
+/* v1.5.0.2 — QTR category selector */
+.club-app-light .qtr-category-cell select{
+  width:100%;
+  min-width:0;
+  padding:8px 30px 8px 10px;
+  border:1px solid #d7e0e5;
+  border-radius:9px;
+  background:#fff;
+  color:#101820;
+  font-weight:800;
+  font-size:14px;
+  cursor:pointer;
+}
+.club-app-light .qtr-category-cell select:focus{
+  outline:none;
+  border-color:#8fd400;
+  box-shadow:0 0 0 3px rgba(143,212,0,.14);
+}
+.club-app-light .qtr-category-cell small{margin-top:2px;color:#71808a}
