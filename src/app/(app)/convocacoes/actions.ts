@@ -19,7 +19,7 @@ export async function createCallUps(formData: FormData) {
 
   const match = await prisma.match.findFirst({
     where: { id: matchId, organizationId: user.organizationId },
-    select: { id: true, categoryId: true },
+    select: { id: true },
   });
   if (!match) return;
 
@@ -28,7 +28,6 @@ export async function createCallUps(formData: FormData) {
       id: { in: athleteIds },
       organizationId: user.organizationId,
       active: true,
-      categoryId: match.categoryId,
     },
     select: { id: true },
   });

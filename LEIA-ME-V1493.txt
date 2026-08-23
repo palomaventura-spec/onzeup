@@ -1,0 +1,21 @@
+ONZEUP v1.4.9.3 — Convocação Final
+
+Corrige:
+1. Texto quebrado "ConvocaÃ§Ã£o" no botão da tela Jogos.
+2. O backend da convocação ainda filtrava pelo categoryId do jogo.
+   Isso impedia convocar atletas "Sem categoria", mesmo quando eles apareciam na tela.
+3. createCallUps agora aceita qualquer atleta ativo da organização selecionado manualmente.
+4. Mantém atletas já convocados fora da lista.
+
+Aplicar:
+APLICAR_V1493.cmd
+
+Depois:
+npx prisma validate
+npx prisma generate
+npm run build
+
+Se passar:
+git add -A
+git commit -m "ONZEUP v1.4.9.3 - fix callup backend and encoding"
+git push origin main
