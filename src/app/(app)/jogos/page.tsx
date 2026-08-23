@@ -155,7 +155,10 @@ export default async function MatchesPage() {
                         <td>
                           <div className="actions">
                             <Link className="btn btn-secondary btn-small" href={`/jogos/${match.id}`}>
-                              Editar
+                              Abrir jogo
+                            </Link>
+                            <Link className="match-callup-button" href={`/convocacoes/${match.id}`}>
+                              ConvocaÃ§Ã£o <span className="match-callup-count">{match.callUps.length}</span>
                             </Link>
                             <form className="inline-form" action={deleteMatch}>
                               <input type="hidden" name="id" value={match.id} />

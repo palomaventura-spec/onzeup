@@ -1,0 +1,18 @@
+ONZEUP v1.4.9
+
+Inclui:
+1. Sino com área própria, sem sobreposição.
+2. Convocação visível dentro de Jogos.
+3. Player: Ver modelo Free/Premium.
+4. Club: remove Teste grátis e 15 dias grátis.
+5. Header mobile Entrar / Ver planos.
+6. Faixa Planilhas -> WhatsApp -> Cobranças responsiva.
+7. /coach vira landing comercial.
+8. /coaches permanece catálogo.
+9. Landing Coach com CTA Criar meu perfil + Explorar profissionais.
+
+Não altera Prisma, pagamentos, webhook Asaas ou /coaches.
+
+Aplicar:
+APLICAR_V149.cmd
+npm run build
