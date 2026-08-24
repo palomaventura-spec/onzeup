@@ -1,19 +1,13 @@
-ONZEUP v1.6.0-b.2
+ONZEUP v1.6.0-c — QTR PDF + Conexões
 
-Correção pontual após validação da cortesia no Super Admin.
+Correções:
+- seletor de categoria do QTR mais largo e sem repetir o ano-base dentro da opção
+- botão PDF abre uma página limpa exclusiva do QTR e chama a impressão dessa página
+- sidebar/header não entram mais no PDF
+- WhatsApp legado com e-mail não aparece mais no campo
+- WhatsApp é normalizado para número com DDI/DDD
+- domínio próprio mostra status e fluxo real de ativação assistida por Vercel/DNS
+- domínio digitado é normalizado sem http/https ou barras
 
-ALTERAÇÕES
-- Dashboard passa a ler Organization.accessStatus.
-- Quando COMPLIMENTARY, exibe "Plano ... — Cortesia".
-- Exibe "Sem cobrança durante a cortesia".
-- Exibe data final e motivo quando cadastrados.
-- Botão passa a "Ver acesso e planos".
-- Mantém comportamento normal para assinaturas pagas/trial.
-- Não altera Prisma nem banco.
-
-COMO USAR
-1. Extraia esta pasta FORA de C:\Users\User\Documents\onzeup.
-2. Execute APLICAR_V160B2.cmd.
-3. Aguarde o npm run build.
-4. Se passar, execute npm run dev e teste Dashboard + Assinatura.
-5. Não faça git push antes do teste visual.
+Sem alteração de Prisma/schema/banco.
+Não fazer Git push antes do build passar.
