@@ -1,17 +1,13 @@
-ONZEUP v1.7.1 - ETAPA 1 - SUPER ADMIN NAVIGATION
+ONZEUP v1.7.1-b — Super Admin / gestão de inativos
 
 Inclui:
-- sidebar fixa no desktop
-- navegacao horizontal compacta no mobile
-- Visao geral, Organizacoes, Players, Pagamentos e Planos
-- link para abrir portal ONZEUP
-- logout sempre disponivel
-- login e recuperacao de senha permanecem sem sidebar
+- Players: filtro, desativar, reativar e excluir somente quando INACTIVE.
+- Ao desativar Player: sai do catálogo, fica privado e perde destaque.
+- Exclusão de Player preserva histórico Payment via playerId SetNull conforme schema.
+- Organizações: filtro por status, desativar, reativar e excluir somente inativas.
+- Exclusão de organização é bloqueada se houver Payment PAID ou Charge PAID.
+- Confirmação obrigatória antes de desativar/excluir.
+- Nenhuma alteração de schema Prisma.
+- Nenhuma alteração no Asaas/webhook/checkout.
 
-Nao altera Prisma, Asaas ou banco.
-
-Aplicacao:
-1. Extraia este ZIP fora da pasta onzeup.
-2. Execute APLICAR_V171_ADMIN_NAV.cmd
-3. O script faz backup e roda npm run build.
-4. Teste /admin e paginas internas antes do git push.
+Aplicar fora da pasta do projeto executando APLICAR_V171B.cmd.

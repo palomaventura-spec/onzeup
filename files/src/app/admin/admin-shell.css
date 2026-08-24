@@ -203,3 +203,63 @@
 
   .admin-content-v171{padding:24px 16px 48px}
 }
+
+/* ===== ONZEUP v1.7.1-b — gestão de inativos ===== */
+.admin-entity-filter-v171{
+  display:flex;
+  gap:9px;
+  align-items:center;
+  margin:0 0 18px;
+  padding:14px;
+  border:1px solid #e2e7eb;
+  border-radius:14px;
+  background:#fff;
+}
+.admin-entity-filter-v171 input{flex:1;min-width:220px}
+.admin-entity-filter-v171 select{min-width:150px}
+.admin-row-actions-v171{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.admin-row-actions-v171 form{margin:0}
+.admin-status-inactive{background:#f1f3f4!important;color:#6c7880!important}
+.admin-status-active{background:#eef7d9!important;color:#466500!important}
+.btn-danger-v171{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:36px;
+  padding:8px 12px;
+  border:1px solid #e6b8b8;
+  border-radius:9px;
+  background:#fff4f4;
+  color:#a92f2f;
+  font:inherit;
+  font-size:10px;
+  font-weight:900;
+  cursor:pointer;
+}
+.btn-danger-v171:hover{background:#ffe7e7;border-color:#da9999}
+.btn-danger-v171:disabled{opacity:.55;cursor:not-allowed}
+.admin-danger-zone-v171{
+  margin-top:18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:24px;
+  border-color:#ead7d7!important;
+}
+.admin-danger-zone-v171 h2{margin:6px 0}
+.admin-danger-actions-v171{display:flex;flex-wrap:wrap;gap:9px;justify-content:flex-end}
+.admin-danger-actions-v171 form{margin:0}
+.admin-empty-cell-v171{text-align:center;padding:34px!important;color:#7a878f}
+.admin-entity-table-v171 td{vertical-align:middle}
+
+@media(max-width:900px){
+  .admin-entity-filter-v171{align-items:stretch;flex-wrap:wrap}
+  .admin-entity-filter-v171 input{flex:1 1 100%}
+  .admin-danger-zone-v171{align-items:flex-start;flex-direction:column}
+  .admin-danger-actions-v171{justify-content:flex-start}
+}
+@media(max-width:620px){
+  .admin-entity-filter-v171{display:grid;grid-template-columns:1fr}
+  .admin-entity-filter-v171 input,
+  .admin-entity-filter-v171 select{min-width:0;width:100%}
+}
