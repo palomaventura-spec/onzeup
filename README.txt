@@ -1,11 +1,17 @@
-ONZEUP PLAYER - CORRECAO DOS FILTROS
+ONZEUP v1.7.1 - ETAPA 1 - SUPER ADMIN NAVIGATION
 
-Alteracoes:
-- categorias fixas de Sub-7 a Sub-20
-- posicoes completas, independentes dos atletas cadastrados
-- placeholders "Todas as categorias" e "Todas as posicoes"
-- busca combinada continua funcionando
-- valor interno das categorias usa "sub 8", "sub 9" etc. para compatibilidade com cadastros existentes
-- botao "Limpar filtros" aparece quando existe filtro ativo
+Inclui:
+- sidebar fixa no desktop
+- navegacao horizontal compacta no mobile
+- Visao geral, Organizacoes, Players, Pagamentos e Planos
+- link para abrir portal ONZEUP
+- logout sempre disponivel
+- login e recuperacao de senha permanecem sem sidebar
 
-Nao altera Prisma, banco ou pagamentos.
+Nao altera Prisma, Asaas ou banco.
+
+Aplicacao:
+1. Extraia este ZIP fora da pasta onzeup.
+2. Execute APLICAR_V171_ADMIN_NAV.cmd
+3. O script faz backup e roda npm run build.
+4. Teste /admin e paginas internas antes do git push.

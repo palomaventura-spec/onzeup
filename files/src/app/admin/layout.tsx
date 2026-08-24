@@ -1,7 +1,11 @@
+import type { ReactNode } from "react";
+import AdminShell from "./AdminShell";
+import "./admin-shell.css";
+
 export default function AdminRootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  return <div className="admin-app-light">{children}</div>;
+  return <AdminShell>{children}</AdminShell>;
 }
