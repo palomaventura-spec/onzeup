@@ -31,7 +31,6 @@ export default async function PlayersHome({
   }>;
 }) {
   const query = await searchParams;
-  await reconcileExpiredPlayerPremiums();
   const year = Number(query.year) || undefined;
 
   const where: any = {

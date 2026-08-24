@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+
 import {
   asaasIsSandbox,
   createAsaasPlayerPremiumCheckout,
@@ -11,10 +13,9 @@ import {
   writeAsaasData,
 } from "@/lib/asaas";
 
-const APP_URL = (process.env.APP_URL || "https://www.onzeup.com.br").replace(
-  /\/$/,
-  "",
-);
+const APP_URL = (
+  process.env.APP_URL || "https://www.onzeup.com.br"
+).replace(/\/$/, "");
 
 async function createPlayerPremium(
   formData: FormData,
@@ -26,14 +27,20 @@ async function createPlayerPremium(
     redirect("/responsavel");
   }
 
-  const playerId = String(formData.get("playerId") || "");
+  const playerId = String(formData.get("playerId") || "").trim();
+
+  if (!playerId) {
+    redirect("/responsavel?paymentStatus=erro");
+  }
 
   const guardian = await prisma.guardianProfile.findUnique({
-    where: { userId: user.id },
+    where: {
+      userId: user.id,
+    },
   });
 
   if (!guardian) {
-    redirect("/responsavel");
+    redirect("/responsavel?paymentStatus=erro");
   }
 
   const player = await prisma.playerProfile.findFirst({
@@ -44,7 +51,7 @@ async function createPlayerPremium(
   });
 
   if (!player) {
-    redirect("/responsavel");
+    redirect("/responsavel?paymentStatus=erro");
   }
 
   if (player.plan === "PREMIUM" && player.planStatus === "ACTIVE") {
@@ -59,7 +66,9 @@ async function createPlayerPremium(
       status: "PENDING",
       method: "ASAAS",
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: {
+      createdAt: "desc",
+    },
   });
 
   if (existing) {
@@ -89,16 +98,21 @@ async function createPlayerPremium(
 
   const returnBase = `${APP_URL}/checkout/asaas/retorno`;
 
+  let checkoutLink = "";
+
   try {
     const common = {
       externalReference: payment.id,
       playerName: player.name,
+
       successUrl: `${returnBase}?status=success&paymentId=${encodeURIComponent(
         payment.id,
       )}&origin=player`,
+
       cancelUrl: `${returnBase}?status=cancel&paymentId=${encodeURIComponent(
         payment.id,
       )}&origin=player`,
+
       expiredUrl: `${returnBase}?status=expired&paymentId=${encodeURIComponent(
         payment.id,
       )}&origin=player`,
@@ -113,8 +127,12 @@ async function createPlayerPremium(
       throw new Error("Asaas não retornou o link do checkout.");
     }
 
+    checkoutLink = checkout.link;
+
     await prisma.payment.update({
-      where: { id: payment.id },
+      where: {
+        id: payment.id,
+      },
       data: {
         pixPayload: writeAsaasData({
           provider: "ASAAS",
@@ -130,19 +148,47 @@ async function createPlayerPremium(
     });
 
     await prisma.playerProfile.update({
-      where: { id: player.id },
-      data: { planStatus: "AWAITING_PAYMENT" },
+      where: {
+        id: player.id,
+      },
+      data: {
+        planStatus: "AWAITING_PAYMENT",
+      },
     });
-
-    redirect(checkout.link);
   } catch (error) {
     console.error(
       "PLAYER_PREMIUM_ASAAS_CREATE_ERROR",
       error instanceof Error ? error.message : error,
     );
 
-    redirect(`/responsavel?player=${player.id}&paymentStatus=erro`);
+    await prisma.payment
+      .update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          status: "CANCELLED",
+          note: `Falha ao criar checkout Asaas - ${player.name}`,
+        },
+      })
+      .catch(() => null);
+
+    redirect(
+      `/responsavel?player=${encodeURIComponent(
+        player.id,
+      )}&paymentStatus=erro`,
+    );
   }
+
+  if (!checkoutLink) {
+    redirect(
+      `/responsavel?player=${encodeURIComponent(
+        player.id,
+      )}&paymentStatus=erro`,
+    );
+  }
+
+  redirect(checkoutLink);
 }
 
 export async function createPlayerPremiumAsaas(formData: FormData) {
