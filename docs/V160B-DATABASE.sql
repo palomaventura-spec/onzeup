@@ -1,0 +1,3 @@
+ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "accessStatus" TEXT NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "complimentaryUntil" TIMESTAMP(3);
+ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "complimentaryReason" TEXT;

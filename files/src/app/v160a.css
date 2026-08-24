@@ -1,0 +1,77 @@
+/* ============================================================
+   ONZEUP v1.6.0-a — CLUB UI REFINEMENT
+   Visual-only refinement for authenticated Club.
+   Scope: .club-app-light. Public pages remain untouched.
+   ============================================================ */
+.club-app-light{--club-surface:#fff;--club-soft:#f7f9fa;--club-border:#dfe6ea;--club-text:#172129;--club-muted:#6b7881;--club-accent:#9ddb16}
+.club-app-light>.main{padding:30px 34px 48px;min-width:0}
+.club-app-light .page-head{align-items:center;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid #e3e9ed}
+.club-app-light .page-head h1{margin:0 0 6px;font-size:30px;letter-spacing:-.035em}
+.club-app-light .page-head p{margin:0;line-height:1.5}
+.club-app-light .page-eyebrow{display:block;margin-bottom:7px;color:#688000;font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+.club-app-light .card{border-radius:14px;padding:22px;border:1px solid var(--club-border);box-shadow:0 1px 2px rgba(16,24,32,.025),0 8px 28px rgba(16,24,32,.025)}
+.club-app-light .card>h2:first-child{font-size:18px;letter-spacing:-.02em;margin-bottom:18px}
+.club-app-light .stack{gap:18px}.club-app-light .two-col{gap:20px}.club-app-light .grid{gap:14px}
+.club-app-light .grid>.card{min-height:108px;display:flex;flex-direction:column;justify-content:center}
+.club-app-light .grid>.card h2{font-size:27px;margin:0 0 6px;letter-spacing:-.04em}
+.club-app-light .grid>.card .muted{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.club-app-light input,.club-app-light select,.club-app-light textarea{min-height:44px;border-radius:10px;border-color:#d7e0e5;padding:11px 13px;transition:border-color .15s,box-shadow .15s,background .15s}
+.club-app-light textarea{min-height:92px;resize:vertical}.club-app-light label{gap:7px;font-size:12px;font-weight:800;color:#4d5a63}
+.club-app-light .form{gap:15px}.club-app-light button,.club-app-light .btn{min-height:42px;border-radius:10px;padding:10px 15px;transition:transform .12s,background .15s,border-color .15s}
+.club-app-light button:hover,.club-app-light .btn:hover{transform:translateY(-1px)}
+.club-app-light .btn-secondary{background:#fff;color:#39464f;border-color:#d8e1e6}.club-app-light .btn-secondary:hover{background:#f4f7f8;border-color:#c9d4da}
+.club-app-light .btn-danger{background:#fff;color:#a33b45;border-color:#edcfd2}.club-app-light .btn-danger:hover{background:#fff4f5}
+.club-app-light .btn-small{min-height:34px;padding:7px 11px}
+.club-app-light .badge{padding:7px 10px;background:#f5f8f9;border-color:#dce4e8;color:#53616a;font-weight:800}
+.club-app-light .table-wrap{overflow:auto;border-radius:12px;border:1px solid #e0e6ea;box-shadow:none}
+.club-app-light .table th{padding:12px 14px;background:#f6f8f9;color:#72808a;font-size:10px;letter-spacing:.09em}
+.club-app-light .table td{padding:14px;border-bottom-color:#e8edef}.club-app-light .table tbody tr:last-child td{border-bottom:0}.club-app-light .table tbody tr:hover{background:#f9fbfb}
+.club-app-light .empty{border:1px dashed #d8e1e6;border-radius:12px;background:#fafcfc;margin-top:8px}
+/* Sidebar refinement */
+.club-app-light.shell{grid-template-columns:248px minmax(0,1fr)}
+.club-app-light.shell>.club-sidebar-final{padding:24px 16px 18px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.club-app-light .club-sidebar-head{padding:0 8px 18px;border-bottom:1px solid #edf0f2}
+.club-app-light .club-sidebar-head .brand{font-size:24px}.club-app-light .club-sidebar-head p{font-size:11px;line-height:1.45;margin:7px 0 0}
+.club-app-light .club-menu-groups{gap:18px;margin-top:18px}.club-app-light .club-menu-group h3{margin:0 8px 6px;font-size:9px;letter-spacing:.14em}
+.club-app-light .club-menu-group nav{display:grid;gap:3px}.club-app-light .club-menu-group nav a{padding:9px 11px;border-radius:9px;font-size:13px;font-weight:700;border-left:3px solid transparent}
+.club-app-light .club-menu-group nav a:hover,.club-app-light .club-menu-group nav a:focus-visible{border-left-color:var(--club-accent);background:#f4f8f1!important;color:#18220f!important}
+.club-app-light .club-sidebar-logout{margin-top:20px;padding-top:14px}.club-app-light .club-sidebar-logout button{width:100%;min-height:38px}
+.club-app-light .club-system-topbar{min-height:48px;margin:-8px 0 22px;padding:0 0 12px;display:flex;justify-content:flex-end;align-items:center}
+/* Dashboard */
+.club-app-light .clean-dashboard-hero{padding:6px 0 24px;margin-bottom:20px;align-items:flex-end}
+.club-app-light .clean-dashboard-hero h1{font-size:34px;letter-spacing:-.045em;margin:3px 0 6px}.club-app-light .clean-dashboard-hero p{margin:0}
+.club-app-light .clean-kpi-grid{gap:14px;margin:18px 0 20px}.club-app-light .clean-kpi-grid>a{border-radius:14px;padding:19px 20px;border:1px solid var(--club-border);box-shadow:0 6px 24px rgba(16,24,32,.025);transition:transform .15s,border-color .15s,box-shadow .15s}
+.club-app-light .clean-kpi-grid>a:hover{transform:translateY(-2px);border-color:#ccd8de;box-shadow:0 10px 28px rgba(16,24,32,.055)}
+.club-app-light .clean-kpi-grid small{font-size:10px;letter-spacing:.1em}.club-app-light .clean-kpi-grid strong{font-size:31px;letter-spacing:-.045em}.club-app-light .clean-kpi-grid span{font-size:11px;font-weight:800}
+.club-app-light .clean-dashboard-grid{gap:18px}.club-app-light .clean-dashboard-panel{padding:22px}.club-app-light .section-title-row{padding-bottom:14px;margin-bottom:10px;border-bottom:1px solid #edf0f2}
+.club-app-light .setup-list>div,.club-app-light .simple-training-list article{padding:13px 0}.club-app-light .setup-list b{background:#eef2f4;color:#61707a;border-radius:999px}.club-app-light .setup-list .done b{background:#edf7e5;color:#4e781e}
+.club-app-light .clean-site-card{margin-top:18px;padding:24px;align-items:center;border-color:#dbe4e8;background:linear-gradient(135deg,#fff,#f8fafb)}
+.club-app-light .dashboard-primary-btn,.club-app-light .dashboard-secondary-btn{border-radius:10px;min-height:42px;display:inline-flex;align-items:center;justify-content:center;padding:10px 15px;font-weight:900}
+/* Agenda */
+.club-app-light .agenda-shell{display:grid;gap:14px}.club-app-light .agenda-day{padding:16px 0;grid-template-columns:92px 1fr;gap:18px}
+.club-app-light .agenda-day-label strong{font-size:18px}.club-app-light .agenda-event{border-radius:12px;padding:14px 16px;box-shadow:0 1px 2px rgba(16,24,32,.02)}
+.club-app-light .agenda-shortcuts{border-radius:14px;padding:16px 18px}.club-app-light .agenda-shortcut-group a{border-radius:9px;padding:9px 12px;font-weight:800}
+/* Athlete / category / staff management */
+.club-app-light .athlete-management-layout,.club-app-light .category-hub-layout{gap:20px}.club-app-light .athlete-create-panel{position:sticky;top:20px}
+.club-app-light .athlete-card-grid{gap:14px}.club-app-light .admin-athlete-card{border-radius:14px;overflow:hidden;transition:transform .15s,box-shadow .15s}.club-app-light .admin-athlete-card:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(16,24,32,.06)}
+.club-app-light .category-hub-stats{gap:10px}.club-app-light .category-hub-stats>*{background:#f7f9fa;border:1px solid #e3e9ed;border-radius:10px;padding:12px}
+.club-app-light .category-training-admin,.club-app-light .category-match-admin,.club-app-light .category-staff-list{border-color:#e4eaed;background:#fafbfc;border-radius:12px}
+/* Finance */
+.club-app-light .finance-grid{gap:18px;margin-top:18px}.club-app-light .finance-grid>.card{padding:22px}.club-app-light .finance-grid hr{margin:26px 0!important}
+.club-app-light .finance-pending,.club-app-light .finance-paid,.club-app-light .finance-overdue,.club-app-light .finance-cancelled{font-weight:900;border-radius:999px;padding:6px 9px}
+/* Communication / connections / help */
+.club-app-light .communication-grid,.club-app-light .connections-grid,.club-app-light .help-concept-grid{gap:16px}
+.club-app-light .comm-list,.club-app-light .comm-recipient-list,.club-app-light .comm-qtr-card,.club-app-light .connection-card,.club-app-light .help-library-card{border-radius:13px;border-color:#e1e7eb;background:#fff}
+.club-app-light .connection-card{padding:20px;transition:transform .15s,border-color .15s}.club-app-light .connection-card:hover{transform:translateY(-2px);border-color:#cdd8de}
+.club-app-light .connection-icon{background:#f2f6ef;border-radius:10px}.club-app-light .connection-future{background:#f7f9fa;color:#72808a}
+.club-app-light .help-concept-grid article,.club-app-light .help-library-card{padding:18px}.club-app-light .help-library-card:hover{background:#f9fbfb}
+/* Plans */
+.club-app-light .commercial-plans-grid{gap:16px}.club-app-light .commercial-plan-card{border-radius:16px;padding:24px}.club-app-light .commercial-plan-card.featured{transform:translateY(-3px)}
+.club-app-light .subscription-current-card{border-radius:16px;background:linear-gradient(135deg,#fff,#f7faf8)}
+/* Modals / overlays */
+.club-app-light .qtr-modal{background:#fff;color:#172129;border:1px solid #dce4e8;box-shadow:0 24px 70px rgba(16,24,32,.2);border-radius:16px}
+.club-app-light .qtr-modal-backdrop{background:rgba(17,25,31,.42);backdrop-filter:blur(2px)}
+/* Responsive */
+@media(max-width:1100px){.club-app-light>.main{padding:26px 24px 42px}.club-app-light.shell{grid-template-columns:226px minmax(0,1fr)}.club-app-light .clean-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.club-app-light.shell{grid-template-columns:1fr}.club-app-light>.main{padding:20px 16px 36px}.club-app-light .page-head{align-items:flex-start}.club-app-light .clean-dashboard-hero h1{font-size:30px}.club-app-light .clean-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.club-app-light .athlete-create-panel{position:static}}
+@media(max-width:560px){.club-app-light>.main{padding:16px 12px 30px}.club-app-light .page-head h1{font-size:27px}.club-app-light .clean-kpi-grid{grid-template-columns:1fr}.club-app-light .card{padding:17px}.club-app-light .grid{grid-template-columns:1fr}.club-app-light .actions{gap:6px}.club-app-light .actions .btn,.club-app-light .actions button{width:100%}.club-app-light .agenda-day{grid-template-columns:1fr;gap:8px}}
