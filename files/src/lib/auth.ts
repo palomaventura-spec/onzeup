@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { isPastGrace } from "@/lib/billing-entitlements";
 
 const COOKIE_NAME = "onzeup_session";
 
@@ -57,13 +58,30 @@ export async function requireOrganizationUser() {
 
   const organization = await prisma.organization.findUnique({
     where: { id: user.organizationId },
-    select: { accessStatus: true, complimentaryUntil: true },
+    select: {
+      accessStatus: true,
+      complimentaryUntil: true,
+      subscription: { select: { status: true, currentPeriodEnd: true } },
+    },
   });
   if (!organization) redirect("/login");
+
   if (organization.accessStatus === "SUSPENDED") redirect("/acesso-bloqueado?status=suspended");
   if (organization.accessStatus === "CANCELLED") redirect("/acesso-bloqueado?status=cancelled");
-  if (organization.accessStatus === "COMPLIMENTARY" && organization.complimentaryUntil && organization.complimentaryUntil < new Date()) {
-    redirect("/acesso-bloqueado?status=expired");
+
+  if (organization.accessStatus === "COMPLIMENTARY") {
+    if (organization.complimentaryUntil && organization.complimentaryUntil < new Date()) {
+      redirect("/acesso-bloqueado?status=expired");
+    }
+    return user as typeof user & { organizationId: string };
+  }
+
+  const subscription = organization.subscription;
+  if (subscription?.status === "CANCELLED") {
+    redirect("/acesso-bloqueado?status=billing_cancelled");
+  }
+  if (subscription?.status === "PAST_DUE" && isPastGrace(subscription.currentPeriodEnd)) {
+    redirect("/acesso-bloqueado?status=past_due");
   }
 
   return user as typeof user & { organizationId: string };

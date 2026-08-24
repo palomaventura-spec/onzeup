@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { reconcileExpiredPlayerPremiums } from "@/lib/billing-entitlements";
 
 const PLAYER_CATEGORIES = Array.from({ length: 14 }, (_, index) => {
   const number = index + 7;
@@ -30,6 +31,7 @@ export default async function PlayersHome({
   }>;
 }) {
   const query = await searchParams;
+  await reconcileExpiredPlayerPremiums();
   const year = Number(query.year) || undefined;
 
   const where: any = {

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { reconcileExpiredPlayerPremiums } from "@/lib/billing-entitlements";
 
 const PLAYER_CATEGORIES = Array.from({ length: 14 }, (_, index) => {
   const number = index + 7;
@@ -30,6 +31,7 @@ export default async function PlayersHome({
   }>;
 }) {
   const query = await searchParams;
+  await reconcileExpiredPlayerPremiums();
   const year = Number(query.year) || undefined;
 
   const where: any = {
@@ -81,6 +83,7 @@ export default async function PlayersHome({
         <a href="https://players.onzeup.com.br" className="player-brand">
           ONZE<span>UP</span> <b>PLAYERS</b>
         </a>
+
         <nav>
           <a href="#todos">Atletas</a>
           <a href="https://onzeup.com.br/player">Sobre o Player</a>
@@ -93,7 +96,9 @@ export default async function PlayersHome({
 
       <section className="catalog-title">
         <span className="page-eyebrow">ONZEUP PLAYERS</span>
+
         <h1>Atletas da base.</h1>
+
         <p>
           Descubra perfis esportivos públicos cadastrados e administrados por
           suas famílias.
@@ -107,8 +112,8 @@ export default async function PlayersHome({
               <span className="page-eyebrow">SELEÇÃO ONZEUP</span>
               <h2>Atletas em destaque</h2>
             </div>
-            <small>Destaques editoriais da plataforma</small>
           </div>
+
           <div className="featured-player-grid">
             {featured.map((p) => (
               <a
@@ -119,12 +124,18 @@ export default async function PlayersHome({
                 {p.photoUrl ? (
                   <img src={p.photoUrl} alt={p.name} />
                 ) : (
-                  <div className="featured-placeholder">{p.name.slice(0, 2)}</div>
+                  <div className="featured-placeholder">
+                    {p.name.slice(0, 2)}
+                  </div>
                 )}
+
                 <div className="featured-player-shade" />
+
                 <div className="featured-player-copy">
                   <span>★ DESTAQUE ONZEUP</span>
+
                   <h3>{p.nickname || p.name}</h3>
+
                   <p>
                     {[
                       p.name !== p.nickname ? p.name : null,
@@ -135,20 +146,25 @@ export default async function PlayersHome({
                       .filter(Boolean)
                       .join(" • ")}
                   </p>
+
                   {p.matches || p.goals ? (
                     <div className="featured-mini-stats">
                       {p.matches != null ? (
                         <b>
-                          {p.matches}<small>JOGOS</small>
+                          {p.matches}
+                          <small>JOGOS</small>
                         </b>
                       ) : null}
+
                       {p.goals != null ? (
                         <b>
-                          {p.goals}<small>GOLS</small>
+                          {p.goals}
+                          <small>GOLS</small>
                         </b>
                       ) : null}
                     </div>
                   ) : null}
+
                   <strong>Ver Player →</strong>
                 </div>
               </a>
@@ -163,6 +179,7 @@ export default async function PlayersHome({
             <span className="page-eyebrow">PESQUISA</span>
             <h2>Encontre um atleta</h2>
           </div>
+
           <span className="badge">{players.length} perfil(is)</span>
         </div>
 
@@ -175,6 +192,7 @@ export default async function PlayersHome({
 
           <select name="category" defaultValue={query.category || ""}>
             <option value="">Todas as categorias</option>
+
             {PLAYER_CATEGORIES.map((category) => (
               <option key={category.value} value={category.value}>
                 {category.label}
@@ -184,6 +202,7 @@ export default async function PlayersHome({
 
           <select name="position" defaultValue={query.position || ""}>
             <option value="">Todas as posições</option>
+
             {PLAYER_POSITIONS.map((position) => (
               <option key={position} value={position}>
                 {position}
@@ -214,7 +233,9 @@ export default async function PlayersHome({
           {players.map((p) => (
             <a
               href={`https://players.onzeup.com.br/${p.slug}`}
-              className={`catalog-person-card ${p.plan === "PREMIUM" ? "premium" : ""}`}
+              className={`catalog-person-card ${
+                p.plan === "PREMIUM" ? "premium" : ""
+              }`}
               key={p.id}
             >
               <div className="catalog-photo">
@@ -223,16 +244,24 @@ export default async function PlayersHome({
                 ) : (
                   <span>{p.name.slice(0, 2).toUpperCase()}</span>
                 )}
+
                 {p.plan === "PREMIUM" ? <b>PREMIUM</b> : null}
               </div>
+
               <small>ONZEUP PLAYER</small>
+
               <h3>{p.nickname || p.name}</h3>
-              {p.nickname ? <p className="catalog-real-name">{p.name}</p> : null}
+
+              {p.nickname ? (
+                <p className="catalog-real-name">{p.name}</p>
+              ) : null}
+
               <p>
                 {[p.position, p.categoryLabel, p.currentClub]
                   .filter(Boolean)
                   .join(" • ")}
               </p>
+
               <strong>Ver perfil →</strong>
             </a>
           ))}
@@ -249,17 +278,24 @@ export default async function PlayersHome({
       <section className="catalog-conversion">
         <div>
           <span className="page-eyebrow">ONZEUP PLAYER</span>
+
           <h2>Seu atleta também pode estar aqui.</h2>
+
           <p>
             Crie gratuitamente a identidade esportiva e publique o perfil
             quando quiser.
           </p>
         </div>
+
         <div>
           <a className="btn" href="https://onzeup.com.br/cadastro">
             Criar perfil grátis
           </a>
-          <a className="players-secondary-cta" href="https://onzeup.com.br/player">
+
+          <a
+            className="players-secondary-cta"
+            href="https://onzeup.com.br/player"
+          >
             Conhecer Free e Premium →
           </a>
         </div>
