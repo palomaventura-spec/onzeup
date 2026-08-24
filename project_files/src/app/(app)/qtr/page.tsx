@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
-import { duplicatePreviousQtr, generateQtr } from "./actions";
+import { duplicatePreviousQtr, generateQtr, saveQtr } from "./actions";
 import QtrEditor from "@/components/qtr/QtrEditor";
 import ModuleTour from "@/components/help/ModuleTour";
 import HelpTip from "@/components/help/HelpTip";
@@ -152,7 +152,7 @@ export default async function QtrPage({
       </section>
 
       <section className="card qtr-main-card">
-        <QtrEditor initialRows={rows} weekStart={weekStart} categories={categories} />
+        <QtrEditor initialRows={rows} weekStart={weekStart} categories={categories} saveAction={saveQtr} />
       </section>
     </>
   );

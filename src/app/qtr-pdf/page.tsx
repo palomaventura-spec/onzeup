@@ -106,7 +106,7 @@ export default async function QtrPdfPage({
         html,body{background:#fff!important;color:#101820!important;margin:0!important;padding:0!important;font-family:Arial,Helvetica,sans-serif}
         .qtr-print-page{padding:24px;max-width:1400px;margin:0 auto;background:#fff;color:#101820}
         .qtr-print-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;border-bottom:2px solid #101820;padding-bottom:14px;margin-bottom:18px}
-        .qtr-print-brand{font-size:24px;font-weight:900;letter-spacing:.03em}.qtr-print-brand span{color:#8fd400}
+        .qtr-print-identity{display:flex;align-items:center;gap:12px}.qtr-print-logo{width:58px;height:58px;object-fit:contain;border-radius:10px}.qtr-print-club-name{font-size:24px;font-weight:900;letter-spacing:.01em;line-height:1.1}
         .qtr-print-header h1{font-size:28px;margin:4px 0 0}.qtr-print-meta{text-align:right;color:#5f6d75;font-size:13px;line-height:1.5}
         .qtr-print-table{width:100%;border-collapse:separate;border-spacing:5px;table-layout:fixed}
         .qtr-print-table th{font-size:11px;letter-spacing:.06em;text-align:center;padding:6px 3px;color:#34434c}.qtr-print-table th:first-child{text-align:left;width:150px}
@@ -124,11 +124,13 @@ export default async function QtrPdfPage({
 
       <header className="qtr-print-header">
         <div>
-          <div className="qtr-print-brand">ONZE<span>UP</span></div>
+          <div className="qtr-print-identity">
+            {org.logoUrl ? <img className="qtr-print-logo" src={org.logoUrl} alt="" /> : null}
+            <div className="qtr-print-club-name">{org.publicName || org.name}</div>
+          </div>
           <h1>QTR semanal</h1>
         </div>
         <div className="qtr-print-meta">
-          <strong>{org.publicName || org.name}</strong><br />
           Semana: {formatDate(weekStart)} a {formatDate(weekEnd)}
         </div>
       </header>
@@ -174,7 +176,7 @@ export default async function QtrPdfPage({
       </table>
 
       <footer className="qtr-print-footer">
-        <span>ONZEUP • Gestão de futebol e futsal de base</span>
+        <span>Gerado por ONZEUP • Gestão de futebol e futsal de base</span>
         <span>QTR gerado em {new Intl.DateTimeFormat("pt-BR").format(new Date())}</span>
       </footer>
     </main>

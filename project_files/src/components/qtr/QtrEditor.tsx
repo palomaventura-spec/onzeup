@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { saveQtr } from "@/app/(app)/qtr/actions";
 
 type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 type EventType = "TRAINING" | "MATCH" | "FRIENDLY" | "EVENT" | "OTHER";
@@ -72,10 +71,12 @@ export default function QtrEditor({
   initialRows,
   weekStart,
   categories,
+  saveAction,
 }: {
   initialRows: QtrRow[];
   weekStart: string;
   categories: { id: string; name: string; birthYear: number | null }[];
+  saveAction: (formData: FormData) => Promise<void>;
 }) {
   const [rows, setRows] = useState<QtrRow[]>(
     initialRows.length ? initialRows : [blankRow()]
@@ -153,7 +154,7 @@ export default function QtrEditor({
 
   return (
     <>
-      <form action={saveQtr}>
+      <form action={saveAction}>
         <input type="hidden" name="weekStart" value={weekStart} />
         <input type="hidden" name="qtrData" value={JSON.stringify(rows)} />
 
@@ -192,7 +193,7 @@ export default function QtrEditor({
                   ) : null}
                   {categories.map((category) => (
                     <option key={category.id} value={category.name}>
-                      {category.name}{category.birthYear ? ` (${category.birthYear})` : ""}
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -302,8 +303,15 @@ export default function QtrEditor({
             + Adicionar categoria
           </button>
           <button type="submit">Salvar alterações</button>
-          <button type="button" className="btn-secondary" onClick={() => window.print()}>
-            Baixar / Imprimir PDF
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              const url = `/qtr-pdf?week=${encodeURIComponent(weekStart)}`;
+              window.open(url, "_blank", "noopener,noreferrer");
+            }}
+          >
+            Gerar PDF
           </button>
           <button
             type="button"

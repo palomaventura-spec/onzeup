@@ -1,13 +1,11 @@
-ONZEUP v1.6.0-c — QTR PDF + Conexões
+ONZEUP PLAYER - CORRECAO DOS FILTROS
 
-Correções:
-- seletor de categoria do QTR mais largo e sem repetir o ano-base dentro da opção
-- botão PDF abre uma página limpa exclusiva do QTR e chama a impressão dessa página
-- sidebar/header não entram mais no PDF
-- WhatsApp legado com e-mail não aparece mais no campo
-- WhatsApp é normalizado para número com DDI/DDD
-- domínio próprio mostra status e fluxo real de ativação assistida por Vercel/DNS
-- domínio digitado é normalizado sem http/https ou barras
+Alteracoes:
+- categorias fixas de Sub-7 a Sub-20
+- posicoes completas, independentes dos atletas cadastrados
+- placeholders "Todas as categorias" e "Todas as posicoes"
+- busca combinada continua funcionando
+- valor interno das categorias usa "sub 8", "sub 9" etc. para compatibilidade com cadastros existentes
+- botao "Limpar filtros" aparece quando existe filtro ativo
 
-Sem alteração de Prisma/schema/banco.
-Não fazer Git push antes do build passar.
+Nao altera Prisma, banco ou pagamentos.
