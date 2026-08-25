@@ -39,11 +39,6 @@
     ".next",
     "**/_backup_*/**",
     "**/ONZEUP_V*_PATCH/**",
-    "files/**",
-    "APLICAR_*.ts",
-    "page.tsx",
-    "actions.ts",
-    "club-plans.ts",
-    "asaas.ts"
+    "files/**"
   ]
 }
