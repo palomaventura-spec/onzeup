@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useFormStatus } from "react-dom";
 
 export default function AdminConfirmSubmit({
   label,
@@ -11,7 +11,7 @@ export default function AdminConfirmSubmit({
   confirmText: string;
   className?: string;
 }) {
-  const [pending, setPending] = useState(false);
+  const { pending } = useFormStatus();
 
   return (
     <button
@@ -19,11 +19,11 @@ export default function AdminConfirmSubmit({
       className={className}
       disabled={pending}
       onClick={(event) => {
-        if (!window.confirm(confirmText)) {
+        const confirmed = window.confirm(confirmText);
+
+        if (!confirmed) {
           event.preventDefault();
-          return;
         }
-        setPending(true);
       }}
     >
       {pending ? "Processando..." : label}
