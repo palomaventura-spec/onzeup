@@ -4,6 +4,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { notifyAdminNewRegistration } from "@/lib/admin-notifications";
 
 const clean = (v: FormDataEntryValue | null) => String(v || "").trim();
 const slugify = (v: string) =>
@@ -96,6 +97,14 @@ export async function registerCoach(formData: FormData) {
       }
     }
   }
+
+  await notifyAdminNewRegistration({
+    type: "COACH",
+    name,
+    email,
+    detail: manages ? `Administra organização: ${orgType || "não informado"}` : "Não administra organização",
+    status: "Conta ativa",
+  });
 
   await createSession(user.id);
   redirect("/coach/dashboard");

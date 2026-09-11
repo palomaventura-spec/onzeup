@@ -8,6 +8,7 @@ import {
   hashEmailVerificationToken,
 } from "@/lib/email-verification";
 import { sendTransactionalEmail } from "@/lib/email";
+import { notifyAdminNewRegistration } from "@/lib/admin-notifications";
 
 const clean = (v: FormDataEntryValue | null) => String(v || "").trim();
 
@@ -125,6 +126,14 @@ export async function registerGuardian(formData: FormData) {
   });
 
   const sent = await issueVerification(user.id, email);
+
+  await notifyAdminNewRegistration({
+    type: "PLAYER",
+    name,
+    email,
+    detail: phone ? `Telefone: ${phone}` : null,
+    status: "Aguardando confirmação de e-mail",
+  });
 
   redirect(
     `/cadastro?status=${sent ? "enviado" : "erro-email"}&email=${encodeURIComponent(email)}`

@@ -4,6 +4,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { notifyAdminNewRegistration } from "@/lib/admin-notifications";
 
 const clean = (value: FormDataEntryValue | null) => String(value || "").trim();
 
@@ -61,6 +62,14 @@ export async function registerClubTrial(formData: FormData) {
       },
     },
     include: { users: true },
+  });
+
+  await notifyAdminNewRegistration({
+    type: "CLUB",
+    name: organizationName,
+    email,
+    detail: `Responsável: ${responsibleName} • Tipo: ${type}`,
+    status: "Trial iniciado",
   });
 
   await createSession(organization.users[0].id);

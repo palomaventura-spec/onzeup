@@ -2167,3 +2167,26 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
 
 /* ONZEUP v1.6.0-b — Super Admin access control */
 .admin-org-search{display:flex;gap:8px;align-items:center;margin:0 0 16px}.admin-org-search input{flex:1}.admin-access-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.admin-access-summary h2{margin:7px 0 2px}.admin-access-card{display:grid;gap:22px}.admin-access-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.admin-access-form label{display:grid;gap:7px;font-size:10px;font-weight:800}.admin-access-reason{grid-column:1/-1}.admin-access-form button{grid-column:1/-1;justify-self:start}.admin-success{padding:12px 14px;border:1px solid #9ddb16;border-radius:10px;background:#182408;color:#c9f06d;margin:12px 0}.badge.access-complimentary{background:#24320d;color:#c9f06d}.badge.access-suspended{background:#382c0e;color:#ffd66b}.badge.access-cancelled{background:#3b1717;color:#ff9b9b}.access-blocked-page{min-height:100vh;background:#f5f7f9;color:#101820;display:grid;place-items:center;padding:24px}.access-blocked-page .card{max-width:560px;background:#fff;border:1px solid #e2e7eb;color:#101820;padding:32px}.access-blocked-page form{margin:22px 0 12px}@media(max-width:900px){.admin-access-summary{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.admin-access-summary,.admin-access-form{grid-template-columns:1fr}.admin-org-search{align-items:stretch;flex-direction:column}}
+
+/* ONZEUP v1.7.2 — testes, cadastros e categorias */
+.admin-email-note{margin:7px 0 0;font-size:10px;color:#68767c}
+.admin-new-signups{display:grid;gap:18px}
+.admin-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.admin-section-head h2{margin:5px 0}
+.admin-today-counts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.admin-today-counts span{padding:8px 10px;border:1px solid #dce3e5;border-radius:999px;font-size:10px;background:#fff}
+.admin-today-counts b{font-size:13px;margin-right:3px}
+.admin-registration-list{display:grid;gap:8px}
+.admin-registration-list article{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(160px,.7fr) auto;gap:16px;align-items:center;padding:13px 0;border-top:1px solid #e5eaec}
+.admin-registration-list article small{font-size:9px;color:#68767c;text-transform:uppercase}
+.admin-registration-list article strong{display:block;margin:3px 0}
+.admin-registration-list article p{margin:0;color:#68767c;font-size:11px}
+.admin-registration-list article>a{font-size:10px;font-weight:800;text-decoration:none;color:#526f08}
+.admin-registration-status{display:grid;gap:4px}
+.admin-registration-status span{font-size:10px;font-weight:700}
+.athlete-category-blocks{display:grid;gap:24px}
+.athlete-category-section{display:grid;gap:12px}
+.athlete-category-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:9px;border-bottom:1px solid #e3e8ea}
+.athlete-category-heading h2{margin:0;font-size:20px}
+.athlete-category-heading span{font-size:10px;color:#68767c}
+@media(max-width:760px){.admin-section-head{flex-direction:column}.admin-today-counts{justify-content:flex-start}.admin-registration-list article{grid-template-columns:1fr}.admin-registration-list article>a{justify-self:start}}

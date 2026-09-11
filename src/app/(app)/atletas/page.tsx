@@ -26,6 +26,18 @@ export default async function AthletesPage() {
   ]);
 
   const activeCount = athletes.filter((a) => a.active).length;
+  const athleteGroups = [
+    ...categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      athletes: athletes.filter((athlete) => athlete.categoryId === category.id),
+    })),
+    {
+      id: "uncategorized",
+      name: "Sem categoria",
+      athletes: athletes.filter((athlete) => !athlete.categoryId),
+    },
+  ].filter((group) => group.athletes.length > 0);
 
   return (
     <>
@@ -77,57 +89,66 @@ export default async function AthletesPage() {
           </form>
         </section>
 
-        <section>
-          <div className="athlete-card-grid">
-            {athletes.map((athlete) => {
-              const playerLinked = athlete.playerLinks.some((link) => link.verified);
-              return (
-                <article className={`admin-athlete-card ${!athlete.active ? "inactive" : ""}`} key={athlete.id}>
-                  <div className="admin-athlete-photo">
-                    {athlete.photoUrl ? <img src={athlete.photoUrl} alt={athlete.name} /> : <span>{(athlete.nickname || athlete.name).slice(0,2).toUpperCase()}</span>}
-                    {athlete.jerseyNumber != null ? <b>#{athlete.jerseyNumber}</b> : null}
-                  </div>
+        <section className="athlete-category-blocks">
+          {athleteGroups.map((group) => (
+            <div className="athlete-category-section" key={group.id}>
+              <div className="athlete-category-heading">
+                <h2>{group.name}</h2>
+                <span>{group.athletes.length} atleta(s)</span>
+              </div>
 
-                  <div className="admin-athlete-content">
-                    <div className="admin-athlete-top">
-                      <div>
-                        <small>{athlete.category?.name || "SEM CATEGORIA"}</small>
-                        <h3>{athlete.nickname || athlete.name}</h3>
-                        {athlete.nickname ? <p>{athlete.name}</p> : null}
+              <div className="athlete-card-grid">
+                {group.athletes.map((athlete) => {
+                  const playerLinked = athlete.playerLinks.some((link) => link.verified);
+                  return (
+                    <article className={`admin-athlete-card ${!athlete.active ? "inactive" : ""}`} key={athlete.id}>
+                      <div className="admin-athlete-photo">
+                        {athlete.photoUrl ? <img src={athlete.photoUrl} alt={athlete.name} /> : <span>{(athlete.nickname || athlete.name).slice(0,2).toUpperCase()}</span>}
+                        {athlete.jerseyNumber != null ? <b>#{athlete.jerseyNumber}</b> : null}
                       </div>
-                      <span className={`status-dot-label ${athlete.active ? "active" : ""}`}>{athlete.active ? "Ativo" : "Inativo"}</span>
-                    </div>
 
-                    <div className="athlete-data-strip">
-                      <span><small>POSIÇÃO</small><strong>{athlete.position || "—"}</strong></span>
-                      <span><small>NASC.</small><strong>{athlete.birthYear || "—"}</strong></span>
-                      <span><small>PLAYER</small><strong>{playerLinked ? "Vinculado ✓" : "—"}</strong></span>
-                    </div>
+                      <div className="admin-athlete-content">
+                        <div className="admin-athlete-top">
+                          <div>
+                            <small>{athlete.category?.name || "SEM CATEGORIA"}</small>
+                            <h3>{athlete.nickname || athlete.name}</h3>
+                            {athlete.nickname ? <p>{athlete.name}</p> : null}
+                          </div>
+                          <span className={`status-dot-label ${athlete.active ? "active" : ""}`}>{athlete.active ? "Ativo" : "Inativo"}</span>
+                        </div>
 
-                    {(athlete.callUps.length > 0 || athlete.charges.length > 0) ? (
-                      <div className="athlete-alert-strip">
-                        {athlete.callUps.length ? <span>{athlete.callUps.length} confirmação pendente</span> : null}
-                        {athlete.charges.length ? <span>{athlete.charges.length} cobrança(s)</span> : null}
+                        <div className="athlete-data-strip">
+                          <span><small>POSIÇÃO</small><strong>{athlete.position || "—"}</strong></span>
+                          <span><small>NASC.</small><strong>{athlete.birthYear || "—"}</strong></span>
+                          <span><small>PLAYER</small><strong>{playerLinked ? "Vinculado ✓" : "—"}</strong></span>
+                        </div>
+
+                        {(athlete.callUps.length > 0 || athlete.charges.length > 0) ? (
+                          <div className="athlete-alert-strip">
+                            {athlete.callUps.length ? <span>{athlete.callUps.length} confirmação pendente</span> : null}
+                            {athlete.charges.length ? <span>{athlete.charges.length} cobrança(s)</span> : null}
+                          </div>
+                        ) : null}
+
+                        <div className="actions">
+                          <Link className="btn btn-small" href={`/atletas/${athlete.id}`}>Abrir atleta</Link>
+                          <form action={toggleAthleteStatus}>
+                            <input type="hidden" name="id" value={athlete.id} />
+                            <input type="hidden" name="next" value={String(!athlete.active)} />
+                            <button className="btn-secondary btn-small" type="submit">{athlete.active ? "Inativar" : "Ativar"}</button>
+                          </form>
+                          <form action={deleteAthlete}>
+                            <input type="hidden" name="id" value={athlete.id} />
+                            <button className="btn-danger btn-small" type="submit">Excluir</button>
+                          </form>
+                        </div>
                       </div>
-                    ) : null}
-
-                    <div className="actions">
-                      <Link className="btn btn-small" href={`/atletas/${athlete.id}`}>Abrir atleta</Link>
-                      <form action={toggleAthleteStatus}>
-                        <input type="hidden" name="id" value={athlete.id} />
-                        <input type="hidden" name="next" value={String(!athlete.active)} />
-                        <button className="btn-secondary btn-small" type="submit">{athlete.active ? "Inativar" : "Ativar"}</button>
-                      </form>
-                      <form action={deleteAthlete}>
-                        <input type="hidden" name="id" value={athlete.id} />
-                        <button className="btn-danger btn-small" type="submit">Excluir</button>
-                      </form>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           {!athletes.length ? <div className="card empty">Nenhum atleta cadastrado.</div> : null}
         </section>
