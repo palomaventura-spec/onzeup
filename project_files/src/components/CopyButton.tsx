@@ -1,1 +1,0 @@
-"use client";export default function CopyButton({text}:{text:string}){return <button type="button" className="btn-secondary btn-small" onClick={()=>navigator.clipboard.writeText(text)}>Copiar mensagem</button>}
