@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
+import { googleCalendarUrl } from "@/lib/google-calendar";
 import { updateMatch } from "../actions";
 
 function toDateInput(date: Date) {
@@ -29,6 +30,13 @@ export default async function EditMatchPage({ params }: { params: Promise<{ id: 
 
   if (!match) notFound();
 
+  const calendarUrl = googleCalendarUrl({
+    title: `${match.category.name} × ${match.opponent}`,
+    start: match.startsAt,
+    location: match.location,
+    details: [match.competition, match.notes].filter(Boolean).join(" • ") || "Jogo cadastrado no ONZEUP",
+  });
+
   return (
     <>
       <div className="page-head">
@@ -36,7 +44,10 @@ export default async function EditMatchPage({ params }: { params: Promise<{ id: 
           <h1>Editar jogo</h1>
           <p className="muted">Atualize informações e resultado da partida.</p>
         </div>
-        <Link className="btn btn-secondary" href="/jogos">Voltar</Link>
+        <div className="actions">
+          <a className="btn btn-secondary" href={calendarUrl} target="_blank" rel="noreferrer">Google Agenda</a>
+          <Link className="btn btn-secondary" href="/jogos">Voltar</Link>
+        </div>
       </div>
 
       <section className="card match-callup-hub">

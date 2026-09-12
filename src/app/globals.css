@@ -2190,3 +2190,15 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
 .athlete-category-heading h2{margin:0;font-size:20px}
 .athlete-category-heading span{font-size:10px;color:#68767c}
 @media(max-width:760px){.admin-section-head{flex-direction:column}.admin-today-counts{justify-content:flex-start}.admin-registration-list article{grid-template-columns:1fr}.admin-registration-list article>a{justify-self:start}}
+
+/* v1.7.5 — Phase 1 final polish */
+.verified-link-admin-grid>article{background:var(--surface,#fff);color:var(--text,#101820)}
+.verified-link-admin-grid>article strong{color:var(--text,#101820)}
+.success-notice{margin:0 0 14px;padding:12px 14px;border:1px solid rgba(87,145,0,.28);border-radius:12px;background:rgba(143,212,0,.12);font-weight:800;color:#315500}
+.agenda-event{display:grid;grid-template-columns:72px minmax(0,1fr);gap:14px;align-items:start}
+.agenda-event-content{display:grid;gap:4px;min-width:0}
+.agenda-event-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:7px}
+.agenda-event-actions a{font-size:11px;font-weight:900;text-decoration:none}
+.agenda-event-actions a:first-child{color:var(--green)}
+.agenda-event-actions a:last-child{color:var(--muted)}
+@media(max-width:700px){.agenda-event{grid-template-columns:56px minmax(0,1fr)}.agenda-event-actions{gap:8px 14px}}

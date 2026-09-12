@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireOrganizationUser } from "@/lib/auth";
 import { updateConnectionSettings } from "./actions";
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 function validWhatsapp(value?: string | null) {
   if (!value) return "";
@@ -8,8 +9,13 @@ function validWhatsapp(value?: string | null) {
   return digits.length >= 10 && digits.length <= 15 ? digits : "";
 }
 
-export default async function ConnectionsPage() {
+export default async function ConnectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ salvo?: string }>;
+}) {
   const user = await requireOrganizationUser();
+  const query = await searchParams;
   const org = user.organization!;
   const whatsapp = validWhatsapp(org.whatsappPhone) || validWhatsapp(org.whatsapp);
 
@@ -24,6 +30,10 @@ export default async function ConnectionsPage() {
           </p>
         </div>
       </div>
+
+      {query.salvo === "1" ? (
+        <div className="success-notice" role="status">WhatsApp salvo com sucesso.</div>
+      ) : null}
 
       <form className="connections-grid" action={updateConnectionSettings}>
         <section className="card connection-card">
@@ -56,7 +66,7 @@ export default async function ConnectionsPage() {
           </div>
 
           <div className="actions">
-            <button type="submit">Salvar WhatsApp</button>
+            <PendingSubmitButton pendingText="Salvando...">Salvar WhatsApp</PendingSubmitButton>
             <Link className="btn-secondary" href="/comunicacao">Abrir Central de Comunicação</Link>
           </div>
         </section>

@@ -22,9 +22,10 @@ async function validateCategory(categoryId: string, organizationId: string) {
   return category?.id ?? null;
 }
 
-function validWeekday(value: string) {
-  const weekday = Number(value);
-  return Number.isInteger(weekday) && weekday >= 0 && weekday <= 6 ? weekday : null;
+function parseTrainingDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export async function createTraining(formData: FormData) {
@@ -32,17 +33,19 @@ export async function createTraining(formData: FormData) {
 
   const categoryIdRaw = clean(formData.get("categoryId"));
   const categoryId = await validateCategory(categoryIdRaw, user.organizationId);
-  const weekday = validWeekday(clean(formData.get("weekday")));
+  const date = parseTrainingDate(clean(formData.get("date")));
   const startTime = clean(formData.get("startTime"));
   const endTime = clean(formData.get("endTime"));
   const location = nullable(formData.get("location"));
   const notes = nullable(formData.get("notes"));
 
-  if (!categoryId || weekday === null || !startTime || !endTime) return;
+  if (!categoryId || !date || !startTime || !endTime) return;
 
   await prisma.trainingSchedule.create({
     data: {
-      weekday,
+      date,
+      // Mantemos weekday preenchido para compatibilidade com registros/rotinas antigas.
+      weekday: date.getDay(),
       startTime,
       endTime,
       location,
@@ -53,6 +56,8 @@ export async function createTraining(formData: FormData) {
   });
 
   revalidatePath("/treinos");
+  revalidatePath("/agenda");
+  revalidatePath("/qtr");
 }
 
 export async function updateTraining(formData: FormData) {
@@ -61,18 +66,19 @@ export async function updateTraining(formData: FormData) {
   const id = clean(formData.get("id"));
   const categoryIdRaw = clean(formData.get("categoryId"));
   const categoryId = await validateCategory(categoryIdRaw, user.organizationId);
-  const weekday = validWeekday(clean(formData.get("weekday")));
+  const date = parseTrainingDate(clean(formData.get("date")));
   const startTime = clean(formData.get("startTime"));
   const endTime = clean(formData.get("endTime"));
   const location = nullable(formData.get("location"));
   const notes = nullable(formData.get("notes"));
 
-  if (!id || !categoryId || weekday === null || !startTime || !endTime) return;
+  if (!id || !categoryId || !date || !startTime || !endTime) return;
 
   await prisma.trainingSchedule.updateMany({
     where: { id, organizationId: user.organizationId },
     data: {
-      weekday,
+      date,
+      weekday: date.getDay(),
       startTime,
       endTime,
       location,
@@ -82,6 +88,8 @@ export async function updateTraining(formData: FormData) {
   });
 
   revalidatePath("/treinos");
+  revalidatePath("/agenda");
+  revalidatePath("/qtr");
   redirect("/treinos");
 }
 
@@ -95,4 +103,6 @@ export async function deleteTraining(formData: FormData) {
   });
 
   revalidatePath("/treinos");
+  revalidatePath("/agenda");
+  revalidatePath("/qtr");
 }

@@ -13,6 +13,20 @@ const WEEKDAYS = [
   "Sábado",
 ];
 
+function dateInputValue(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDate(date: Date | null, weekday: number) {
+  if (!date) return `Legado • ${WEEKDAYS[weekday]}`;
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
 export default async function TrainingPage() {
   const user = await requireOrganizationUser();
 
@@ -20,7 +34,7 @@ export default async function TrainingPage() {
     prisma.trainingSchedule.findMany({
       where: { organizationId: user.organizationId },
       include: { category: true },
-      orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
+      orderBy: [{ date: "asc" }, { startTime: "asc" }],
     }),
     prisma.category.findMany({
       where: { organizationId: user.organizationId },
@@ -28,25 +42,27 @@ export default async function TrainingPage() {
     }),
   ]);
 
+  const today = dateInputValue(new Date());
+
   return (
     <>
       <div className="page-head">
         <div>
-          <h1>Horários de treino</h1>
+          <h1>Treinos</h1>
           <p className="muted">
-            Organize dias, horários e locais de treinamento por categoria.
+            Cadastre cada treino em uma data real do calendário para alimentar Agenda, QTR e Google Agenda.
           </p>
         </div>
-        <span className="badge">{trainings.length} horário(s)</span>
+        <span className="badge">{trainings.length} treino(s)</span>
       </div>
 
       <div className="two-col">
-        <section className="card">
-          <h2>Novo horário</h2>
+        <section className="card" id="novo-treino">
+          <h2>Novo treino</h2>
 
           {categories.length === 0 ? (
             <div className="empty">
-              Cadastre pelo menos uma categoria antes de criar horários de treino.
+              Cadastre pelo menos uma categoria antes de criar treinos.
             </div>
           ) : (
             <form className="form" action={createTraining}>
@@ -61,13 +77,8 @@ export default async function TrainingPage() {
               </label>
 
               <label>
-                Dia da semana
-                <select name="weekday" required defaultValue="">
-                  <option value="" disabled>Selecione</option>
-                  {WEEKDAYS.map((day, index) => (
-                    <option key={day} value={index}>{day}</option>
-                  ))}
-                </select>
+                Data
+                <input name="date" type="date" min={today} required />
               </label>
 
               <label>
@@ -90,7 +101,7 @@ export default async function TrainingPage() {
                 <textarea name="notes" rows={4} placeholder="Ex.: levar colete branco" />
               </label>
 
-              <button type="submit">Adicionar horário</button>
+              <button type="submit">Adicionar treino</button>
             </form>
           )}
         </section>
@@ -99,14 +110,14 @@ export default async function TrainingPage() {
           <h2>Agenda de treinos</h2>
 
           {trainings.length === 0 ? (
-            <div className="empty">Nenhum horário de treino cadastrado.</div>
+            <div className="empty">Nenhum treino cadastrado.</div>
           ) : (
             <div className="table-wrap">
               <table className="table">
                 <thead>
                   <tr>
                     <th>Categoria</th>
-                    <th>Dia</th>
+                    <th>Data</th>
                     <th>Horário</th>
                     <th>Local</th>
                     <th>Ações</th>
@@ -116,7 +127,7 @@ export default async function TrainingPage() {
                   {trainings.map((training) => (
                     <tr key={training.id}>
                       <td><strong>{training.category.name}</strong></td>
-                      <td>{WEEKDAYS[training.weekday]}</td>
+                      <td>{formatDate(training.date, training.weekday)}</td>
                       <td>{training.startTime} – {training.endTime}</td>
                       <td>{training.location ?? "—"}</td>
                       <td>
@@ -136,6 +147,12 @@ export default async function TrainingPage() {
               </table>
             </div>
           )}
+
+          {trainings.some((training) => !training.date) ? (
+            <p className="muted" style={{ marginTop: 12 }}>
+              Treinos marcados como “Legado” foram criados antes desta atualização. Abra “Editar” e escolha uma data para convertê-los ao novo calendário.
+            </p>
+          ) : null}
         </section>
       </div>
     </>

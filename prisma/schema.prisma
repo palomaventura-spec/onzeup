@@ -170,6 +170,7 @@ model Athlete {
 
 model TrainingSchedule {
   id             String       @id @default(cuid())
+  date           DateTime?
   weekday        Int
   startTime      String
   endTime        String
@@ -184,6 +185,7 @@ model TrainingSchedule {
 
   @@index([organizationId])
   @@index([categoryId])
+  @@index([organizationId, date])
 }
 
 model Match {

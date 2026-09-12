@@ -4,15 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
 import { updateTraining } from "../actions";
 
-const WEEKDAYS = [
-  "Domingo",
-  "Segunda-feira",
-  "Terça-feira",
-  "Quarta-feira",
-  "Quinta-feira",
-  "Sexta-feira",
-  "Sábado",
-];
+function dateInputValue(date: Date | null) {
+  return date ? date.toISOString().slice(0, 10) : "";
+}
 
 export default async function EditTrainingPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireOrganizationUser();
@@ -34,11 +28,17 @@ export default async function EditTrainingPage({ params }: { params: Promise<{ i
     <>
       <div className="page-head">
         <div>
-          <h1>Editar horário</h1>
-          <p className="muted">Atualize categoria, dia, horário e local do treino.</p>
+          <h1>Editar treino</h1>
+          <p className="muted">Atualize categoria, data, horário e local do treino.</p>
         </div>
         <Link className="btn btn-secondary" href="/treinos">Voltar</Link>
       </div>
+
+      {!training.date ? (
+        <div className="notice" role="status">
+          Este é um treino antigo baseado apenas em dia da semana. Escolha uma data abaixo para convertê-lo ao calendário.
+        </div>
+      ) : null}
 
       <section className="card">
         <form className="form" action={updateTraining}>
@@ -54,12 +54,8 @@ export default async function EditTrainingPage({ params }: { params: Promise<{ i
           </label>
 
           <label>
-            Dia da semana
-            <select name="weekday" defaultValue={String(training.weekday)} required>
-              {WEEKDAYS.map((day, index) => (
-                <option key={day} value={index}>{day}</option>
-              ))}
-            </select>
+            Data
+            <input name="date" type="date" defaultValue={dateInputValue(training.date)} required />
           </label>
 
           <label>

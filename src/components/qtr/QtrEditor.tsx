@@ -44,27 +44,19 @@ const EVENT_LABELS: Record<EventType, string> = {
   OTHER: "Outro",
 };
 
-function blankRow(): QtrRow {
-  return {
-    category: "",
-    birthYear: null,
-    mon: [],
-    tue: [],
-    wed: [],
-    thu: [],
-    fri: [],
-    sat: [],
-    sun: [],
-  };
-}
-
 function dateForDay(weekStart: string, offset: number) {
   const date = new Date(`${weekStart}T12:00:00`);
   date.setDate(date.getDate() + offset);
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(date);
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(date);
+}
+
+function periodLabel(weekStart: string) {
+  const start = new Date(`${weekStart}T12:00:00`);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const format = (date: Date) =>
+    new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+  return `${format(start)} a ${format(end)}`;
 }
 
 export default function QtrEditor({
@@ -78,15 +70,22 @@ export default function QtrEditor({
   categories: { id: string; name: string; birthYear: number | null }[];
   saveAction: (formData: FormData) => Promise<void>;
 }) {
-  const [rows, setRows] = useState<QtrRow[]>(
-    initialRows.length ? initialRows : [blankRow()]
-  );
+  const [rows, setRows] = useState<QtrRow[]>(initialRows);
+  const [selectedCategory, setSelectedCategory] = useState("__all__");
 
   const [editing, setEditing] = useState<{
     rowIndex: number;
     day: DayKey;
     eventIndex: number | null;
   } | null>(null);
+
+  const visibleRows = useMemo(
+    () =>
+      rows
+        .map((row, rowIndex) => ({ row, rowIndex }))
+        .filter(({ row }) => selectedCategory === "__all__" || row.category === selectedCategory),
+    [rows, selectedCategory]
+  );
 
   const currentEvent = useMemo(() => {
     if (!editing) return null;
@@ -102,14 +101,6 @@ export default function QtrEditor({
         }
       : events[editing.eventIndex];
   }, [editing, rows]);
-
-  function addRow() {
-    setRows((current) => [...current, blankRow()]);
-  }
-
-  function removeRow(index: number) {
-    setRows((current) => current.filter((_, rowIndex) => rowIndex !== index));
-  }
 
   function saveEvent(formData: FormData) {
     if (!editing) return;
@@ -132,28 +123,87 @@ export default function QtrEditor({
         return { ...row, [editing.day]: events };
       })
     );
-
     setEditing(null);
   }
 
   function deleteEvent() {
     if (!editing || editing.eventIndex === null) return;
-
     setRows((current) =>
       current.map((row, rowIndex) => {
         if (rowIndex !== editing.rowIndex) return row;
-        const events = row[editing.day].filter(
-          (_, index) => index !== editing.eventIndex
-        );
+        const events = row[editing.day].filter((_, index) => index !== editing.eventIndex);
         return { ...row, [editing.day]: events };
       })
     );
-
     setEditing(null);
+  }
+
+  const hasSpecificCategory = selectedCategory !== "__all__";
+  const selectedRow = rows.find((row) => row.category === selectedCategory);
+
+  function openCategoryPdf() {
+    if (!hasSpecificCategory) return;
+    const url = `/qtr-pdf?week=${encodeURIComponent(weekStart)}&category=${encodeURIComponent(selectedCategory)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function sendCategoryWhatsApp() {
+    if (!hasSpecificCategory) return;
+    const pdfUrl = `${window.location.origin}/qtr-pdf?week=${encodeURIComponent(weekStart)}&category=${encodeURIComponent(selectedCategory)}`;
+    const message =
+      `⚽ QTR SEMANAL — ${selectedCategory}\n\n` +
+      `Período: ${periodLabel(weekStart)}\n\n` +
+      `Confira o QTR da categoria ${selectedCategory}:\n${pdfUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
   }
 
   return (
     <>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "end",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+          margin: "0 0 14px",
+        }}
+      >
+        <label style={{ display: "grid", gap: 6, minWidth: 260 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#667585", letterSpacing: ".04em" }}>
+            VISUALIZAR CATEGORIA
+          </span>
+          <select
+            value={selectedCategory}
+            onChange={(event) => {
+              setSelectedCategory(event.target.value);
+              setEditing(null);
+            }}
+            style={{
+              minHeight: 42,
+              border: "1px solid #d7dfe6",
+              borderRadius: 10,
+              background: "#fff",
+              padding: "0 12px",
+              fontWeight: 700,
+            }}
+          >
+            <option value="__all__">Todas as categorias</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.name}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div style={{ color: "#6b7785", fontSize: 13 }}>
+          {hasSpecificCategory
+            ? `PDF e WhatsApp serão gerados somente para ${selectedCategory}.`
+            : "Visão geral da coordenação. Selecione uma categoria para enviar o QTR."}
+        </div>
+      </div>
+
       <form action={saveAction}>
         <input type="hidden" name="weekStart" value={weekStart} />
         <input type="hidden" name="qtrData" value={JSON.stringify(rows)} />
@@ -170,33 +220,10 @@ export default function QtrEditor({
             <div className="qtr-row-action-head" />
           </div>
 
-          {rows.map((row, rowIndex) => (
-            <div className="qtr-grid qtr-row" key={rowIndex}>
+          {visibleRows.map(({ row, rowIndex }) => (
+            <div className="qtr-grid qtr-row" key={`${row.category}-${rowIndex}`}>
               <div className="qtr-category-cell">
-                <select
-                  aria-label={`Categoria ${rowIndex + 1}`}
-                  value={row.category}
-                  onChange={(event) => {
-                    const selected = categories.find((category) => category.name === event.target.value);
-                    setRows((current) =>
-                      current.map((currentRow, currentIndex) =>
-                        currentIndex === rowIndex
-                          ? { ...currentRow, category: event.target.value, birthYear: selected?.birthYear ?? null }
-                          : currentRow
-                      )
-                    );
-                  }}
-                >
-                  <option value="">Selecione a categoria</option>
-                  {row.category && !categories.some((category) => category.name === row.category) ? (
-                    <option value={row.category}>{row.category}</option>
-                  ) : null}
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.name}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                <strong style={{ fontSize: 15 }}>{row.category}</strong>
                 {row.birthYear ? <small>Ano-base: {row.birthYear}</small> : null}
               </div>
 
@@ -208,13 +235,7 @@ export default function QtrEditor({
                       <button
                         className="qtr-empty-slot"
                         type="button"
-                        onClick={() =>
-                          setEditing({
-                            rowIndex,
-                            day: day.key,
-                            eventIndex: null,
-                          })
-                        }
+                        onClick={() => setEditing({ rowIndex, day: day.key, eventIndex: null })}
                       >
                         <span>—</span>
                         <small>Adicionar</small>
@@ -226,47 +247,23 @@ export default function QtrEditor({
                             key={eventIndex}
                             type="button"
                             className={`qtr-event qtr-event-${event.type.toLowerCase()}`}
-                            onClick={() =>
-                              setEditing({
-                                rowIndex,
-                                day: day.key,
-                                eventIndex,
-                              })
-                            }
+                            onClick={() => setEditing({ rowIndex, day: day.key, eventIndex })}
                           >
-                            <strong>
-                              {event.title || EVENT_LABELS[event.type]}
-                            </strong>
-
+                            <strong>{event.title || EVENT_LABELS[event.type]}</strong>
                             {(event.startTime || event.endTime) && (
                               <span className="qtr-event-time">
                                 {event.startTime || "—"}
                                 {event.endTime ? ` – ${event.endTime}` : ""}
                               </span>
                             )}
-
-                            {event.location ? (
-                              <span className="qtr-event-location">
-                                {event.location}
-                              </span>
-                            ) : null}
-
-                            {event.notes ? (
-                              <small>{event.notes}</small>
-                            ) : null}
+                            {event.location ? <span className="qtr-event-location">{event.location}</span> : null}
+                            {event.notes ? <small>{event.notes}</small> : null}
                           </button>
                         ))}
-
                         <button
                           type="button"
                           className="qtr-add-small"
-                          onClick={() =>
-                            setEditing({
-                              rowIndex,
-                              day: day.key,
-                              eventIndex: null,
-                            })
-                          }
+                          onClick={() => setEditing({ rowIndex, day: day.key, eventIndex: null })}
                         >
                           + atividade
                         </button>
@@ -276,16 +273,7 @@ export default function QtrEditor({
                 );
               })}
 
-              <div className="qtr-row-action">
-                <button
-                  className="btn-danger btn-small"
-                  type="button"
-                  onClick={() => removeRow(rowIndex)}
-                  title="Remover linha"
-                >
-                  ×
-                </button>
-              </div>
+              <div className="qtr-row-action" />
             </div>
           ))}
         </div>
@@ -299,38 +287,18 @@ export default function QtrEditor({
         </div>
 
         <div className="qtr-bottom-actions">
-          <button type="button" className="btn-secondary" onClick={addRow}>
-            + Adicionar categoria
-          </button>
           <button type="submit">Salvar alterações</button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => {
-              const url = `/qtr-pdf?week=${encodeURIComponent(weekStart)}`;
-              window.open(url, "_blank", "noopener,noreferrer");
-            }}
-          >
-            Gerar PDF
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={async () => {
-              if (navigator.share) {
-                await navigator.share({
-                  title: "QTR semanal",
-                  text: "QTR semanal da organização",
-                  url: window.location.href,
-                });
-              } else {
-                await navigator.clipboard.writeText(window.location.href);
-                alert("Link copiado. Você pode colar no WhatsApp.");
-              }
-            }}
-          >
-            Compartilhar
-          </button>
+
+          {hasSpecificCategory ? (
+            <>
+              <button type="button" className="btn-secondary" onClick={openCategoryPdf}>
+                Gerar PDF — {selectedCategory}
+              </button>
+              <button type="button" className="btn-secondary" onClick={sendCategoryWhatsApp}>
+                Enviar {selectedCategory} pelo WhatsApp
+              </button>
+            </>
+          ) : null}
         </div>
       </form>
 
@@ -345,19 +313,12 @@ export default function QtrEditor({
                   {DAYS.find((day) => day.key === editing.day)?.label}
                 </h2>
               </div>
-              <button
-                type="button"
-                className="btn-secondary btn-small"
-                onClick={() => setEditing(null)}
-              >
+              <button type="button" className="btn-secondary btn-small" onClick={() => setEditing(null)}>
                 Fechar
               </button>
             </div>
 
-            <form
-              className="form qtr-event-form"
-              action={(formData) => saveEvent(formData)}
-            >
+            <form className="form qtr-event-form" action={(formData) => saveEvent(formData)}>
               <label>
                 Tipo
                 <select name="type" defaultValue={currentEvent.type}>
@@ -371,60 +332,34 @@ export default function QtrEditor({
 
               <label>
                 Título
-                <input
-                  name="title"
-                  defaultValue={currentEvent.title}
-                  placeholder="Ex.: Treino / Taça Edilson Silva"
-                />
+                <input name="title" defaultValue={currentEvent.title} placeholder="Ex.: Treino / Taça Edilson Silva" />
               </label>
 
               <div className="qtr-time-fields">
                 <label>
                   Início
-                  <input
-                    name="startTime"
-                    type="time"
-                    defaultValue={currentEvent.startTime || ""}
-                  />
+                  <input name="startTime" type="time" defaultValue={currentEvent.startTime || ""} />
                 </label>
-
                 <label>
                   Fim
-                  <input
-                    name="endTime"
-                    type="time"
-                    defaultValue={currentEvent.endTime || ""}
-                  />
+                  <input name="endTime" type="time" defaultValue={currentEvent.endTime || ""} />
                 </label>
               </div>
 
               <label>
                 Local
-                <input
-                  name="location"
-                  defaultValue={currentEvent.location || ""}
-                  placeholder="Ex.: Arena Onze / Campo Principal"
-                />
+                <input name="location" defaultValue={currentEvent.location || ""} placeholder="Ex.: Arena Onze / Campo Principal" />
               </label>
 
               <label>
                 Observação
-                <textarea
-                  name="notes"
-                  rows={3}
-                  defaultValue={currentEvent.notes || ""}
-                  placeholder="Ex.: A confirmar / uniforme branco"
-                />
+                <textarea name="notes" rows={3} defaultValue={currentEvent.notes || ""} placeholder="Ex.: A confirmar / uniforme branco" />
               </label>
 
               <div className="actions">
                 <button type="submit">Salvar atividade</button>
                 {editing.eventIndex !== null ? (
-                  <button
-                    className="btn-danger"
-                    type="button"
-                    onClick={deleteEvent}
-                  >
+                  <button className="btn-danger" type="button" onClick={deleteEvent}>
                     Excluir atividade
                   </button>
                 ) : null}

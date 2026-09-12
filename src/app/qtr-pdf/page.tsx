@@ -50,10 +50,7 @@ function formatDate(date: Date) {
 }
 
 function shortDate(date: Date) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(date);
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(date);
 }
 
 function readRows(raw?: string | null): QtrRow[] {
@@ -77,13 +74,16 @@ function typeLabel(type?: string) {
 export default async function QtrPdfPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; category?: string }>;
 }) {
   const user = await requireOrganizationUser();
   const query = await searchParams;
-  const requested = query.week && /^\d{4}-\d{2}-\d{2}$/.test(query.week)
-    ? new Date(`${query.week}T12:00:00`)
-    : new Date();
+
+  const requested =
+    query.week && /^\d{4}-\d{2}-\d{2}$/.test(query.week)
+      ? new Date(`${query.week}T12:00:00`)
+      : new Date();
+
   const weekStart = mondayOf(requested);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
@@ -97,7 +97,9 @@ export default async function QtrPdfPage({
     },
   });
 
-  const rows = readRows(qtr?.dataJson);
+  const allRows = readRows(qtr?.dataJson);
+  const category = query.category?.trim();
+  const rows = category ? allRows.filter((row) => row.category === category) : allRows;
   const org = user.organization!;
 
   return (
@@ -106,15 +108,15 @@ export default async function QtrPdfPage({
         html,body{background:#fff!important;color:#101820!important;margin:0!important;padding:0!important;font-family:Arial,Helvetica,sans-serif}
         .qtr-print-page{padding:24px;max-width:1400px;margin:0 auto;background:#fff;color:#101820}
         .qtr-print-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;border-bottom:2px solid #101820;padding-bottom:14px;margin-bottom:18px}
-        .qtr-print-identity{display:flex;align-items:center;gap:12px}.qtr-print-logo{width:58px;height:58px;object-fit:contain;border-radius:10px}.qtr-print-club-name{font-size:24px;font-weight:900;letter-spacing:.01em;line-height:1.1}
-        .qtr-print-header h1{font-size:28px;margin:4px 0 0}.qtr-print-meta{text-align:right;color:#5f6d75;font-size:13px;line-height:1.5}
+        .qtr-print-identity{display:flex;align-items:center;gap:12px}.qtr-print-logo{width:58px;height:58px;object-fit:contain;border-radius:10px}.qtr-print-club-name{font-size:24px;font-weight:900;line-height:1.1}
+        .qtr-print-header h1{font-size:28px;margin:4px 0 0}.qtr-print-category-title{margin-top:5px;font-size:16px;font-weight:800;color:#5d6b73}
+        .qtr-print-meta{text-align:right;color:#5f6d75;font-size:13px;line-height:1.5}
         .qtr-print-table{width:100%;border-collapse:separate;border-spacing:5px;table-layout:fixed}
         .qtr-print-table th{font-size:11px;letter-spacing:.06em;text-align:center;padding:6px 3px;color:#34434c}.qtr-print-table th:first-child{text-align:left;width:150px}
         .qtr-print-table td{vertical-align:top;border:1px solid #dce4e8;border-radius:8px;padding:8px;min-height:80px;height:80px;font-size:11px;background:#fbfcfd}
         .qtr-print-category{font-weight:900!important;background:#f4f7f8!important;font-size:13px!important}.qtr-print-category small{display:block;margin-top:5px;color:#687780;font-weight:700}
         .qtr-print-event{border-left:4px solid #8fd400;padding-left:7px;margin-bottom:6px}.qtr-print-event strong{display:block;font-size:11px}.qtr-print-event span,.qtr-print-event small{display:block;color:#5f6d75;margin-top:2px;font-size:9px}
         .qtr-print-empty{display:grid;place-items:center;color:#a3afb6;height:100%;font-size:20px}
-        .qtr-print-actions{display:flex;gap:10px;justify-content:flex-end;margin-bottom:16px}.qtr-print-actions button{border:0;border-radius:8px;padding:10px 14px;font-weight:800;background:#8fd400;color:#101820;cursor:pointer}.qtr-print-actions button.secondary{background:#eef2f4}
         .qtr-print-footer{margin-top:14px;border-top:1px solid #dce4e8;padding-top:8px;color:#71808a;font-size:9px;display:flex;justify-content:space-between}
         @page{size:landscape;margin:10mm}
         @media print{.no-print{display:none!important}.qtr-print-page{padding:0;max-width:none}.qtr-print-table td{height:72px}.qtr-print-header{margin-bottom:10px}.qtr-print-footer{position:fixed;bottom:0;left:0;right:0}}
@@ -129,6 +131,7 @@ export default async function QtrPdfPage({
             <div className="qtr-print-club-name">{org.publicName || org.name}</div>
           </div>
           <h1>QTR semanal</h1>
+          {category ? <div className="qtr-print-category-title">{category}</div> : null}
         </div>
         <div className="qtr-print-meta">
           Semana: {formatDate(weekStart)} a {formatDate(weekEnd)}
@@ -170,7 +173,13 @@ export default async function QtrPdfPage({
               })}
             </tr>
           )) : (
-            <tr><td colSpan={8}>Nenhum QTR salvo para esta semana.</td></tr>
+            <tr>
+              <td colSpan={8}>
+                {category
+                  ? `Nenhum QTR encontrado para a categoria ${category} nesta semana.`
+                  : "Nenhum QTR salvo para esta semana."}
+              </td>
+            </tr>
           )}
         </tbody>
       </table>

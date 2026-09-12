@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
+import { googleCalendarUrl } from "@/lib/google-calendar";
 
 type AgendaItem = {
   id: string;
@@ -32,6 +33,11 @@ function time(date: Date) {
   }).format(date);
 }
 
+function eventAt(date: Date, clock: string) {
+  const day = date.toISOString().slice(0, 10);
+  return new Date(`${day}T${clock}:00`);
+}
+
 function nextOccurrences(
   weekday: number,
   startTime: string,
@@ -47,16 +53,10 @@ function nextOccurrences(
 
     if (date.getDay() !== weekday) continue;
 
-    const [sh, sm] = startTime.split(":").map(Number);
-    const [eh, em] = endTime.split(":").map(Number);
-
-    const start = new Date(date);
-    start.setHours(sh || 0, sm || 0, 0, 0);
-
-    const end = new Date(date);
-    end.setHours(eh || sh || 0, em || sm || 0, 0, 0);
-
-    occurrences.push({ start, end });
+    occurrences.push({
+      start: eventAt(date, startTime),
+      end: eventAt(date, endTime),
+    });
   }
   return occurrences;
 }
@@ -70,8 +70,15 @@ export default async function AgendaPage() {
 
   const [trainings, matches] = await Promise.all([
     prisma.trainingSchedule.findMany({
-      where: { organizationId: user.organizationId },
+      where: {
+        organizationId: user.organizationId,
+        OR: [
+          { date: { gte: from, lte: horizon } },
+          { date: null },
+        ],
+      },
       include: { category: true },
+      orderBy: [{ date: "asc" }, { startTime: "asc" }],
     }),
     prisma.match.findMany({
       where: {
@@ -87,15 +94,33 @@ export default async function AgendaPage() {
   const items: AgendaItem[] = [];
 
   trainings.forEach((training) => {
+    if (training.date) {
+      const start = eventAt(training.date, training.startTime);
+      const end = eventAt(training.date, training.endTime);
+      items.push({
+        id: `training-${training.id}`,
+        type: "TRAINING",
+        startsAt: start,
+        endsAt: end,
+        title: `Treino • ${training.category.name}`,
+        subtitle: `${training.startTime} – ${training.endTime}`,
+        location: training.location,
+        href: `/treinos/${training.id}`,
+      });
+      return;
+    }
+
+    // Compatibilidade temporária: registros antigos sem data continuam visíveis
+    // até serem editados e convertidos ao novo calendário.
     nextOccurrences(training.weekday, training.startTime, training.endTime, from, 35)
       .forEach((occurrence, index) => {
         items.push({
-          id: `training-${training.id}-${index}`,
+          id: `training-${training.id}-legacy-${index}`,
           type: "TRAINING",
           startsAt: occurrence.start,
           endsAt: occurrence.end,
           title: `Treino • ${training.category.name}`,
-          subtitle: `${training.startTime} – ${training.endTime}`,
+          subtitle: `${training.startTime} – ${training.endTime} • registro antigo`,
           location: training.location,
           href: `/treinos/${training.id}`,
         });
@@ -128,18 +153,18 @@ export default async function AgendaPage() {
         <div>
           <span className="page-eyebrow">PRÓXIMOS 35 DIAS</span>
           <h1>Agenda</h1>
-          <p className="muted">Treinos recorrentes e jogos em uma única linha do tempo.</p>
+          <p className="muted">Treinos e jogos organizados pelas datas reais do calendário.</p>
         </div>
         <div className="agenda-shortcuts">
-          <span>GERENCIAR</span>
+          <span>ADICIONAR / GERENCIAR</span>
           <div className="agenda-shortcut-group">
-            <Link href="/treinos">
-              <span>●</span>
-              Treinos
+            <Link href="/treinos#novo-treino">
+              <span>＋</span>
+              Novo treino
             </Link>
-            <Link href="/jogos">
-              <span>●</span>
-              Jogos
+            <Link href="/jogos#novo-jogo">
+              <span>＋</span>
+              Novo jogo
             </Link>
           </div>
         </div>
@@ -160,17 +185,30 @@ export default async function AgendaPage() {
 
               <div className="agenda-day-events">
                 <h2>{labelDate(date)}</h2>
-                {dayItems.map((item) => (
-                  <Link href={item.href} className={`agenda-event agenda-${item.type.toLowerCase()}`} key={item.id}>
-                    <div className="agenda-event-time">{time(item.startsAt)}</div>
-                    <div>
-                      <small>{item.type === "TRAINING" ? "TREINO" : "JOGO"}</small>
-                      <strong>{item.title}</strong>
-                      <span>{item.subtitle}{item.location ? ` • ${item.location}` : ""}</span>
-                    </div>
-                    <b>→</b>
-                  </Link>
-                ))}
+                {dayItems.map((item) => {
+                  const calendarUrl = googleCalendarUrl({
+                    title: item.title,
+                    start: item.startsAt,
+                    end: item.endsAt,
+                    location: item.location,
+                    details: item.type === "TRAINING" ? "Treino cadastrado no ONZEUP" : item.subtitle,
+                  });
+
+                  return (
+                    <article className={`agenda-event agenda-${item.type.toLowerCase()}`} key={item.id}>
+                      <div className="agenda-event-time">{time(item.startsAt)}</div>
+                      <div className="agenda-event-content">
+                        <small>{item.type === "TRAINING" ? "TREINO" : "JOGO"}</small>
+                        <strong>{item.title}</strong>
+                        <span>{item.subtitle}{item.location ? ` • ${item.location}` : ""}</span>
+                        <div className="agenda-event-actions">
+                          <Link href={item.href}>Editar informações</Link>
+                          <a href={calendarUrl} target="_blank" rel="noreferrer">Adicionar ao Google Agenda</a>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           );

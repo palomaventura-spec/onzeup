@@ -51,7 +51,7 @@ export default async function MatchesPage() {
       </div>
 
       <div className="two-col">
-        <section className="card">
+        <section className="card" id="novo-jogo">
           <h2>Novo jogo</h2>
 
           {categories.length === 0 ? (

@@ -1,159 +1,185 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
-import { duplicatePreviousQtr, generateQtr, saveQtr } from "./actions";
+import { generateQtr, saveQtr } from "./actions";
 import QtrEditor from "@/components/qtr/QtrEditor";
-import ModuleTour from "@/components/help/ModuleTour";
-import HelpTip from "@/components/help/HelpTip";
+import QtrGenerateButton from "@/components/qtr/QtrGenerateButton";
+
+type SearchParams = {
+  week?: string;
+  gerado?: string;
+  salvo?: string;
+  erro?: string;
+};
 
 function mondayOf(date: Date) {
-  const result = new Date(date);
-  const day = result.getDay();
+  const d = new Date(date);
+  const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
-  result.setDate(result.getDate() + diff);
-  result.setHours(12, 0, 0, 0);
-  return result;
+  d.setDate(d.getDate() + diff);
+  d.setHours(12, 0, 0, 0);
+  return d;
 }
 
 function isoDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function endOfWeekLabel(weekStart: string) {
-  const start = new Date(`${weekStart}T12:00:00`);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-
-  const format = new Intl.DateTimeFormat("pt-BR", {
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  });
-
-  return `${format.format(start)} a ${format.format(end)}`;
+  }).format(date);
 }
 
-function normalizeRows(raw: string | null) {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    const keys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-
-    return parsed.map((row: any) => {
-      const normalized: any = {
-        category: row?.category || "",
-        birthYear: row?.birthYear ?? null,
-      };
-
-      for (const key of keys) {
-        const value = row?.[key];
-        normalized[key] = Array.isArray(value)
-          ? value
-          : typeof value === "string" && value.trim()
-          ? [{ type: "OTHER", title: value.trim() }]
-          : [];
-      }
-
-      return normalized;
-    });
-  } catch {
-    return [];
-  }
-}
+const navButtonStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 38,
+  padding: "0 14px",
+  border: "1px solid #dbe2ea",
+  borderRadius: 10,
+  background: "#ffffff",
+  color: "#14202b",
+  fontSize: 14,
+  fontWeight: 700,
+  textDecoration: "none",
+  whiteSpace: "nowrap" as const,
+};
 
 export default async function QtrPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const user = await requireOrganizationUser();
-  const query = await searchParams;
+  const params = await searchParams;
 
-  const requestedWeek =
-    query.week && /^\d{4}-\d{2}-\d{2}$/.test(query.week)
-      ? new Date(`${query.week}T12:00:00`)
-      : mondayOf(new Date());
+  const requested = params.week ? new Date(`${params.week}T12:00:00`) : new Date();
+  const weekStart = mondayOf(requested);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
 
-  const weekStartDate = mondayOf(requestedWeek);
-  const weekStart = isoDate(weekStartDate);
-
-  const qtr = await prisma.qtr.findUnique({
-    where: {
-      organizationId_weekStart: {
-        organizationId: user.organizationId,
-        weekStart: weekStartDate,
-      },
-    },
-  });
-
-  const rows = normalizeRows(qtr?.dataJson ?? null);
-
-  const categories = await prisma.category.findMany({
-    where: { organizationId: user.organizationId },
-    select: { id: true, name: true, birthYear: true },
-    orderBy: [{ birthYear: "desc" }, { name: "asc" }],
-  });
-
-  const previous = new Date(weekStartDate);
+  const previous = new Date(weekStart);
   previous.setDate(previous.getDate() - 7);
-
-  const next = new Date(weekStartDate);
+  const next = new Date(weekStart);
   next.setDate(next.getDate() + 7);
 
+  const [qtr, categories] = await Promise.all([
+    prisma.qtr.findUnique({
+      where: {
+        organizationId_weekStart: {
+          organizationId: user.organizationId,
+          weekStart,
+        },
+      },
+    }),
+    prisma.category.findMany({
+      where: { organizationId: user.organizationId },
+      select: { id: true, name: true, birthYear: true },
+      orderBy: [{ birthYear: "desc" }, { name: "asc" }],
+    }),
+  ]);
+
+  let initialRows: any[] = [];
+  if (qtr?.dataJson) {
+    try {
+      const parsed = JSON.parse(qtr.dataJson);
+      initialRows = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      initialRows = [];
+    }
+  }
+
   return (
-    <>
-      <div className="page-head">
-        <ModuleTour module="qtr" />
+    <main className="page-shell">
+      <section
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          gap: 20,
+          flexWrap: "wrap",
+          marginBottom: 18,
+        }}
+      >
         <div>
-          <h1>QTR</h1>
-          <p className="muted">Quadro semanal de treinos, jogos e eventos.</p>
-        </div>
-      </div>
-
-      <section className="card qtr-toolbar">
-        <div className="qtr-toolbar-block">
-          <span className="qtr-toolbar-label">SEMANA</span>
-          <div className="qtr-week-picker">
-            <a className="btn-secondary" href={`/qtr?week=${isoDate(previous)}`}>
-              ‹
-            </a>
-            <strong>{endOfWeekLabel(weekStart)}</strong>
-            <a className="btn-secondary" href={`/qtr?week=${isoDate(next)}`}>
-              ›
-            </a>
-          </div>
+          <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#667585" }}>
+            Planejamento semanal
+          </p>
+          <h1 style={{ margin: 0, fontSize: "clamp(28px, 3vw, 36px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: "#0f1720" }}>
+            QTR
+          </h1>
+          <p style={{ margin: "8px 0 0", color: "#53606d", fontSize: 15 }}>
+            {formatDate(weekStart)} a {formatDate(weekEnd)}
+          </p>
         </div>
 
-        <div className="qtr-toolbar-block">
-          <span className="qtr-toolbar-label">TIPO DE QTR <HelpTip title="Qual modo escolher?">Automático usa treinos e jogos cadastrados; Manual começa livre; Híbrido gera automaticamente e permite editar.</HelpTip></span>
-          <div className="actions">
-            <span className="qtr-mode active">Automático</span>
-            <span className="qtr-mode">Manual</span>
-            <span className="qtr-mode">Híbrido</span>
-          </div>
-        </div>
-
-        <div className="qtr-toolbar-block qtr-toolbar-actions">
-          <span className="qtr-toolbar-label">AÇÕES</span>
-          <div className="actions">
-            <form action={duplicatePreviousQtr}>
-              <input type="hidden" name="weekStart" value={weekStart} />
-              <button className="btn-secondary" type="submit">
-                Duplicar semana
-              </button>
-            </form>
-            <form action={generateQtr}>
-              <input type="hidden" name="weekStart" value={weekStart} />
-              <button type="submit">Gerar automático</button>
-            </form>
-          </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Link href={`/qtr?week=${isoDate(previous)}`} style={navButtonStyle}>← Semana anterior</Link>
+          <Link href={`/qtr?week=${isoDate(next)}`} style={navButtonStyle}>Próxima semana →</Link>
         </div>
       </section>
 
-      <section className="card qtr-main-card">
-        <QtrEditor initialRows={rows} weekStart={weekStart} categories={categories} saveAction={saveQtr} />
+      {params.gerado === "1" || params.salvo === "1" ? (
+        <div
+          role="status"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 14,
+            padding: "9px 12px",
+            border: "1px solid #d7eadf",
+            borderRadius: 10,
+            background: "#f3fbf6",
+            color: "#21643b",
+            fontSize: 14,
+            fontWeight: 700,
+          }}
+        >
+          <span aria-hidden="true">✓</span>
+          {params.gerado === "1" ? "QTR atualizado com sucesso" : "Alterações salvas com sucesso"}
+        </div>
+      ) : null}
+
+      <section
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 18,
+          flexWrap: "wrap",
+          marginBottom: 18,
+          padding: "16px 18px",
+          border: "1px solid #e2e8ef",
+          borderRadius: 14,
+          background: "#ffffff",
+          boxShadow: "0 4px 14px rgba(15, 23, 32, 0.04)",
+        }}
+      >
+        <div>
+          <h2 style={{ margin: 0, fontSize: 17, color: "#111923" }}>Atualizar QTR automaticamente</h2>
+          <p style={{ margin: "5px 0 0", color: "#6b7785", fontSize: 14 }}>
+            Sincroniza os treinos e jogos cadastrados nesta semana.
+          </p>
+        </div>
+
+        <form action={generateQtr}>
+          <input type="hidden" name="weekStart" value={isoDate(weekStart)} />
+          <QtrGenerateButton />
+        </form>
       </section>
-    </>
+
+      <QtrEditor
+        key={`${isoDate(weekStart)}-${qtr?.updatedAt?.getTime() ?? 0}`}
+        weekStart={isoDate(weekStart)}
+        initialRows={initialRows}
+        categories={categories}
+        saveAction={saveQtr}
+      />
+    </main>
   );
 }

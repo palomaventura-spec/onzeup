@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
 import { IntegrationStatus } from "@prisma/client";
@@ -32,4 +33,5 @@ export async function updateConnectionSettings(formData: FormData) {
   revalidatePath("/integracoes");
   revalidatePath("/comunicacao");
   revalidatePath("/organizacao");
+  redirect("/integracoes?salvo=1");
 }

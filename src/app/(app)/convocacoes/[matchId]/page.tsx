@@ -4,6 +4,7 @@ import CallUpSubmitButton from "@/components/CallUpSubmitButton";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
+import { googleCalendarUrl } from "@/lib/google-calendar";
 import {
   createCallUps,
   deleteCallUp,
@@ -62,6 +63,13 @@ export default async function MatchCallUpsPage({
 
   const orgName = user.organization?.publicName || user.organization?.name || "OnzeUp";
   const location = match.location || "Local a definir";
+  const calendarUrl = googleCalendarUrl({
+    title: `${match.category.name} × ${match.opponent}`,
+    start: match.startsAt,
+    location: match.location,
+    details: `Convocação • ${match.competition || "Jogo"} • ${orgName}`,
+  });
+
   const baseMessage = (athleteName: string) =>
 `⚽ CONVOCAÇÃO — ${match.category.name}
 
@@ -85,7 +93,10 @@ ${orgName}`;
             {orgName} × {match.opponent} • {fmt(match.startsAt)}
           </p>
         </div>
-        <Link className="btn btn-secondary" href={`/jogos/${match.id}`}>Voltar ao jogo</Link>
+        <div className="actions">
+          <a className="btn btn-secondary" href={calendarUrl} target="_blank" rel="noreferrer">Adicionar ao Google Agenda</a>
+          <Link className="btn btn-secondary" href={`/jogos/${match.id}`}>Voltar ao jogo</Link>
+        </div>
       </div>
 
       <div className="two-col">
