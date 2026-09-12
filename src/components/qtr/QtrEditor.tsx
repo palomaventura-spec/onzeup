@@ -62,11 +62,13 @@ function periodLabel(weekStart: string) {
 export default function QtrEditor({
   initialRows,
   weekStart,
+  qtrId,
   categories,
   saveAction,
 }: {
   initialRows: QtrRow[];
   weekStart: string;
+  qtrId: string | null;
   categories: { id: string; name: string; birthYear: number | null }[];
   saveAction: (formData: FormData) => Promise<void>;
 }) {
@@ -139,7 +141,6 @@ export default function QtrEditor({
   }
 
   const hasSpecificCategory = selectedCategory !== "__all__";
-  const selectedRow = rows.find((row) => row.category === selectedCategory);
 
   function openCategoryPdf() {
     if (!hasSpecificCategory) return;
@@ -147,13 +148,33 @@ export default function QtrEditor({
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  function publicQtrUrl() {
+    if (!qtrId || !hasSpecificCategory) return null;
+    return `${window.location.origin}/qtr-public/${encodeURIComponent(qtrId)}?category=${encodeURIComponent(selectedCategory)}`;
+  }
+
+  function openPublicQtr() {
+    const url = publicQtrUrl();
+    if (!url) {
+      window.alert("Atualize ou salve o QTR antes de gerar o link público.");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   function sendCategoryWhatsApp() {
     if (!hasSpecificCategory) return;
-    const pdfUrl = `${window.location.origin}/qtr-pdf?week=${encodeURIComponent(weekStart)}&category=${encodeURIComponent(selectedCategory)}`;
+    const publicUrl = publicQtrUrl();
+    if (!publicUrl) {
+      window.alert("Atualize ou salve o QTR antes de enviar pelo WhatsApp.");
+      return;
+    }
+
     const message =
       `⚽ QTR SEMANAL — ${selectedCategory}\n\n` +
       `Período: ${periodLabel(weekStart)}\n\n` +
-      `Confira o QTR da categoria ${selectedCategory}:\n${pdfUrl}`;
+      `Confira o QTR da categoria ${selectedCategory}:\n${publicUrl}`;
+
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
   }
 
@@ -293,6 +314,9 @@ export default function QtrEditor({
             <>
               <button type="button" className="btn-secondary" onClick={openCategoryPdf}>
                 Gerar PDF — {selectedCategory}
+              </button>
+              <button type="button" className="btn-secondary" onClick={openPublicQtr}>
+                Abrir link público — {selectedCategory}
               </button>
               <button type="button" className="btn-secondary" onClick={sendCategoryWhatsApp}>
                 Enviar {selectedCategory} pelo WhatsApp

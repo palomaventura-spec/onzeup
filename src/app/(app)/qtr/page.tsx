@@ -176,6 +176,7 @@ export default async function QtrPage({
       <QtrEditor
         key={`${isoDate(weekStart)}-${qtr?.updatedAt?.getTime() ?? 0}`}
         weekStart={isoDate(weekStart)}
+        qtrId={qtr?.id ?? null}
         initialRows={initialRows}
         categories={categories}
         saveAction={saveQtr}
