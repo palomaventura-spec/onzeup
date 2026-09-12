@@ -14,8 +14,8 @@ export async function requestPasswordReset(formData: FormData) {
 
   const user = await prisma.user.findUnique({ where: { email } });
 
-  // Mantém resposta neutra para não revelar se o endereço existe.
-  if (!user) {
+  // Mantém resposta neutra para não revelar se o endereço existe ou está desativado.
+  if (!user || !user.active || user.accountStatus === "INACTIVE" || user.accountStatus === "SUSPENDED") {
     redirect("/esqueci-senha?status=ok");
   }
 

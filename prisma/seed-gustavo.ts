@@ -5,7 +5,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   const email = "gustavo.model@onzeup.com.br";
-  const password = "G9OnzeUp2026!";
+  const password = String(process.env.GUSTAVO_DEMO_PASSWORD || "");
+  if (password.length < 12) {
+    throw new Error("GUSTAVO_DEMO_PASSWORD deve estar configurado e ter pelo menos 12 caracteres.");
+  }
   const passwordHash = await bcrypt.hash(password, 12);
 
   const user = await prisma.user.upsert({
@@ -132,7 +135,7 @@ async function main() {
   console.log("");
   console.log("✅ Conta modelo do Gustavo pronta.");
   console.log(`E-mail: ${email}`);
-  console.log(`Senha: ${password}`);
+  console.log("Senha: definida exclusivamente por GUSTAVO_DEMO_PASSWORD.");
   console.log(`User ID: ${user.id}`);
   console.log("");
 }

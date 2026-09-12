@@ -2,6 +2,49 @@
 
 import { useState } from "react";
 
+const MAX_IMAGE_SIDE = 2200;
+
+async function sanitizeImage(file: File): Promise<File> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+    reader.readAsDataURL(file);
+  });
+
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Imagem inválida."));
+    img.src = dataUrl;
+  });
+
+  const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Não foi possível processar a imagem.");
+  ctx.drawImage(image, 0, 0, width, height);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (value) => (value ? resolve(value) : reject(new Error("Não foi possível processar a imagem."))),
+      "image/webp",
+      0.88
+    );
+  });
+
+  // O reprocessamento via canvas remove metadados EXIF (incluindo GPS) antes do upload.
+  return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "imagem"}.webp`, {
+    type: "image/webp",
+    lastModified: Date.now(),
+  });
+}
+
 export default function ImageUpload({
   name,
   defaultValue,
@@ -25,14 +68,31 @@ export default function ImageUpload({
     setMessage("");
 
     try {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        setStatus("error");
+        setMessage("Formato não permitido. Use JPEG, PNG ou WEBP.");
+        return;
+      }
+
+      if (file.size <= 0 || file.size > 4 * 1024 * 1024) {
+        setStatus("error");
+        setMessage("A imagem original deve ter até 4 MB.");
+        return;
+      }
+
+      const safeFile = await sanitizeImage(file);
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", safeFile);
       form.append("purpose", purpose || name);
 
       const response = await fetch("/api/upload", { method: "POST", body: form });
       const text = await response.text();
       let json: any = {};
-      try { json = JSON.parse(text); } catch { json = {}; }
+      try {
+        json = JSON.parse(text);
+      } catch {
+        json = {};
+      }
 
       if (!response.ok || !json.url) {
         setStatus("error");
@@ -43,9 +103,9 @@ export default function ImageUpload({
       setUrl(json.url);
       setStatus("success");
       setMessage("Imagem enviada. Agora salve as configurações.");
-    } catch (error) {
+    } catch {
       setStatus("error");
-      setMessage("Não foi possível conectar ao serviço de upload.");
+      setMessage("Não foi possível processar ou enviar a imagem.");
     }
   }
 

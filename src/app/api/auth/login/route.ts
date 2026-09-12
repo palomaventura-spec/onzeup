@@ -4,6 +4,20 @@ import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { UserRole } from "@prisma/client";
 
+function safeInternalDestination(value: string, fallback: string) {
+  if (!value) return fallback;
+  if (!value.startsWith("/") || value.startsWith("//")) return fallback;
+  if (value.includes("\\") || /[\r\n]/.test(value)) return fallback;
+
+  try {
+    const parsed = new URL(value, "https://www.onzeup.com.br");
+    if (parsed.origin !== "https://www.onzeup.com.br") return fallback;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function POST(req: Request) {
   const form = await req.formData();
 
@@ -14,8 +28,8 @@ export async function POST(req: Request) {
 
   const failureUrl = adminOnly ? "/admin/login?erro=1" : "/login?erro=1";
 
-  // Bootstrap seguro do Super Admin pelas variáveis de ambiente.
-  // Isso evita depender de seed manual para entrar em produção.
+  // Bootstrap do Super Admin pelas variáveis de ambiente.
+  // Mantido para compatibilidade operacional, sem senha padrão em código.
   if (adminOnly) {
     const adminEmail = String(
       process.env.ONZEUP_ADMIN_EMAIL || "onzeupfutebolbase@gmail.com"
@@ -23,11 +37,7 @@ export async function POST(req: Request) {
 
     const adminPassword = String(process.env.ONZEUP_ADMIN_PASSWORD || "");
 
-    if (
-      adminPassword &&
-      email === adminEmail &&
-      password === adminPassword
-    ) {
+    if (adminPassword && email === adminEmail && password === adminPassword) {
       const passwordHash = await bcrypt.hash(adminPassword, 12);
 
       const admin = await prisma.user.upsert({
@@ -76,15 +86,16 @@ export async function POST(req: Request) {
 
   await createSession(user.id);
 
-  const destination =
-    requestedNext ||
-    (user.role === "SUPER_ADMIN"
+  const fallback =
+    user.role === "SUPER_ADMIN"
       ? "/admin"
       : user.role === "GUARDIAN"
         ? "/responsavel"
         : user.role === "COACH"
           ? "/coach/dashboard"
-          : "/dashboard");
+          : "/dashboard";
+
+  const destination = safeInternalDestination(requestedNext, fallback);
 
   return NextResponse.redirect(new URL(destination, req.url), 303);
 }

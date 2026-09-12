@@ -4,8 +4,16 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = process.env.ONZEUP_ADMIN_EMAIL || "onzeupfutebolbase@gmail.com";
-  const password = process.env.ONZEUP_ADMIN_PASSWORD || "OnzeUpAdmin2026!";
+  const email = String(process.env.ONZEUP_ADMIN_EMAIL || "").trim().toLowerCase();
+  const password = String(process.env.ONZEUP_ADMIN_PASSWORD || "");
+
+  if (!email) {
+    throw new Error("ONZEUP_ADMIN_EMAIL não configurado.");
+  }
+  if (password.length < 12) {
+    throw new Error("ONZEUP_ADMIN_PASSWORD deve estar configurado e ter pelo menos 12 caracteres.");
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
 
   const admin = await prisma.user.upsert({
@@ -36,7 +44,7 @@ async function main() {
   console.log("");
   console.log("✅ Super Admin ONZEUP criado/atualizado.");
   console.log(`E-mail: ${email}`);
-  console.log("Senha: definida por ONZEUP_ADMIN_PASSWORD ou padrão local.");
+  console.log("Senha: definida exclusivamente por ONZEUP_ADMIN_PASSWORD.");
   console.log(`User ID: ${admin.id}`);
   console.log("");
 }

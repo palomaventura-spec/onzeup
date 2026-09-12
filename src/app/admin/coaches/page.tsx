@@ -166,7 +166,7 @@ export default async function AdminCoachesPage({
       )}
 
       <section className="admin-card">
-        <form method="GET" className="admin-filter-row">
+        <form method="GET" className="admin-filter-row admin-coaches-filters">
           <input
             type="search"
             name="q"
@@ -208,8 +208,8 @@ export default async function AdminCoachesPage({
             Nenhum Coach encontrado.
           </div>
         ) : (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
+          <div className="admin-table-wrap admin-coaches-table-wrap">
+            <table className="admin-table admin-coaches-table">
               <thead>
                 <tr>
                   <th>Coach</th>

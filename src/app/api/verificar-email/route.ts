@@ -17,11 +17,37 @@ export async function GET(req: Request) {
 
   const record = await prisma.emailVerificationToken.findUnique({
     where: { tokenHash },
+    include: {
+      user: {
+        select: {
+          id: true,
+          active: true,
+          accountStatus: true,
+          emailVerifiedAt: true,
+        },
+      },
+    },
   });
 
   if (!record || record.usedAt || record.expiresAt <= new Date()) {
     return NextResponse.redirect(
       new URL("/login?verificacao=token-expirado", req.url),
+      303
+    );
+  }
+
+  // Um token antigo não pode reativar conta já bloqueada/desativada.
+  if (
+    record.user.emailVerifiedAt ||
+    record.user.accountStatus !== "PENDING_VERIFICATION"
+  ) {
+    await prisma.emailVerificationToken.update({
+      where: { id: record.id },
+      data: { usedAt: new Date() },
+    });
+
+    return NextResponse.redirect(
+      new URL("/login?verificacao=token-invalido", req.url),
       303
     );
   }

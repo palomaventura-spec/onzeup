@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { readAsaasData, writeAsaasData } from "@/lib/asaas";
 
@@ -88,7 +89,13 @@ export async function POST(request: Request) {
     }
 
     const receivedToken = request.headers.get("asaas-access-token");
-    if (!receivedToken || receivedToken !== configuredToken) {
+    const configuredBuffer = Buffer.from(configuredToken);
+    const receivedBuffer = Buffer.from(receivedToken || "");
+    const validToken =
+      configuredBuffer.length === receivedBuffer.length &&
+      crypto.timingSafeEqual(configuredBuffer, receivedBuffer);
+
+    if (!validToken) {
       console.warn("ASAAS_WEBHOOK_INVALID_TOKEN");
       return NextResponse.json({ ok: false }, { status: 401 });
     }

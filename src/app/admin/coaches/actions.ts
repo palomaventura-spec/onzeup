@@ -41,6 +41,7 @@ export async function deactivateCoach(formData: FormData) {
       where: { id: coach.ownerUserId },
       data: {
         active: false,
+        accountStatus: "INACTIVE",
       },
     }),
   ]);
@@ -145,6 +146,10 @@ export async function deleteInactiveCoach(formData: FormData) {
       where: {
         id: coach.id,
       },
+    });
+
+    await tx.passwordResetToken.deleteMany({
+      where: { userId: user.id },
     });
 
     await tx.session.deleteMany({

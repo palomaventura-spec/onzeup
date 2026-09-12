@@ -149,7 +149,29 @@ export async function deleteInactiveOrganization(formData: FormData) {
     redirect(adminOrganizationUrl(organizationId, "error=financial_history"));
   }
 
-  await prisma.organization.delete({ where: { id: organizationId } });
+  const organizationUsers = await prisma.user.findMany({
+    where: { organizationId },
+    select: { id: true },
+  });
+  const userIds = organizationUsers.map((user) => user.id);
+
+  await prisma.$transaction(async (tx) => {
+    // PasswordResetToken não possui FK no schema atual; limpamos explicitamente
+    // para não deixar token órfão após exclusão definitiva da organização.
+    if (userIds.length) {
+      await tx.passwordResetToken.deleteMany({
+        where: { userId: { in: userIds } },
+      });
+
+      // Remove explicitamente as contas da organização para garantir que
+      // os e-mails possam ser reutilizados após exclusão definitiva.
+      await tx.user.deleteMany({
+        where: { id: { in: userIds }, organizationId },
+      });
+    }
+
+    await tx.organization.delete({ where: { id: organizationId } });
+  });
 
   revalidatePath("/admin");
   revalidatePath("/admin/organizacoes");

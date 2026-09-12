@@ -20,7 +20,9 @@ export async function registerClubTrial(formData: FormData) {
   const phone = clean(formData.get("phone"));
   const password = clean(formData.get("password"));
   const confirm = clean(formData.get("confirm"));
-  const type = clean(formData.get("type")) || "SCHOOL";
+  const rawType = clean(formData.get("type")) || "SCHOOL";
+  const allowedTypes = ["CLUB", "SCHOOL", "PROJECT", "ACADEMY", "PERSONAL_TRAINING"] as const;
+  const type = allowedTypes.includes(rawType as (typeof allowedTypes)[number]) ? rawType : "SCHOOL";
   const legal = formData.get("legal") === "on";
 
   if (!responsibleName || !organizationName || !email || password.length < 8 || password !== confirm || !legal) {
