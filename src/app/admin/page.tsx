@@ -15,6 +15,14 @@ function dateTime(value: Date) {
   }).format(value);
 }
 
+function accountStatusLabel(status: string) {
+  if (status === "ACTIVE") return "Ativo";
+  if (status === "PENDING_VERIFICATION") return "Aguardando verificação";
+  if (status === "INACTIVE") return "Inativo";
+  if (status === "SUSPENDED") return "Suspenso";
+  return status;
+}
+
 function roleLabel(role: string) {
   if (role === "GUARDIAN") return "Player / Responsável";
   if (role === "COACH") return "Coach";
@@ -112,15 +120,17 @@ export default async function AdminHome() {
                 <p>{item.email}</p>
               </div>
               <div className="admin-registration-status">
-                <span>{item.emailVerifiedAt ? "E-mail verificado" : item.role === "GUARDIAN" ? "Aguardando verificação" : item.accountStatus}</span>
+                <span>{item.emailVerifiedAt ? "E-mail verificado" : item.role === "GUARDIAN" ? "Aguardando verificação" : accountStatusLabel(item.accountStatus)}</span>
                 <small>{dateTime(item.createdAt)}</small>
               </div>
               {item.role === "COORDINATOR" && item.organizationId ? (
                 <Link href={`/admin/organizacoes/${item.organizationId}`}>Gerenciar →</Link>
               ) : item.role === "GUARDIAN" ? (
                 <Link href="/admin/players">Ver Players →</Link>
+              ) : item.role === "COACH" ? (
+                <Link href="/admin/coaches">Gerenciar →</Link>
               ) : (
-                <span className="muted">Coach</span>
+                <span className="muted">—</span>
               )}
             </article>
           ))}
@@ -131,6 +141,7 @@ export default async function AdminHome() {
       <section className="admin-shortcuts-v134">
         <Link href="/admin/organizacoes" className="card"><span className="page-eyebrow">CLUBES</span><h2>Organizações</h2><p className="muted">Planos, cortesias, suspensão e reativação.</p><strong>Gerenciar organizações →</strong></Link>
         <Link href="/admin/players" className="card"><span className="page-eyebrow">PLAYERS</span><h2>Players</h2><p className="muted">Cadastros, status e administração dos atletas.</p><strong>Gerenciar Players →</strong></Link>
+        <Link href="/admin/coaches" className="card"><span className="page-eyebrow">COACHES</span><h2>Coaches</h2><p className="muted">Cadastros, vínculos e administração dos profissionais.</p><strong>Gerenciar Coaches →</strong></Link>
         <Link href="/admin/pagamentos" className="card"><span className="page-eyebrow">PAGAMENTOS</span><h2>Pagamentos</h2><p className="muted">{pendingPix} pagamento(s) aguardando confirmação.</p><strong>Abrir pagamentos →</strong></Link>
         <Link href="/" className="card"><span className="page-eyebrow">PLATAFORMA</span><h2>Portal ONZEUP</h2><p className="muted">Abrir a experiência pública da plataforma.</p><strong>Abrir portal →</strong></Link>
       </section>

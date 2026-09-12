@@ -32,7 +32,9 @@ async function main() {
   const guardian = await prisma.guardianProfile.upsert({
     where: { userId: user.id },
     update: {},
-    create: { userId: user.id },
+    create: {
+      userId: user.id,
+    },
   });
 
   const common = {
@@ -64,7 +66,9 @@ async function main() {
   };
 
   await prisma.playerProfile.upsert({
-    where: { slug: "gustavo-aguiar-free" },
+    where: {
+      slug: "gustavo-aguiar-free",
+    },
     update: {
       ...common,
       plan: "FREE",
@@ -84,12 +88,18 @@ async function main() {
   });
 
   await prisma.playerProfile.upsert({
-    where: { slug: "gustavo-aguiar" },
+    where: {
+      slug: "gustavo-aguiar",
+    },
     update: {
       ...common,
       plan: "PREMIUM",
       template: "PREMIUM_DARK",
-      videos: "https://youtu.be/LT4pTFW0O_k\nhttps://youtu.be/kDZu3B9m6Yo\nhttps://youtu.be/b8PhpMC0ma8\nhttps://youtu.be/ULRKMnTMh7U",
+      videos:
+        "https://youtu.be/LT4pTFW0O_k\n" +
+        "https://youtu.be/kDZu3B9m6Yo\n" +
+        "https://youtu.be/b8PhpMC0ma8\n" +
+        "https://youtu.be/ULRKMnTMh7U",
       directoryVisible: true,
       isComplimentary: true,
       complimentaryReason: "Perfil modelo oficial ONZEUP",
@@ -100,7 +110,11 @@ async function main() {
       slug: "gustavo-aguiar",
       plan: "PREMIUM",
       template: "PREMIUM_DARK",
-      videos: "https://youtu.be/LT4pTFW0O_k\nhttps://youtu.be/kDZu3B9m6Yo\nhttps://youtu.be/b8PhpMC0ma8\nhttps://youtu.be/ULRKMnTMh7U",
+      videos:
+        "https://youtu.be/LT4pTFW0O_k\n" +
+        "https://youtu.be/kDZu3B9m6Yo\n" +
+        "https://youtu.be/b8PhpMC0ma8\n" +
+        "https://youtu.be/ULRKMnTMh7U",
       directoryVisible: true,
       isComplimentary: true,
       complimentaryReason: "Perfil modelo oficial ONZEUP",
@@ -109,7 +123,11 @@ async function main() {
   });
 
   // Remove sessões antigas dessa conta para o teste começar limpo.
-  await prisma.session.deleteMany({ where: { userId: user.id } });
+  await prisma.session.deleteMany({
+    where: {
+      userId: user.id,
+    },
+  });
 
   console.log("");
   console.log("✅ Conta modelo do Gustavo pronta.");
