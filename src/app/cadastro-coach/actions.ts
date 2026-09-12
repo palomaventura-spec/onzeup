@@ -2,9 +2,9 @@
 
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { createSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { notifyAdminNewRegistration } from "@/lib/admin-notifications";
+import { issueAccountVerification } from "@/lib/registration-verification";
 
 const clean = (v: FormDataEntryValue | null) => String(v || "").trim();
 const slugify = (v: string) =>
@@ -20,7 +20,22 @@ export async function registerCoach(formData: FormData) {
   if (!name || !email || password.length < 8 || password !== confirm) {
     redirect("/cadastro-coach?erro=dados");
   }
-  if (await prisma.user.findUnique({ where: { email } })) {
+
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, role: true, active: true, emailVerifiedAt: true, accountStatus: true },
+  });
+
+  if (existing) {
+    if (
+      existing.role === "COACH" &&
+      !existing.active &&
+      !existing.emailVerifiedAt &&
+      existing.accountStatus === "PENDING_VERIFICATION"
+    ) {
+      const sent = await issueAccountVerification({ userId: existing.id, email, product: "Coach" });
+      redirect(`/cadastro-coach?status=${sent ? "reenviado" : "erro-email"}&email=${encodeURIComponent(email)}`);
+    }
     redirect("/cadastro-coach?erro=email");
   }
 
@@ -39,8 +54,8 @@ export async function registerCoach(formData: FormData) {
       email,
       passwordHash: await hash(password, 12),
       role: "COACH",
-      active: true,
-      accountStatus: "ACTIVE",
+      active: false,
+      accountStatus: "PENDING_VERIFICATION",
       coachProfile: {
         create: {
           name,
@@ -68,7 +83,7 @@ export async function registerCoach(formData: FormData) {
     });
 
     for (const match of matches) {
-      const existing = await prisma.coachOrganizationAccess.findFirst({
+      const linked = await prisma.coachOrganizationAccess.findFirst({
         where: {
           coachId: user.coachProfile.id,
           organizationId: match.organizationId,
@@ -78,7 +93,7 @@ export async function registerCoach(formData: FormData) {
         select: { id: true },
       });
 
-      if (!existing) {
+      if (!linked) {
         await prisma.coachOrganizationAccess.create({
           data: {
             coachId: user.coachProfile.id,
@@ -98,14 +113,38 @@ export async function registerCoach(formData: FormData) {
     }
   }
 
+  const sent = await issueAccountVerification({ userId: user.id, email, product: "Coach" });
+
   await notifyAdminNewRegistration({
     type: "COACH",
     name,
     email,
     detail: manages ? `Administra organização: ${orgType || "não informado"}` : "Não administra organização",
-    status: "Conta ativa",
+    status: "Aguardando confirmação de e-mail",
   });
 
-  await createSession(user.id);
-  redirect("/coach/dashboard");
+  redirect(`/cadastro-coach?status=${sent ? "enviado" : "erro-email"}&email=${encodeURIComponent(email)}`);
+}
+
+export async function resendCoachVerification(formData: FormData) {
+  const email = clean(formData.get("email")).toLowerCase();
+  if (!email) redirect("/cadastro-coach?erro=dados");
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, role: true, active: true, emailVerifiedAt: true, accountStatus: true },
+  });
+
+  if (
+    !user ||
+    user.role !== "COACH" ||
+    user.active ||
+    user.emailVerifiedAt ||
+    user.accountStatus !== "PENDING_VERIFICATION"
+  ) {
+    redirect("/cadastro-coach?status=reenviado");
+  }
+
+  const sent = await issueAccountVerification({ userId: user.id, email, product: "Coach" });
+  redirect(`/cadastro-coach?status=${sent ? "reenviado" : "erro-email"}&email=${encodeURIComponent(email)}`);
 }

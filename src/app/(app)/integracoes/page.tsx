@@ -1,15 +1,6 @@
+import Link from "next/link";
 import { requireOrganizationUser } from "@/lib/auth";
 import { updateConnectionSettings } from "./actions";
-
-function pixType(key?: string | null) {
-  if (!key) return "Não configurado";
-  const value = key.trim();
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "E-mail";
-  if (/^\+?\d{10,13}$/.test(value.replace(/\D/g, ""))) return "Celular";
-  if (/^\d{11}$/.test(value.replace(/\D/g, ""))) return "CPF";
-  if (/^\d{14}$/.test(value.replace(/\D/g, ""))) return "CNPJ";
-  return "Chave aleatória";
-}
 
 function validWhatsapp(value?: string | null) {
   if (!value) return "";
@@ -20,17 +11,16 @@ function validWhatsapp(value?: string | null) {
 export default async function ConnectionsPage() {
   const user = await requireOrganizationUser();
   const org = user.organization!;
-  const standardUrl = `/o/${org.slug}`;
   const whatsapp = validWhatsapp(org.whatsappPhone) || validWhatsapp(org.whatsapp);
 
   return (
     <>
       <div className="page-head">
         <div>
-          <span className="page-eyebrow">CONFIGURAÇÃO DA ORGANIZAÇÃO</span>
+          <span className="page-eyebrow">COMUNICAÇÃO DA ORGANIZAÇÃO</span>
           <h1>Conexões</h1>
           <p className="muted">
-            Configure domínio, WhatsApp e a forma como sua organização recebe pagamentos.
+            Configure o contato oficial da organização. Nesta fase, o ONZEUP prepara mensagens para envio manual pelo WhatsApp.
           </p>
         </div>
       </div>
@@ -38,66 +28,15 @@ export default async function ConnectionsPage() {
       <form className="connections-grid" action={updateConnectionSettings}>
         <section className="card connection-card">
           <div className="connection-title">
-            <span className="connection-icon">🌐</span>
-            <div>
-              <h2>Site e domínio</h2>
-              <p className="muted">Seu site ONZEUP já funciona sem precisar comprar um domínio.</p>
-            </div>
-          </div>
-
-          <div className="connection-current">
-            <small>ENDEREÇO ONZEUP</small>
-            <strong>onzeup.com.br{standardUrl}</strong>
-            <span className="badge">Ativo</span>
-          </div>
-
-          <label>
-            Domínio próprio <span className="help">(opcional)</span>
-            <input
-              name="customDomain"
-              defaultValue={org.customDomain ?? ""}
-              placeholder="www.suaescolinha.com.br"
-              autoCapitalize="none"
-              autoCorrect="off"
-            />
-          </label>
-
-          {org.customDomain ? (
-            <div className="connection-current">
-              <small>STATUS DO DOMÍNIO PRÓPRIO</small>
-              <strong>{org.domainVerified ? "Domínio verificado" : "Aguardando configuração DNS"}</strong>
-              <span className="help">
-                {org.domainVerified
-                  ? "O domínio próprio está liberado. O endereço ONZEUP continua funcionando normalmente."
-                  : "O domínio foi salvo, mas ainda precisa ser adicionado ao projeto ONZEUP na Vercel e validado por DNS antes de funcionar."}
-              </span>
-            </div>
-          ) : null}
-
-          <div className="connection-current">
-            <small>COMO A ATIVAÇÃO FUNCIONA</small>
-            <strong>1. Salvar → 2. Configurar DNS → 3. Verificar</strong>
-            <span className="help">
-              Nesta primeira fase a ativação é assistida pelo ONZEUP. Depois de salvar o domínio,
-              ele é adicionado ao projeto na Vercel. A Vercel informa o registro DNS correto
-              (CNAME ou A) e o responsável pelo domínio configura esse registro no provedor onde
-              comprou o endereço. Quando a verificação concluir, o domínio passa a apontar para o
-              site público do clube. Não altere o DNS antes de receber os dados de configuração.
-            </span>
-          </div>
-        </section>
-
-        <section className="card connection-card">
-          <div className="connection-title">
             <span className="connection-icon">💬</span>
             <div>
-              <h2>WhatsApp</h2>
-              <p className="muted">Usado para contatos, convocações e mensagens geradas pelo sistema.</p>
+              <h2>WhatsApp da organização</h2>
+              <p className="muted">Contato oficial usado pela equipe e nas comunicações do ONZEUP.</p>
             </div>
           </div>
 
           <label>
-            WhatsApp da organização
+            Número com DDI + DDD + telefone
             <input
               name="whatsappPhone"
               defaultValue={whatsapp}
@@ -106,41 +45,19 @@ export default async function ConnectionsPage() {
               autoComplete="tel"
             />
           </label>
-          <p className="help">Digite somente o número com DDI + DDD + telefone. Ex.: 5521999999999.</p>
+          <p className="help">Exemplo: 5521999999999.</p>
 
           <div className="connection-current">
-            <small>STATUS</small>
-            <strong>{whatsapp ? "Número cadastrado" : "Não configurado"}</strong>
+            <small>COMO FUNCIONA NESTA FASE</small>
+            <strong>{whatsapp ? "WhatsApp configurado" : "Cadastre o número oficial"}</strong>
             <span className="help">
-              Nesta fase, o ONZEUP prepara mensagens e links para abrir no WhatsApp. O envio automático via API fica para uma evolução futura.
+              O ONZEUP gera mensagens prontas de convocação, contato e cobrança. O sistema abre o WhatsApp do dispositivo e o envio é confirmado manualmente por você. Não é necessário WhatsApp Business nem API.
             </span>
           </div>
-        </section>
 
-        <section className="card connection-card">
-          <div className="connection-title">
-            <span className="connection-icon">💠</span>
-            <div>
-              <h2>Recebimentos via PIX</h2>
-              <p className="muted">O dinheiro vai diretamente para a conta informada pelo clube.</p>
-            </div>
-          </div>
-
-          <label>
-            Chave PIX da organização
-            <input
-              name="pixKey"
-              defaultValue={org.pixKey ?? ""}
-              placeholder="CPF, CNPJ, e-mail, celular ou chave aleatória"
-            />
-          </label>
-
-          <div className="connection-current">
-            <small>TIPO IDENTIFICADO</small>
-            <strong>{pixType(org.pixKey)}</strong>
-            <span className="help">
-              O ONZEUP não recebe nem movimenta esse dinheiro. O Financeiro controla pendências e baixas; o pagamento acontece diretamente entre responsável e clube.
-            </span>
+          <div className="actions">
+            <button type="submit">Salvar WhatsApp</button>
+            <Link className="btn-secondary" href="/comunicacao">Abrir Central de Comunicação</Link>
           </div>
         </section>
 
@@ -148,20 +65,15 @@ export default async function ConnectionsPage() {
           <div className="connection-title">
             <span className="connection-icon">⚡</span>
             <div>
-              <h2>Recebimentos automáticos</h2>
-              <p className="muted">Uma evolução futura do ONZEUP.</p>
+              <h2>Fase 2 — Premium / Pro</h2>
+              <p className="muted">Recursos avançados entram após a validação do beta.</p>
             </div>
           </div>
           <p>
-            No futuro, o clube poderá conectar uma conta de recebimento e ter PIX,
-            cartão, boleto e baixa automática dentro da plataforma.
+            Domínio próprio, WhatsApp automático via API, lembretes automáticos, convocações automáticas e integrações avançadas ficarão para a próxima fase.
           </p>
           <span className="badge">Em breve</span>
         </section>
-
-        <div className="connections-save">
-          <button type="submit">Salvar conexões</button>
-        </div>
       </form>
     </>
   );

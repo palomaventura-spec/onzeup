@@ -33,6 +33,20 @@ function parseType(value: string): ChargeType {
   }
 }
 
+
+export async function updatePixSettings(formData: FormData) {
+  const user = await requireOrganizationUser();
+  const pixKey = nullable(formData.get("pixKey"));
+
+  await prisma.organization.update({
+    where: { id: user.organizationId },
+    data: { pixKey },
+  });
+
+  revalidatePath("/financeiro");
+  revalidatePath("/comunicacao");
+}
+
 export async function createCharge(formData: FormData) {
   const user = await requireOrganizationUser();
 

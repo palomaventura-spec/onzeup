@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { registerClubTrial } from "./actions";
+import { registerClubTrial, resendClubVerification } from "./actions";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 export default async function ClubRegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; erro?: string }>;
+  searchParams: Promise<{ status?: string; erro?: string; email?: string }>;
 }) {
   const query = await searchParams;
 
@@ -35,9 +35,15 @@ export default async function ClubRegisterPage({
         <span className="page-eyebrow">CADASTRO DO CLUB</span>
         <h2>Criar conta ONZEUP Club</h2>
 
-        {query.status ? (
+        {query.status === "enviado" || query.status === "reenviado" ? (
           <div className="notice">
-            Cadastro criado. Confirme seu e-mail para ativar a conta e iniciar o acesso.
+            Enviamos um link de confirmação para <strong>{query.email || "seu e-mail"}</strong>. Confirme o endereço antes de acessar o ONZEUP Club.
+          </div>
+        ) : null}
+
+        {query.status === "erro-email" ? (
+          <div className="notice error">
+            A conta foi criada, mas não conseguimos enviar o e-mail de confirmação agora. Tente reenviar abaixo.
           </div>
         ) : null}
 
@@ -53,6 +59,15 @@ export default async function ClubRegisterPage({
           </div>
         ) : null}
 
+        {query.status ? (
+          <>
+            <form action={resendClubVerification} className="stack verification-resend-form">
+              <input type="hidden" name="email" value={query.email || ""} />
+              <PendingSubmitButton className="btn-secondary" pendingText="Reenviando...">Reenviar confirmação</PendingSubmitButton>
+            </form>
+            <p className="help">Já confirmou? <Link href="/login">Entrar no ONZEUP Club</Link></p>
+          </>
+        ) : (
         <form action={registerClubTrial} className="stack" autoComplete="off">
           <label>
             Nome do responsável
@@ -120,10 +135,13 @@ export default async function ClubRegisterPage({
           </PendingSubmitButton>
           <p className="form-submit-help">Ao enviar, vamos preparar sua conta e abrir a configuração inicial.</p>
         </form>
+        )}
 
-        <p className="help">
-          Já possui conta? <Link href="/login">Entrar</Link>
-        </p>
+        {!query.status ? (
+          <p className="help">
+            Já possui conta? <Link href="/login">Entrar</Link>
+          </p>
+        ) : null}
       </section>
     </main>
   );

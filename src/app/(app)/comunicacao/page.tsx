@@ -21,7 +21,7 @@ export default async function CommunicationPage() {
   const orgName = user.organization?.publicName || user.organization?.name || "ONZEUP";
   const now = new Date();
 
-  const [matches, charges, qtr] = await Promise.all([
+  const [matches, charges, qtr, trainings] = await Promise.all([
     prisma.match.findMany({
       where: { organizationId: user.organizationId, status: "SCHEDULED", startsAt: { gte: now } },
       include: {
@@ -40,6 +40,22 @@ export default async function CommunicationPage() {
     prisma.qtr.findFirst({
       where: { organizationId: user.organizationId },
       orderBy: { weekStart: "desc" },
+    }),
+    prisma.trainingSchedule.findMany({
+      where: { organizationId: user.organizationId },
+      include: {
+        category: {
+          include: {
+            athletes: {
+              where: { active: true },
+              orderBy: { name: "asc" },
+              take: 12,
+            },
+          },
+        },
+      },
+      orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
+      take: 6,
     }),
   ]);
 
@@ -102,6 +118,43 @@ ${orgName}`;
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+
+        <section className="card">
+          <div className="section-title-row">
+            <div><span className="page-eyebrow">TREINOS</span><h2>Avisos para responsáveis</h2></div>
+            <Link href="/treinos">Gerenciar treinos</Link>
+          </div>
+
+          <div className="comm-list">
+            {trainings.map((training) => {
+              const weekday = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"][training.weekday] || "Treino";
+              return (
+                <article key={training.id}>
+                  <div className="comm-title">
+                    <div>
+                      <small>{training.category.name}</small>
+                      <strong>{weekday} • {training.startTime}–{training.endTime}</strong>
+                      <span>{training.location || "Local a definir"}</span>
+                    </div>
+                  </div>
+                  <div className="comm-recipient-list">
+                    {training.category.athletes.slice(0, 8).map((athlete) => {
+                      const message = `⚽ TREINO — ${training.category.name}\n\nOlá! Passando para lembrar o treino de ${athlete.nickname || athlete.name}.\n\n📅 ${weekday}\n⏰ ${training.startTime} às ${training.endTime}\n📍 ${training.location || "Local a definir"}${training.notes ? `\n📝 ${training.notes}` : ""}\n\n${orgName}`;
+                      return (
+                        <div key={athlete.id}>
+                          <span><strong>{athlete.nickname || athlete.name}</strong><small>{athlete.guardianName || "Responsável"}</small></span>
+                          <WhatsAppAction phone={athlete.guardianPhone} message={message} label="Avisar" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </article>
+              );
+            })}
+            {!trainings.length ? <p className="muted">Nenhum horário de treino cadastrado.</p> : null}
           </div>
         </section>
 

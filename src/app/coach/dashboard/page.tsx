@@ -100,7 +100,7 @@ export default async function CoachDashboard({
         </div>
         <div className="actions">
           {coach.isPublic ? <Link className="btn-secondary" href={`/coach-profile/${coach.slug}`}>Ver meu site ↗</Link> : null}
-          <Link className="btn-secondary" href="/coach/editar">Editar meu perfil</Link>
+          <Link className="btn" href="/coach/editar">{coach.isPublic ? "Editar minha página profissional" : "Criar minha página profissional"}</Link>
         </div>
       </header>
 

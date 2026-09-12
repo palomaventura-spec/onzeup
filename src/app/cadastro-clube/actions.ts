@@ -2,9 +2,9 @@
 
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { createSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { notifyAdminNewRegistration } from "@/lib/admin-notifications";
+import { issueAccountVerification } from "@/lib/registration-verification";
 
 const clean = (value: FormDataEntryValue | null) => String(value || "").trim();
 
@@ -28,7 +28,24 @@ export async function registerClubTrial(formData: FormData) {
   if (!responsibleName || !organizationName || !email || password.length < 8 || password !== confirm || !legal) {
     redirect("/cadastro-clube?erro=dados");
   }
-  if (await prisma.user.findUnique({ where: { email } })) redirect("/cadastro-clube?erro=email");
+
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, role: true, active: true, emailVerifiedAt: true, accountStatus: true },
+  });
+
+  if (existing) {
+    if (
+      existing.role === "COORDINATOR" &&
+      !existing.active &&
+      !existing.emailVerifiedAt &&
+      existing.accountStatus === "PENDING_VERIFICATION"
+    ) {
+      const sent = await issueAccountVerification({ userId: existing.id, email, product: "Club" });
+      redirect(`/cadastro-clube?status=${sent ? "reenviado" : "erro-email"}&email=${encodeURIComponent(email)}`);
+    }
+    redirect("/cadastro-clube?erro=email");
+  }
 
   const baseSlug = safeSlug(organizationName) || `clube-${Date.now()}`;
   let slug = baseSlug;
@@ -58,22 +75,47 @@ export async function registerClubTrial(formData: FormData) {
           email,
           passwordHash,
           role: "COORDINATOR",
-          active: true,
-          accountStatus: "TRIAL",
+          active: false,
+          accountStatus: "PENDING_VERIFICATION",
         },
       },
     },
     include: { users: true },
   });
 
+  const user = organization.users[0];
+  const sent = await issueAccountVerification({ userId: user.id, email, product: "Club" });
+
   await notifyAdminNewRegistration({
     type: "CLUB",
     name: organizationName,
     email,
     detail: `Responsável: ${responsibleName} • Tipo: ${type}`,
-    status: "Trial iniciado",
+    status: "Aguardando confirmação de e-mail",
   });
 
-  await createSession(organization.users[0].id);
-  redirect("/onboarding-clube");
+  redirect(`/cadastro-clube?status=${sent ? "enviado" : "erro-email"}&email=${encodeURIComponent(email)}`);
+}
+
+export async function resendClubVerification(formData: FormData) {
+  const email = clean(formData.get("email")).toLowerCase();
+  if (!email) redirect("/cadastro-clube?erro=dados");
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, role: true, active: true, emailVerifiedAt: true, accountStatus: true },
+  });
+
+  if (
+    !user ||
+    user.role !== "COORDINATOR" ||
+    user.active ||
+    user.emailVerifiedAt ||
+    user.accountStatus !== "PENDING_VERIFICATION"
+  ) {
+    redirect("/cadastro-clube?status=reenviado");
+  }
+
+  const sent = await issueAccountVerification({ userId: user.id, email, product: "Club" });
+  redirect(`/cadastro-clube?status=${sent ? "reenviado" : "erro-email"}&email=${encodeURIComponent(email)}`);
 }

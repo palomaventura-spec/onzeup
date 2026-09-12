@@ -317,7 +317,7 @@ export default async function GuardianPortal({
 <label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público ONZEUP Players</span></label>
 
               <div className="actions">
-                <button type="submit">Salvar perfil</button>
+                <PendingSubmitButton pendingText="Salvando perfil...">Salvar perfil</PendingSubmitButton>
                 {selected ? (
                   <button type="submit" formAction={deletePlayer} className="btn-danger">
                     Excluir perfil

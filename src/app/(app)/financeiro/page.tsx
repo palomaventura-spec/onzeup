@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
 import ModuleTour from "@/components/help/ModuleTour";
+import WhatsAppAction from "@/components/WhatsAppAction";
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import {
   createCharge,
   createMonthlyFees,
@@ -9,6 +11,7 @@ import {
   markChargePending,
   cancelCharge,
   deleteCharge,
+  updatePixSettings,
 } from "./actions";
 
 function money(cents: number) {
@@ -34,6 +37,17 @@ function labelType(type: string) {
   }[type] || type;
 }
 
+
+function pixType(key?: string | null) {
+  if (!key) return "Não configurado";
+  const value = key.trim();
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "E-mail";
+  const digits = value.replace(/\D/g, "");
+  if (/^\d{11}$/.test(digits)) return "CPF ou celular";
+  if (/^\d{14}$/.test(digits)) return "CNPJ";
+  return "Chave aleatória";
+}
+
 function statusLabel(status: string) {
   return {
     PENDING: "Pendente",
@@ -47,7 +61,7 @@ export default async function FinancePage() {
   const user = await requireOrganizationUser();
   const orgId = user.organizationId;
 
-  const [charges, athletes, categories, matches] = await Promise.all([
+  const [charges, athletes, categories, matches, organization] = await Promise.all([
     prisma.charge.findMany({
       where: { organizationId: orgId },
       include: { athlete: { include: { category: true } }, match: true },
@@ -66,6 +80,10 @@ export default async function FinancePage() {
       where: { organizationId: orgId, status: "SCHEDULED" },
       include: { category: true, callUps: true },
       orderBy: { startsAt: "asc" },
+    }),
+    prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { name: true, publicName: true, pixKey: true },
     }),
   ]);
 
@@ -90,6 +108,24 @@ export default async function FinancePage() {
         <div className="card"><h2>{pending.length}</h2><span className="muted">Cobranças pendentes</span></div>
         <div className="card"><h2>{paid.length}</h2><span className="muted">Pagamentos registrados</span></div>
       </div>
+
+      <section className="card" style={{marginTop:18}}>
+        <div className="section-title-row">
+          <div>
+            <span className="page-eyebrow">RECEBIMENTOS DIRETOS</span>
+            <h2>PIX da organização</h2>
+            <p className="muted">A cobrança é controlada no ONZEUP, mas o pagamento vai diretamente para o clube.</p>
+          </div>
+          <span className="badge">{pixType(organization?.pixKey)}</span>
+        </div>
+        <form className="form" action={updatePixSettings}>
+          <label>Chave PIX
+            <input name="pixKey" defaultValue={organization?.pixKey ?? ""} placeholder="CPF, CNPJ, e-mail, celular ou chave aleatória" />
+          </label>
+          <p className="help">O ONZEUP não recebe nem movimenta este dinheiro. A chave é usada apenas para montar as mensagens de cobrança.</p>
+          <PendingSubmitButton className="btn" pendingText="Salvando PIX...">Salvar chave PIX</PendingSubmitButton>
+        </form>
+      </section>
 
       <div className="finance-grid">
         <section className="card">
@@ -221,6 +257,14 @@ export default async function FinancePage() {
                             <button className="btn-secondary btn-small" type="submit">Cancelar</button>
                           </form>
                         )}
+
+                        {charge.status !== "PAID" ? (
+                          <WhatsAppAction
+                            phone={charge.athlete.guardianPhone}
+                            label="Cobrar no WhatsApp"
+                            message={`Olá! Lembrete da ${organization?.publicName || organization?.name || "organização"}.\n\n👤 Atleta: ${charge.athlete.nickname || charge.athlete.name}\n📄 ${charge.title}\n💰 ${money(charge.amountCents)}\n📅 Vencimento: ${fmtDate(charge.dueDate)}${organization?.pixKey ? `\n💠 PIX: ${organization.pixKey}` : ""}\n\nSe o pagamento já foi realizado, desconsidere.`}
+                          />
+                        ) : null}
 
                         <form action={deleteCharge} className="inline-form">
                           <input type="hidden" name="id" value={charge.id} />

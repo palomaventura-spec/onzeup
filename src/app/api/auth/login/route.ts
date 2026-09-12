@@ -70,13 +70,20 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({ where: { email } });
 
-  if (!user || !user.active) {
+  if (!user) {
     return NextResponse.redirect(new URL(failureUrl, req.url), 303);
   }
 
   const ok = await bcrypt.compare(password, user.passwordHash);
 
   if (!ok) {
+    return NextResponse.redirect(new URL(failureUrl, req.url), 303);
+  }
+
+  if (!user.active) {
+    if (!adminOnly && user.accountStatus === "PENDING_VERIFICATION") {
+      return NextResponse.redirect(new URL("/login?erro=confirme-email", req.url), 303);
+    }
     return NextResponse.redirect(new URL(failureUrl, req.url), 303);
   }
 

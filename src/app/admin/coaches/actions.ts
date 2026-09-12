@@ -66,11 +66,16 @@ export async function reactivateCoach(formData: FormData) {
     select: {
       id: true,
       ownerUserId: true,
+      owner: { select: { accountStatus: true } },
     },
   });
 
   if (!coach) {
     redirect("/admin/coaches?error=not_found");
+  }
+
+  if (coach.owner.accountStatus !== "INACTIVE") {
+    redirect("/admin/coaches?error=verification_required");
   }
 
   await prisma.user.update({
