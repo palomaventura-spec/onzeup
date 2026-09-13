@@ -103,3 +103,24 @@
   .club-app-light .communication-grid{grid-template-columns:1fr}
   .club-app-light .communication-grid>.comm-qtr-card{grid-column:auto}
 }
+/* ONZEUP v1.7.7 — Avisos do Club Light */
+
+.club-app-light .notice{
+  background:#f3f8e8;
+  border:1px solid #cfe0a6;
+  color:#40531a;
+}
+
+.club-app-light .notice strong{
+  color:#2e3d10;
+}
+
+.club-app-light .notice.error{
+  background:#fff1f1;
+  border:1px solid #efc3c7;
+  color:#9f2f3a;
+}
+
+.club-app-light .notice.error strong{
+  color:#8b2530;
+}

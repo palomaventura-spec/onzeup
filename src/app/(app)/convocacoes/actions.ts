@@ -1,38 +1,94 @@
 "use server";
 
+import { CallUpStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { CallUpStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import { requireOrganizationUser } from "@/lib/auth";
 
-function clean(value: FormDataEntryValue | null) {
+import {
+  getClubCallUpCategoryAccess,
+  requireClubPermission,
+} from "@/lib/club-access";
+import { prisma } from "@/lib/prisma";
+
+function clean(
+  value: FormDataEntryValue | null
+) {
   return String(value ?? "").trim();
 }
 
-export async function createCallUps(formData: FormData) {
-  const user = await requireOrganizationUser();
-  const matchId = clean(formData.get("matchId"));
-  const athleteIds = formData.getAll("athleteIds").map(String).filter(Boolean);
+export async function createCallUps(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission(
+      "CALLUPS_MANAGE"
+    );
 
-  if (!matchId || athleteIds.length === 0) return;
+  const matchId =
+    clean(formData.get("matchId"));
 
-  const match = await prisma.match.findFirst({
-    where: { id: matchId, organizationId: user.organizationId },
-    select: { id: true },
-  });
+  const athleteIds = formData
+    .getAll("athleteIds")
+    .map(String)
+    .filter(Boolean);
+
+  if (
+    !matchId ||
+    athleteIds.length === 0
+  ) {
+    return;
+  }
+
+  const match =
+    await prisma.match.findFirst({
+      where: {
+        id: matchId,
+        organizationId:
+          user.organizationId,
+      },
+
+      select: {
+        id: true,
+        categoryId: true,
+      },
+    });
+
   if (!match) return;
 
-  const athletes = await prisma.athlete.findMany({
-    where: {
-      id: { in: athleteIds },
-      organizationId: user.organizationId,
-      active: true,
-    },
-    select: { id: true },
-  });
+  const categoryAccess =
+    await getClubCallUpCategoryAccess(
+      user,
+      match.categoryId
+    );
 
-  if (athletes.length === 0) return;
+  if (!categoryAccess.canManage) {
+    return;
+  }
+
+  const athletes =
+    await prisma.athlete.findMany({
+      where: {
+        id: {
+          in: athleteIds,
+        },
+
+        organizationId:
+          user.organizationId,
+
+        categoryId:
+          match.categoryId,
+
+        active: true,
+      },
+
+      select: {
+        id: true,
+      },
+    });
+
+  if (athletes.length === 0) {
+    return;
+  }
 
   await prisma.$transaction(
     athletes.map((athlete) =>
@@ -43,73 +99,254 @@ export async function createCallUps(formData: FormData) {
             athleteId: athlete.id,
           },
         },
+
         update: {},
+
         create: {
           matchId: match.id,
           athleteId: athlete.id,
-          organizationId: user.organizationId,
+          organizationId:
+            user.organizationId,
         },
       })
     )
   );
 
-  revalidatePath(`/convocacoes/${matchId}`);
+  revalidatePath(
+    `/convocacoes/${match.id}`
+  );
 }
 
-export async function deleteCallUp(formData: FormData) {
-  const user = await requireOrganizationUser();
-  const id = clean(formData.get("id"));
-  const matchId = clean(formData.get("matchId"));
+export async function deleteCallUp(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission(
+      "CALLUPS_MANAGE"
+    );
+
+  const id =
+    clean(formData.get("id"));
+
   if (!id) return;
 
-  await prisma.callUp.deleteMany({
-    where: { id, organizationId: user.organizationId },
+  const callUp =
+    await prisma.callUp.findFirst({
+      where: {
+        id,
+        organizationId:
+          user.organizationId,
+      },
+
+      select: {
+        id: true,
+        matchId: true,
+
+        match: {
+          select: {
+            categoryId: true,
+          },
+        },
+      },
+    });
+
+  if (!callUp) return;
+
+  const categoryAccess =
+    await getClubCallUpCategoryAccess(
+      user,
+      callUp.match.categoryId
+    );
+
+  if (!categoryAccess.canManage) {
+    return;
+  }
+
+  await prisma.callUp.delete({
+    where: {
+      id: callUp.id,
+    },
   });
 
-  if (matchId) revalidatePath(`/convocacoes/${matchId}`);
+  revalidatePath(
+    `/convocacoes/${callUp.matchId}`
+  );
 }
 
-export async function updateCallUpStatus(formData: FormData) {
-  const user = await requireOrganizationUser();
-  const id = clean(formData.get("id"));
-  const matchId = clean(formData.get("matchId"));
-  const rawStatus = clean(formData.get("status"));
+export async function updateCallUpStatus(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission(
+      "CALLUPS_MANAGE"
+    );
+
+  const id =
+    clean(formData.get("id"));
+
+  const rawStatus =
+    clean(formData.get("status"));
 
   if (!id) return;
+
+  const callUp =
+    await prisma.callUp.findFirst({
+      where: {
+        id,
+        organizationId:
+          user.organizationId,
+      },
+
+      select: {
+        id: true,
+        matchId: true,
+
+        match: {
+          select: {
+            categoryId: true,
+          },
+        },
+      },
+    });
+
+  if (!callUp) return;
+
+  const categoryAccess =
+    await getClubCallUpCategoryAccess(
+      user,
+      callUp.match.categoryId
+    );
+
+  if (!categoryAccess.canManage) {
+    return;
+  }
 
   const status =
     rawStatus === "CONFIRMED"
       ? CallUpStatus.CONFIRMED
       : rawStatus === "DECLINED"
-      ? CallUpStatus.DECLINED
-      : CallUpStatus.PENDING;
+        ? CallUpStatus.DECLINED
+        : CallUpStatus.PENDING;
 
-  await prisma.callUp.updateMany({
-    where: { id, organizationId: user.organizationId },
+  await prisma.callUp.update({
+    where: {
+      id: callUp.id,
+    },
+
     data: {
       status,
-      respondedAt: status === CallUpStatus.PENDING ? null : new Date(),
+
+      respondedAt:
+        status ===
+        CallUpStatus.PENDING
+          ? null
+          : new Date(),
     },
   });
 
-  if (matchId) revalidatePath(`/convocacoes/${matchId}`);
+  revalidatePath(
+    `/convocacoes/${callUp.matchId}`
+  );
 }
 
-export async function markCallUpsSent(formData: FormData) {
-  const user = await requireOrganizationUser();
-  const matchId = clean(formData.get("matchId"));
+export async function markCallUpsSent(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission(
+      "CALLUPS_MANAGE"
+    );
+
+  const matchId =
+    clean(formData.get("matchId"));
+
   if (!matchId) return;
+
+  const match =
+    await prisma.match.findFirst({
+      where: {
+        id: matchId,
+        organizationId:
+          user.organizationId,
+      },
+
+      select: {
+        id: true,
+        categoryId: true,
+      },
+    });
+
+  if (!match) return;
+
+  const categoryAccess =
+    await getClubCallUpCategoryAccess(
+      user,
+      match.categoryId
+    );
+
+  if (!categoryAccess.canManage) {
+    return;
+  }
 
   await prisma.callUp.updateMany({
-    where: { matchId, organizationId: user.organizationId },
-    data: { sentAt: new Date() },
+    where: {
+      matchId: match.id,
+      organizationId:
+        user.organizationId,
+    },
+
+    data: {
+      sentAt: new Date(),
+    },
   });
 
-  revalidatePath(`/convocacoes/${matchId}`);
+  revalidatePath(
+    `/convocacoes/${match.id}`
+  );
 }
 
-export async function goToMatchCallUps(formData: FormData) {
-  const matchId = clean(formData.get("matchId"));
+export async function goToMatchCallUps(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission(
+      "CALLUPS_VIEW"
+    );
+
+  const matchId =
+    clean(formData.get("matchId"));
+
   if (!matchId) return;
-  redirect(`/convocacoes/${matchId}`);
+
+  const match =
+    await prisma.match.findFirst({
+      where: {
+        id: matchId,
+        organizationId:
+          user.organizationId,
+      },
+
+      select: {
+        id: true,
+        categoryId: true,
+      },
+    });
+
+  if (!match) return;
+
+  const categoryAccess =
+    await getClubCallUpCategoryAccess(
+      user,
+      match.categoryId
+    );
+
+  if (!categoryAccess.canView) {
+    redirect(
+      "/convocacoes?erro=sem-acesso-categoria"
+    );
+  }
+
+  redirect(
+    `/convocacoes/${match.id}`
+  );
 }

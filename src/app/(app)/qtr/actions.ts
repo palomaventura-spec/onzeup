@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireOrganizationUser } from "@/lib/auth";
+import { requireClubPermission } from "@/lib/club-access";
 
-const clean = (value: FormDataEntryValue | null) => String(value ?? "").trim();
+const clean = (value: FormDataEntryValue | null) =>
+  String(value ?? "").trim();
 
 type QtrEvent = {
   type: "TRAINING" | "MATCH" | "FRIENDLY" | "EVENT" | "OTHER";
@@ -28,7 +29,10 @@ type QtrRow = {
   sun: QtrEvent[];
 };
 
-function blankRow(category = "", birthYear: number | null = null): QtrRow {
+function blankRow(
+  category = "",
+  birthYear: number | null = null
+): QtrRow {
   return {
     category,
     birthYear,
@@ -44,51 +48,109 @@ function blankRow(category = "", birthYear: number | null = null): QtrRow {
 
 function normalizeRows(raw: unknown): QtrRow[] {
   if (!Array.isArray(raw)) return [];
-  const keys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+
+  const keys = [
+    "mon",
+    "tue",
+    "wed",
+    "thu",
+    "fri",
+    "sat",
+    "sun",
+  ] as const;
 
   return raw
     .map((row: any) => {
-      const normalized = blankRow(clean(row?.category), row?.birthYear ?? null);
+      const normalized = blankRow(
+        clean(row?.category),
+        row?.birthYear ?? null
+      );
+
       for (const key of keys) {
         const value = row?.[key];
+
         if (Array.isArray(value)) {
           normalized[key] = value
             .filter(Boolean)
             .map((event: any) => ({
-              type: ["TRAINING", "MATCH", "FRIENDLY", "EVENT", "OTHER"].includes(event?.type)
+              type: [
+                "TRAINING",
+                "MATCH",
+                "FRIENDLY",
+                "EVENT",
+                "OTHER",
+              ].includes(event?.type)
                 ? event.type
                 : "OTHER",
+
               title: clean(event?.title),
-              startTime: clean(event?.startTime) || undefined,
-              endTime: clean(event?.endTime) || undefined,
-              location: clean(event?.location) || undefined,
-              notes: clean(event?.notes) || undefined,
+
+              startTime:
+                clean(event?.startTime) ||
+                undefined,
+
+              endTime:
+                clean(event?.endTime) ||
+                undefined,
+
+              location:
+                clean(event?.location) ||
+                undefined,
+
+              notes:
+                clean(event?.notes) ||
+                undefined,
             }))
-            .filter((event: QtrEvent) => event.title || event.startTime || event.location);
+            .filter(
+              (event: QtrEvent) =>
+                event.title ||
+                event.startTime ||
+                event.location
+            );
         }
       }
+
       return normalized;
     })
     .filter((row) => row.category);
 }
 
-function redirectToQtr(weekStart: string, category: string, status: "gerado" | "salvo") {
+function redirectToQtr(
+  weekStart: string,
+  category: string,
+  status: "gerado" | "salvo"
+) {
   const query = new URLSearchParams({
     week: weekStart,
     category: category || "__all__",
     [status]: "1",
   });
+
   redirect(`/qtr?${query.toString()}`);
 }
 
-export async function saveQtr(formData: FormData) {
-  const user = await requireOrganizationUser();
-  const weekStart = clean(formData.get("weekStart"));
-  const category = clean(formData.get("category")) || "__all__";
-  const data = clean(formData.get("qtrData"));
+export async function saveQtr(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission("QTR_EDIT");
+
+  const weekStart = clean(
+    formData.get("weekStart")
+  );
+
+  const category =
+    clean(formData.get("category")) ||
+    "__all__";
+
+  const data = clean(
+    formData.get("qtrData")
+  );
+
   if (!weekStart || !data) return;
 
   let parsed: unknown;
+
   try {
     parsed = JSON.parse(data);
   } catch {
@@ -100,118 +162,295 @@ export async function saveQtr(formData: FormData) {
   await prisma.qtr.upsert({
     where: {
       organizationId_weekStart: {
-        organizationId: user.organizationId,
-        weekStart: new Date(`${weekStart}T12:00:00`),
+        organizationId:
+          user.organizationId,
+
+        weekStart: new Date(
+          `${weekStart}T12:00:00`
+        ),
       },
     },
-    update: { dataJson: JSON.stringify(rows), title: "QTR semanal" },
-    create: {
-      organizationId: user.organizationId,
-      weekStart: new Date(`${weekStart}T12:00:00`),
+
+    update: {
+      dataJson: JSON.stringify(rows),
       title: "QTR semanal",
+    },
+
+    create: {
+      organizationId:
+        user.organizationId,
+
+      weekStart: new Date(
+        `${weekStart}T12:00:00`
+      ),
+
+      title: "QTR semanal",
+
       dataJson: JSON.stringify(rows),
     },
   });
 
   revalidatePath("/qtr");
-  redirectToQtr(weekStart, category, "salvo");
+
+  redirectToQtr(
+    weekStart,
+    category,
+    "salvo"
+  );
 }
 
-export async function generateQtr(formData: FormData) {
-  const user = await requireOrganizationUser();
-  const weekStart = clean(formData.get("weekStart"));
-  const category = clean(formData.get("category")) || "__all__";
-  if (!weekStart) redirect("/qtr?erro=sem-semana");
+export async function generateQtr(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission("QTR_EDIT");
 
-  const start = new Date(`${weekStart}T00:00:00`);
+  const weekStart = clean(
+    formData.get("weekStart")
+  );
+
+  const category =
+    clean(formData.get("category")) ||
+    "__all__";
+
+  if (!weekStart) {
+    redirect(
+      "/qtr?erro=sem-semana"
+    );
+  }
+
+  const start = new Date(
+    `${weekStart}T00:00:00`
+  );
+
   const end = new Date(start);
-  end.setDate(end.getDate() + 7);
 
-  const categories = await prisma.category.findMany({
-    where: { organizationId: user.organizationId },
-    orderBy: [{ birthYear: "desc" }, { name: "asc" }],
-  });
+  end.setDate(
+    end.getDate() + 7
+  );
 
-  const trainings = await prisma.trainingSchedule.findMany({
-    where: {
-      organizationId: user.organizationId,
-      OR: [{ date: { gte: start, lt: end } }, { date: null }],
-    },
-    orderBy: [{ startTime: "asc" }],
-  });
+  const categories =
+    await prisma.category.findMany({
+      where: {
+        organizationId:
+          user.organizationId,
+      },
 
-  const matches = await prisma.match.findMany({
-    where: {
-      organizationId: user.organizationId,
-      startsAt: { gte: start, lt: end },
-    },
-    orderBy: [{ startsAt: "asc" }],
-  });
+      orderBy: [
+        {
+          birthYear: "desc",
+        },
 
-  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-  const rowsByCategory = new Map<string, QtrRow>();
+        {
+          name: "asc",
+        },
+      ],
+    });
+
+  const trainings =
+    await prisma.trainingSchedule.findMany({
+      where: {
+        organizationId:
+          user.organizationId,
+
+        OR: [
+          {
+            date: {
+              gte: start,
+              lt: end,
+            },
+          },
+
+          {
+            date: null,
+          },
+        ],
+      },
+
+      orderBy: [
+        {
+          startTime: "asc",
+        },
+      ],
+    });
+
+  const matches =
+    await prisma.match.findMany({
+      where: {
+        organizationId:
+          user.organizationId,
+
+        startsAt: {
+          gte: start,
+          lt: end,
+        },
+      },
+
+      orderBy: [
+        {
+          startsAt: "asc",
+        },
+      ],
+    });
+
+  const dayKeys = [
+    "sun",
+    "mon",
+    "tue",
+    "wed",
+    "thu",
+    "fri",
+    "sat",
+  ] as const;
+
+  const rowsByCategory =
+    new Map<string, QtrRow>();
 
   for (const item of categories) {
-    rowsByCategory.set(item.id, blankRow(item.name, item.birthYear));
+    rowsByCategory.set(
+      item.id,
+      blankRow(
+        item.name,
+        item.birthYear
+      )
+    );
   }
 
   for (const training of trainings) {
-    const row = rowsByCategory.get(training.categoryId);
+    const row =
+      rowsByCategory.get(
+        training.categoryId
+      );
+
     if (!row) continue;
 
-    const weekday = training.date ? training.date.getDay() : training.weekday;
-    const key = dayKeys[weekday];
+    const weekday =
+      training.date
+        ? training.date.getDay()
+        : training.weekday;
+
+    const key =
+      dayKeys[weekday];
+
     if (!key) continue;
 
     row[key].push({
       type: "TRAINING",
       title: "Treino",
-      startTime: training.startTime,
-      endTime: training.endTime,
-      location: training.location ?? undefined,
-      notes: training.notes ?? undefined,
+      startTime:
+        training.startTime,
+      endTime:
+        training.endTime,
+      location:
+        training.location ??
+        undefined,
+      notes:
+        training.notes ??
+        undefined,
     });
   }
 
   for (const match of matches) {
-    const row = rowsByCategory.get(match.categoryId);
+    const row =
+      rowsByCategory.get(
+        match.categoryId
+      );
+
     if (!row) continue;
 
-    const key = dayKeys[match.startsAt.getDay()];
-    const competition = (match.competition || "").toLowerCase();
-    const friendly = competition.includes("amistoso");
+    const key =
+      dayKeys[
+        match.startsAt.getDay()
+      ];
+
+    const competition =
+      (
+        match.competition || ""
+      ).toLowerCase();
+
+    const friendly =
+      competition.includes(
+        "amistoso"
+      );
 
     row[key].push({
-      type: friendly ? "FRIENDLY" : "MATCH",
-      title: friendly ? `Amistoso × ${match.opponent}` : `Jogo × ${match.opponent}`,
-      startTime: match.startsAt.toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }),
-      location: match.location ?? undefined,
-      notes: match.competition ?? undefined,
+      type: friendly
+        ? "FRIENDLY"
+        : "MATCH",
+
+      title: friendly
+        ? `Amistoso × ${match.opponent}`
+        : `Jogo × ${match.opponent}`,
+
+      startTime:
+        match.startsAt.toLocaleTimeString(
+          "pt-BR",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }
+        ),
+
+      location:
+        match.location ??
+        undefined,
+
+      notes:
+        match.competition ??
+        undefined,
     });
   }
 
-  const rows = categories.map((item) => rowsByCategory.get(item.id)!);
+  const rows =
+    categories.map(
+      (item) =>
+        rowsByCategory.get(
+          item.id
+        )!
+    );
 
   await prisma.qtr.upsert({
     where: {
       organizationId_weekStart: {
-        organizationId: user.organizationId,
-        weekStart: new Date(`${weekStart}T12:00:00`),
+        organizationId:
+          user.organizationId,
+
+        weekStart: new Date(
+          `${weekStart}T12:00:00`
+        ),
       },
     },
-    update: { dataJson: JSON.stringify(rows), title: "QTR semanal" },
+
+    update: {
+      dataJson:
+        JSON.stringify(rows),
+
+      title:
+        "QTR semanal",
+    },
+
     create: {
-      organizationId: user.organizationId,
-      weekStart: new Date(`${weekStart}T12:00:00`),
-      title: "QTR semanal",
-      dataJson: JSON.stringify(rows),
+      organizationId:
+        user.organizationId,
+
+      weekStart: new Date(
+        `${weekStart}T12:00:00`
+      ),
+
+      title:
+        "QTR semanal",
+
+      dataJson:
+        JSON.stringify(rows),
     },
   });
 
   revalidatePath("/qtr");
-  redirectToQtr(weekStart, category, "gerado");
+
+  redirectToQtr(
+    weekStart,
+    category,
+    "gerado"
+  );
 }

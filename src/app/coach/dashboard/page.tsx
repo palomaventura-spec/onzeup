@@ -99,8 +99,26 @@ export default async function CoachDashboard({
           <p>Seu login é individual. Clubes liberam apenas os acessos das equipes e categorias em que você trabalha.</p>
         </div>
         <div className="actions">
-          {coach.isPublic ? <Link className="btn-secondary" href={`/coach-profile/${coach.slug}`}>Ver meu site ↗</Link> : null}
-          <Link className="btn" href="/coach/editar">{coach.isPublic ? "Editar minha página profissional" : "Criar minha página profissional"}</Link>
+          {coach.isPublic ? (
+            <Link
+              className="btn-secondary"
+              href={`/coach-profile/${coach.slug}`}
+            >
+              Ver meu site ↗
+            </Link>
+          ) : null}
+
+          <Link className="btn" href="/coach/editar">
+            {coach.isPublic
+              ? "Editar minha página profissional"
+              : "Criar minha página profissional"}
+          </Link>
+
+          <form action="/api/auth/logout" method="post">
+            <button className="btn-secondary" type="submit">
+              Sair
+            </button>
+          </form>
         </div>
       </header>
 

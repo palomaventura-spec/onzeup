@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireOrganizationUser } from "@/lib/auth";
+import { requireClubPermission } from "@/lib/club-access";
+import { hasClubPermission } from "@/lib/club-permissions";
 import { generateQtr, saveQtr } from "./actions";
 import QtrEditor from "@/components/qtr/QtrEditor";
 import QtrGenerateButton from "@/components/qtr/QtrGenerateButton";
@@ -17,8 +18,10 @@ function mondayOf(date: Date) {
   const d = new Date(date);
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
+
   d.setDate(d.getDate() + diff);
   d.setHours(12, 0, 0, 0);
+
   return d;
 }
 
@@ -34,8 +37,15 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
-function qtrHref(week: string, category: string) {
-  return `/qtr?week=${encodeURIComponent(week)}&category=${encodeURIComponent(category)}`;
+function qtrHref(
+  week: string,
+  category: string
+) {
+  return `/qtr?week=${encodeURIComponent(
+    week
+  )}&category=${encodeURIComponent(
+    category
+  )}`;
 }
 
 const navButtonStyle = {
@@ -59,55 +69,129 @@ export default async function QtrPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const user = await requireOrganizationUser();
+  const user =
+    await requireClubPermission("QTR_VIEW");
+
+  const canEdit = hasClubPermission(
+    user,
+    "QTR_EDIT"
+  );
+
   const params = await searchParams;
 
-  const requested = params.week ? new Date(`${params.week}T12:00:00`) : new Date();
+  const requested = params.week
+    ? new Date(
+        `${params.week}T12:00:00`
+      )
+    : new Date();
+
   const weekStart = mondayOf(requested);
+
   const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 6);
+  weekEnd.setDate(
+    weekEnd.getDate() + 6
+  );
 
   const previous = new Date(weekStart);
-  previous.setDate(previous.getDate() - 7);
-  const next = new Date(weekStart);
-  next.setDate(next.getDate() + 7);
+  previous.setDate(
+    previous.getDate() - 7
+  );
 
-  const [qtr, categories] = await Promise.all([
-    prisma.qtr.findUnique({
-      where: {
-        organizationId_weekStart: {
-          organizationId: user.organizationId,
-          weekStart,
+  const next = new Date(weekStart);
+  next.setDate(
+    next.getDate() + 7
+  );
+
+  const [qtr, categories] =
+    await Promise.all([
+      prisma.qtr.findUnique({
+        where: {
+          organizationId_weekStart: {
+            organizationId:
+              user.organizationId,
+            weekStart,
+          },
         },
-      },
-    }),
-    prisma.category.findMany({
-      where: { organizationId: user.organizationId },
-      select: { id: true, name: true, birthYear: true },
-      orderBy: [{ birthYear: "desc" }, { name: "asc" }],
-    }),
-  ]);
+      }),
+
+      prisma.category.findMany({
+        where: {
+          organizationId:
+            user.organizationId,
+        },
+
+        select: {
+          id: true,
+          name: true,
+          birthYear: true,
+        },
+
+        orderBy: [
+          {
+            birthYear: "desc",
+          },
+          {
+            name: "asc",
+          },
+        ],
+      }),
+    ]);
 
   const validCategory =
     params.category &&
-    (params.category === "__all__" || categories.some((category) => category.name === params.category))
+    (params.category === "__all__" ||
+      categories.some(
+        (category) =>
+          category.name ===
+          params.category
+      ))
       ? params.category
       : null;
 
-  const selectedCategory = validCategory || categories[0]?.name || "__all__";
+  const selectedCategory =
+    validCategory ||
+    categories[0]?.name ||
+    "__all__";
 
-  if (!qtr && categories.length > 0) {
+  /*
+   * Se ainda não existe QTR para a semana,
+   * somente Gestor/Coordenador podem gerar.
+   *
+   * Coach continua apenas visualizando.
+   */
+  if (
+    !qtr &&
+    categories.length > 0 &&
+    canEdit
+  ) {
     const formData = new FormData();
-    formData.set("weekStart", isoDate(weekStart));
-    formData.set("category", selectedCategory);
+
+    formData.set(
+      "weekStart",
+      isoDate(weekStart)
+    );
+
+    formData.set(
+      "category",
+      selectedCategory
+    );
+
     await generateQtr(formData);
   }
 
   let initialRows: any[] = [];
+
   if (qtr?.dataJson) {
     try {
-      const parsed = JSON.parse(qtr.dataJson);
-      initialRows = Array.isArray(parsed) ? parsed : [];
+      const parsed = JSON.parse(
+        qtr.dataJson
+      );
+
+      initialRows = Array.isArray(
+        parsed
+      )
+        ? parsed
+        : [];
     } catch {
       initialRows = [];
     }
@@ -115,49 +199,242 @@ export default async function QtrPage({
 
   return (
     <main className="page-shell">
-      <section style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 20, flexWrap: "wrap", marginBottom: 18 }}>
+      <section
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent:
+            "space-between",
+          gap: 20,
+          flexWrap: "wrap",
+          marginBottom: 18,
+        }}
+      >
         <div>
-          <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#667585" }}>Planejamento semanal</p>
-          <h1 style={{ margin: 0, fontSize: "clamp(28px, 3vw, 36px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: "#0f1720" }}>QTR</h1>
-          <p style={{ margin: "8px 0 0", color: "#53606d", fontSize: 15 }}>{formatDate(weekStart)} a {formatDate(weekEnd)}</p>
-        </div>
+          <p
+            style={{
+              margin: "0 0 4px",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#667585",
+            }}
+          >
+            Planejamento semanal
+          </p>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Link href={qtrHref(isoDate(previous), selectedCategory)} style={navButtonStyle}>← Semana anterior</Link>
-          <Link href={qtrHref(isoDate(next), selectedCategory)} style={navButtonStyle}>Próxima semana →</Link>
-        </div>
-      </section>
+          <h1
+            style={{
+              margin: 0,
+              fontSize:
+                "clamp(28px, 3vw, 36px)",
+              lineHeight: 1.05,
+              letterSpacing: "-0.03em",
+              color: "#0f1720",
+            }}
+          >
+            QTR
+          </h1>
 
-      {params.gerado === "1" || params.salvo === "1" ? (
-        <div role="status" style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 14, padding: "9px 12px", border: "1px solid #d7eadf", borderRadius: 10, background: "#f3fbf6", color: "#21643b", fontSize: 14, fontWeight: 700 }}>
-          <span aria-hidden="true">✓</span>
-          {params.gerado === "1" ? "QTR atualizado com a agenda" : "Alterações salvas com sucesso"}
-        </div>
-      ) : null}
-
-      <section style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, flexWrap: "wrap", marginBottom: 18, padding: "16px 18px", border: "1px solid #e2e8ef", borderRadius: 14, background: "#ffffff", boxShadow: "0 4px 14px rgba(15, 23, 32, 0.04)" }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 17, color: "#111923" }}>Atualizar com a agenda</h2>
-          <p style={{ margin: "5px 0 0", color: "#6b7785", fontSize: 14 }}>
-            Use somente quando quiser sincronizar novamente os treinos e jogos desta semana.
+          <p
+            style={{
+              margin: "8px 0 0",
+              color: "#53606d",
+              fontSize: 15,
+            }}
+          >
+            {formatDate(weekStart)} a{" "}
+            {formatDate(weekEnd)}
           </p>
         </div>
 
-        <form action={generateQtr}>
-          <input type="hidden" name="weekStart" value={isoDate(weekStart)} />
-          <input type="hidden" name="category" value={selectedCategory} />
-          <QtrGenerateButton />
-        </form>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link
+            href={qtrHref(
+              isoDate(previous),
+              selectedCategory
+            )}
+            style={navButtonStyle}
+          >
+            ← Semana anterior
+          </Link>
+
+          <Link
+            href={qtrHref(
+              isoDate(next),
+              selectedCategory
+            )}
+            style={navButtonStyle}
+          >
+            Próxima semana →
+          </Link>
+        </div>
       </section>
 
+      {params.gerado === "1" ||
+      params.salvo === "1" ? (
+        <div
+          role="status"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 14,
+            padding: "9px 12px",
+            border:
+              "1px solid #d7eadf",
+            borderRadius: 10,
+            background: "#f3fbf6",
+            color: "#21643b",
+            fontSize: 14,
+            fontWeight: 700,
+          }}
+        >
+          <span aria-hidden="true">
+            ✓
+          </span>
+
+          {params.gerado === "1"
+            ? "QTR atualizado com a agenda"
+            : "Alterações salvas com sucesso"}
+        </div>
+      ) : null}
+
+      {canEdit ? (
+        <section
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent:
+              "space-between",
+            gap: 18,
+            flexWrap: "wrap",
+            marginBottom: 18,
+            padding: "16px 18px",
+            border:
+              "1px solid #e2e8ef",
+            borderRadius: 14,
+            background: "#ffffff",
+            boxShadow:
+              "0 4px 14px rgba(15, 23, 32, 0.04)",
+          }}
+        >
+          <div>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 17,
+                color: "#111923",
+              }}
+            >
+              Atualizar com a agenda
+            </h2>
+
+            <p
+              style={{
+                margin: "5px 0 0",
+                color: "#6b7785",
+                fontSize: 14,
+              }}
+            >
+              Use somente quando quiser
+              sincronizar novamente os
+              treinos e jogos desta
+              semana.
+            </p>
+          </div>
+
+          <form action={generateQtr}>
+            <input
+              type="hidden"
+              name="weekStart"
+              value={isoDate(
+                weekStart
+              )}
+            />
+
+            <input
+              type="hidden"
+              name="category"
+              value={
+                selectedCategory
+              }
+            />
+
+            <QtrGenerateButton />
+          </form>
+        </section>
+      ) : (
+        <div
+          style={{
+            marginBottom: 18,
+            padding: "12px 14px",
+            border:
+              "1px solid #e2e8ef",
+            borderRadius: 12,
+            background: "#ffffff",
+            color: "#667585",
+            fontSize: 14,
+          }}
+        >
+          <strong
+            style={{
+              color: "#14202b",
+            }}
+          >
+            Somente visualização
+          </strong>
+          {" — "}
+          O QTR é atualizado pelo Gestor
+          ou Coordenador.
+        </div>
+      )}
+
+      {!qtr && !canEdit ? (
+        <div
+          className="card"
+          style={{
+            marginBottom: 18,
+          }}
+        >
+          <strong>
+            QTR ainda não disponível
+          </strong>
+
+          <p
+            className="muted"
+            style={{
+              marginBottom: 0,
+            }}
+          >
+            O Gestor ou Coordenador ainda
+            não gerou o QTR desta semana.
+          </p>
+        </div>
+      ) : null}
+
       <QtrEditor
-        key={`${isoDate(weekStart)}-${qtr?.updatedAt?.getTime() ?? 0}-${selectedCategory}`}
-        weekStart={isoDate(weekStart)}
+        key={`${isoDate(
+          weekStart
+        )}-${
+          qtr?.updatedAt?.getTime() ?? 0
+        }-${selectedCategory}`}
+        weekStart={isoDate(
+          weekStart
+        )}
         qtrId={qtr?.id ?? null}
         initialRows={initialRows}
         categories={categories}
-        initialCategory={selectedCategory}
+        initialCategory={
+          selectedCategory
+        }
         saveAction={saveQtr}
+        canEdit={canEdit}
       />
     </main>
   );

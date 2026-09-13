@@ -1,124 +1,445 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requireOrganizationUser } from "@/lib/auth";
-import { createAthleteMembership, updateAthlete } from "../actions";
 
-export default async function EditAthletePage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireOrganizationUser();
+import { prisma } from "@/lib/prisma";
+import { requireClubPermission } from "@/lib/club-access";
+import { hasClubPermission } from "@/lib/club-permissions";
+
+import { updateAthlete } from "../actions";
+
+function dominantFootLabel(
+  value: string | null
+) {
+  switch (value) {
+    case "RIGHT":
+      return "Direito";
+
+    case "LEFT":
+      return "Esquerdo";
+
+    case "BOTH":
+      return "Ambidestro";
+
+    default:
+      return "Não informado";
+  }
+}
+
+export default async function EditAthletePage({
+  params,
+}: {
+  params: Promise<{
+    id: string;
+  }>;
+}) {
+  const user = await requireClubPermission(
+    "ATHLETES_VIEW"
+  );
+
+  const canEdit = hasClubPermission(
+    user,
+    "ATHLETES_EDIT"
+  );
+
   const { id } = await params;
 
-  const [athlete, categories] = await Promise.all([
-    prisma.athlete.findFirst({
-      where: { id, organizationId: user.organizationId },
-    }),
-    prisma.category.findMany({
-      where: { organizationId: user.organizationId },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+  const [athlete, categories] =
+    await Promise.all([
+      prisma.athlete.findFirst({
+        where: {
+          id,
+          organizationId:
+            user.organizationId,
+        },
 
-  if (!athlete) notFound();
+        include: {
+          category: true,
+        },
+      }),
+
+      canEdit
+        ? prisma.category.findMany({
+            where: {
+              organizationId:
+                user.organizationId,
+            },
+
+            orderBy: {
+              name: "asc",
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+  if (!athlete) {
+    notFound();
+  }
 
   return (
     <>
       <div className="page-head">
         <div>
-          <h1>Editar atleta</h1>
-          <p className="muted">Dados esportivos públicos e dados privados do responsável ficam separados.</p>
+          <h1>
+            {canEdit
+              ? "Editar atleta"
+              : athlete.nickname ||
+                athlete.name}
+          </h1>
+
+          <p className="muted">
+            {canEdit
+              ? "Dados esportivos públicos e dados privados do responsável ficam separados."
+              : "Visualização dos dados esportivos do atleta."}
+          </p>
         </div>
-        <Link className="btn btn-secondary" href="/atletas">Voltar</Link>
+
+        <Link
+          className="btn btn-secondary"
+          href="/atletas"
+        >
+          Voltar
+        </Link>
       </div>
 
-      <section className="card">
-        <form className="form" action={updateAthlete}>
-          <input type="hidden" name="id" value={athlete.id} />
+      {canEdit ? (
+        <section className="card">
+          <form
+            className="form"
+            action={updateAthlete}
+          >
+            <input
+              type="hidden"
+              name="id"
+              value={athlete.id}
+            />
 
-          <label>
-            Nome
-            <input name="name" defaultValue={athlete.name} required />
-          </label>
+            <label>
+              Nome
 
-          <label>
-            Nome esportivo / apelido
-            <input name="nickname" defaultValue={athlete.nickname ?? ""} />
-          </label>
+              <input
+                name="name"
+                defaultValue={athlete.name}
+                required
+              />
+            </label>
 
-          <label>
-            Categoria
-            <select name="categoryId" defaultValue={athlete.categoryId ?? ""}>
-              <option value="">Sem categoria</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              ))}
-            </select>
-          </label>
+            <label>
+              Nome esportivo / apelido
 
-          <label>
-            Ano de nascimento
-            <input name="birthYear" type="number" defaultValue={athlete.birthYear ?? ""} />
-          </label>
+              <input
+                name="nickname"
+                defaultValue={
+                  athlete.nickname ?? ""
+                }
+              />
+            </label>
 
-          <label>
-            Número
-            <input name="jerseyNumber" type="number" min="0" max="99" defaultValue={athlete.jerseyNumber ?? ""} />
-          </label>
+            <label>
+              Categoria
 
-          <label>
-            Posição
-            <input name="position" defaultValue={athlete.position ?? ""} />
-          </label>
+              <select
+                name="categoryId"
+                defaultValue={
+                  athlete.categoryId ?? ""
+                }
+              >
+                <option value="">
+                  Sem categoria
+                </option>
 
-          <label>
-            Pé dominante
-            <select name="dominantFoot" defaultValue={athlete.dominantFoot ?? ""}>
-              <option value="">Não informado</option>
-              <option value="RIGHT">Direito</option>
-              <option value="LEFT">Esquerdo</option>
-              <option value="BOTH">Ambidestro</option>
-            </select>
-          </label>
+                {categories.map(
+                  (category) => (
+                    <option
+                      key={category.id}
+                      value={category.id}
+                    >
+                      {category.name}
+                    </option>
+                  )
+                )}
+              </select>
+            </label>
 
-          <label>
-            URL da foto
-            <input name="photoUrl" type="url" defaultValue={athlete.photoUrl ?? ""} />
-          </label>
+            <label>
+              Ano de nascimento
 
-          <label>
-            Status
-            <select name="active" defaultValue={String(athlete.active)}>
-              <option value="true">Ativo</option>
-              <option value="false">Inativo</option>
-            </select>
-          </label>
+              <input
+                name="birthYear"
+                type="number"
+                defaultValue={
+                  athlete.birthYear ?? ""
+                }
+              />
+            </label>
 
-          <hr style={{borderColor:"var(--line)", width:"100%"}} />
+            <label>
+              Número
 
-          <h3>Responsável — privado</h3>
+              <input
+                name="jerseyNumber"
+                type="number"
+                min="0"
+                max="99"
+                defaultValue={
+                  athlete.jerseyNumber ?? ""
+                }
+              />
+            </label>
 
-          <label>
-            Nome do responsável
-            <input name="guardianName" defaultValue={athlete.guardianName ?? ""} />
-          </label>
+            <label>
+              Posição
 
-          <label>
-            Parentesco / relação
-            <input name="guardianRelation" defaultValue={athlete.guardianRelation ?? ""} placeholder="Ex.: Mãe, Pai, Avó, Tutor" />
-          </label>
+              <input
+                name="position"
+                defaultValue={
+                  athlete.position ?? ""
+                }
+              />
+            </label>
 
-          <label>
-            WhatsApp / telefone
-            <input name="guardianPhone" defaultValue={athlete.guardianPhone ?? ""} />
-          </label>
+            <label>
+              Pé dominante
 
-          <label>
-            E-mail
-            <input name="guardianEmail" type="email" defaultValue={athlete.guardianEmail ?? ""} />
-          </label>
+              <select
+                name="dominantFoot"
+                defaultValue={
+                  athlete.dominantFoot ?? ""
+                }
+              >
+                <option value="">
+                  Não informado
+                </option>
 
-          <button type="submit">Salvar alterações</button>
-        </form>
-      </section>
+                <option value="RIGHT">
+                  Direito
+                </option>
+
+                <option value="LEFT">
+                  Esquerdo
+                </option>
+
+                <option value="BOTH">
+                  Ambidestro
+                </option>
+              </select>
+            </label>
+
+            <label>
+              URL da foto
+
+              <input
+                name="photoUrl"
+                type="url"
+                defaultValue={
+                  athlete.photoUrl ?? ""
+                }
+              />
+            </label>
+
+            <label>
+              Status
+
+              <select
+                name="active"
+                defaultValue={String(
+                  athlete.active
+                )}
+              >
+                <option value="true">
+                  Ativo
+                </option>
+
+                <option value="false">
+                  Inativo
+                </option>
+              </select>
+            </label>
+
+            <hr
+              style={{
+                borderColor: "var(--line)",
+                width: "100%",
+              }}
+            />
+
+            <h3>
+              Responsável — privado
+            </h3>
+
+            <label>
+              Nome do responsável
+
+              <input
+                name="guardianName"
+                defaultValue={
+                  athlete.guardianName ?? ""
+                }
+              />
+            </label>
+
+            <label>
+              Parentesco / relação
+
+              <input
+                name="guardianRelation"
+                defaultValue={
+                  athlete.guardianRelation ??
+                  ""
+                }
+                placeholder="Ex.: Mãe, Pai, Avó, Tutor"
+              />
+            </label>
+
+            <label>
+              WhatsApp / telefone
+
+              <input
+                name="guardianPhone"
+                defaultValue={
+                  athlete.guardianPhone ?? ""
+                }
+              />
+            </label>
+
+            <label>
+              E-mail
+
+              <input
+                name="guardianEmail"
+                type="email"
+                defaultValue={
+                  athlete.guardianEmail ?? ""
+                }
+              />
+            </label>
+
+            <button type="submit">
+              Salvar alterações
+            </button>
+          </form>
+        </section>
+      ) : (
+        <section className="card">
+          <span className="page-eyebrow">
+            SOMENTE VISUALIZAÇÃO
+          </span>
+
+          <h2>Dados esportivos</h2>
+
+          <div className="stack">
+            {athlete.photoUrl ? (
+              <div className="admin-athlete-photo">
+                <img
+                  src={athlete.photoUrl}
+                  alt={athlete.name}
+                />
+              </div>
+            ) : null}
+
+            <div>
+              <span className="help">
+                Nome
+              </span>
+
+              <strong>
+                {athlete.name}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">
+                Nome esportivo
+              </span>
+
+              <strong>
+                {athlete.nickname || "—"}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">
+                Categoria
+              </span>
+
+              <strong>
+                {athlete.category?.name ||
+                  "Sem categoria"}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">
+                Ano de nascimento
+              </span>
+
+              <strong>
+                {athlete.birthYear || "—"}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">
+                Número
+              </span>
+
+              <strong>
+                {athlete.jerseyNumber ??
+                  "—"}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">
+                Posição
+              </span>
+
+              <strong>
+                {athlete.position || "—"}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">
+                Pé dominante
+              </span>
+
+              <strong>
+                {dominantFootLabel(
+                  athlete.dominantFoot
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">
+                Status
+              </span>
+
+              <strong>
+                {athlete.active
+                  ? "Ativo"
+                  : "Inativo"}
+              </strong>
+            </div>
+          </div>
+
+          <div
+            className="form-divider"
+            style={{
+              marginTop: 24,
+            }}
+          >
+            <span>
+              PRIVACIDADE DA FAMÍLIA
+            </span>
+          </div>
+
+          <p className="muted">
+            Os dados pessoais e de contato do responsável são restritos à
+            gestão autorizada do clube.
+          </p>
+        </section>
+      )}
     </>
   );
 }

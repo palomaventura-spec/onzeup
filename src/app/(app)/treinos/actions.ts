@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireOrganizationUser } from "@/lib/auth";
+import { requireClubPermission } from "@/lib/club-access";
 
 function clean(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -14,44 +14,98 @@ function nullable(value: FormDataEntryValue | null) {
   return v || null;
 }
 
-async function validateCategory(categoryId: string, organizationId: string) {
+async function validateCategory(
+  categoryId: string,
+  organizationId: string
+) {
   const category = await prisma.category.findFirst({
-    where: { id: categoryId, organizationId },
-    select: { id: true },
+    where: {
+      id: categoryId,
+      organizationId,
+    },
+    select: {
+      id: true,
+    },
   });
+
   return category?.id ?? null;
 }
 
 function parseTrainingDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
   const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date;
 }
 
-export async function createTraining(formData: FormData) {
-  const user = await requireOrganizationUser();
+export async function createTraining(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission(
+      "TRAININGS_EDIT"
+    );
 
-  const categoryIdRaw = clean(formData.get("categoryId"));
-  const categoryId = await validateCategory(categoryIdRaw, user.organizationId);
-  const date = parseTrainingDate(clean(formData.get("date")));
-  const startTime = clean(formData.get("startTime"));
-  const endTime = clean(formData.get("endTime"));
-  const location = nullable(formData.get("location"));
-  const notes = nullable(formData.get("notes"));
+  const categoryIdRaw = clean(
+    formData.get("categoryId")
+  );
 
-  if (!categoryId || !date || !startTime || !endTime) return;
+  const categoryId =
+    await validateCategory(
+      categoryIdRaw,
+      user.organizationId
+    );
+
+  const date = parseTrainingDate(
+    clean(formData.get("date"))
+  );
+
+  const startTime = clean(
+    formData.get("startTime")
+  );
+
+  const endTime = clean(
+    formData.get("endTime")
+  );
+
+  const location = nullable(
+    formData.get("location")
+  );
+
+  const notes = nullable(
+    formData.get("notes")
+  );
+
+  if (
+    !categoryId ||
+    !date ||
+    !startTime ||
+    !endTime
+  ) {
+    return;
+  }
 
   await prisma.trainingSchedule.create({
     data: {
       date,
-      // Mantemos weekday preenchido para compatibilidade com registros/rotinas antigas.
+
+      // Mantemos weekday preenchido
+      // para compatibilidade com
+      // registros/rotinas antigas.
       weekday: date.getDay(),
+
       startTime,
       endTime,
       location,
       notes,
       categoryId,
-      organizationId: user.organizationId,
+      organizationId:
+        user.organizationId,
     },
   });
 
@@ -60,22 +114,65 @@ export async function createTraining(formData: FormData) {
   revalidatePath("/qtr");
 }
 
-export async function updateTraining(formData: FormData) {
-  const user = await requireOrganizationUser();
+export async function updateTraining(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission(
+      "TRAININGS_EDIT"
+    );
 
-  const id = clean(formData.get("id"));
-  const categoryIdRaw = clean(formData.get("categoryId"));
-  const categoryId = await validateCategory(categoryIdRaw, user.organizationId);
-  const date = parseTrainingDate(clean(formData.get("date")));
-  const startTime = clean(formData.get("startTime"));
-  const endTime = clean(formData.get("endTime"));
-  const location = nullable(formData.get("location"));
-  const notes = nullable(formData.get("notes"));
+  const id = clean(
+    formData.get("id")
+  );
 
-  if (!id || !categoryId || !date || !startTime || !endTime) return;
+  const categoryIdRaw = clean(
+    formData.get("categoryId")
+  );
+
+  const categoryId =
+    await validateCategory(
+      categoryIdRaw,
+      user.organizationId
+    );
+
+  const date = parseTrainingDate(
+    clean(formData.get("date"))
+  );
+
+  const startTime = clean(
+    formData.get("startTime")
+  );
+
+  const endTime = clean(
+    formData.get("endTime")
+  );
+
+  const location = nullable(
+    formData.get("location")
+  );
+
+  const notes = nullable(
+    formData.get("notes")
+  );
+
+  if (
+    !id ||
+    !categoryId ||
+    !date ||
+    !startTime ||
+    !endTime
+  ) {
+    return;
+  }
 
   await prisma.trainingSchedule.updateMany({
-    where: { id, organizationId: user.organizationId },
+    where: {
+      id,
+      organizationId:
+        user.organizationId,
+    },
+
     data: {
       date,
       weekday: date.getDay(),
@@ -90,16 +187,30 @@ export async function updateTraining(formData: FormData) {
   revalidatePath("/treinos");
   revalidatePath("/agenda");
   revalidatePath("/qtr");
+
   redirect("/treinos");
 }
 
-export async function deleteTraining(formData: FormData) {
-  const user = await requireOrganizationUser();
-  const id = clean(formData.get("id"));
+export async function deleteTraining(
+  formData: FormData
+) {
+  const user =
+    await requireClubPermission(
+      "TRAININGS_EDIT"
+    );
+
+  const id = clean(
+    formData.get("id")
+  );
+
   if (!id) return;
 
   await prisma.trainingSchedule.deleteMany({
-    where: { id, organizationId: user.organizationId },
+    where: {
+      id,
+      organizationId:
+        user.organizationId,
+    },
   });
 
   revalidatePath("/treinos");

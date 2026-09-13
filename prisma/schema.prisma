@@ -72,6 +72,7 @@ model User {
   email                   String                   @unique
   passwordHash            String
   role                    UserRole                 @default(COORDINATOR)
+  clubRole                ClubRole?
   active                  Boolean                  @default(true)
   organizationId          String?
   createdAt               DateTime                 @default(now())
@@ -79,6 +80,7 @@ model User {
   accountStatus           String                   @default("ACTIVE")
   emailVerifiedAt         DateTime?
   coachProfile            CoachProfile?
+  clubInvites             ClubUserInvite[]
   emailVerificationTokens EmailVerificationToken[]
   guardianProfile         GuardianProfile?
   payments                Payment[]
@@ -86,6 +88,19 @@ model User {
   organization            Organization?            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+}
+
+model ClubUserInvite {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  userId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Session {
@@ -511,6 +526,13 @@ enum UserRole {
   COORDINATOR
   GUARDIAN
   COACH
+}
+
+enum ClubRole {
+  MANAGER
+  COORDINATOR
+  COACH
+  FINANCE
 }
 
 enum OrganizationType {

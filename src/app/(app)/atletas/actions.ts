@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireOrganizationUser } from "@/lib/auth";
+import { requireClubPermission } from "@/lib/club-access";
 
 function clean(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -17,23 +17,32 @@ function nullable(value: FormDataEntryValue | null) {
 function nullableNumber(value: FormDataEntryValue | null) {
   const raw = clean(value);
   if (!raw) return null;
+
   const num = Number(raw);
   return Number.isFinite(num) ? num : null;
 }
 
-async function validateCategory(categoryId: string | null, organizationId: string) {
+async function validateCategory(
+  categoryId: string | null,
+  organizationId: string
+) {
   if (!categoryId) return null;
 
   const category = await prisma.category.findFirst({
-    where: { id: categoryId, organizationId },
-    select: { id: true },
+    where: {
+      id: categoryId,
+      organizationId,
+    },
+    select: {
+      id: true,
+    },
   });
 
   return category?.id ?? null;
 }
 
 export async function createAthlete(formData: FormData) {
-  const user = await requireOrganizationUser();
+  const user = await requireClubPermission("ATHLETES_EDIT");
 
   const name = clean(formData.get("name"));
   const nickname = nullable(formData.get("nickname"));
@@ -78,7 +87,7 @@ export async function createAthlete(formData: FormData) {
 }
 
 export async function updateAthlete(formData: FormData) {
-  const user = await requireOrganizationUser();
+  const user = await requireClubPermission("ATHLETES_EDIT");
 
   const id = clean(formData.get("id"));
   const name = clean(formData.get("name"));
@@ -88,10 +97,12 @@ export async function updateAthlete(formData: FormData) {
   const dominantFoot = nullable(formData.get("dominantFoot"));
   const birthYear = nullableNumber(formData.get("birthYear"));
   const photoUrl = nullable(formData.get("photoUrl"));
+
   const guardianName = nullable(formData.get("guardianName"));
   const guardianRelation = nullable(formData.get("guardianRelation"));
   const guardianPhone = nullable(formData.get("guardianPhone"));
   const guardianEmail = nullable(formData.get("guardianEmail"));
+
   const active = clean(formData.get("active")) === "true";
 
   const categoryId = await validateCategory(
@@ -102,7 +113,10 @@ export async function updateAthlete(formData: FormData) {
   if (!id || !name) return;
 
   await prisma.athlete.updateMany({
-    where: { id, organizationId: user.organizationId },
+    where: {
+      id,
+      organizationId: user.organizationId,
+    },
     data: {
       name,
       nickname,
@@ -121,39 +135,52 @@ export async function updateAthlete(formData: FormData) {
   });
 
   revalidatePath("/atletas");
+  revalidatePath(`/atletas/${id}`);
+
   redirect("/atletas");
 }
 
 export async function deleteAthlete(formData: FormData) {
-  const user = await requireOrganizationUser();
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
   const id = clean(formData.get("id"));
   if (!id) return;
 
   await prisma.athlete.deleteMany({
-    where: { id, organizationId: user.organizationId },
+    where: {
+      id,
+      organizationId: user.organizationId,
+    },
   });
 
   revalidatePath("/atletas");
 }
 
 export async function toggleAthleteStatus(formData: FormData) {
-  const user = await requireOrganizationUser();
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
   const id = clean(formData.get("id"));
   const next = clean(formData.get("next")) === "true";
 
   if (!id) return;
 
   await prisma.athlete.updateMany({
-    where: { id, organizationId: user.organizationId },
-    data: { active: next },
+    where: {
+      id,
+      organizationId: user.organizationId,
+    },
+    data: {
+      active: next,
+    },
   });
 
   revalidatePath("/atletas");
+  revalidatePath(`/atletas/${id}`);
 }
 
-
 export async function createAthleteMembership(formData: FormData) {
-  const user = await requireOrganizationUser();
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
   const athleteId = clean(formData.get("athleteId"));
   const categoryId = nullable(formData.get("categoryId"));
   const sport = clean(formData.get("sport")) || "BOTH";
@@ -164,16 +191,28 @@ export async function createAthleteMembership(formData: FormData) {
   if (!athleteId) return;
 
   const athlete = await prisma.athlete.findFirst({
-    where: { id: athleteId, organizationId: user.organizationId },
-    select: { id: true },
+    where: {
+      id: athleteId,
+      organizationId: user.organizationId,
+    },
+    select: {
+      id: true,
+    },
   });
+
   if (!athlete) return;
 
   if (categoryId) {
     const category = await prisma.category.findFirst({
-      where: { id: categoryId, organizationId: user.organizationId },
-      select: { id: true },
+      where: {
+        id: categoryId,
+        organizationId: user.organizationId,
+      },
+      select: {
+        id: true,
+      },
     });
+
     if (!category) return;
   }
 

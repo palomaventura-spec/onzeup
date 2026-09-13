@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireOrganizationUser } from "@/lib/auth";
+import { requireClubPermission } from "@/lib/club-access";
 import ModuleTour from "@/components/help/ModuleTour";
 
 function fmt(date: Date) {
@@ -14,28 +14,41 @@ function fmt(date: Date) {
 }
 
 export default async function CallUpsPage() {
-  const user = await requireOrganizationUser();
+  const user =
+    await requireClubPermission(
+      "CALLUPS_VIEW"
+    );
 
-  const matches = await prisma.match.findMany({
-    where: {
-      organizationId: user.organizationId,
-      status: "SCHEDULED",
-    },
-    include: {
-      category: true,
-      callUps: true,
-    },
-    orderBy: { startsAt: "asc" },
-  });
+  const matches =
+    await prisma.match.findMany({
+      where: {
+        organizationId:
+          user.organizationId,
+        status: "SCHEDULED",
+      },
+
+      include: {
+        category: true,
+        callUps: true,
+      },
+
+      orderBy: {
+        startsAt: "asc",
+      },
+    });
 
   return (
     <>
       <div className="page-head">
         <ModuleTour module="convocacoes" />
+
         <div>
           <h1>Convocações</h1>
+
           <p className="muted">
-            Selecione atletas por jogo e envie a convocação de forma privada aos responsáveis.
+            Selecione atletas por jogo e envie
+            a convocação de forma privada aos
+            responsáveis.
           </p>
         </div>
       </div>
@@ -44,7 +57,10 @@ export default async function CallUpsPage() {
         <h2>Jogos agendados</h2>
 
         {matches.length === 0 ? (
-          <div className="empty">Nenhum jogo agendado para convocação.</div>
+          <div className="empty">
+            Nenhum jogo agendado para
+            convocação.
+          </div>
         ) : (
           <div className="table-wrap">
             <table className="table">
@@ -58,18 +74,53 @@ export default async function CallUpsPage() {
                   <th>Ação</th>
                 </tr>
               </thead>
+
               <tbody>
                 {matches.map((match) => {
-                  const confirmed = match.callUps.filter(c => c.status === "CONFIRMED").length;
+                  const confirmed =
+                    match.callUps.filter(
+                      (callUp) =>
+                        callUp.status ===
+                        "CONFIRMED"
+                    ).length;
+
                   return (
                     <tr key={match.id}>
-                      <td>{fmt(match.startsAt)}</td>
-                      <td>{match.category.name}</td>
-                      <td><strong>{match.opponent}</strong></td>
-                      <td>{match.callUps.length}</td>
-                      <td>{confirmed}</td>
                       <td>
-                        <Link className="btn btn-secondary btn-small" href={`/convocacoes/${match.id}`}>
+                        {fmt(
+                          match.startsAt
+                        )}
+                      </td>
+
+                      <td>
+                        {
+                          match.category
+                            .name
+                        }
+                      </td>
+
+                      <td>
+                        <strong>
+                          {match.opponent}
+                        </strong>
+                      </td>
+
+                      <td>
+                        {
+                          match.callUps
+                            .length
+                        }
+                      </td>
+
+                      <td>
+                        {confirmed}
+                      </td>
+
+                      <td>
+                        <Link
+                          className="btn btn-secondary btn-small"
+                          href={`/convocacoes/${match.id}`}
+                        >
                           Gerenciar
                         </Link>
                       </td>

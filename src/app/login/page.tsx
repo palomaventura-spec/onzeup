@@ -3,9 +3,14 @@ import Link from "next/link";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ verificacao?: string; senha?: string; erro?: string }>;
+  searchParams: Promise<{
+    verificacao?: string;
+    senha?: string;
+    erro?: string;
+  }>;
 }) {
   const q = await searchParams;
+
   return (
     <main className="login login-commercial">
       <div className="login-commercial-wrap">
@@ -20,10 +25,17 @@ export default async function LoginPage({
           </Link>
 
           <div>
-            <span className="page-eyebrow">ACESSO À PLATAFORMA</span>
-            <h2>Acesse sua conta ONZEUP</h2>
+            <span className="page-eyebrow">
+              ACESSO À PLATAFORMA
+            </span>
+
+            <h2>
+              Acesse sua conta ONZEUP
+            </h2>
+
             <p className="muted">
-              Entre com seu e-mail ONZEUP. A plataforma identifica automaticamente seu perfil.
+              Entre com seu e-mail ONZEUP. A plataforma identifica
+              automaticamente seu perfil.
             </p>
           </div>
 
@@ -33,9 +45,11 @@ export default async function LoginPage({
             </div>
           ) : null}
 
-          {q.verificacao === "token-expirado" || q.verificacao === "token-invalido" ? (
+          {q.verificacao === "token-expirado" ||
+          q.verificacao === "token-invalido" ? (
             <div className="notice error">
-              O link de ativação é inválido ou expirou. Volte ao cadastro Player para solicitar um novo link.
+              O link de ativação é inválido ou expirou. Solicite um novo link
+              de confirmação.
             </div>
           ) : null}
 
@@ -45,8 +59,21 @@ export default async function LoginPage({
             </div>
           ) : null}
 
+          {q.erro === "1" ? (
+            <div className="notice error">
+              E-mail ou senha incorretos.
+            </div>
+          ) : null}
+
+          {q.erro === "confirme-email" ? (
+            <div className="notice error">
+              Confirme seu e-mail antes de acessar o ONZEUP.
+            </div>
+          ) : null}
+
           <label>
             E-mail
+
             <input
               name="email"
               type="email"
@@ -58,6 +85,7 @@ export default async function LoginPage({
 
           <label>
             Senha
+
             <input
               name="password"
               type="password"
@@ -67,33 +95,57 @@ export default async function LoginPage({
             />
           </label>
 
-          <button className="btn" type="submit">
+          <button
+            className="btn"
+            type="submit"
+          >
             Entrar
           </button>
 
           <div className="login-commercial-links">
-            <Link href="/esqueci-senha">Esqueci minha senha</Link>
+            <Link href="/esqueci-senha">
+              Esqueci minha senha
+            </Link>
           </div>
 
           <div className="login-register-box">
-            <span>Ainda não possui conta?</span>
-            <Link href="/cadastro-clube">ONZEUP Club — criar conta →</Link>
-            <Link href="/cadastro">ONZEUP Player — criar grátis →</Link>
-            <Link href="/cadastro-coach">ONZEUP Coach — criar grátis →</Link>
+            <span>
+              Ainda não possui conta?
+            </span>
+
+            <Link href="/cadastro-clube">
+              ONZEUP Club — criar conta →
+            </Link>
+
+            <Link href="/cadastro">
+              ONZEUP Player — criar grátis →
+            </Link>
+
+            <Link href="/cadastro-coach">
+              ONZEUP Coach — criar grátis →
+            </Link>
           </div>
         </form>
 
         <aside className="login-side-message">
-          <span className="marketing-kicker">ONZEUP</span>
+          <span className="marketing-kicker">
+            ONZEUP
+          </span>
+
           <h1>
             Club para gestão. Player para atletas.
             <br />
             Coach para profissionais.
           </h1>
+
           <p>
-            Clubes, escolinhas, famílias e atletas conectados em uma única plataforma esportiva.
+            Clubes, escolinhas, famílias e atletas conectados em uma única
+            plataforma esportiva.
           </p>
-          <Link href="/">Voltar para o site →</Link>
+
+          <Link href="/">
+            Voltar para o site →
+          </Link>
         </aside>
       </div>
     </main>

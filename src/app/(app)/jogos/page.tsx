@@ -1,125 +1,295 @@
 import Link from "next/link";
+
 import { prisma } from "@/lib/prisma";
-import { requireOrganizationUser } from "@/lib/auth";
-import { deleteMatch, markMatchFinished, createMatch } from "./actions";
+import { requireClubPermission } from "@/lib/club-access";
+import { hasClubPermission } from "@/lib/club-permissions";
+
+import {
+  deleteMatch,
+  markMatchFinished,
+  createMatch,
+} from "./actions";
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
+  return new Intl.DateTimeFormat(
+    "pt-BR",
+    {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }
+  ).format(date);
 }
 
 function formatTime(date: Date) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
+  return new Intl.DateTimeFormat(
+    "pt-BR",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }
+  ).format(date);
 }
 
 export default async function MatchesPage() {
-  const user = await requireOrganizationUser();
+  const user =
+    await requireClubPermission(
+      "MATCHES_VIEW"
+    );
 
-  const [matches, categories] = await Promise.all([
+  const canEdit =
+    hasClubPermission(
+      user,
+      "MATCHES_EDIT"
+    );
+
+  const canViewCallUps =
+    hasClubPermission(
+      user,
+      "CALLUPS_VIEW"
+    );
+
+  const [
+    matches,
+    categories,
+  ] = await Promise.all([
     prisma.match.findMany({
-      where: { organizationId: user.organizationId },
-      include: { category: true, callUps: true },
-      orderBy: { startsAt: "asc" },
+      where: {
+        organizationId:
+          user.organizationId,
+      },
+
+      include: {
+        category: true,
+        callUps: true,
+      },
+
+      orderBy: {
+        startsAt: "asc",
+      },
     }),
+
     prisma.category.findMany({
-      where: { organizationId: user.organizationId },
-      orderBy: { name: "asc" },
+      where: {
+        organizationId:
+          user.organizationId,
+      },
+
+      orderBy: {
+        name: "asc",
+      },
     }),
   ]);
 
-  const upcoming = matches.filter((m) => m.status === "SCHEDULED");
-  const finished = matches.filter((m) => m.status === "FINISHED");
-  const cancelled = matches.filter((m) => m.status === "CANCELLED");
+  const upcoming =
+    matches.filter(
+      (match) =>
+        match.status ===
+        "SCHEDULED"
+    );
+
+  const finished =
+    matches.filter(
+      (match) =>
+        match.status ===
+        "FINISHED"
+    );
+
+  const cancelled =
+    matches.filter(
+      (match) =>
+        match.status ===
+        "CANCELLED"
+    );
 
   return (
     <>
       <div className="page-head">
         <div>
-          <h1>Jogos e resultados</h1>
+          <h1>
+            Jogos e resultados
+          </h1>
+
           <p className="muted">
-            Cadastre partidas, faça convocações e publique resultados no mesmo fluxo.
+            {canEdit
+              ? "Cadastre partidas, faça convocações e publique resultados no mesmo fluxo."
+              : "Consulte partidas, resultados e convocações das equipes."}
           </p>
         </div>
-        <span className="badge">{matches.length} jogo(s)</span>
+
+        <span className="badge">
+          {matches.length} jogo(s)
+        </span>
       </div>
 
-      <div className="two-col">
-        <section className="card" id="novo-jogo">
-          <h2>Novo jogo</h2>
+      <div
+        className={
+          canEdit
+            ? "two-col"
+            : "stack"
+        }
+      >
+        {canEdit ? (
+          <section
+            className="card"
+            id="novo-jogo"
+          >
+            <h2>Novo jogo</h2>
 
-          {categories.length === 0 ? (
-            <div className="empty">
-              Cadastre uma categoria antes de criar jogos.
-            </div>
-          ) : (
-            <form className="form" action={createMatch}>
-              <label>
-                Categoria
-                <select name="categoryId" required defaultValue="">
-                  <option value="" disabled>Selecione</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  ))}
-                </select>
-              </label>
+            {categories.length === 0 ? (
+              <div className="empty">
+                Cadastre uma categoria antes de criar jogos.
+              </div>
+            ) : (
+              <form
+                className="form"
+                action={createMatch}
+              >
+                <label>
+                  Categoria
 
-              <label>
-                Competição
-                <input name="competition" placeholder="Ex.: Campeonato Carioca" />
-              </label>
+                  <select
+                    name="categoryId"
+                    required
+                    defaultValue=""
+                  >
+                    <option
+                      value=""
+                      disabled
+                    >
+                      Selecione
+                    </option>
 
-              <label>
-                Adversário
-                <input name="opponent" placeholder="Nome do adversário" required />
-              </label>
+                    {categories.map(
+                      (category) => (
+                        <option
+                          key={category.id}
+                          value={category.id}
+                        >
+                          {category.name}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </label>
 
-              <label>
-                Data
-                <input name="matchDate" type="date" required />
-              </label>
+                <label>
+                  Competição
 
-              <label>
-                Horário
-                <input name="matchTime" type="time" required />
-              </label>
+                  <input
+                    name="competition"
+                    placeholder="Ex.: Campeonato Carioca"
+                  />
+                </label>
 
-              <label>
-                Local
-                <input name="location" placeholder="Campo / ginásio" />
-              </label>
+                <label>
+                  Adversário
 
-              <label>
-                Mandante / visitante
-                <select name="homeAway" defaultValue="">
-                  <option value="">Não informado</option>
-                  <option value="HOME">Mandante</option>
-                  <option value="AWAY">Visitante</option>
-                  <option value="NEUTRAL">Campo neutro</option>
-                </select>
-              </label>
+                  <input
+                    name="opponent"
+                    placeholder="Nome do adversário"
+                    required
+                  />
+                </label>
 
-              <label>
-                Observações
-                <textarea name="notes" rows={4} placeholder="Informações gerais da partida." />
-              </label>
+                <label>
+                  Data
 
-              <button type="submit">Cadastrar jogo</button>
-            </form>
-          )}
-        </section>
+                  <input
+                    name="matchDate"
+                    type="date"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Horário
+
+                  <input
+                    name="matchTime"
+                    type="time"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Local
+
+                  <input
+                    name="location"
+                    placeholder="Campo / ginásio"
+                  />
+                </label>
+
+                <label>
+                  Mandante / visitante
+
+                  <select
+                    name="homeAway"
+                    defaultValue=""
+                  >
+                    <option value="">
+                      Não informado
+                    </option>
+
+                    <option value="HOME">
+                      Mandante
+                    </option>
+
+                    <option value="AWAY">
+                      Visitante
+                    </option>
+
+                    <option value="NEUTRAL">
+                      Campo neutro
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  Observações
+
+                  <textarea
+                    name="notes"
+                    rows={4}
+                    placeholder="Informações gerais da partida."
+                  />
+                </label>
+
+                <button type="submit">
+                  Cadastrar jogo
+                </button>
+              </form>
+            )}
+          </section>
+        ) : (
+          <section className="card">
+            <span className="page-eyebrow">
+              ACESSO DO COACH
+            </span>
+
+            <h2>
+              Jogos em modo de visualização
+            </h2>
+
+            <p className="muted">
+              Você pode consultar os jogos e gerenciar convocações, mas os
+              dados da partida são alterados pelo Gestor ou Coordenador.
+            </p>
+          </section>
+        )}
 
         <section className="stack">
           <div className="card">
-            <h2>Próximos jogos</h2>
+            <h2>
+              Próximos jogos
+            </h2>
+
             {upcoming.length === 0 ? (
-              <div className="empty">Nenhum próximo jogo cadastrado.</div>
+              <div className="empty">
+                Nenhum próximo jogo cadastrado.
+              </div>
             ) : (
               <div className="table-wrap">
                 <table className="table">
@@ -132,42 +302,136 @@ export default async function MatchesPage() {
                       <th>Ações</th>
                     </tr>
                   </thead>
+
                   <tbody>
-                    {upcoming.map((match) => (
-                      <tr key={match.id}>
-                        <td>
-                          {formatDate(match.startsAt)}
-                          <div className="help">{formatTime(match.startsAt)}</div>
-                        </td>
-                        <td>{match.category.name}</td>
-                        <td>
-                          <strong>{match.opponent}</strong>
-                          <div className="help">{match.competition ?? "—"}</div>
-                        </td>
-                        <td>
-                          <form className="actions" action={markMatchFinished}>
-                            <input type="hidden" name="id" value={match.id} />
-                            <input name="goalsFor" type="number" min="0" placeholder="Nós" style={{width:70}} required />
-                            <input name="goalsAgainst" type="number" min="0" placeholder="Eles" style={{width:70}} required />
-                            <button className="btn-small" type="submit">Finalizar</button>
-                          </form>
-                        </td>
-                        <td>
-                          <div className="actions">
-                            <Link className="btn btn-secondary btn-small" href={`/jogos/${match.id}`}>
-                              Abrir jogo
-                            </Link>
-                            <Link className="match-callup-button" href={`/convocacoes/${match.id}`}>
-                              {"Convoca\u00e7\u00e3o"} <span className="match-callup-count">{match.callUps.length}</span>
-                            </Link>
-                            <form className="inline-form" action={deleteMatch}>
-                              <input type="hidden" name="id" value={match.id} />
-                              <button className="btn-danger btn-small" type="submit">Excluir</button>
-                            </form>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {upcoming.map(
+                      (match) => (
+                        <tr key={match.id}>
+                          <td>
+                            {formatDate(
+                              match.startsAt
+                            )}
+
+                            <div className="help">
+                              {formatTime(
+                                match.startsAt
+                              )}
+                            </div>
+                          </td>
+
+                          <td>
+                            {match.category.name}
+                          </td>
+
+                          <td>
+                            <strong>
+                              {match.opponent}
+                            </strong>
+
+                            <div className="help">
+                              {match.competition ?? "—"}
+                            </div>
+                          </td>
+
+                          <td>
+                            {canEdit ? (
+                              <form
+                                className="actions"
+                                action={
+                                  markMatchFinished
+                                }
+                              >
+                                <input
+                                  type="hidden"
+                                  name="id"
+                                  value={match.id}
+                                />
+
+                                <input
+                                  name="goalsFor"
+                                  type="number"
+                                  min="0"
+                                  placeholder="Nós"
+                                  style={{
+                                    width: 70,
+                                  }}
+                                  required
+                                />
+
+                                <input
+                                  name="goalsAgainst"
+                                  type="number"
+                                  min="0"
+                                  placeholder="Eles"
+                                  style={{
+                                    width: 70,
+                                  }}
+                                  required
+                                />
+
+                                <button
+                                  className="btn-small"
+                                  type="submit"
+                                >
+                                  Finalizar
+                                </button>
+                              </form>
+                            ) : (
+                              <span className="help">
+                                Aguardando resultado
+                              </span>
+                            )}
+                          </td>
+
+                          <td>
+                            <div className="actions">
+                              <Link
+                                className="btn btn-secondary btn-small"
+                                href={`/jogos/${match.id}`}
+                              >
+                                {canEdit
+                                  ? "Abrir jogo"
+                                  : "Ver jogo"}
+                              </Link>
+
+                              {canViewCallUps ? (
+                                <Link
+                                  className="match-callup-button"
+                                  href={`/convocacoes/${match.id}`}
+                                >
+                                  Convocação{" "}
+                                  <span className="match-callup-count">
+                                    {match.callUps.length}
+                                  </span>
+                                </Link>
+                              ) : null}
+
+                              {canEdit ? (
+                                <form
+                                  className="inline-form"
+                                  action={
+                                    deleteMatch
+                                  }
+                                >
+                                  <input
+                                    type="hidden"
+                                    name="id"
+                                    value={match.id}
+                                  />
+
+                                  <button
+                                    className="btn-danger btn-small"
+                                    type="submit"
+                                  >
+                                    Excluir
+                                  </button>
+                                </form>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -176,8 +440,11 @@ export default async function MatchesPage() {
 
           <div className="card">
             <h2>Resultados</h2>
+
             {finished.length === 0 ? (
-              <div className="empty">Nenhum resultado registrado.</div>
+              <div className="empty">
+                Nenhum resultado registrado.
+              </div>
             ) : (
               <div className="table-wrap">
                 <table className="table">
@@ -190,31 +457,55 @@ export default async function MatchesPage() {
                       <th>Ações</th>
                     </tr>
                   </thead>
+
                   <tbody>
-                    {finished.map((match) => (
-                      <tr key={match.id}>
-                        <td>{formatDate(match.startsAt)}</td>
-                        <td>{match.category.name}</td>
-                        <td>{match.opponent}</td>
-                        <td>
-                          <strong>{match.goalsFor ?? 0} × {match.goalsAgainst ?? 0}</strong>
-                        </td>
-                        <td>
-                          <Link className="btn btn-secondary btn-small" href={`/jogos/${match.id}`}>
-                            Editar
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
+                    {finished.map(
+                      (match) => (
+                        <tr key={match.id}>
+                          <td>
+                            {formatDate(
+                              match.startsAt
+                            )}
+                          </td>
+
+                          <td>
+                            {match.category.name}
+                          </td>
+
+                          <td>
+                            {match.opponent}
+                          </td>
+
+                          <td>
+                            <strong>
+                              {match.goalsFor ?? 0} ×{" "}
+                              {match.goalsAgainst ?? 0}
+                            </strong>
+                          </td>
+
+                          <td>
+                            <Link
+                              className="btn btn-secondary btn-small"
+                              href={`/jogos/${match.id}`}
+                            >
+                              {canEdit
+                                ? "Editar"
+                                : "Ver"}
+                            </Link>
+                          </td>
+                        </tr>
+                      )
+                    )}
                   </tbody>
                 </table>
               </div>
             )}
           </div>
 
-          {cancelled.length > 0 && (
+          {cancelled.length > 0 ? (
             <div className="card">
               <h2>Cancelados</h2>
+
               <div className="table-wrap">
                 <table className="table">
                   <thead>
@@ -224,19 +515,32 @@ export default async function MatchesPage() {
                       <th>Adversário</th>
                     </tr>
                   </thead>
+
                   <tbody>
-                    {cancelled.map((match) => (
-                      <tr key={match.id}>
-                        <td>{formatDate(match.startsAt)}</td>
-                        <td>{match.category.name}</td>
-                        <td>{match.opponent}</td>
-                      </tr>
-                    ))}
+                    {cancelled.map(
+                      (match) => (
+                        <tr key={match.id}>
+                          <td>
+                            {formatDate(
+                              match.startsAt
+                            )}
+                          </td>
+
+                          <td>
+                            {match.category.name}
+                          </td>
+
+                          <td>
+                            {match.opponent}
+                          </td>
+                        </tr>
+                      )
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
-          )}
+          ) : null}
         </section>
       </div>
     </>

@@ -1,0 +1,608 @@
+/* ============================================================
+   ONZEUP Player — refinamento responsivo
+   Escopo: portal privado do responsável.
+   ============================================================ */
+
+@media (max-width: 700px) {
+  .guardian-portal {
+    min-width: 0;
+    overflow-x: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Cabeçalho */
+
+  .guardian-portal-nav {
+    width: 100%;
+    height: auto;
+    min-height: 66px;
+    padding:
+      10px 14px
+      calc(10px + env(safe-area-inset-top));
+    gap: 10px;
+  }
+
+  .guardian-portal-nav .player-brand {
+    min-width: 0;
+    font-size: 18px;
+    white-space: nowrap;
+  }
+
+  .guardian-portal-nav .player-brand b {
+    display: block;
+    margin: 2px 0 0;
+    font-size: 7px;
+  }
+
+  .guardian-portal-nav > div {
+    min-width: 0;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .guardian-portal-nav > div > span {
+    display: block;
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .guardian-portal-nav form {
+    margin: 0;
+  }
+
+  .guardian-portal-nav button {
+    min-height: 34px;
+    padding: 7px 10px;
+  }
+
+  /* Estrutura principal */
+
+  .guardian-portal-container {
+    width: min(100% - 24px, 620px);
+    padding: 24px 0 48px;
+  }
+
+  .player-welcome {
+    display: grid;
+    align-items: start;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .player-welcome h1 {
+    margin: 4px 0 7px;
+    font-size: clamp(35px, 11vw, 46px);
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+  }
+
+  .player-welcome p {
+    max-width: 330px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .player-welcome > .btn {
+    width: 100%;
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .player-portal-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  /* Seletor de atletas */
+
+  .player-profile-sidebar {
+    position: static;
+    min-width: 0;
+    padding: 11px;
+    border-radius: 14px;
+  }
+
+  .player-sidebar-title {
+    padding: 6px 7px;
+  }
+
+  .player-switcher {
+    min-width: 0;
+    padding: 9px;
+  }
+
+  .player-switcher section {
+    min-width: 0;
+  }
+
+  .player-switcher strong,
+  .player-switcher small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .guardian-contact-card {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .guardian-contact-card input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Editor */
+
+  .player-editor-area {
+    min-width: 0;
+    padding: 16px;
+    border-radius: 15px;
+  }
+
+  .player-editor-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .player-editor-head h2 {
+    margin: 4px 0 8px;
+    font-size: 27px;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
+  .player-editor-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    gap: 9px;
+  }
+
+  .player-editor-actions .publication-status {
+    width: max-content;
+  }
+
+  .player-quick-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .player-quick-actions > * {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .player-editor-form,
+  .player-editor-grid,
+  .two-field-row,
+  .four-field-row {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .player-editor-form {
+    gap: 15px;
+  }
+
+  .player-editor-grid {
+    gap: 18px;
+  }
+
+  .player-editor-form input,
+  .player-editor-form select,
+  .player-editor-form textarea {
+    min-width: 0;
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .player-editor-form textarea {
+    min-height: 125px;
+    line-height: 1.5;
+  }
+
+  .player-editor-form label {
+    min-width: 0;
+  }
+
+  .field-help {
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  /* Upload e fotos */
+
+  .player-photo-editor {
+    width: 100%;
+    min-width: 0;
+    justify-items: stretch;
+  }
+
+  .player-photo-editor .image-upload-field {
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid #26323d;
+    border-radius: 12px;
+    background: #0a1117;
+    overflow: hidden;
+  }
+
+  .player-photo-editor .image-upload-field input[type="file"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 6px;
+    overflow: hidden;
+    font-size: 12px;
+    white-space: normal;
+  }
+
+  .player-photo-editor
+    .image-upload-field
+    input[type="file"]::file-selector-button {
+    min-height: 36px;
+    margin: 0 8px 0 0;
+    padding: 7px 10px;
+    border: 1px solid #35434d;
+    border-radius: 8px;
+    background: #172129;
+    color: #ffffff;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .player-photo-editor .image-upload-preview {
+    max-width: 100%;
+  }
+
+  .player-photo-editor .image-upload-preview.logo {
+    width: 120px;
+    height: 120px;
+  }
+
+  .player-photo-editor .image-upload-preview.cover {
+    width: 100%;
+    aspect-ratio: 16 / 8;
+  }
+
+  .player-photo-editor > img,
+  .player-photo-placeholder {
+    width: min(100%, 280px);
+    margin: 4px auto 0;
+    aspect-ratio: 4 / 5;
+    border-radius: 14px;
+  }
+
+  /* Upgrade Premium */
+
+  .player-upgrade-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 14px;
+    padding: 17px;
+  }
+
+  .player-upgrade-card h3 {
+    font-size: 21px;
+    line-height: 1.15;
+  }
+
+  .player-upgrade-card p {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .player-upgrade-card > form {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .player-upgrade-card > form > strong {
+    white-space: normal;
+  }
+
+  .player-upgrade-card button {
+    width: 100%;
+  }
+
+  /* Seções e estatísticas */
+
+  .player-editor-section {
+    min-width: 0;
+    padding-top: 16px;
+  }
+
+  .player-editor-section h3 {
+    font-size: 21px;
+    line-height: 1.2;
+  }
+
+  .player-public-toggle,
+  .check-row {
+    min-width: 0;
+    align-items: flex-start;
+  }
+
+  .player-public-toggle input[type="checkbox"],
+  .check-row input[type="checkbox"] {
+    width: 21px;
+    min-width: 21px;
+    height: 21px;
+    margin-top: 1px;
+  }
+
+  .player-public-toggle span,
+  .check-row span {
+    min-width: 0;
+    line-height: 1.45;
+  }
+
+  /* Salvar e excluir */
+
+  .player-editor-form > .actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .player-editor-form > .actions button {
+    width: 100%;
+  }
+
+  /* Pré-visualização */
+
+  .player-preview-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 18px;
+  }
+
+  .player-preview-card h3 {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .player-preview-card > div:last-child {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .player-preview-card > div:last-child > * {
+    width: 100%;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Agenda da família */
+
+  .player-family-agenda {
+    min-width: 0;
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .player-family-agenda .section-title-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .player-family-agenda h2 {
+    margin: 5px 0 8px;
+    font-size: 25px;
+    line-height: 1.1;
+  }
+
+  .player-family-agenda .muted {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .player-agenda-list article {
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .player-callup-response {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .player-callup-response-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .player-callup-response-actions form,
+  .player-callup-response-actions button {
+    width: 100%;
+  }
+
+  /* Vínculos esportivos */
+
+  .player-club-links {
+    min-width: 0;
+    margin-top: 22px;
+    padding-top: 20px;
+  }
+
+  .player-club-links .section-title-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 15px;
+  }
+
+  .player-club-links .section-title-row h2 {
+    margin: 5px 0 8px;
+    font-size: 26px;
+    line-height: 1.1;
+  }
+
+  .player-club-links .section-title-row p {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .player-club-links .section-title-row form,
+  .player-club-links .section-title-row button {
+    width: 100%;
+  }
+
+  .player-link-list > article {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .player-link-list > article > b {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-top: 3px;
+  }
+
+  .player-membership-chips span {
+    line-height: 1.4;
+  }
+
+  .player-link-status-notice {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 390px) {
+  .guardian-portal-nav > div > span {
+    display: none;
+  }
+
+  .player-quick-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .player-editor-area {
+    padding: 13px;
+  }
+
+  .player-family-agenda,
+  .player-preview-card {
+    padding: 15px;
+  }
+}
+/* Correção de prioridade sobre as regras antigas do globals.css */
+@media (max-width: 700px) {
+  .guardian-portal .player-editor-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+  }
+
+  .guardian-portal .player-editor-head > div {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .guardian-portal .player-editor-head h2 {
+    width: 100%;
+    font-size: 28px;
+    line-height: 1.05;
+  }
+
+  .guardian-portal .player-editor-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+  }
+
+  .guardian-portal .player-quick-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .guardian-portal .player-quick-actions > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 390px) {
+  .guardian-portal .player-quick-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Upload de imagens mais compacto no celular */
+@media (max-width: 700px) {
+  .guardian-portal
+    .player-photo-editor
+    .image-upload-field
+    input[type="file"] {
+    min-height: 46px;
+    padding: 5px;
+    font-size: 0;
+    white-space: nowrap;
+  }
+
+  .guardian-portal
+    .player-photo-editor
+    .image-upload-field
+    input[type="file"]::file-selector-button {
+    width: 100%;
+    min-height: 36px;
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .guardian-portal
+    .player-photo-editor
+    .image-upload-preview.logo {
+    width: 110px;
+    height: 110px;
+  }
+
+  .guardian-portal
+    .player-photo-editor
+    .image-upload-preview.empty {
+    padding: 12px;
+    font-size: 10px;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .guardian-portal .player-photo-editor > img,
+  .guardian-portal .player-photo-placeholder {
+    width: min(100%, 190px);
+    margin: 6px auto 0;
+    aspect-ratio: 4 / 5;
+  }
+}
