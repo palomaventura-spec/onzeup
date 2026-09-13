@@ -75,3 +75,31 @@
 @media(max-width:1100px){.club-app-light>.main{padding:26px 24px 42px}.club-app-light.shell{grid-template-columns:226px minmax(0,1fr)}.club-app-light .clean-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.club-app-light.shell{grid-template-columns:1fr}.club-app-light>.main{padding:20px 16px 36px}.club-app-light .page-head{align-items:flex-start}.club-app-light .clean-dashboard-hero h1{font-size:30px}.club-app-light .clean-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.club-app-light .athlete-create-panel{position:static}}
 @media(max-width:560px){.club-app-light>.main{padding:16px 12px 30px}.club-app-light .page-head h1{font-size:27px}.club-app-light .clean-kpi-grid{grid-template-columns:1fr}.club-app-light .card{padding:17px}.club-app-light .grid{grid-template-columns:1fr}.club-app-light .actions{gap:6px}.club-app-light .actions .btn,.club-app-light .actions button{width:100%}.club-app-light .agenda-day{grid-template-columns:1fr;gap:8px}}
+/* ONZEUP — Correção visual Comunicação Light */
+.club-app-light .communication-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
+.club-app-light .communication-grid>.card{background:#fff;color:#172129;border:1px solid #dfe6ea;box-shadow:0 8px 28px rgba(16,24,32,.035)}
+.club-app-light .communication-grid>.comm-qtr-card{grid-column:1/-1}
+.club-app-light .comm-list{display:grid;gap:10px}
+.club-app-light .comm-list>article{border:1px solid #dfe6ea;border-radius:13px;padding:13px;background:#fff;color:#172129;box-shadow:0 1px 2px rgba(16,24,32,.02)}
+.club-app-light .comm-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.club-app-light .comm-title>div{display:grid;gap:3px}
+.club-app-light .comm-title small{color:#6f8f00;font-size:10px;font-weight:900}
+.club-app-light .comm-title strong{color:#172129}
+.club-app-light .comm-title span{color:#6b7881;font-size:10px}
+.club-app-light .comm-recipient-list{display:grid;gap:6px;margin-top:11px;padding-top:10px;border-top:1px solid #e5eaed}
+.club-app-light .comm-recipient-list>div,.club-app-light .comm-charge{display:flex!important;justify-content:space-between;align-items:center;gap:10px;padding:9px 10px;border:1px solid #e4eaed;border-radius:10px;background:#f9fbfc}
+.club-app-light .comm-recipient-list span,.club-app-light .comm-charge>div{display:grid;gap:2px}
+.club-app-light .comm-recipient-list strong,.club-app-light .comm-charge strong{color:#172129}
+.club-app-light .comm-recipient-list small,.club-app-light .comm-charge span{color:#6b7881;font-size:10px}
+.club-app-light .comm-qtr-summary{border:1px solid #dfe6ea;background:#f8fafb;border-radius:12px;padding:13px;display:grid;gap:3px;margin:14px 0;color:#172129}
+.club-app-light .comm-qtr-summary span{font-size:11px;color:#6b7881}
+.club-app-light .communication-grid .section-title-row{border-bottom:1px solid #e8edef;padding-bottom:14px;margin-bottom:10px}
+.club-app-light .communication-grid .section-title-row h2{color:#111b23}
+.club-app-light .communication-grid .section-title-row>a{color:#79a000}
+.club-app-light .communication-grid .btn-secondary{background:#fff;color:#24313a;border:1px solid #d7e0e5}
+.club-app-light .communication-grid .btn-secondary:hover{background:#f4f7f8;border-color:#c9d4da}
+.club-app-light .communication-grid .btn{background:#92df00;color:#091100;border:1px solid #92df00}
+@media(max-width:900px){
+  .club-app-light .communication-grid{grid-template-columns:1fr}
+  .club-app-light .communication-grid>.comm-qtr-card{grid-column:auto}
+}
