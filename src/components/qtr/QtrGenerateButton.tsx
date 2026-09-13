@@ -9,8 +9,15 @@ export default function QtrGenerateButton() {
     <button
       type="submit"
       disabled={pending}
+      onClick={(event) => {
+        if (pending) return;
+        const confirmed = window.confirm(
+          "Atualizar com a agenda vai recriar o QTR desta semana com os treinos e jogos cadastrados. Ajustes manuais feitos somente no QTR podem ser substituídos. Deseja continuar?"
+        );
+        if (!confirmed) event.preventDefault();
+      }}
       style={{
-        minWidth: 170,
+        minWidth: 180,
         minHeight: 42,
         padding: "0 18px",
         border: 0,
@@ -24,7 +31,7 @@ export default function QtrGenerateButton() {
         opacity: pending ? 0.85 : 1,
       }}
     >
-      {pending ? "Gerando QTR..." : "Gerar automático"}
+      {pending ? "Atualizando..." : "Atualizar com agenda"}
     </button>
   );
 }

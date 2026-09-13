@@ -44,6 +44,14 @@ const EVENT_LABELS: Record<EventType, string> = {
   OTHER: "Outro",
 };
 
+const EVENT_COLORS: Record<EventType, { background: string; border: string; color: string }> = {
+  TRAINING: { background: "#2b9d47", border: "#23813a", color: "#ffffff" },
+  MATCH: { background: "#d4aa18", border: "#b58e0f", color: "#1f1a00" },
+  FRIENDLY: { background: "#3377a5", border: "#286489", color: "#ffffff" },
+  EVENT: { background: "#76539a", border: "#624382", color: "#ffffff" },
+  OTHER: { background: "#29333d", border: "#202832", color: "#ffffff" },
+};
+
 function dateForDay(weekStart: string, offset: number) {
   const date = new Date(`${weekStart}T12:00:00`);
   date.setDate(date.getDate() + offset);
@@ -64,16 +72,18 @@ export default function QtrEditor({
   weekStart,
   qtrId,
   categories,
+  initialCategory,
   saveAction,
 }: {
   initialRows: QtrRow[];
   weekStart: string;
   qtrId: string | null;
   categories: { id: string; name: string; birthYear: number | null }[];
+  initialCategory: string;
   saveAction: (formData: FormData) => Promise<void>;
 }) {
   const [rows, setRows] = useState<QtrRow[]>(initialRows);
-  const [selectedCategory, setSelectedCategory] = useState("__all__");
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
 
   const [editing, setEditing] = useState<{
     rowIndex: number;
@@ -103,6 +113,16 @@ export default function QtrEditor({
         }
       : events[editing.eventIndex];
   }, [editing, rows]);
+
+  function changeCategory(category: string) {
+    setSelectedCategory(category);
+    setEditing(null);
+    const query = new URLSearchParams({
+      week: weekStart,
+      category,
+    });
+    window.location.assign(`/qtr?${query.toString()}`);
+  }
 
   function saveEvent(formData: FormData) {
     if (!editing) return;
@@ -180,34 +200,13 @@ export default function QtrEditor({
 
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "end",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-          margin: "0 0 14px",
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 16, flexWrap: "wrap", margin: "0 0 14px" }}>
         <label style={{ display: "grid", gap: 6, minWidth: 260 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: "#667585", letterSpacing: ".04em" }}>
-            VISUALIZAR CATEGORIA
-          </span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#667585", letterSpacing: ".04em" }}>CATEGORIA</span>
           <select
             value={selectedCategory}
-            onChange={(event) => {
-              setSelectedCategory(event.target.value);
-              setEditing(null);
-            }}
-            style={{
-              minHeight: 42,
-              border: "1px solid #d7dfe6",
-              borderRadius: 10,
-              background: "#fff",
-              padding: "0 12px",
-              fontWeight: 700,
-            }}
+            onChange={(event) => changeCategory(event.target.value)}
+            style={{ minHeight: 42, border: "1px solid #d7dfe6", borderRadius: 10, background: "#fff", padding: "0 12px", fontWeight: 700 }}
           >
             <option value="__all__">Todas as categorias</option>
             {categories.map((category) => (
@@ -220,13 +219,14 @@ export default function QtrEditor({
 
         <div style={{ color: "#6b7785", fontSize: 13 }}>
           {hasSpecificCategory
-            ? `PDF e WhatsApp serão gerados somente para ${selectedCategory}.`
-            : "Visão geral da coordenação. Selecione uma categoria para enviar o QTR."}
+            ? `Você está editando apenas o QTR de ${selectedCategory}.`
+            : "Visão geral da coordenação. Selecione uma categoria para compartilhar."}
         </div>
       </div>
 
       <form action={saveAction}>
         <input type="hidden" name="weekStart" value={weekStart} />
+        <input type="hidden" name="category" value={selectedCategory} />
         <input type="hidden" name="qtrData" value={JSON.stringify(rows)} />
 
         <div className="qtr-board">
@@ -263,24 +263,28 @@ export default function QtrEditor({
                       </button>
                     ) : (
                       <>
-                        {events.map((event, eventIndex) => (
-                          <button
-                            key={eventIndex}
-                            type="button"
-                            className={`qtr-event qtr-event-${event.type.toLowerCase()}`}
-                            onClick={() => setEditing({ rowIndex, day: day.key, eventIndex })}
-                          >
-                            <strong>{event.title || EVENT_LABELS[event.type]}</strong>
-                            {(event.startTime || event.endTime) && (
-                              <span className="qtr-event-time">
-                                {event.startTime || "—"}
-                                {event.endTime ? ` – ${event.endTime}` : ""}
-                              </span>
-                            )}
-                            {event.location ? <span className="qtr-event-location">{event.location}</span> : null}
-                            {event.notes ? <small>{event.notes}</small> : null}
-                          </button>
-                        ))}
+                        {events.map((event, eventIndex) => {
+                          const colors = EVENT_COLORS[event.type] || EVENT_COLORS.OTHER;
+                          return (
+                            <button
+                              key={eventIndex}
+                              type="button"
+                              className={`qtr-event qtr-event-${event.type.toLowerCase()}`}
+                              style={{ background: colors.background, borderColor: colors.border, color: colors.color }}
+                              onClick={() => setEditing({ rowIndex, day: day.key, eventIndex })}
+                            >
+                              <strong>{event.title || EVENT_LABELS[event.type]}</strong>
+                              {(event.startTime || event.endTime) && (
+                                <span className="qtr-event-time">
+                                  {event.startTime || "—"}
+                                  {event.endTime ? ` – ${event.endTime}` : ""}
+                                </span>
+                              )}
+                              {event.location ? <span className="qtr-event-location">{event.location}</span> : null}
+                              {event.notes ? <small>{event.notes}</small> : null}
+                            </button>
+                          );
+                        })}
                         <button
                           type="button"
                           className="qtr-add-small"
@@ -300,11 +304,15 @@ export default function QtrEditor({
         </div>
 
         <div className="qtr-legend">
-          <span><i className="legend-training" /> Treino</span>
-          <span><i className="legend-match" /> Jogo</span>
-          <span><i className="legend-friendly" /> Amistoso</span>
-          <span><i className="legend-event" /> Evento</span>
-          <span><i className="legend-empty" /> Sem atividade</span>
+          <span><i style={{ background: EVENT_COLORS.TRAINING.background }} /> Treino</span>
+          <span><i style={{ background: EVENT_COLORS.MATCH.background }} /> Jogo</span>
+          <span><i style={{ background: EVENT_COLORS.FRIENDLY.background }} /> Amistoso</span>
+          <span><i style={{ background: EVENT_COLORS.EVENT.background }} /> Evento</span>
+          <span><i style={{ background: EVENT_COLORS.OTHER.background }} /> Sem atividade</span>
+        </div>
+
+        <div style={{ marginTop: 14, padding: "10px 12px", border: "1px solid #e1e7eb", borderRadius: 10, background: "#f8fafb", color: "#5f6d75", fontSize: 12, lineHeight: 1.5 }}>
+          <strong style={{ color: "#34434c" }}>Dica:</strong> altere Treinos/Jogos na Agenda quando a mudança for oficial. Use a edição abaixo apenas para um ajuste específico deste QTR.
         </div>
 
         <div className="qtr-bottom-actions">
@@ -312,15 +320,9 @@ export default function QtrEditor({
 
           {hasSpecificCategory ? (
             <>
-              <button type="button" className="btn-secondary" onClick={openCategoryPdf}>
-                Gerar PDF — {selectedCategory}
-              </button>
-              <button type="button" className="btn-secondary" onClick={openPublicQtr}>
-                Abrir link público — {selectedCategory}
-              </button>
-              <button type="button" className="btn-secondary" onClick={sendCategoryWhatsApp}>
-                Enviar {selectedCategory} pelo WhatsApp
-              </button>
+              <button type="button" className="btn-secondary" onClick={openCategoryPdf}>Gerar PDF — {selectedCategory}</button>
+              <button type="button" className="btn-secondary" onClick={openPublicQtr}>Abrir link público — {selectedCategory}</button>
+              <button type="button" className="btn-secondary" onClick={sendCategoryWhatsApp}>Enviar {selectedCategory} pelo WhatsApp</button>
             </>
           ) : null}
         </div>
@@ -337,9 +339,7 @@ export default function QtrEditor({
                   {DAYS.find((day) => day.key === editing.day)?.label}
                 </h2>
               </div>
-              <button type="button" className="btn-secondary btn-small" onClick={() => setEditing(null)}>
-                Fechar
-              </button>
+              <button type="button" className="btn-secondary btn-small" onClick={() => setEditing(null)}>Fechar</button>
             </div>
 
             <form className="form qtr-event-form" action={(formData) => saveEvent(formData)}>
@@ -383,9 +383,7 @@ export default function QtrEditor({
               <div className="actions">
                 <button type="submit">Salvar atividade</button>
                 {editing.eventIndex !== null ? (
-                  <button className="btn-danger" type="button" onClick={deleteEvent}>
-                    Excluir atividade
-                  </button>
+                  <button className="btn-danger" type="button" onClick={deleteEvent}>Excluir atividade</button>
                 ) : null}
               </div>
             </form>

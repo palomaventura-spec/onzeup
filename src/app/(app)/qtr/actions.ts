@@ -72,9 +72,19 @@ function normalizeRows(raw: unknown): QtrRow[] {
     .filter((row) => row.category);
 }
 
+function redirectToQtr(weekStart: string, category: string, status: "gerado" | "salvo") {
+  const query = new URLSearchParams({
+    week: weekStart,
+    category: category || "__all__",
+    [status]: "1",
+  });
+  redirect(`/qtr?${query.toString()}`);
+}
+
 export async function saveQtr(formData: FormData) {
   const user = await requireOrganizationUser();
   const weekStart = clean(formData.get("weekStart"));
+  const category = clean(formData.get("category")) || "__all__";
   const data = clean(formData.get("qtrData"));
   if (!weekStart || !data) return;
 
@@ -104,12 +114,13 @@ export async function saveQtr(formData: FormData) {
   });
 
   revalidatePath("/qtr");
-  redirect(`/qtr?week=${encodeURIComponent(weekStart)}&salvo=1`);
+  redirectToQtr(weekStart, category, "salvo");
 }
 
 export async function generateQtr(formData: FormData) {
   const user = await requireOrganizationUser();
   const weekStart = clean(formData.get("weekStart"));
+  const category = clean(formData.get("category")) || "__all__";
   if (!weekStart) redirect("/qtr?erro=sem-semana");
 
   const start = new Date(`${weekStart}T00:00:00`);
@@ -140,8 +151,8 @@ export async function generateQtr(formData: FormData) {
   const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
   const rowsByCategory = new Map<string, QtrRow>();
 
-  for (const category of categories) {
-    rowsByCategory.set(category.id, blankRow(category.name, category.birthYear));
+  for (const item of categories) {
+    rowsByCategory.set(item.id, blankRow(item.name, item.birthYear));
   }
 
   for (const training of trainings) {
@@ -183,7 +194,7 @@ export async function generateQtr(formData: FormData) {
     });
   }
 
-  const rows = categories.map((category) => rowsByCategory.get(category.id)!);
+  const rows = categories.map((item) => rowsByCategory.get(item.id)!);
 
   await prisma.qtr.upsert({
     where: {
@@ -202,5 +213,5 @@ export async function generateQtr(formData: FormData) {
   });
 
   revalidatePath("/qtr");
-  redirect(`/qtr?week=${encodeURIComponent(weekStart)}&gerado=1`);
+  redirectToQtr(weekStart, category, "gerado");
 }
