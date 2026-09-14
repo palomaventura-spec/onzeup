@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import PlayerPublicActions from "@/components/PlayerPublicActions";
+import PublicProfileBackButton from "@/components/PublicProfileBackButton";
 
 const RESERVED = new Set(["admin","api","atletas","categorias","comissao","convocacoes","dashboard","financeiro","integracoes","jogos","login","o","organizacao","player","qtr","responsavel","treinos","cadastro","verificar-email","esqueci-senha","redefinir-senha","exemplos","players","coaches","coach","cadastro-coach","cadastro-clube","onboarding-clube"]);
 
@@ -54,7 +55,9 @@ export default async function PublicPlayer({params}:{params:Promise<{slug:string
 
   if(!isPremium){
     const video=videos[0] ? youtubeEmbed(videos[0]) : "";
-    return <main className="free-player-site">
+    return (
+     <main className="free-player-site">
+      <PublicProfileBackButton />
       <header className="free-player-nav">
         <Link href="https://players.onzeup.com.br" className="player-brand">ONZE<span>UP</span> <b>PLAYER</b></Link>
         <div className="public-social-actions">
@@ -84,7 +87,8 @@ export default async function PublicPlayer({params}:{params:Promise<{slug:string
         {video?<article className="card free-video"><span className="page-eyebrow">EM CAMPO</span><h2>Vídeo</h2><iframe src={video} title={`Vídeo de ${player.name}`} allowFullScreen /></article>:null}
       </section>
       <footer className="free-player-footer"><b>ONZE<span>UP</span> PLAYER</b><p>Perfil esportivo administrado pelo responsável do atleta.</p><PlayerPublicActions name={player.name}/></footer>
-    </main>;
+    </main>
+    );
   }
 
 
