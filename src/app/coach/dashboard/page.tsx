@@ -236,7 +236,10 @@ export default async function CoachDashboard({
         )}
       </section>
 
-      <section className="card coach-callups-card">
+      <section
+       id="convocacoes"
+       className="card coach-callups-card"
+       >
         <div className="section-title-row">
           <div><span className="page-eyebrow">CONVOCAÇÕES</span><h2>Próximos jogos das suas equipes</h2></div>
         </div>

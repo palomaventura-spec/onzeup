@@ -1,0 +1,137 @@
+.navigation {
+  display: none;
+}
+
+.navigationInner {
+  display: grid;
+}
+
+.item {
+  appearance: none;
+}
+
+.icon {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.logoutForm {
+  display: contents;
+}
+
+@media (max-width: 900px) {
+  .navigation {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 120;
+    display: block;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid #263238;
+    background: rgba(8, 12, 14, 0.97);
+    box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(14px);
+  }
+
+  .navigationInner {
+    width: min(100%, 620px);
+    min-height: 67px;
+    margin: 0 auto;
+    padding: 6px 8px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 3px;
+  }
+
+  .item {
+    width: 100%;
+    min-width: 0;
+    min-height: 55px;
+    margin: 0;
+    padding: 6px 3px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #89969e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-family: inherit;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .item:hover,
+  .item:focus-visible {
+    color: #ffffff;
+    background: #141d22;
+    transform: none;
+  }
+
+  .item span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .active {
+    background: #1b2a12;
+    color: #9ddb16;
+  }
+
+  .active:hover,
+  .active:focus-visible {
+    background: #213417;
+    color: #a9ea1a;
+  }
+
+  .logoutForm {
+    display: block;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .logoutForm .item {
+    color: #c6cdd1;
+  }
+
+  .logoutForm .item:hover,
+  .logoutForm .item:focus-visible {
+    color: #ff9ca5;
+    background: #291518;
+  }
+}
+
+@media (max-width: 380px) {
+  .navigationInner {
+    padding-right: 4px;
+    padding-left: 4px;
+    gap: 1px;
+  }
+
+  .item {
+    font-size: 8px;
+  }
+
+  .icon {
+    width: 20px;
+    height: 20px;
+  }
+}

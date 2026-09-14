@@ -1,0 +1,395 @@
+/* ============================================================
+   ONZEUP Coach — experiência mobile
+   Escopo exclusivo das áreas internas do treinador.
+   ============================================================ */
+
+@media (max-width: 900px) {
+  main.coach-partner-dashboard,
+  main.coach-portal,
+  main.coach-editor,
+  main.coach-callup-detail {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    padding-bottom: calc(
+      96px + env(safe-area-inset-bottom)
+    );
+  }
+
+  /* Dashboard */
+
+  main.coach-partner-dashboard {
+    padding-top: 26px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  main.coach-partner-dashboard > header {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 18px;
+  }
+
+  main.coach-partner-dashboard > header > div {
+    width: 100%;
+    min-width: 0;
+  }
+
+  main.coach-partner-dashboard > header h1 {
+    margin: 6px 0 9px;
+    font-size: clamp(34px, 10vw, 44px);
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    overflow-wrap: anywhere;
+  }
+
+  main.coach-partner-dashboard > header p {
+    max-width: 560px;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  main.coach-partner-dashboard > header > .actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  main.coach-partner-dashboard
+    > header
+    > .actions
+    > a,
+  main.coach-partner-dashboard
+    > header
+    > .actions
+    > form,
+  main.coach-partner-dashboard
+    > header
+    > .actions
+    > form
+    > button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  main.coach-partner-dashboard
+    > header
+    > .actions
+    > a,
+  main.coach-partner-dashboard
+    > header
+    > .actions
+    > form
+    > button {
+    min-height: 45px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  /*
+   * No celular o logout principal fica no menu inferior.
+   * Evita a repetição do botão Sair no cabeçalho.
+   */
+  main.coach-partner-dashboard
+    > header
+    > .actions
+    > form[action="/api/auth/logout"] {
+    display: none;
+  }
+
+  /* Busca de vínculos */
+
+  main.coach-partner-dashboard .coach-link-search {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+    margin-top: 22px;
+    padding: 18px;
+  }
+
+  main.coach-partner-dashboard
+    .coach-link-search
+    > div,
+  main.coach-partner-dashboard
+    .coach-link-search
+    > form {
+    width: 100%;
+    min-width: 0;
+  }
+
+  main.coach-partner-dashboard
+    .coach-link-search
+    > form
+    button {
+    width: 100%;
+    min-height: 45px;
+    white-space: normal;
+  }
+
+  main.coach-partner-dashboard
+    .coach-link-search
+    h2 {
+    font-size: 23px;
+    line-height: 1.15;
+  }
+
+  main.coach-partner-dashboard
+    .coach-link-search
+    p {
+    line-height: 1.55;
+  }
+
+  /* Indicadores */
+
+  main.coach-partner-dashboard
+    .coach-dashboard-stats {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+    margin: 18px 0;
+  }
+
+  main.coach-partner-dashboard
+    .coach-dashboard-stats
+    article {
+    min-width: 0;
+    padding: 18px;
+  }
+
+  main.coach-partner-dashboard
+    .coach-dashboard-stats
+    strong {
+    font-size: 27px;
+  }
+
+  /* Cartões */
+
+  main.coach-partner-dashboard > .card {
+    min-width: 0;
+    padding: 18px;
+  }
+
+  main.coach-partner-dashboard
+    .section-title-row {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+  }
+
+  main.coach-partner-dashboard
+    .section-title-row
+    > * {
+    min-width: 0;
+  }
+
+  main.coach-partner-dashboard
+    .section-title-row
+    h2 {
+    font-size: 23px;
+    line-height: 1.15;
+  }
+
+  main.coach-partner-dashboard
+    .section-title-row
+    .badge {
+    width: max-content;
+    max-width: 100%;
+  }
+
+  /* Convites, equipes e partidas */
+
+  main.coach-partner-dashboard
+    .coach-access-list
+    article,
+  main.coach-partner-dashboard
+    .coach-match-list
+    article {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 13px;
+  }
+
+  main.coach-partner-dashboard
+    .coach-access-list
+    article
+    > div,
+  main.coach-partner-dashboard
+    .coach-match-list
+    article
+    > div {
+    width: 100%;
+    min-width: 0;
+  }
+
+  main.coach-partner-dashboard
+    .coach-invite-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  main.coach-partner-dashboard
+    .coach-invite-actions
+    form,
+  main.coach-partner-dashboard
+    .coach-invite-actions
+    button {
+    width: 100%;
+  }
+
+  main.coach-partner-dashboard
+    .coach-match-list
+    article
+    > div:last-child {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  main.coach-partner-dashboard
+    .coach-match-list
+    article
+    > div:last-child
+    a {
+    width: 100%;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Blocos finais */
+
+  main.coach-partner-dashboard
+    .coach-dashboard-grid {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  main.coach-partner-dashboard
+    .coach-dashboard-grid
+    > .card {
+    min-width: 0;
+    padding: 18px;
+  }
+
+  main.coach-partner-dashboard
+    .coach-dashboard-grid
+    .btn {
+    width: 100%;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  main.coach-partner-dashboard
+    .coach-referral-box
+    input {
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  /* Detalhe de convocação */
+
+  main.coach-callup-detail {
+    padding-top: 24px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  main.coach-callup-detail .page-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  main.coach-callup-detail
+    .coach-callup-athletes
+    article {
+    min-width: 0;
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  main.coach-callup-detail
+    .coach-callup-athletes
+    article
+    > b {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  /* Editor e página interna */
+
+  main.coach-editor,
+  main.coach-portal {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  main.coach-editor input,
+  main.coach-editor select,
+  main.coach-editor textarea,
+  main.coach-portal input,
+  main.coach-portal select,
+  main.coach-portal textarea {
+    min-width: 0;
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  main.coach-editor .actions,
+  main.coach-portal .actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  main.coach-editor .actions > *,
+  main.coach-portal .actions > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  main.coach-partner-dashboard {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  main.coach-partner-dashboard > .card,
+  main.coach-partner-dashboard
+    .coach-dashboard-grid
+    > .card {
+    padding: 16px;
+  }
+
+  main.coach-partner-dashboard > header h1 {
+    font-size: 35px;
+  }
+}

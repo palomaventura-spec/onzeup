@@ -9,6 +9,8 @@
 @import "./v1503.css";
 @import "./v160a.css";
 @import "./player-mobile.css";
+@import "./coach-mobile.css";
+
 :root{
   --bg:#070b10; --card:#0f151c; --muted:#89929e; --line:#1d2732;
   --green:#9ddb16; --white:#f7f9fb;
