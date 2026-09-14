@@ -1,0 +1,130 @@
+.prompt {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 300;
+  width: min(460px, calc(100vw - 40px));
+  min-width: 0;
+  padding: 13px 44px 13px 13px;
+  border: 1px solid #334148;
+  border-radius: 16px;
+  background: rgba(11, 17, 21, 0.97);
+  color: #ffffff;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.42),
+    0 2px 8px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(16px);
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #070b10;
+}
+
+.copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.copy strong {
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.copy span {
+  color: #a4b0b6;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.install {
+  min-height: 39px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #9ddb16;
+  color: #071006;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.install:hover,
+.install:focus-visible {
+  background: #aceb22;
+  transform: translateY(-1px);
+}
+
+.close {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 29px;
+  height: 29px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #86949b;
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close:hover,
+.close:focus-visible {
+  background: #202a2f;
+  color: #ffffff;
+  transform: none;
+}
+
+@media (max-width: 900px) {
+  .prompt {
+    right: 12px;
+    bottom: calc(
+      82px + env(safe-area-inset-bottom)
+    );
+    width: calc(100vw - 24px);
+  }
+}
+
+@media (max-width: 520px) {
+  .prompt {
+    padding: 12px 42px 12px 12px;
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 11px;
+  }
+
+  .install {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install {
+    transition: none;
+  }
+}
