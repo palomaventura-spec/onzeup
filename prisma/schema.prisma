@@ -60,17 +60,24 @@ model Organization {
   athleteMemberships          AthleteMembership[]
   athleteEvaluations          AthleteEvaluation[]
   athletePerformanceGoals     AthletePerformanceGoal[]
+  athleteBodyMeasurements     AthleteBodyMeasurement[]
+  athleteWellbeingEntries     AthleteWellbeingEntry[]
+  athleteExternalTrainings    AthleteExternalTraining[]
+  performanceTemplates        PerformanceTemplate[]
   performanceReports          PerformanceReport[]
   callUps                     CallUp[]
   categories                  Category[]
   charges                     Charge[]
   coachAccesses               CoachOrganizationAccess[]
   matches                     Match[]
+  matchAthleteStats           MatchAthleteStat[]
   payments                    Payment[]
   qtrs                        Qtr[]
   staffMembers                StaffMember[]
   subscription                Subscription?
   trainingSchedules           TrainingSchedule[]
+  trainingSessions            TrainingSession[]
+  trainingAttendances         TrainingAttendance[]
   userPermissionOverrides     ClubUserPermissionOverride[]
   users                       User[]
 }
@@ -100,6 +107,12 @@ model User {
   uploadedAthleteDocuments     AthleteDocument[]            @relation("AthleteDocumentUploader")
   reviewedAthleteDocuments     AthleteDocument[]            @relation("AthleteDocumentReviewer")
   athleteDataAuditLogs         AthleteDataAuditLog[]        @relation("AthleteDataAuditActor")
+  recordedMatchAthleteStats    MatchAthleteStat[]           @relation("MatchAthleteStatRecorder")
+  recordedTrainingSessions     TrainingSession[]            @relation("TrainingSessionRecorder")
+  recordedTrainingAttendances  TrainingAttendance[]         @relation("TrainingAttendanceRecorder")
+  recordedBodyMeasurements     AthleteBodyMeasurement[]     @relation("AthleteBodyMeasurementRecorder")
+  recordedWellbeingEntries     AthleteWellbeingEntry[]      @relation("AthleteWellbeingEntryRecorder")
+  recordedExternalTrainings    AthleteExternalTraining[]    @relation("AthleteExternalTrainingRecorder")
   guardianProfile              GuardianProfile?
   payments                     Payment[]
   sessions                     Session[]
@@ -148,6 +161,7 @@ model Category {
   matches                 Match[]
   staffMembers            StaffMember[]
   trainingSchedules       TrainingSchedule[]
+  trainingSessions        TrainingSession[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -200,6 +214,11 @@ model Athlete {
   evaluations          AthleteEvaluation[]
   performanceGoals     AthletePerformanceGoal[]
   performanceReports   PerformanceReport[]
+  matchStats           MatchAthleteStat[]
+  trainingAttendances  TrainingAttendance[]
+  bodyMeasurements     AthleteBodyMeasurement[]
+  wellbeingEntries     AthleteWellbeingEntry[]
+  externalTrainings    AthleteExternalTraining[]
   privateData          AthletePrivateData?
   guardians            AthleteGuardian[]
   documents            AthleteDocument[]
@@ -358,7 +377,7 @@ model AthleteDataAuditLog {
 }
 
 model TrainingSchedule {
-  id             String       @id @default(cuid())
+  id             String            @id @default(cuid())
   date           DateTime?
   weekday        Int
   startTime      String
@@ -367,14 +386,64 @@ model TrainingSchedule {
   notes          String?
   organizationId String
   categoryId     String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  category       Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sessions       TrainingSession[]
 
   @@index([organizationId])
   @@index([categoryId])
   @@index([organizationId, date])
+}
+
+model TrainingSession {
+  id               String                @id @default(cuid())
+  organizationId   String
+  categoryId       String
+  scheduleId       String?
+  recordedByUserId String?
+  startsAt         DateTime
+  endsAt           DateTime?
+  location         String?
+  notes            String?
+  status           TrainingSessionStatus @default(SCHEDULED)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  organization     Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category         Category              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  schedule         TrainingSchedule?     @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  recordedBy       User?                 @relation("TrainingSessionRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  attendances      TrainingAttendance[]
+
+  @@index([organizationId, startsAt])
+  @@index([categoryId, startsAt])
+  @@index([scheduleId])
+  @@index([recordedByUserId])
+}
+
+model TrainingAttendance {
+  id               String                   @id @default(cuid())
+  organizationId   String
+  sessionId        String
+  athleteId        String
+  recordedByUserId String?
+  status           TrainingAttendanceStatus @default(PENDING)
+  arrivedAt        DateTime?
+  leftAt           DateTime?
+  minutesPresent   Int?
+  notes            String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  session          TrainingSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  athlete          Athlete                  @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  recordedBy       User?                    @relation("TrainingAttendanceRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, athleteId])
+  @@index([organizationId, athleteId])
+  @@index([athleteId, status])
+  @@index([recordedByUserId])
 }
 
 model AthleteEvaluation {
@@ -383,12 +452,14 @@ model AthleteEvaluation {
   athleteId         String
   categoryId        String?
   evaluatorUserId   String?
+  templateId        String?
   title             String?
   periodStart       DateTime
   periodEnd         DateTime
   evaluatedAt       DateTime                 @default(now())
   season            String?
   sport             SportType                @default(BOTH)
+  athleteRole       PerformanceAthleteRole   @default(LINE_PLAYER)
   positionSnapshot  String?
   status            AthleteEvaluationStatus  @default(DRAFT)
   strengths         String?
@@ -402,30 +473,90 @@ model AthleteEvaluation {
   athlete           Athlete                  @relation(fields: [athleteId], references: [id], onDelete: Cascade)
   category          Category?                @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   evaluator         User?                    @relation("AthleteEvaluationAuthor", fields: [evaluatorUserId], references: [id], onDelete: SetNull)
+  template          PerformanceTemplate?     @relation(fields: [templateId], references: [id], onDelete: SetNull)
   scores            AthleteEvaluationScore[]
   reports           PerformanceReport[]
 
   @@index([organizationId, athleteId, evaluatedAt])
   @@index([categoryId, evaluatedAt])
   @@index([evaluatorUserId])
+  @@index([templateId])
   @@index([status])
 }
 
 model AthleteEvaluationScore {
-  id           String            @id @default(cuid())
-  evaluationId String
-  area         PerformanceArea
-  metricCode   String
-  metricLabel  String
-  score        Int
-  notes        String?
-  sortOrder    Int               @default(0)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  evaluation   AthleteEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  id                String                @id @default(cuid())
+  evaluationId      String
+  criterionId       String?
+  area              PerformanceArea
+  metricCode        String
+  metricLabel       String
+  score             Int
+  ratingLabel       String?
+  ratingDescription String?
+  notes             String?
+  sortOrder         Int                   @default(0)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  evaluation        AthleteEvaluation     @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  criterion         PerformanceCriterion? @relation(fields: [criterionId], references: [id], onDelete: SetNull)
 
   @@unique([evaluationId, metricCode])
   @@index([evaluationId, area])
+  @@index([criterionId])
+}
+
+model PerformanceTemplate {
+  id             String                 @id @default(cuid())
+  organizationId String?
+  name           String
+  description    String?
+  athleteRole    PerformanceAthleteRole
+  sport          SportType              @default(BOTH)
+  active         Boolean                @default(true)
+  systemDefault  Boolean                @default(false)
+  version        Int                    @default(1)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  organization   Organization?          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  criteria       PerformanceCriterion[]
+  evaluations    AthleteEvaluation[]
+
+  @@index([organizationId, active])
+  @@index([athleteRole, sport, active])
+}
+
+model PerformanceCriterion {
+  id          String                      @id @default(cuid())
+  templateId  String
+  area        PerformanceArea
+  code        String
+  label       String
+  description String?
+  sortOrder   Int                         @default(0)
+  active      Boolean                     @default(true)
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  template    PerformanceTemplate         @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  levels      PerformanceCriterionLevel[]
+  scores      AthleteEvaluationScore[]
+
+  @@unique([templateId, code])
+  @@index([templateId, area, sortOrder])
+}
+
+model PerformanceCriterionLevel {
+  id          String               @id @default(cuid())
+  criterionId String
+  score       Int
+  label       String
+  description String
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  criterion   PerformanceCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
+
+  @@unique([criterionId, score])
+  @@index([criterionId])
 }
 
 model AthletePerformanceGoal {
@@ -450,6 +581,85 @@ model AthletePerformanceGoal {
   @@index([organizationId, athleteId, status])
   @@index([categoryId])
   @@index([createdByUserId])
+}
+
+model AthleteBodyMeasurement {
+  id               String       @id @default(cuid())
+  organizationId   String
+  athleteId        String
+  recordedByUserId String?
+  measuredAt       DateTime     @default(now())
+  heightCm         Decimal?     @db.Decimal(6, 2)
+  weightKg         Decimal?     @db.Decimal(6, 2)
+  bmi              Decimal?     @db.Decimal(5, 2)
+  wingspanCm       Decimal?     @db.Decimal(6, 2)
+  bodyFatPercent   Decimal?     @db.Decimal(5, 2)
+  muscleMassKg     Decimal?     @db.Decimal(6, 2)
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete          Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  recordedBy       User?        @relation("AthleteBodyMeasurementRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, athleteId, measuredAt])
+  @@index([athleteId, measuredAt])
+  @@index([recordedByUserId])
+}
+
+model AthleteWellbeingEntry {
+  id               String               @id @default(cuid())
+  organizationId   String
+  athleteId        String
+  recordedByUserId String?
+  recordedAt       DateTime             @default(now())
+  sleepHours       Decimal?             @db.Decimal(4, 2)
+  sleepQuality     Int?
+  fatigueLevel     Int?
+  energyLevel      Int?
+  hasPain          Boolean              @default(false)
+  painLevel        Int?
+  painLocation     String?
+  notes            String?
+  source           WellbeingEntrySource @default(CLUB)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete          Athlete              @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  recordedBy       User?                @relation("AthleteWellbeingEntryRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, athleteId, recordedAt])
+  @@index([athleteId, recordedAt])
+  @@index([recordedByUserId])
+}
+
+model AthleteExternalTraining {
+  id               String                 @id @default(cuid())
+  organizationId   String
+  athleteId        String
+  recordedByUserId String?
+  activity         String
+  modality         String?
+  providerName     String?
+  weekdays         String?
+  startTime        String?
+  endTime          String?
+  durationMinutes  Int?
+  intensity        TrainingIntensity?
+  objective        String?
+  startsAt         DateTime?
+  endsAt           DateTime?
+  status           ExternalTrainingStatus @default(ACTIVE)
+  notes            String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  organization     Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete          Athlete                @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  recordedBy       User?                  @relation("AthleteExternalTrainingRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, athleteId, status])
+  @@index([athleteId, startsAt])
+  @@index([recordedByUserId])
 }
 
 model PerformanceReport {
@@ -477,27 +687,63 @@ model PerformanceReport {
 }
 
 model Match {
-  id             String       @id @default(cuid())
-  competition    String?
-  opponent       String
-  startsAt       DateTime
-  location       String?
-  homeAway       String?
-  status         MatchStatus  @default(SCHEDULED)
-  goalsFor       Int?
-  goalsAgainst   Int?
-  notes          String?
-  organizationId String
-  categoryId     String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  callUps        CallUp[]
-  charges        Charge[]
-  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id               String             @id @default(cuid())
+  competition      String?
+  round            String?
+  opponent         String
+  startsAt         DateTime
+  location         String?
+  homeAway         String?
+  status           MatchStatus        @default(SCHEDULED)
+  goalsFor         Int?
+  goalsAgainst     Int?
+  notes            String?
+  formation        String?
+  matchSheetStatus MatchSheetStatus   @default(DRAFT)
+  finalizedAt      DateTime?
+  organizationId   String
+  categoryId       String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  callUps          CallUp[]
+  charges          Charge[]
+  athleteStats     MatchAthleteStat[]
+  category         Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, startsAt])
   @@index([categoryId, startsAt])
+}
+
+model MatchAthleteStat {
+  id               String                   @id @default(cuid())
+  organizationId   String
+  matchId          String
+  athleteId        String
+  recordedByUserId String?
+  participation    MatchParticipationStatus @default(RELATED)
+  lineupRole       MatchLineupRole?
+  enteredAtMinute  Int?
+  leftAtMinute     Int?
+  minutesPlayed    Int?
+  positionPlayed   String?
+  jerseyNumber     Int?
+  goals            Int                      @default(0)
+  assists          Int                      @default(0)
+  yellowCards      Int                      @default(0)
+  redCards         Int                      @default(0)
+  notes            String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  match            Match                    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  athlete          Athlete                  @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  recordedBy       User?                    @relation("MatchAthleteStatRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([matchId, athleteId])
+  @@index([organizationId, athleteId])
+  @@index([athleteId, participation])
+  @@index([recordedByUserId])
 }
 
 model CallUp {
@@ -901,8 +1147,75 @@ enum PerformanceArea {
   TECHNICAL
   TACTICAL
   PHYSICAL
+  COGNITIVE
+  EMOTIONAL
+  // Mantidos por compatibilidade com dados já existentes.
   BEHAVIORAL
   COMPETITIVE
+}
+
+enum PerformanceAthleteRole {
+  LINE_PLAYER
+  GOALKEEPER
+}
+
+enum MatchSheetStatus {
+  DRAFT
+  FINALIZED
+  ARCHIVED
+}
+
+enum MatchParticipationStatus {
+  CALLED_UP
+  RELATED
+  PRESENT
+  ABSENT
+  NOT_RELATED
+  INJURED
+  SUSPENDED
+}
+
+enum MatchLineupRole {
+  STARTER
+  SUBSTITUTE
+  DID_NOT_PLAY
+}
+
+enum TrainingSessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum TrainingAttendanceStatus {
+  PENDING
+  PRESENT
+  ABSENT
+  JUSTIFIED_ABSENCE
+  INJURED
+  EXCUSED
+  LATE
+  PARTIAL
+}
+
+enum WellbeingEntrySource {
+  CLUB
+  FAMILY
+  ATHLETE
+}
+
+enum TrainingIntensity {
+  LOW
+  MODERATE
+  HIGH
+  VERY_HIGH
+}
+
+enum ExternalTrainingStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
 }
 
 enum PerformanceGoalStatus {
