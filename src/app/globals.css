@@ -2205,3 +2205,70 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
 .agenda-event-actions a:first-child{color:var(--green)}
 .agenda-event-actions a:last-child{color:var(--muted)}
 @media(max-width:700px){.agenda-event{grid-template-columns:56px minmax(0,1fr)}.agenda-event-actions{gap:8px 14px}}
+/* ONZEUP Dashboard v2 — adicionar ao final de src/app/globals.css */
+.od-dashboard{--od-ink:#0a1420;--od-muted:#687985;--od-line:#dde5e9;--od-green:#93e000;display:grid;gap:18px;color:var(--od-ink);padding-bottom:30px}
+.od-dashboard a{text-decoration:none}.od-header{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:2px 0 4px}.od-eyebrow{display:block;color:#527500;font-size:10px;font-weight:1000;letter-spacing:.15em;text-transform:uppercase}.od-header h1{margin:5px 0 2px;font-size:clamp(30px,3vw,44px);line-height:1;letter-spacing:-.04em}.od-date{margin:0;color:var(--od-muted);font-size:14px;text-transform:capitalize}.od-search{display:flex;align-items:center;gap:10px;width:min(360px,36vw);padding:0 16px;border:1px solid var(--od-line);border-radius:14px;background:#fff;box-shadow:0 8px 24px rgba(10,20,32,.04)}.od-search span{font-size:22px;color:#71818c}.od-search input{width:100%;height:46px;border:0!important;outline:0;background:transparent!important;padding:0!important;box-shadow:none!important}
+.od-quick-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap}.od-quick-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border:1px solid var(--od-line);border-radius:11px;background:#fff;color:var(--od-ink);font-size:12px;font-weight:900;box-shadow:0 5px 16px rgba(10,20,32,.035)}.od-quick-actions a:hover{border-color:#a6bf6d;transform:translateY(-1px)}.od-quick-actions .od-action-primary{border-color:var(--od-green);background:var(--od-green);color:#061000}
+.od-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.od-kpis>a{position:relative;display:grid;min-height:128px;padding:20px 21px;border:1px solid var(--od-line);border-radius:16px;background:#fff;color:var(--od-ink);box-shadow:0 12px 35px rgba(15,31,43,.055);overflow:hidden}.od-kpis>a:after{content:"";position:absolute;right:-25px;bottom:-35px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,rgba(147,224,0,.16),transparent 68%)}.od-kpi-icon{position:absolute;right:18px;top:16px;font-size:22px;color:#84b300}.od-kpis small{color:var(--od-muted);font-size:9px;font-weight:900;letter-spacing:.1em}.od-kpis strong{font-size:34px;line-height:1;margin:9px 0}.od-kpis em{color:#567300;font-size:10px;font-style:normal;font-weight:800}
+.od-main-grid{display:grid;grid-template-columns:1.1fr .9fr 1.02fr;gap:12px}.od-bottom-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:12px}.od-panel{min-width:0;padding:21px!important;border-color:var(--od-line)!important;background:#fff!important;color:var(--od-ink)!important;box-shadow:0 12px 35px rgba(15,31,43,.055)!important}.od-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:16px}.od-panel-head h2{margin:4px 0 0;font-size:21px;letter-spacing:-.025em}.od-panel-head>a{color:#567300;font-size:10px;font-weight:900;padding-top:6px;white-space:nowrap}
+.od-timeline{display:grid}.od-timeline>a{display:grid;grid-template-columns:47px 12px minmax(0,1fr) auto;gap:11px;align-items:center;min-height:66px;border-top:1px solid #edf1f3;color:var(--od-ink)}.od-timeline>a:first-child{border-top:0}.od-timeline time{font-size:12px;font-weight:900}.od-timeline i{width:9px;height:9px;border:2px solid #fff;border-radius:50%;background:var(--od-green);box-shadow:0 0 0 2px rgba(147,224,0,.22)}.od-timeline div{display:grid;gap:4px}.od-timeline strong{font-size:13px}.od-timeline span{color:var(--od-muted);font-size:10px}.od-timeline b{padding:6px 9px;border-radius:999px;background:#eff8dd;color:#4b7000;font-size:9px}
+.od-alerts{display:grid;align-content:start}.od-alerts>a{display:grid;grid-template-columns:34px minmax(0,1fr) 27px;gap:10px;align-items:center;padding:12px 0;border-top:1px solid #edf1f3;color:var(--od-ink)}.od-alerts>a>i{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;font-style:normal;font-weight:1000}.od-alerts i.red{background:#fff0f0;color:#e84040}.od-alerts i.amber{background:#fff5dc;color:#d98a00}.od-alerts i.blue{background:#eaf2ff;color:#3270d6}.od-alerts>a>div{display:grid;gap:3px}.od-alerts strong{font-size:11px}.od-alerts span{color:var(--od-muted);font-size:9px}.od-alerts>a>b{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#f2f5f6;font-size:10px}
+.od-performance-body{display:grid;grid-template-columns:minmax(150px,1fr) .7fr;align-items:center;gap:8px}.od-performance svg{width:100%;max-height:190px}.od-performance svg line{stroke:#dfe6e9;stroke-width:1}.od-radar-grid{fill:none;stroke:#dfe6e9;stroke-width:1}.od-radar-value{fill:rgba(147,224,0,.28);stroke:#72b600;stroke-width:3;stroke-linejoin:round}.od-performance-score{display:grid;gap:4px;padding-left:14px;border-left:1px solid #e4e9eb}.od-performance-score small{font-size:8px;color:var(--od-muted);font-weight:900}.od-performance-score strong{font-size:34px}.od-performance-score span{font-size:9px;color:var(--od-muted)}.od-area-list{display:flex;gap:6px 10px;flex-wrap:wrap;margin-top:8px}.od-area-list span{font-size:8px;color:var(--od-muted)}.od-area-list i{display:inline-block;width:6px;height:6px;margin-right:4px;border-radius:50%;background:var(--od-green)}.od-area-list b{color:var(--od-ink)}
+.od-game-row{display:grid;grid-template-columns:65px minmax(0,1fr) auto auto;gap:14px;align-items:center;min-height:66px;padding:9px 0;border-top:1px solid #e8edef;color:var(--od-ink)}.od-game-row time{display:grid;gap:2px;text-align:center}.od-game-row time b{font-size:10px;text-transform:uppercase}.od-game-row time span,.od-game-row div span{font-size:9px;color:var(--od-muted)}.od-game-row div{display:grid;gap:4px}.od-game-row div strong{font-size:12px}.od-game-row em{font-size:9px;color:var(--od-muted);font-style:normal}.od-game-row>b{padding:6px 9px;border-radius:999px;font-size:8px}.od-game-row>b.done{background:#e9f8d0;color:#4b7000}.od-game-row>b.pending{background:#e9f2ff;color:#2461b8}
+.od-communication>a{display:grid;grid-template-columns:9px minmax(0,1fr);gap:12px;padding:13px 0;border-top:1px solid #e8edef;color:var(--od-ink)}.od-communication>a>i{width:8px;height:8px;margin-top:4px;border-radius:50%}.od-communication i.green{background:var(--od-green)}.od-communication i.amber{background:#f5a000}.od-communication i.blue{background:#3878e8}.od-communication div{display:grid;gap:4px}.od-communication strong{font-size:11px}.od-communication span{font-size:9px;line-height:1.45;color:var(--od-muted)}
+.od-empty{display:grid;justify-items:start;gap:8px;min-height:180px;align-content:center;padding:14px;color:var(--od-muted)}.od-empty strong{color:var(--od-ink)}.od-empty span{font-size:11px}.od-empty a{margin-top:4px;padding:8px 11px;border-radius:9px;background:#eef7dd;color:#4e7200;font-size:9px;font-weight:900}.od-footer{display:flex;align-items:center;justify-content:space-between;padding:6px 2px;color:var(--od-muted)}.od-footer span{font-size:9px;font-weight:1000;letter-spacing:.13em}.od-footer small{font-size:9px}
+.club-sidebar-final .club-sidebar-signature{display:grid;gap:4px;margin-top:24px;padding:16px 10px 0;border-top:1px solid #1c2731}.club-sidebar-signature small{color:#8bc900;font-size:8px;font-weight:1000;letter-spacing:.12em}.club-sidebar-signature span{color:#788692;font-size:9px;line-height:1.5}.club-sidebar-final .brand{text-decoration:none!important;color:#fff!important}.club-sidebar-final .brand span{color:#9ddb16!important}
+@media(max-width:1250px){.od-main-grid{grid-template-columns:1fr 1fr}.od-performance{grid-column:1/-1}.od-performance-body{grid-template-columns:220px 1fr}.od-bottom-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.od-dashboard{padding-bottom:82px}.od-header{align-items:flex-start}.od-search{width:min(330px,48vw)}.od-kpis{grid-template-columns:repeat(2,1fr)}.od-main-grid{grid-template-columns:1fr 1fr}.od-performance{grid-column:1/-1}}
+@media(max-width:680px){.od-header{display:grid}.od-search{width:100%}.od-quick-actions{display:grid;grid-template-columns:1fr 1fr}.od-quick-actions a{padding:0 10px}.od-kpis{grid-template-columns:1fr 1fr}.od-kpis>a{min-height:112px;padding:17px}.od-kpis strong{font-size:28px}.od-main-grid{grid-template-columns:1fr}.od-performance{grid-column:auto}.od-performance-body{grid-template-columns:1fr 100px}.od-game-row{grid-template-columns:52px minmax(0,1fr)}.od-game-row>em,.od-game-row>b{grid-column:2;justify-self:start}.od-footer{display:none}}
+@media(max-width:420px){.od-kpis{grid-template-columns:1fr}.od-kpis>a{min-height:105px}.od-performance-body{grid-template-columns:1fr}.od-performance-score{border-left:0;border-top:1px solid #e4e9eb;padding:12px 0 0}.od-timeline>a{grid-template-columns:42px 10px minmax(0,1fr)}.od-timeline>a>b{display:none}}
+/* ONZEUP Dashboard v2.1 — aplicar uma única vez após dashboard-v2.css */
+
+/* Sidebar tecnológica escura: também corrige o logo que aparecia somente como “UP”. */
+.shell.club-app-light > .club-sidebar-final{
+  background:#091019 !important;
+  border-right:1px solid #1b2732 !important;
+  box-shadow:12px 0 35px rgba(7,16,25,.08) !important;
+}
+.shell.club-app-light > .club-sidebar-final .brand{
+  color:#ffffff !important;
+}
+.shell.club-app-light > .club-sidebar-final .brand span{
+  color:#9ddb16 !important;
+}
+.shell.club-app-light > .club-sidebar-final .club-sidebar-head p{
+  color:#8997a3 !important;
+}
+
+/* O aviso de assinatura continua visível, mas deixa de dominar a página. */
+.od-dashboard > .od-quick-actions + .card{
+  min-height:0 !important;
+  padding:16px 20px !important;
+  border-color:#dce4e8 !important;
+  box-shadow:0 8px 24px rgba(15,31,43,.04) !important;
+}
+.od-dashboard > .od-quick-actions + .card h2{
+  margin:3px 0 5px !important;
+  font-size:18px !important;
+}
+.od-dashboard > .od-quick-actions + .card p{
+  margin:0 !important;
+  font-size:11px !important;
+}
+.od-dashboard > .od-quick-actions + .card a,
+.od-dashboard > .od-quick-actions + .card button{
+  min-height:36px !important;
+  padding:8px 13px !important;
+  font-size:10px !important;
+}
+
+@media(max-width:680px){
+  .od-dashboard > .od-quick-actions + .card{
+    padding:15px !important;
+  }
+}
+/* ONZEUP — lista de presença por categoria */
+.training-detail-grid{display:grid;grid-template-columns:minmax(300px,.55fr) minmax(600px,1.45fr);gap:14px;align-items:start}.training-data-card,.training-attendance-card{padding:24px!important}.training-readonly{display:grid;grid-template-columns:1fr 1fr;gap:16px}.training-readonly p{margin:4px 0;color:var(--muted)}.attendance-form{display:grid;gap:14px}.attendance-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e0e7e9;border-radius:12px;background:#f7f9fa}.attendance-counters{display:flex;gap:7px;flex-wrap:wrap}.attendance-counters span{padding:7px 10px;border-radius:999px;font-size:9px;font-weight:800}.attendance-counters b{font-size:12px}.attendance-counters .is-present{background:#eaf8d2;color:#456800}.attendance-counters .is-absent{background:#fff0f0;color:#b72d2d}.attendance-counters .is-late{background:#fff5da;color:#9a6100}.attendance-list{display:grid;gap:8px}.attendance-athlete{display:grid;grid-template-columns:minmax(190px,1fr) minmax(310px,1.25fr) 130px;gap:13px;align-items:center;padding:12px;border:1px solid #e0e7e9;border-radius:13px;background:#fff}.attendance-athlete-id{display:flex;align-items:center;gap:10px;min-width:0}.attendance-athlete-id>img,.attendance-athlete-id>span{width:42px;height:42px;flex:0 0 42px;border-radius:50%;object-fit:cover}.attendance-athlete-id>span{display:grid;place-items:center;background:#14202a;color:#9ddb16;font-size:11px;font-weight:1000}.attendance-athlete-id>div{display:grid;gap:3px;min-width:0}.attendance-athlete-id strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.attendance-athlete-id small{color:#78868e;font-size:8px}.attendance-options{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.attendance-options label{display:flex;align-items:center;justify-content:center;min-height:38px;padding:6px;border:1px solid #dce4e7;border-radius:9px;color:#66767f;font-size:9px;font-weight:900;cursor:pointer}.attendance-options input{position:absolute;opacity:0;pointer-events:none}.attendance-options label.selected.present{border-color:#8acb0b;background:#eff9dc;color:#456800}.attendance-options label.selected.absent{border-color:#ef9292;background:#fff0f0;color:#a32929}.attendance-options label.selected.late{border-color:#efbd59;background:#fff6df;color:#8d5900}.attendance-arrival{display:grid;gap:4px;visibility:hidden;opacity:0}.attendance-arrival.visible{visibility:visible;opacity:1}.attendance-arrival span{font-size:8px;font-weight:900;color:#7b878d}.attendance-arrival input{min-height:38px!important;padding:6px 8px!important}.attendance-submit{width:100%;min-height:44px}.training-location{display:block;margin-top:3px;color:#7a878e;font-size:8px}.attendance-table-summary{display:inline-flex;padding:6px 8px;border-radius:999px;background:#eef8dc;color:#4d7000;font-size:9px;font-weight:800}
+@media(max-width:1180px){.training-detail-grid{grid-template-columns:1fr}.attendance-athlete{grid-template-columns:minmax(180px,1fr) minmax(300px,1.4fr) 130px}}
+@media(max-width:760px){.training-data-card,.training-attendance-card{padding:18px!important}.attendance-toolbar{align-items:stretch;flex-direction:column}.attendance-athlete{grid-template-columns:1fr}.attendance-options{grid-template-columns:repeat(3,1fr)}.attendance-arrival{display:none}.attendance-arrival.visible{display:grid}.training-readonly{grid-template-columns:1fr 1fr}}
+@media(max-width:440px){.attendance-options{grid-template-columns:1fr}.training-readonly{grid-template-columns:1fr}}
