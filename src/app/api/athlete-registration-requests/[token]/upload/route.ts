@@ -13,7 +13,7 @@ const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"] as const;
 const CATEGORIES = ["IDENTITY", "MEDICAL_EXAM", "MEDICAL_CLEARANCE", "AUTHORIZATION", "SPORTS_REGISTRATION", "SCHOOL", "OTHER"] as const;
 type Category = (typeof CATEGORIES)[number];
-type RequestedItem = { key: string; label: string; category: Category };
+type RequestedItem = { key: string; label: string; category: Category; subject: "ATHLETE" | "GUARDIAN" };
 
 function hash(value: string | Buffer) {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -55,7 +55,7 @@ function invitationPayload(encrypted: string | null) {
     return {
       guardianId: parsed.guardianId || null,
       requestedItems: (parsed.requestedItems || []).filter(
-        (item) => item && item.key && item.label && CATEGORIES.includes(item.category)
+        (item) => item && item.key && item.label && CATEGORIES.includes(item.category) && ["ATHLETE", "GUARDIAN"].includes(item.subject)
       ),
     };
   } catch {
@@ -131,7 +131,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
         data: {
           organizationId: invitation.organizationId,
           athleteId: invitation.athleteId,
-          guardianId: payload.guardianId,
+          guardianId: requestedItem.subject === "GUARDIAN" ? payload.guardianId : null,
           registrationRequestId: invitation.id,
           category: requestedItem.category,
           requestItemKey: requestedItem.key,

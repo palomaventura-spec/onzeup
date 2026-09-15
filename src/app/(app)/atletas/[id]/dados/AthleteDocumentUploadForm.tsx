@@ -10,9 +10,11 @@ type GuardianOption = {
 
 export default function AthleteDocumentUploadForm({
   athleteId,
+  athleteName,
   guardians,
 }: {
   athleteId: string;
+  athleteName: string;
   guardians: GuardianOption[];
 }) {
   const router = useRouter();
@@ -80,7 +82,7 @@ export default function AthleteDocumentUploadForm({
         <label>
           Documento referente a
           <select name="guardianId" defaultValue="">
-            <option value="">Atleta</option>
+            <option value="">Atleta: {athleteName}</option>
             {guardians.map((guardian) => (
               <option key={guardian.id} value={guardian.id}>
                 Responsável: {guardian.name}

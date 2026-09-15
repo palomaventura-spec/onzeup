@@ -66,9 +66,31 @@ export default function FamilyDocumentSubmissionForm({
         <h2>Lista de envio</h2>
         <div className="stack" style={{ marginTop: 14 }}>
           {requestedDocuments.map((item) => (
-            <div key={item.key} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: 13, display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <strong>{item.label}</strong>
-              <span className="badge">{item.received ? "Recebido" : "Pendente"}</span>
+            <div
+              key={item.key}
+              style={{
+                border: "1px solid var(--line)",
+                borderRadius: 10,
+                padding: 13,
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) 112px",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <strong style={{ minWidth: 0 }}>{item.label}</strong>
+              <span
+                className="badge"
+                style={{
+                  width: 112,
+                  minWidth: 112,
+                  justifyContent: "center",
+                  textAlign: "center",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {item.received ? "Recebido" : "Pendente"}
+              </span>
             </div>
           ))}
         </div>

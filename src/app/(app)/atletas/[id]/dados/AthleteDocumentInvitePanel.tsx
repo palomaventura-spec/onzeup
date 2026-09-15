@@ -12,25 +12,26 @@ type Invitation = {
   createdAt: string;
 };
 
-type RequestedItem = { key: string; label: string; category: string };
+type RequestedItem = { key: string; label: string; category: string; subject: "ATHLETE" | "GUARDIAN" };
 
 const presetItems = [
-  ["medical_clearance", "Atestado médico para futebol competitivo / alto rendimento", "MEDICAL_CLEARANCE"],
-  ["electrocardiogram", "Eletrocardiograma (ECG) com laudo e imagens", "MEDICAL_EXAM"],
-  ["echocardiogram", "Ecocardiograma com laudo e imagens", "MEDICAL_EXAM"],
-  ["blood_count", "Hemograma completo", "MEDICAL_EXAM"],
-  ["lipid_glycemic_profile", "Perfil lipídico e glicêmico", "MEDICAL_EXAM"],
-  ["registration_form", "Ficha cadastral preenchida", "OTHER"],
-  ["photo_3x4", "Foto 3×4 atualizada", "OTHER"],
-  ["athlete_identity", "Documento de identidade do atleta", "IDENTITY"],
-  ["guardian_identity", "Documento de identidade do pai, mãe ou responsável legal", "IDENTITY"],
-  ["cpf_documents", "CPF do atleta e dos responsáveis, quando não constar na identidade", "IDENTITY"],
-  ["birth_certificate", "Certidão de nascimento", "IDENTITY"],
-  ["school_declaration", "Declaração escolar atualizada", "SCHOOL"],
-  ["vaccination_card", "Carteira de vacinação", "MEDICAL_EXAM"],
-  ["health_card", "Carteira do plano de saúde ou cartão do SUS", "OTHER"],
-  ["sports_registration", "Registro ou inscrição esportiva", "SPORTS_REGISTRATION"],
-  ["authorization", "Autorização assinada pelo responsável", "AUTHORIZATION"],
+  ["medical_clearance", "Atestado médico para futebol competitivo / alto rendimento", "MEDICAL_CLEARANCE", "ATHLETE"],
+  ["electrocardiogram", "Eletrocardiograma (ECG) com laudo e imagens", "MEDICAL_EXAM", "ATHLETE"],
+  ["echocardiogram", "Ecocardiograma com laudo e imagens", "MEDICAL_EXAM", "ATHLETE"],
+  ["blood_count", "Hemograma completo", "MEDICAL_EXAM", "ATHLETE"],
+  ["lipid_glycemic_profile", "Perfil lipídico e glicêmico", "MEDICAL_EXAM", "ATHLETE"],
+  ["registration_form", "Ficha cadastral preenchida", "OTHER", "ATHLETE"],
+  ["photo_3x4", "Foto 3×4 atualizada", "OTHER", "ATHLETE"],
+  ["athlete_identity", "Documento de identidade do atleta", "IDENTITY", "ATHLETE"],
+  ["guardian_identity", "Documento de identidade do pai, mãe ou responsável legal", "IDENTITY", "GUARDIAN"],
+  ["athlete_cpf", "CPF do atleta, quando não constar na identidade", "IDENTITY", "ATHLETE"],
+  ["guardian_cpf", "CPF do responsável, quando não constar na identidade", "IDENTITY", "GUARDIAN"],
+  ["birth_certificate", "Certidão de nascimento", "IDENTITY", "ATHLETE"],
+  ["school_declaration", "Declaração escolar atualizada", "SCHOOL", "ATHLETE"],
+  ["vaccination_card", "Carteira de vacinação", "MEDICAL_EXAM", "ATHLETE"],
+  ["health_card", "Carteira do plano de saúde ou cartão do SUS", "OTHER", "ATHLETE"],
+  ["sports_registration", "Registro ou inscrição esportiva", "SPORTS_REGISTRATION", "ATHLETE"],
+  ["authorization", "Autorização assinada pelo responsável", "AUTHORIZATION", "ATHLETE"],
 ] as const;
 
 const statusLabels: Record<string, string> = {
@@ -60,7 +61,11 @@ export default function AthleteDocumentInvitePanel({
   const [generatedLink, setGeneratedLink] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [customItems, setCustomItems] = useState<string[]>([]);
+  const [customItems, setCustomItems] = useState<Array<{ label: string; subject: "ATHLETE" | "GUARDIAN" }>>([]);
+  const [guardianId, setGuardianId] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
 
   async function createInvitation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,14 +78,15 @@ export default function AthleteDocumentInvitePanel({
     const selectedKeys = new Set(form.getAll("presetItems").map(String));
     const requestedItems: RequestedItem[] = presetItems
       .filter(([key]) => selectedKeys.has(key))
-      .map(([key, label, category]) => ({ key, label, category }));
+      .map(([key, label, category, subject]) => ({ key, label, category, subject }));
 
-    customItems.forEach((label, index) => {
-      const normalized = label.trim();
+    customItems.forEach((item, index) => {
+      const normalized = item.label.trim();
       if (normalized) requestedItems.push({
         key: `custom_${index}_${crypto.randomUUID().replaceAll("-", "")}`,
         label: normalized,
         category: "OTHER",
+        subject: item.subject,
       });
     });
 
@@ -140,14 +146,27 @@ export default function AthleteDocumentInvitePanel({
           <div className="form-grid-2">
             <label>
               Responsável cadastrado (opcional)
-              <select name="guardianId" defaultValue="">
-                <option value="">Não vincular agora</option>
+              <select
+                name="guardianId"
+                value={guardianId}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  const guardian = guardians.find((item) => item.id === nextId);
+                  setGuardianId(nextId);
+                  if (guardian) {
+                    setRecipientName(guardian.name);
+                    setRecipientEmail(guardian.email || "");
+                    setRecipientPhone(guardian.phone || "");
+                  }
+                }}
+              >
+                <option value="">Destinatário não cadastrado</option>
                 {guardians.map((guardian) => <option key={guardian.id} value={guardian.id}>{guardian.name}</option>)}
               </select>
             </label>
-            <label>Nome de quem receberá o link<input name="recipientName" required /></label>
-            <label>E-mail (opcional)<input type="email" name="recipientEmail" /></label>
-            <label>WhatsApp / telefone (opcional)<input name="recipientPhone" /></label>
+            <label>Nome de quem receberá o link<input name="recipientName" required value={recipientName} onChange={(event) => setRecipientName(event.target.value)} /></label>
+            <label>E-mail (opcional)<input type="email" name="recipientEmail" value={recipientEmail} onChange={(event) => setRecipientEmail(event.target.value)} /></label>
+            <label>WhatsApp / telefone (opcional)<input name="recipientPhone" value={recipientPhone} onChange={(event) => setRecipientPhone(event.target.value)} /></label>
             <label>
               Validade do link
               <select name="validityDays" defaultValue="7">
@@ -161,10 +180,10 @@ export default function AthleteDocumentInvitePanel({
           <fieldset style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 15 }}>
             <legend style={{ fontWeight: 800 }}>Documentos solicitados</legend>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
-              {presetItems.map(([value, label]) => (
+              {presetItems.map(([value, label, , subject]) => (
                 <label key={value} style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <input type="checkbox" name="presetItems" value={value} style={{ width: "auto" }} />
-                  {label}
+                  <span>{label}<span className="help" style={{ display: "block" }}>{subject === "GUARDIAN" ? "Documento do responsável" : "Documento do atleta"}</span></span>
                 </label>
               ))}
             </div>
@@ -174,20 +193,24 @@ export default function AthleteDocumentInvitePanel({
             <legend style={{ fontWeight: 800 }}>Outros documentos</legend>
             <p className="muted">Inclua qualquer documento que não esteja na lista padrão.</p>
             <div className="stack">
-              {customItems.map((value, index) => (
+              {customItems.map((item, index) => (
                 <div className="actions" key={index}>
                   <input
-                    value={value}
+                    value={item.label}
                     required
                     placeholder="Nome do documento solicitado"
-                    onChange={(event) => setCustomItems((items) => items.map((item, itemIndex) => itemIndex === index ? event.target.value : item))}
+                    onChange={(event) => setCustomItems((items) => items.map((current, itemIndex) => itemIndex === index ? { ...current, label: event.target.value } : current))}
                     style={{ flex: 1 }}
                   />
+                  <select value={item.subject} onChange={(event) => setCustomItems((items) => items.map((current, itemIndex) => itemIndex === index ? { ...current, subject: event.target.value as "ATHLETE" | "GUARDIAN" } : current))}>
+                    <option value="ATHLETE">Do atleta</option>
+                    <option value="GUARDIAN">Do responsável</option>
+                  </select>
                   <button type="button" className="btn btn-secondary" onClick={() => setCustomItems((items) => items.filter((_, itemIndex) => itemIndex !== index))}>Remover</button>
                 </div>
               ))}
             </div>
-            <button type="button" className="btn btn-secondary" onClick={() => setCustomItems((items) => [...items, ""])} style={{ marginTop: 12 }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setCustomItems((items) => [...items, { label: "", subject: "ATHLETE" }])} style={{ marginTop: 12 }}>
               Adicionar outro documento
             </button>
           </fieldset>

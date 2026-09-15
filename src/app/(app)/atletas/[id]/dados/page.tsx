@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 
 import AthleteDocumentUploadForm from "./AthleteDocumentUploadForm";
 import AthleteDocumentInvitePanel from "./AthleteDocumentInvitePanel";
+import AthleteDocumentManager from "./AthleteDocumentManager";
 
 import {
   createBodyMeasurement,
@@ -43,14 +44,6 @@ const documentCategoryLabels = {
   SPORTS_REGISTRATION: "Registro esportivo",
   SCHOOL: "Documento escolar",
   OTHER: "Outro",
-} as const;
-
-const documentStatusLabels = {
-  PENDING: "Pendente",
-  APPROVED: "Aprovado",
-  REJECTED: "Rejeitado",
-  EXPIRED: "Vencido",
-  ARCHIVED: "Arquivado",
 } as const;
 
 function formatFileSize(value: number | bigint) {
@@ -99,6 +92,7 @@ export default async function AthletePrivateDataPage({
           sizeBytes: true,
           issuedAt: true,
           expiresAt: true,
+          rejectionReason: true,
           createdAt: true,
           guardian: { select: { name: true } },
         },
@@ -407,51 +401,30 @@ export default async function AthletePrivateDataPage({
 
         <AthleteDocumentUploadForm
           athleteId={athlete.id}
+          athleteName={athlete.name}
           guardians={athlete.guardians.map((guardian) => ({
             id: guardian.id,
             name: guardian.name,
           }))}
         />
 
-        {athlete.documents.length ? (
-          <div className="table-wrap" style={{ marginTop: 22 }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Documento</th>
-                  <th>Referente a</th>
-                  <th>Categoria</th>
-                  <th>Envio</th>
-                  <th>Validade</th>
-                  <th>Tamanho</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {athlete.documents.map((document) => (
-                  <tr key={document.id}>
-                    <td>
-                      <strong>{document.title}</strong>
-                      <span className="help" style={{ display: "block" }}>
-                        {document.originalFileName}
-                      </span>
-                    </td>
-                    <td>{document.guardian?.name || athlete.name}</td>
-                    <td>{documentCategoryLabels[document.category]}</td>
-                    <td>{dateLabel(document.createdAt)}</td>
-                    <td>{document.expiresAt ? dateLabel(document.expiresAt) : "Sem validade"}</td>
-                    <td>{formatFileSize(document.sizeBytes)}</td>
-                    <td><span className="badge">{documentStatusLabels[document.status]}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="muted" style={{ marginTop: 18 }}>
-            Nenhum documento ou exame anexado.
-          </p>
-        )}
+        <AthleteDocumentManager
+          documents={athlete.documents.map((document) => ({
+            id: document.id,
+            title: document.title,
+            originalFileName: document.originalFileName,
+            categoryLabel: documentCategoryLabels[document.category],
+            subjectLabel: document.guardian?.name
+              ? `Responsável: ${document.guardian.name}`
+              : `Atleta: ${athlete.name}`,
+            status: document.status,
+            sizeLabel: formatFileSize(document.sizeBytes),
+            createdAtLabel: dateLabel(document.createdAt),
+            issuedAt: dateInput(document.issuedAt),
+            expiresAt: dateInput(document.expiresAt),
+            rejectionReason: document.rejectionReason,
+          }))}
+        />
       </section>
     </>
   );

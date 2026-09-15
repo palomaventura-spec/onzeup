@@ -26,6 +26,7 @@ type RequestedItem = {
   key: string;
   label: string;
   category: Category;
+  subject: "ATHLETE" | "GUARDIAN";
 };
 
 function clean(value: unknown) {
@@ -64,14 +65,22 @@ export async function POST(request: Request) {
           const key = clean(candidate.key).slice(0, 80);
           const label = clean(candidate.label).slice(0, 140);
           const categoryInput = clean(candidate.category);
-          if (!/^[a-z0-9_-]+$/i.test(key) || !label || !CATEGORIES.includes(categoryInput as Category)) return [];
-          return [{ key, label, category: categoryInput as Category }];
+          const subject = clean(candidate.subject).toUpperCase();
+          if (!/^[a-z0-9_-]+$/i.test(key) || !label || !CATEGORIES.includes(categoryInput as Category) || !["ATHLETE", "GUARDIAN"].includes(subject)) return [];
+          return [{ key, label, category: categoryInput as Category, subject: subject as "ATHLETE" | "GUARDIAN" }];
         }).filter((item, index, all) => all.findIndex((other) => other.key === item.key) === index).slice(0, 30)
       : [];
 
     if (!athleteId || !recipientName || requestedItems.length === 0) {
       return NextResponse.json(
         { error: "Informe o destinatário e ao menos um documento solicitado." },
+        { status: 400 }
+      );
+    }
+
+    if (requestedItems.some((item) => item.subject === "GUARDIAN") && !guardianId) {
+      return NextResponse.json(
+        { error: "Selecione um responsável cadastrado para solicitar documentos dele." },
         { status: 400 }
       );
     }
