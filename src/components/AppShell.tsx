@@ -56,6 +56,11 @@ const groups: MenuGroup[] = [
         label: "Atletas",
         permission: "ATHLETES_VIEW",
       },
+      {
+        href: "/performance",
+        label: "Performance",
+        permission: "ATHLETES_VIEW",
+      },
     ],
   },
 
@@ -174,6 +179,12 @@ const mobileMoreItems:
     {
       href: "/atletas",
       label: "Atletas",
+      icon: "athletes",
+      permission: "ATHLETES_VIEW",
+    },
+    {
+      href: "/performance",
+      label: "Performance",
       icon: "athletes",
       permission: "ATHLETES_VIEW",
     },

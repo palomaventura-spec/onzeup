@@ -246,20 +246,30 @@ model ClubUserPermissionOverride {
 }
 
 model AthletePrivateData {
-  id                    String    @id @default(cuid())
-  athleteId             String    @unique
-  birthDate             DateTime?
-  rgEncrypted           String?
-  rgIssuerEncrypted     String?
-  cpfEncrypted          String?
-  nationality           String?
-  naturality            String?
-  email                 String?
-  instagram             String?
-  medicalNotesEncrypted String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  athlete               Athlete   @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  id                                String    @id @default(cuid())
+  athleteId                         String    @unique
+  birthDate                         DateTime?
+  rgEncrypted                       String?
+  rgIssuerEncrypted                 String?
+  cpfEncrypted                      String?
+  nationality                       String?
+  naturality                        String?
+  email                             String?
+  instagram                         String?
+  bloodTypeEncrypted                String?
+  allergiesEncrypted                String?
+  medicationsEncrypted              String?
+  healthConditionsEncrypted         String?
+  medicalRestrictionsEncrypted      String?
+  healthPlanEncrypted               String?
+  healthPlanNumberEncrypted         String?
+  emergencyContactNameEncrypted     String?
+  emergencyContactPhoneEncrypted    String?
+  emergencyContactRelationEncrypted String?
+  medicalNotesEncrypted             String?
+  createdAt                         DateTime  @default(now())
+  updatedAt                         DateTime  @updatedAt
+  athlete                           Athlete   @relation(fields: [athleteId], references: [id], onDelete: Cascade)
 }
 
 model AthleteGuardian {
@@ -286,6 +296,7 @@ model AthleteGuardian {
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   athlete             Athlete             @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  documents           AthleteDocument[]
 
   @@index([athleteId, relation])
   @@index([athleteId, isPrimary])
@@ -325,13 +336,15 @@ model AthleteDocument {
   id                    String                      @id @default(cuid())
   organizationId        String
   athleteId             String
+  guardianId            String?
   registrationRequestId String?
   uploadedByUserId      String?
   reviewedByUserId      String?
   category              AthleteDocumentCategory
+  requestItemKey        String?
   status                AthleteDocumentStatus       @default(PENDING)
   title                 String
-  storageProvider       String                      @default("CLOUDFLARE_R2")
+  storageProvider       String                      @default("VERCEL_BLOB_PRIVATE")
   storageKey            String                      @unique
   originalFileName      String
   mimeType              String
@@ -346,14 +359,17 @@ model AthleteDocument {
   updatedAt             DateTime                    @updatedAt
   organization          Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   athlete               Athlete                     @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  guardian              AthleteGuardian?            @relation(fields: [guardianId], references: [id], onDelete: SetNull)
   registrationRequest   AthleteRegistrationRequest? @relation(fields: [registrationRequestId], references: [id], onDelete: SetNull)
   uploadedBy            User?                       @relation("AthleteDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   reviewedBy            User?                       @relation("AthleteDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, athleteId, category])
+  @@index([guardianId, category])
   @@index([athleteId, status])
   @@index([expiresAt])
   @@index([registrationRequestId])
+  @@index([registrationRequestId, requestItemKey])
 }
 
 model AthleteDataAuditLog {

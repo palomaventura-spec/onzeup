@@ -13,45 +13,29 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function PwaInstallPrompt() {
   const [installEvent, setInstallEvent] =
-    useState<BeforeInstallPromptEvent | null>(
-      null
-    );
-
+    useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const standalone =
-      window.matchMedia(
-        "(display-mode: standalone)"
-      ).matches ||
+      window.matchMedia("(display-mode: standalone)").matches ||
       (
         window.navigator as Navigator & {
           standalone?: boolean;
         }
       ).standalone === true;
 
-    if (standalone) {
-      return;
-    }
+    if (standalone) return;
 
     const dismissed =
-      window.sessionStorage.getItem(
-        "onzeup-install-dismissed"
-      ) === "1";
+      window.sessionStorage.getItem("onzeup-install-dismissed") === "1";
 
-    function handleBeforeInstallPrompt(
-      event: Event
-    ) {
+    function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault();
 
-      if (dismissed) {
-        return;
-      }
+      if (dismissed) return;
 
-      setInstallEvent(
-        event as BeforeInstallPromptEvent
-      );
-
+      setInstallEvent(event as BeforeInstallPromptEvent);
       setVisible(true);
     }
 
@@ -60,38 +44,23 @@ export default function PwaInstallPrompt() {
       setVisible(false);
     }
 
-    window.addEventListener(
-      "beforeinstallprompt",
-      handleBeforeInstallPrompt
-    );
-
-    window.addEventListener(
-      "appinstalled",
-      handleInstalled
-    );
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleInstalled);
 
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt
       );
-
-      window.removeEventListener(
-        "appinstalled",
-        handleInstalled
-      );
+      window.removeEventListener("appinstalled", handleInstalled);
     };
   }, []);
 
   async function install() {
-    if (!installEvent) {
-      return;
-    }
+    if (!installEvent) return;
 
     await installEvent.prompt();
-
-    const choice =
-      await installEvent.userChoice;
+    const choice = await installEvent.userChoice;
 
     if (choice.outcome === "accepted") {
       setVisible(false);
@@ -100,21 +69,15 @@ export default function PwaInstallPrompt() {
   }
 
   function dismiss() {
-    window.sessionStorage.setItem(
-      "onzeup-install-dismissed",
-      "1"
-    );
-
+    window.sessionStorage.setItem("onzeup-install-dismissed", "1");
     setVisible(false);
   }
 
-  if (!visible || !installEvent) {
-    return null;
-  }
+  if (!visible || !installEvent) return null;
 
   return (
     <aside
-      className={styles.prompt}
+      className={`${styles.prompt} no-print`}
       aria-label="Instalar aplicativo ONZEUP"
     >
       <img
@@ -126,8 +89,7 @@ export default function PwaInstallPrompt() {
       <div className={styles.copy}>
         <strong>Instale o ONZEUP</strong>
         <span>
-          Acesse Club, Player e Coach direto
-          da tela inicial.
+          Acesse Club, Player e Coach direto da tela inicial.
         </span>
       </div>
 

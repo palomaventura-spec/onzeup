@@ -8,34 +8,93 @@ export function addGraceDays(date: Date, days = PAYMENT_GRACE_DAYS) {
   return result;
 }
 
-export function isPastGrace(periodEnd: Date | null | undefined, now = new Date()) {
+export function isPastGrace(
+  periodEnd: Date | null | undefined,
+  now = new Date()
+) {
   if (!periodEnd) return false;
   return now > addGraceDays(periodEnd);
 }
 
-export function hasValidComplimentaryAccess(input: {
-  isComplimentary?: boolean | null;
-  complimentaryUntil?: Date | null;
-}, now = new Date()) {
+export function hasValidComplimentaryAccess(
+  input: {
+    isComplimentary?: boolean | null;
+    complimentaryUntil?: Date | null;
+  },
+  now = new Date()
+) {
   if (!input.isComplimentary) return false;
   return !input.complimentaryUntil || input.complimentaryUntil >= now;
 }
 
-export function hasEffectivePlayerPremium(input: {
-  plan?: string | null;
-  planStatus?: string | null;
-  premiumUntil?: Date | null;
-  isComplimentary?: boolean | null;
-  complimentaryUntil?: Date | null;
-}, now = new Date()) {
+export function hasEffectivePlayerPremium(
+  input: {
+    plan?: string | null;
+    planStatus?: string | null;
+    premiumUntil?: Date | null;
+    isComplimentary?: boolean | null;
+    complimentaryUntil?: Date | null;
+  },
+  now = new Date()
+) {
   if (hasValidComplimentaryAccess(input, now)) return true;
-  if (String(input.planStatus || "").toUpperCase() === "CANCELLED") return false;
-  if (String(input.plan || "").toUpperCase() !== "PREMIUM") return false;
-  if (!input.premiumUntil) return String(input.planStatus || "ACTIVE").toUpperCase() === "ACTIVE";
+  if (String(input.planStatus || "").toUpperCase() === "CANCELLED") {
+    return false;
+  }
+  if (String(input.plan || "").toUpperCase() !== "PREMIUM") {
+    return false;
+  }
+  if (!input.premiumUntil) {
+    return String(input.planStatus || "ACTIVE").toUpperCase() === "ACTIVE";
+  }
   return !isPastGrace(input.premiumUntil, now);
 }
 
-export async function reconcileExpiredPlayerPremiums(filter?: { guardianId?: string; slug?: string }) {
+export function hasEffectiveClubElite(
+  input: {
+    plan?: string | null;
+    status?: string | null;
+    trialEnds?: Date | null;
+    currentPeriodEnd?: Date | null;
+    accessStatus?: string | null;
+    complimentaryUntil?: Date | null;
+  },
+  now = new Date()
+) {
+  const plan = String(input.plan || "").toUpperCase();
+  const status = String(input.status || "").toUpperCase();
+  const accessStatus = String(input.accessStatus || "ACTIVE").toUpperCase();
+
+  if (plan !== "BUSINESS") return false;
+  if (["SUSPENDED", "CANCELLED"].includes(accessStatus)) return false;
+
+  if (accessStatus === "COMPLIMENTARY") {
+    return !input.complimentaryUntil || input.complimentaryUntil >= now;
+  }
+
+  if (status === "CANCELLED") return false;
+
+  if (status === "TRIAL") {
+    return !input.trialEnds || input.trialEnds >= now;
+  }
+
+  if (status === "ACTIVE") {
+    return !input.currentPeriodEnd || !isPastGrace(input.currentPeriodEnd, now);
+  }
+
+  if (status === "PAST_DUE") {
+    return Boolean(
+      input.currentPeriodEnd && !isPastGrace(input.currentPeriodEnd, now)
+    );
+  }
+
+  return false;
+}
+
+export async function reconcileExpiredPlayerPremiums(filter?: {
+  guardianId?: string;
+  slug?: string;
+}) {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - PAYMENT_GRACE_DAYS);
 

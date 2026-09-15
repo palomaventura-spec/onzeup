@@ -93,12 +93,30 @@ export default async function EditAthletePage({
           </p>
         </div>
 
-        <Link
-          className="btn btn-secondary"
-          href="/atletas"
-        >
-          Voltar
-        </Link>
+        <div className="actions">
+          {canEdit ? (
+            <Link
+              className="btn btn-secondary"
+              href={`/atletas/${athlete.id}/dados`}
+            >
+              Ficha e documentos
+            </Link>
+          ) : null}
+
+          <Link
+            className="btn"
+            href={`/atletas/${athlete.id}/performance`}
+          >
+            Performance
+          </Link>
+
+          <Link
+            className="btn btn-secondary"
+            href="/atletas"
+          >
+            Voltar
+          </Link>
+        </div>
       </div>
 
       {canEdit ? (
