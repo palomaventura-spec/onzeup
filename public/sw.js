@@ -1,4 +1,4 @@
-const CACHE_NAME = "onzeup-static-v1";
+const CACHE_NAME = "onzeup-static-v2";
 
 const STATIC_ASSETS = [
   "/pwa-icon-192.png",
@@ -24,14 +24,8 @@ self.addEventListener("activate", (event) => {
       .then((cacheNames) =>
         Promise.all(
           cacheNames
-            .filter(
-              (cacheName) =>
-                cacheName.startsWith("onzeup-static-") &&
-                cacheName !== CACHE_NAME
-            )
-            .map((cacheName) =>
-              caches.delete(cacheName)
-            )
+            .filter((cacheName) => cacheName.startsWith("onzeup-static-") && cacheName !== CACHE_NAME)
+            .map((cacheName) => caches.delete(cacheName))
         )
       )
       .then(() => self.clients.claim())
@@ -40,24 +34,12 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-
-  if (request.method !== "GET") {
-    return;
-  }
+  if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
 
-  if (url.origin !== self.location.origin) {
-    return;
-  }
-
-  /*
-   * Nunca armazenamos:
-   * - páginas autenticadas;
-   * - respostas das APIs;
-   * - uploads de atletas;
-   * - dados de clubes, responsáveis ou treinadores.
-   */
+  /* Páginas, APIs, uploads e dados privados nunca entram no cache. */
   if (
     request.mode === "navigate" ||
     url.pathname.startsWith("/api/") ||
@@ -66,37 +48,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isNextStaticAsset =
-    url.pathname.startsWith("/_next/static/");
-
-  const isApprovedPublicAsset =
-    STATIC_ASSETS.includes(url.pathname);
-
-  if (!isNextStaticAsset && !isApprovedPublicAsset) {
-    return;
-  }
+  const approved = url.pathname.startsWith("/_next/static/") || STATIC_ASSETS.includes(url.pathname);
+  if (!approved) return;
 
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
-      const cachedResponse =
-        await cache.match(request);
-
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+      const cachedResponse = await cache.match(request);
+      if (cachedResponse) return cachedResponse;
 
       const networkResponse = await fetch(request);
-
-      if (
-        networkResponse.ok &&
-        networkResponse.type === "basic"
-      ) {
-        cache.put(
-          request,
-          networkResponse.clone()
-        );
+      if (networkResponse.ok && networkResponse.type === "basic") {
+        cache.put(request, networkResponse.clone());
       }
-
       return networkResponse;
     })
   );

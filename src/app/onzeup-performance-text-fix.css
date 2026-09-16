@@ -1,0 +1,17 @@
+/* Correção de contraste do banner ONZEUP Performance. */
+.club-app-light .performance-hero .page-eyebrow {
+  color: #b8ef47 !important;
+  opacity: 1 !important;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 35%);
+}
+
+.club-app-light .performance-hero h1 {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: 0 2px 14px rgb(0 0 0 / 28%);
+}
+
+.club-app-light .performance-hero p {
+  color: #e2edf5 !important;
+  opacity: 1 !important;
+}

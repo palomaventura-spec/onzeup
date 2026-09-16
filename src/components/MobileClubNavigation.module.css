@@ -1,337 +1,167 @@
-.bottomNav,
+.bottomNav {
+  display: none;
+}
+
 .backdrop {
   display: none;
 }
 
 @media (max-width: 900px) {
-  :global(.club-app-light):has(.bottomNav) > :global(.main) {
-    padding-bottom: calc(
-      96px + env(safe-area-inset-bottom)
-    ) !important;
-  }
-
   .bottomNav {
     position: fixed;
+    z-index: 80;
     right: 0;
     bottom: 0;
     left: 0;
-    z-index: 180;
-
-    display: flex;
-    align-items: stretch;
-    justify-content: space-around;
-
-    min-height: 68px;
-    padding:
-      7px 8px
-      calc(
-        7px + env(safe-area-inset-bottom)
-      );
-
-    border-top: 1px solid
-      rgba(126, 145, 157, 0.24);
-
-    background:
-      rgba(9, 14, 20, 0.96);
-
-    box-shadow:
-      0 -12px 34px
-      rgba(0, 0, 0, 0.28);
-
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: calc(64px + env(safe-area-inset-bottom));
+    padding: 6px max(8px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px, env(safe-area-inset-left));
+    border-top: 1px solid #e2e8f0;
+    background: rgb(255 255 255 / 96%);
+    box-shadow: 0 -10px 30px rgb(15 23 42 / 8%);
+    backdrop-filter: blur(16px);
   }
 
-  .bottomNav > a,
-  .bottomNav > button {
+  .bottomNav a,
+  .bottomNav button {
     display: flex;
-    flex: 1 1 0;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-
     min-width: 0;
     min-height: 52px;
-    margin: 0;
-    padding: 4px 3px;
-
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
     border: 0;
     border-radius: 12px;
-
+    color: #64748b;
     background: transparent;
-    color: #82909b;
-
-    font-family: inherit;
-    font-size: 10px;
-    font-weight: 800;
-    line-height: 1;
-
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
     cursor: pointer;
-    transition:
-      color 160ms ease,
-      background 160ms ease,
-      transform 160ms ease;
   }
 
-  .bottomNav > a:active,
-  .bottomNav > button:active {
-    transform: scale(0.96);
+  .bottomNav a svg,
+  .bottomNav button svg {
+    width: 21px;
+    height: 21px;
   }
 
-  .bottomNav > a svg,
-  .bottomNav > button svg {
-    display: block;
-    flex: 0 0 auto;
-  }
-
-  .bottomNav > a span,
-  .bottomNav > button span {
-    overflow: hidden;
-    max-width: 100%;
-
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .bottomNav > .active {
-    background:
-      rgba(157, 219, 22, 0.1);
-
-    color: #9ddb16;
+  .bottomNav .active {
+    color: #0b141d;
+    background: #effbd7;
   }
 
   .moreIcon {
-    display: grid !important;
-    place-items: center;
-
+    display: grid;
     width: 21px;
     height: 21px;
-
-    overflow: visible !important;
-
-    color: currentColor;
-    font-size: 15px;
-    font-weight: 900;
+    place-items: center;
     letter-spacing: 1px;
-    line-height: 1;
   }
 
   .backdrop {
     position: fixed;
+    z-index: 100;
     inset: 0;
-    z-index: 190;
-
     display: flex;
     align-items: flex-end;
-
-    padding: 20px 12px 0;
-
-    background:
-      rgba(2, 5, 8, 0.7);
-
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    padding-top: env(safe-area-inset-top);
+    background: rgb(2 8 16 / 58%);
+    backdrop-filter: blur(4px);
   }
 
   .sheet {
-    width: min(100%, 620px);
-    max-height: min(78vh, 680px);
-    margin: 0 auto;
-
-    overflow-y: auto;
-    overscroll-behavior: contain;
-
-    padding:
-      20px 18px
-      calc(
-        22px + env(safe-area-inset-bottom)
-      );
-
-    border: 1px solid #2a3540;
-    border-bottom: 0;
+    width: 100%;
+    max-height: min(82vh, 720px);
+    overflow: auto;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
     border-radius: 24px 24px 0 0;
-
-    background:
-      linear-gradient(
-        160deg,
-        #111a22,
-        #090e14
-      );
-
-    box-shadow:
-      0 -24px 70px
-      rgba(0, 0, 0, 0.48);
-
-    animation:
-      mobileClubSheetIn
-      180ms ease-out;
+    background: white;
+    box-shadow: 0 -24px 60px rgb(0 0 0 / 22%);
   }
 
   .head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 18px;
-
+    gap: 16px;
     margin-bottom: 18px;
   }
 
-  .head > div {
-    display: grid;
-    gap: 4px;
-  }
-
   .head span {
-    color: #9ddb16;
-
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 0.15em;
+    color: #78ad00;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .14em;
   }
 
   .head h2 {
-    margin: 0;
-
-    color: #f7f9fb;
-    font-size: 25px;
-    letter-spacing: -0.03em;
+    margin: 3px 0 0;
+    color: #0b141d;
+    font-size: 23px;
   }
 
-  .head > button {
-    display: grid;
-    place-items: center;
-
-    width: 38px;
-    height: 38px;
-    margin: 0;
-    padding: 0;
-
-    border: 1px solid #34414d;
-    border-radius: 50%;
-
-    background: #18222b;
-    color: #f7f9fb;
-
-    font-size: 25px;
-    font-weight: 400;
-    line-height: 1;
-
-    cursor: pointer;
+  .head button {
+    width: 44px;
+    height: 44px;
+    border: 1px solid #dbe3ea;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #0b141d;
+    font-size: 26px;
   }
 
   .grid {
     display: grid;
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
-    gap: 9px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
 
-  .grid > a {
+  .grid a {
     display: flex;
-    min-width: 0;
-    min-height: 88px;
+    min-height: 84px;
+    align-items: center;
+    justify-content: center;
     flex-direction: column;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-
-    padding: 14px;
-
-    border: 1px solid #26323d;
-    border-radius: 15px;
-
-    background: #0d151c;
-    color: #b5c0c9;
-
-    transition:
-      border-color 160ms ease,
-      background 160ms ease,
-      color 160ms ease;
+    gap: 8px;
+    padding: 10px 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    color: #334155;
+    background: #f8fafc;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
   }
 
-  .grid > a span {
-    overflow: hidden;
-    max-width: 100%;
-
-    font-size: 11px;
-    font-weight: 800;
-    line-height: 1.25;
-    text-overflow: ellipsis;
-  }
-
-  .grid > a.active {
-    border-color:
-      rgba(157, 219, 22, 0.52);
-
-    background:
-      rgba(157, 219, 22, 0.1);
-
-    color: #9ddb16;
+  .grid a.active {
+    border-color: #9ddd18;
+    color: #0b141d;
+    background: #effbd7;
   }
 
   .logout {
     margin-top: 16px;
-    padding-top: 16px;
-
-    border-top: 1px solid #27333d;
   }
 
   .logout button {
     width: 100%;
-    margin: 0;
-
-    border: 1px solid #3a454f;
-
-    background: #18222b;
-    color: #f7f9fb;
-  }
-
-  :global(.club-app-light):has(.bottomNav)
-    :global(.qtr-board) {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    touch-action: pan-x pan-y;
-    scrollbar-width: thin;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  :global(.club-app-light):has(.bottomNav)
-    :global(.qtr-board > .qtr-grid) {
-    width: 1120px;
-    min-width: 1120px;
+    min-height: 46px;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    color: #b91c1c;
+    background: #fff7f7;
+    font: inherit;
+    font-weight: 800;
   }
 }
 
-@media (max-width: 420px) {
-  .bottomNav {
-    padding-right: 4px;
-    padding-left: 4px;
-  }
-
-  .bottomNav > a,
-  .bottomNav > button {
-    font-size: 9px;
-  }
-
+@media (max-width: 390px) {
   .grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-}
-
-@keyframes mobileClubSheetIn {
-  from {
-    opacity: 0;
-    transform: translateY(28px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -1,0 +1,53 @@
+/* Ajuste de largura, legibilidade e estado ativo da navegação Club. */
+@media (min-width: 1181px) {
+  .club-app-light.shell {
+    grid-template-columns: 248px minmax(0, 1fr) !important;
+  }
+
+  .club-app-light .club-sidebar-final {
+    width: 248px !important;
+    min-width: 248px !important;
+    max-width: 248px !important;
+    flex: 0 0 248px !important;
+  }
+
+  .club-app-light .club-menu-group nav a {
+    min-height: 44px !important;
+    gap: 12px !important;
+    padding: 10px 12px !important;
+    color: #bdc9d7 !important;
+    font-size: 14px !important;
+    font-weight: 650 !important;
+  }
+
+  .club-app-light .club-menu-group nav a svg {
+    width: 19px !important;
+    height: 19px !important;
+    flex: 0 0 19px !important;
+    color: #8ea0b4 !important;
+  }
+
+  .club-app-light .club-menu-group nav a span {
+    display: block !important;
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .club-app-light .club-menu-group nav a.is-active {
+    color: #ffffff !important;
+    background: linear-gradient(90deg, rgb(157 221 24 / 28%), rgb(157 221 24 / 9%)) !important;
+  }
+
+  .club-app-light .club-menu-group nav a.is-active svg {
+    color: #9ddd18 !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  .club-app-light.shell { grid-template-columns: 88px minmax(0, 1fr) !important; }
+  .club-app-light .club-sidebar-final { width: 88px !important; min-width: 88px !important; max-width: 88px !important; flex-basis: 88px !important; }
+  .club-app-light .club-menu-group nav a { justify-content: center !important; }
+  .club-app-light .club-menu-group nav a span { display: none !important; }
+}

@@ -1,0 +1,401 @@
+/* Etapa 2 — composição visual dos módulos operacionais do Club. */
+.club-app-light .page-head,
+.club-app-light .od-header,
+.club-app-light .performance-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 0 24px;
+  padding: 0 0 22px;
+  border-bottom: 1px solid var(--club-border);
+}
+
+.club-app-light :where(.page-head h1, .od-header h1, .performance-hero h1) {
+  margin: 4px 0 0;
+  color: var(--club-ink);
+  font-size: clamp(28px, 2.4vw, 33px);
+  line-height: 1.12;
+  letter-spacing: -.04em;
+}
+
+.club-app-light :where(.page-head .muted, .od-header .od-date, .performance-hero p) {
+  margin: 7px 0 0;
+  color: var(--club-muted);
+  font-size: 14px;
+}
+
+.club-app-light :where(.page-head .actions, .od-quick-actions) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+/* Dashboard */
+.club-app-light .od-dashboard { max-width: 1680px; margin: 0 auto; }
+
+.club-app-light .od-search {
+  display: flex;
+  width: min(100%, 340px);
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid var(--club-border);
+  border-radius: 12px;
+  background: white;
+}
+
+.club-app-light .od-search span { color: var(--club-muted); font-size: 20px; }
+.club-app-light .od-search input { min-height: 40px; padding: 0; border: 0; box-shadow: none; }
+
+.club-app-light .od-quick-actions { justify-content: flex-start; margin: -10px 0 18px; }
+.club-app-light .od-quick-actions a {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border: 1px solid var(--club-border);
+  border-radius: 11px;
+  color: var(--club-ink);
+  background: white;
+  font-weight: 750;
+  text-decoration: none;
+}
+.club-app-light .od-quick-actions .od-action-primary { border-color: var(--club-lime); background: var(--club-lime); }
+
+.club-app-light .od-kpis,
+.club-app-light .athlete-kpis,
+.club-app-light .agenda-kpis,
+.club-app-light .performance-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.club-app-light .od-kpis > a,
+.club-app-light :where(.athlete-kpis, .agenda-kpis, .performance-kpis) > article {
+  position: relative;
+  display: grid;
+  min-height: 118px;
+  overflow: hidden;
+  align-content: center;
+  padding: 18px;
+  border: 1px solid var(--club-border);
+  border-radius: var(--club-radius);
+  color: var(--club-ink);
+  background: white;
+  box-shadow: var(--club-shadow);
+  text-decoration: none;
+}
+
+.club-app-light .od-kpis > a::after,
+.club-app-light :where(.athlete-kpis, .agenda-kpis, .performance-kpis) > article::after {
+  position: absolute;
+  right: -16px;
+  bottom: -30px;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--club-lime-soft);
+  content: "";
+}
+
+.club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis) small,
+.club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis) span {
+  position: relative;
+  z-index: 1;
+  color: var(--club-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis) strong { position: relative; z-index: 1; margin-top: 3px; font-size: 29px; line-height: 1; }
+.club-app-light .od-kpis em { position: relative; z-index: 1; margin-top: 9px; color: var(--club-lime-dark); font-size: 12px; font-style: normal; font-weight: 800; }
+.club-app-light .od-kpi-icon { display: none; }
+
+.club-app-light .od-main-grid { display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(320px, .82fr); gap: 16px; }
+.club-app-light .od-bottom-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .85fr); gap: 16px; margin-top: 16px; }
+.club-app-light .od-panel { min-width: 0; padding: 20px; border: 1px solid var(--club-border); border-radius: var(--club-radius-lg); background: white; box-shadow: var(--club-shadow); }
+.club-app-light .od-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding-bottom: 16px; border-bottom: 1px solid #e8edf2; }
+.club-app-light .od-panel-head h2 { margin: 3px 0 0; color: var(--club-ink); font-size: 21px; letter-spacing: -.025em; }
+.club-app-light .od-panel-head > a { color: var(--club-lime-dark); font-size: 13px; font-weight: 800; text-decoration: none; }
+
+.club-app-light .od-timeline a { display: grid; grid-template-columns: 64px 10px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; border-bottom: 1px solid #edf1f4; color: inherit; text-decoration: none; }
+.club-app-light .od-timeline a:last-child { border-bottom: 0; }
+.club-app-light .od-timeline time { color: var(--club-ink); font-size: 17px; font-weight: 850; }
+.club-app-light .od-timeline i { width: 9px; height: 9px; border-radius: 50%; background: #2aaa55; }
+.club-app-light .od-timeline strong, .club-app-light .od-timeline span { display: block; }
+.club-app-light .od-timeline span { color: var(--club-muted); font-size: 12px; }
+.club-app-light .od-timeline b { padding: 5px 8px; border-radius: 999px; color: #356400; background: var(--club-lime-soft); font-size: 11px; }
+
+.club-app-light .od-alerts > a,
+.club-app-light .od-communication > a { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 11px; min-height: 64px; border-bottom: 1px solid #edf1f4; color: var(--club-ink); text-decoration: none; }
+.club-app-light .od-alerts > a:last-child,
+.club-app-light .od-communication > a:last-child { border-bottom: 0; }
+.club-app-light .od-alerts i, .club-app-light .od-communication i { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 10px; color: #a71919; background: #fee2e2; font-style: normal; font-weight: 900; }
+.club-app-light .od-alerts i.amber, .club-app-light .od-communication i.amber { color: #805a00; background: #fff1c5; }
+.club-app-light .od-alerts i.blue, .club-app-light .od-communication i.blue { color: #1d4ed8; background: #dbeafe; }
+.club-app-light .od-communication i.green { background: var(--club-lime-soft); }
+.club-app-light .od-alerts strong, .club-app-light .od-alerts span, .club-app-light .od-communication strong, .club-app-light .od-communication span { display: block; }
+.club-app-light .od-alerts strong, .club-app-light .od-communication strong { font-size: 13px; }
+.club-app-light .od-alerts span, .club-app-light .od-communication span { color: var(--club-muted); font-size: 12px; }
+.club-app-light .od-alerts > a > b { color: var(--club-muted); font-size: 12px; }
+
+.club-app-light .od-performance { grid-column: 1 / -1; }
+.club-app-light .od-performance-body { display: flex; align-items: center; justify-content: center; gap: 28px; padding: 12px 0; }
+.club-app-light .od-performance svg { width: 178px; height: 178px; overflow: visible; }
+.club-app-light .od-performance svg line, .club-app-light .od-radar-grid { fill: none; stroke: #dbe3ea; stroke-width: 1; }
+.club-app-light .od-radar-value { fill: rgb(157 221 24 / 25%); stroke: var(--club-lime-dark); stroke-width: 2.5; }
+.club-app-light .od-performance-score { display: grid; gap: 2px; }
+.club-app-light .od-performance-score small { color: var(--club-muted); font-size: 11px; font-weight: 850; }
+.club-app-light .od-performance-score strong { color: var(--club-ink); font-size: 40px; line-height: 1; }
+.club-app-light .od-performance-score span { color: var(--club-muted); font-size: 12px; }
+.club-app-light .od-area-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.club-app-light .od-area-list span { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 7px; align-items: center; color: var(--club-text); font-size: 12px; }
+.club-app-light .od-area-list i { width: 7px; height: 7px; border-radius: 50%; background: var(--club-lime); }
+.club-app-light .od-area-list b { font-size: 12px; }
+
+.club-app-light .od-game-row { display: grid; grid-template-columns: 82px minmax(0, 1fr) auto auto; align-items: center; gap: 14px; min-height: 72px; border-bottom: 1px solid #edf1f4; color: var(--club-ink); text-decoration: none; }
+.club-app-light .od-game-row:last-child { border-bottom: 0; }
+.club-app-light .od-game-row time b, .club-app-light .od-game-row time span, .club-app-light .od-game-row div strong, .club-app-light .od-game-row div span { display: block; }
+.club-app-light .od-game-row time b { font-size: 13px; }
+.club-app-light .od-game-row time span, .club-app-light .od-game-row div span { color: var(--club-muted); font-size: 12px; }
+.club-app-light .od-game-row em { color: var(--club-muted); font-size: 12px; font-style: normal; }
+.club-app-light .od-game-row > b { padding: 5px 8px; border-radius: 999px; color: #6b4b00; background: #fff1c5; font-size: 10px; white-space: nowrap; }
+.club-app-light .od-game-row > b.done { color: #356400; background: var(--club-lime-soft); }
+.club-app-light .od-empty { display: grid; min-height: 164px; place-items: center; align-content: center; gap: 5px; color: var(--club-muted); text-align: center; }
+.club-app-light .od-empty strong { color: var(--club-ink); }
+.club-app-light .od-empty span, .club-app-light .od-empty a { font-size: 13px; }
+.club-app-light .od-empty a { color: var(--club-lime-dark); font-weight: 800; text-decoration: none; }
+.club-app-light .od-footer { display: flex; gap: 10px; margin: 18px 0 4px; color: var(--club-muted); font-size: 12px; }
+.club-app-light .od-footer span { color: var(--club-ink); font-weight: 900; letter-spacing: .08em; }
+
+/* Atletas */
+.club-app-light .athlete-create-drawer { margin-bottom: 16px; overflow: hidden; border: 1px solid var(--club-border); border-radius: var(--club-radius-lg); background: white; box-shadow: var(--club-shadow); }
+.club-app-light .athlete-create-drawer summary { display: flex; min-height: 88px; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px; cursor: pointer; list-style: none; }
+.club-app-light .athlete-create-drawer summary::-webkit-details-marker { display: none; }
+.club-app-light .athlete-create-drawer h2 { margin: 3px 0; color: var(--club-ink); font-size: 19px; }
+.club-app-light .athlete-create-drawer p { margin: 0; color: var(--club-muted); font-size: 13px; }
+.club-app-light .athlete-create-drawer summary .btn { display: inline-flex; min-height: 42px; align-items: center; padding: 8px 14px; border-radius: 11px; color: #152000; background: var(--club-lime); font-weight: 800; }
+.club-app-light .athlete-create-form { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .9fr); gap: 20px; padding: 0 20px 20px; border-top: 1px solid #e8edf2; }
+.club-app-light .athlete-create-form fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin: 0; padding: 18px 0 0; border: 0; }
+.club-app-light .athlete-create-form legend { grid-column: 1 / -1; width: 100%; margin-bottom: 2px; color: var(--club-ink); font-size: 15px; font-weight: 850; }
+.club-app-light .athlete-create-form label, .club-app-light .athlete-filter-bar label { display: grid; gap: 6px; color: var(--club-text); font-size: 12px; font-weight: 750; }
+.club-app-light .athlete-create-photo { grid-column: 1 / -1; }
+.club-app-light .athlete-create-form > button { grid-column: 1 / -1; min-height: 44px; border: 0; border-radius: 11px; color: #152000; background: var(--club-lime); font: inherit; font-weight: 850; cursor: pointer; }
+
+.club-app-light .athlete-filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; padding: 14px; border: 1px solid var(--club-border); border-radius: var(--club-radius); background: white; box-shadow: var(--club-shadow); }
+.club-app-light .athlete-filter-bar form { display: grid; width: 100%; grid-template-columns: minmax(220px, 1.5fr) repeat(3, minmax(130px, .7fr)) auto auto; align-items: end; gap: 10px; }
+.club-app-light .athlete-filter-bar button { min-height: 44px; border: 1px solid var(--club-border); border-radius: 11px; color: var(--club-ink); background: white; font: inherit; font-weight: 800; cursor: pointer; }
+.club-app-light .athlete-filter-bar form > a { display: inline-flex; min-height: 44px; align-items: center; color: var(--club-muted); font-weight: 800; text-decoration: none; }
+.club-app-light .athlete-filter-bar > span { min-width: max-content; color: var(--club-muted); font-size: 12px; font-weight: 750; }
+
+.club-app-light .athlete-premium-category { margin-bottom: 20px; padding: 20px; border: 1px solid var(--club-border); border-radius: var(--club-radius-lg); background: white; box-shadow: var(--club-shadow); }
+.club-app-light .athlete-premium-category-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 17px; padding-bottom: 15px; border-bottom: 1px solid #e8edf2; }
+.club-app-light .athlete-premium-category-head h2 { margin: 3px 0 0; color: var(--club-ink); font-size: 21px; }
+.club-app-light .athlete-premium-category-head > span { padding: 5px 9px; border-radius: 999px; color: var(--club-muted); background: var(--club-surface-muted); font-size: 12px; font-weight: 800; }
+.club-app-light .athlete-premium-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.club-app-light .athlete-profile-card { overflow: hidden; border: 1px solid var(--club-border); border-radius: var(--club-radius); background: white; }
+.club-app-light .athlete-profile-card.inactive { opacity: .68; }
+.club-app-light .athlete-profile-visual { position: relative; display: grid; height: 138px; place-items: center; overflow: hidden; color: var(--club-lime); background: linear-gradient(135deg, #152c3e, #07111c); font-size: 29px; font-weight: 900; }
+.club-app-light .athlete-profile-visual img { width: 100%; height: 100%; object-fit: cover; }
+.club-app-light .athlete-profile-visual > b { position: absolute; top: 12px; left: 12px; display: grid; min-width: 36px; height: 36px; place-items: center; border-radius: 10px; color: var(--club-lime); background: rgb(7 17 28 / 90%); font-size: 15px; }
+.club-app-light .athlete-profile-visual > i { position: absolute; top: 12px; right: 12px; padding: 4px 7px; border-radius: 999px; color: #a5b4c2; background: rgb(7 17 28 / 82%); font-size: 10px; font-style: normal; font-weight: 800; }
+.club-app-light .athlete-profile-visual > i.active { color: #d7ff9b; }
+.club-app-light .athlete-profile-body { padding: 15px; }
+.club-app-light .athlete-profile-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.club-app-light .athlete-profile-title small { color: var(--club-lime-dark); font-size: 10px; font-weight: 900; letter-spacing: .08em; }
+.club-app-light .athlete-profile-title h3 { margin: 2px 0 0; color: var(--club-ink); font-size: 19px; }
+.club-app-light .athlete-profile-title p { margin: 1px 0 0; color: var(--club-muted); font-size: 12px; }
+.club-app-light .athlete-profile-title > span { padding: 4px 6px; border-radius: 7px; color: #356400; background: var(--club-lime-soft); font-size: 9px; font-weight: 900; white-space: nowrap; }
+.club-app-light .athlete-profile-data { display: grid; grid-template-columns: 1.15fr .85fr .85fr; gap: 8px; margin: 15px 0; padding: 12px 0; border-block: 1px solid #e8edf2; }
+.club-app-light .athlete-profile-data span { display: grid; min-width: 0; gap: 2px; }
+.club-app-light .athlete-profile-data small { color: var(--club-muted); font-size: 9px; font-weight: 850; letter-spacing: .08em; }
+.club-app-light .athlete-profile-data strong { overflow: hidden; color: var(--club-ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.club-app-light .athlete-profile-alerts { display: flex; min-height: 24px; flex-wrap: wrap; gap: 5px; }
+.club-app-light .athlete-profile-alerts span { padding: 3px 6px; border-radius: 6px; color: #895900; background: #fff1c5; font-size: 10px; font-weight: 750; }
+.club-app-light .athlete-profile-ok { min-height: 24px; color: #4d7f00; font-size: 11px; font-weight: 700; }
+.club-app-light .athlete-profile-actions { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 7px; margin-top: 14px; }
+.club-app-light .athlete-profile-actions a { display: inline-flex; min-height: 37px; align-items: center; justify-content: center; border: 1px solid var(--club-border); border-radius: 9px; color: var(--club-text); font-size: 11px; font-weight: 800; text-decoration: none; }
+.club-app-light .athlete-profile-actions .btn { border-color: var(--club-lime); color: #152000; background: var(--club-lime); }
+.club-app-light .athlete-manage { margin-top: 12px; border-top: 1px solid #e8edf2; }
+.club-app-light .athlete-manage summary { padding: 10px 0 0; color: var(--club-muted); font-size: 11px; font-weight: 800; cursor: pointer; }
+.club-app-light .athlete-manage > div { display: flex; gap: 7px; padding-top: 8px; }
+.club-app-light .athlete-manage button { min-height: 34px; padding: 5px 9px; border-radius: 8px; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
+
+/* Performance */
+.club-app-light .performance-hub { max-width: 1680px; margin: 0 auto; }
+.club-app-light .performance-hero { position: relative; min-height: 164px; align-items: center; overflow: hidden; padding: 26px; border: 0; border-radius: var(--club-radius-lg); color: white; background: linear-gradient(110deg, #081622 0%, #112b3b 62%, #28451b 100%); }
+.club-app-light .performance-hero::after { position: absolute; right: -55px; bottom: -90px; width: 300px; height: 300px; border: 1px solid rgb(157 221 24 / 26%); border-radius: 50%; content: ""; }
+.club-app-light .performance-hero h1 { color: white; }
+.club-app-light .performance-hero p { max-width: 720px; color: #d3deea; }
+.club-app-light .performance-hero-score { position: relative; z-index: 1; min-width: 160px; padding-left: 23px; border-left: 1px solid rgb(255 255 255 / 20%); }
+.club-app-light .performance-hero-score small { color: #c6d2dd; font-size: 11px; font-weight: 850; letter-spacing: .08em; }
+.club-app-light .performance-hero-score strong { display: block; color: var(--club-lime); font-size: 45px; line-height: 1; }
+.club-app-light .performance-hero-score span { color: #d3deea; font-size: 12px; }
+.club-app-light .performance-overview-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(330px, .85fr); gap: 16px; margin: 16px 0; }
+.club-app-light .performance-panel, .club-app-light .performance-filter-panel, .club-app-light .performance-roster { padding: 20px; border: 1px solid var(--club-border); border-radius: var(--club-radius-lg); background: white; box-shadow: var(--club-shadow); }
+.club-app-light .performance-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.club-app-light .performance-title h2, .club-app-light .performance-attention h2 { margin: 3px 0 0; color: var(--club-ink); font-size: 21px; }
+.club-app-light .performance-title .badge { padding: 5px 9px; border-radius: 999px; color: var(--club-muted); background: var(--club-surface-muted); font-size: 11px; font-weight: 800; }
+.club-app-light .performance-area-list { display: grid; gap: 14px; margin-top: 20px; }
+.club-app-light .performance-area-list > div > div:first-child { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.club-app-light .performance-area-list strong { color: var(--club-ink); }
+.club-app-light .performance-area-list span { color: var(--club-ink); font-weight: 850; }
+.club-app-light .performance-track { height: 8px; overflow: hidden; border-radius: 999px; background: #e8edf2; }
+.club-app-light .performance-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #76b700, var(--club-lime)); }
+.club-app-light .performance-attention > a { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 62px; border-bottom: 1px solid #e8edf2; color: var(--club-ink); text-decoration: none; }
+.club-app-light .performance-attention > a:first-of-type { margin-top: 12px; }
+.club-app-light .performance-attention > a:last-child { border-bottom: 0; }
+.club-app-light .performance-attention > a > span { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 10px; color: #526d00; background: var(--club-lime-soft); font-weight: 900; }
+.club-app-light .performance-attention strong, .club-app-light .performance-attention small { display: block; }
+.club-app-light .performance-attention strong { font-size: 13px; }
+.club-app-light .performance-attention small { color: var(--club-muted); font-size: 11px; }
+.club-app-light .performance-attention b { color: var(--club-lime-dark); }
+.club-app-light .performance-filter-panel { margin-bottom: 16px; padding: 14px; }
+.club-app-light .performance-filter-panel form { display: grid; grid-template-columns: minmax(220px, 1.6fr) minmax(180px, .55fr) auto auto; align-items: end; gap: 10px; }
+.club-app-light .performance-filter-panel label { display: grid; gap: 6px; color: var(--club-text); font-size: 12px; font-weight: 750; }
+.club-app-light .performance-filter-panel button { min-height: 44px; border: 0; border-radius: 11px; color: #152000; background: var(--club-lime); font: inherit; font-weight: 850; cursor: pointer; }
+.club-app-light .performance-filter-panel a { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 8px 14px; border: 1px solid var(--club-border); border-radius: 11px; color: var(--club-ink); background: white; font-weight: 800; text-decoration: none; }
+.club-app-light .performance-roster { padding: 20px; }
+.club-app-light .performance-athlete-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 17px; }
+.club-app-light .performance-athlete-card { overflow: hidden; border: 1px solid var(--club-border); border-radius: var(--club-radius); background: white; }
+.club-app-light .performance-athlete-cover { position: relative; display: grid; height: 102px; align-content: start; padding: 14px; color: var(--club-lime); background: linear-gradient(135deg, #102d40, #08131e); }
+.club-app-light .performance-athlete-cover > span { font-size: 10px; font-weight: 900; letter-spacing: .11em; text-transform: uppercase; }
+.club-app-light .performance-athlete-cover b, .club-app-light .performance-athlete-cover img { position: absolute; bottom: -26px; left: 16px; width: 58px; height: 58px; border: 3px solid white; border-radius: 15px; color: var(--club-lime); background: #0a1722; font-size: 19px; object-fit: cover; }
+.club-app-light .performance-athlete-cover b { display: grid; place-items: center; }
+.club-app-light .performance-athlete-cover i { position: absolute; right: 14px; bottom: 14px; color: #d7e3ed; font-size: 11px; font-style: normal; }
+.club-app-light .performance-athlete-content { padding: 37px 16px 16px; }
+.club-app-light .performance-athlete-content h3 { margin: 0; color: var(--club-ink); font-size: 19px; }
+.club-app-light .performance-athlete-content p { margin: 2px 0 14px; color: var(--club-muted); font-size: 12px; }
+.club-app-light .performance-athlete-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 12px 0; border-block: 1px solid #e8edf2; }
+.club-app-light .performance-athlete-stats div { display: grid; gap: 2px; }
+.club-app-light .performance-athlete-stats span { color: var(--club-muted); font-size: 9px; font-weight: 850; letter-spacing: .08em; }
+.club-app-light .performance-athlete-stats strong { color: var(--club-ink); font-size: 16px; }
+.club-app-light .performance-athlete-stats small { font-size: 10px; }
+.club-app-light .performance-athlete-stats small.up { color: #519000; }
+.club-app-light .performance-athlete-stats small.down { color: #c12c2c; }
+.club-app-light .performance-last { display: block; margin: 12px 0; color: var(--club-muted); font-size: 11px; }
+.club-app-light .performance-athlete-content > a { display: flex; align-items: center; justify-content: space-between; color: var(--club-ink); font-size: 12px; font-weight: 850; text-decoration: none; }
+.club-app-light .performance-athlete-content > a b { color: var(--club-lime-dark); }
+
+/* Agenda */
+.club-app-light .agenda-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 16px; padding: 14px; border: 1px solid var(--club-border); border-radius: var(--club-radius); background: white; box-shadow: var(--club-shadow); }
+.club-app-light .agenda-filter-form { display: flex; width: 100%; align-items: end; gap: 10px; }
+.club-app-light .agenda-filter-form label { display: grid; flex: 0 1 220px; gap: 6px; color: var(--club-text); font-size: 12px; font-weight: 750; }
+.club-app-light .agenda-filter-form button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--club-border); border-radius: 11px; color: var(--club-ink); background: white; font: inherit; font-weight: 800; cursor: pointer; }
+.club-app-light .agenda-filter-form > a { display: inline-flex; min-height: 44px; align-items: center; color: var(--club-muted); font-size: 13px; font-weight: 800; text-decoration: none; }
+.club-app-light .agenda-view-switch { display: flex; min-width: max-content; padding: 4px; border-radius: 10px; background: #eef2f6; }
+.club-app-light .agenda-view-switch a { display: inline-flex; min-height: 34px; align-items: center; padding: 6px 11px; border-radius: 7px; color: var(--club-muted); font-size: 12px; font-weight: 800; text-decoration: none; }
+.club-app-light .agenda-view-switch a.active { color: var(--club-ink); background: white; box-shadow: 0 2px 7px rgb(15 23 42 / 10%); }
+.club-app-light .agenda-premium-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; }
+.club-app-light .agenda-side { display: grid; align-content: start; gap: 16px; }
+.club-app-light .agenda-mini-calendar, .club-app-light .agenda-next-card, .club-app-light .agenda-main-card { border: 1px solid var(--club-border); border-radius: var(--club-radius-lg); background: white; box-shadow: var(--club-shadow); }
+.club-app-light .agenda-mini-calendar, .club-app-light .agenda-next-card { padding: 18px; }
+.club-app-light :where(.agenda-mini-calendar, .agenda-next-card) h2 { margin: 3px 0 14px; color: var(--club-ink); font-size: 18px; }
+.club-app-light .agenda-mini-week, .club-app-light .agenda-mini-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+.club-app-light .agenda-mini-week { margin-bottom: 5px; color: var(--club-muted); font-size: 10px; font-weight: 850; }
+.club-app-light .agenda-mini-days span { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 8px; color: var(--club-text); font-size: 12px; }
+.club-app-light .agenda-mini-days .has-event { color: var(--club-lime-dark); font-weight: 900; }
+.club-app-light .agenda-mini-days .today { color: #152000; background: var(--club-lime); }
+.club-app-light .agenda-next-card > a { display: grid; grid-template-columns: 9px minmax(0, 1fr); gap: 8px; align-items: center; min-height: 54px; border-bottom: 1px solid #edf1f4; color: var(--club-ink); text-decoration: none; }
+.club-app-light .agenda-next-card > a:last-child { border-bottom: 0; }
+.club-app-light .agenda-dot { width: 8px; height: 8px; border-radius: 50%; background: #28a755; }
+.club-app-light .agenda-dot-match { background: #d89e00; }
+.club-app-light .agenda-next-card strong, .club-app-light .agenda-next-card span { display: block; }
+.club-app-light .agenda-next-card strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.club-app-light .agenda-next-card span { color: var(--club-muted); font-size: 11px; }
+.club-app-light .agenda-main-card { min-width: 0; overflow: auto; }
+.club-app-light .agenda-month-grid { display: grid; min-width: 790px; grid-template-columns: repeat(7, minmax(112px, 1fr)); }
+.club-app-light .agenda-month-day { min-height: 145px; padding: 10px; border-right: 1px solid #e8edf2; border-bottom: 1px solid #e8edf2; background: #fff; }
+.club-app-light .agenda-month-day:nth-child(7n) { border-right: 0; }
+.club-app-light .agenda-month-day.today { background: #fbfff2; }
+.club-app-light .agenda-month-day header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.club-app-light .agenda-month-day header span { color: var(--club-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.club-app-light .agenda-month-day header strong { color: var(--club-ink); font-size: 17px; }
+.club-app-light .agenda-calendar-event { display: grid; grid-template-columns: 37px minmax(0, 1fr); gap: 4px; margin-bottom: 5px; padding: 5px; border-radius: 6px; color: #315d08; background: var(--club-lime-soft); font-size: 10px; text-decoration: none; }
+.club-app-light .agenda-calendar-event b { font-size: 10px; }
+.club-app-light .agenda-calendar-event span { overflow: hidden; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.club-app-light .agenda-calendar-match { color: #735200; background: #fff1c5; }
+.club-app-light .agenda-month-day small { color: var(--club-muted); font-size: 10px; }
+.club-app-light .agenda-compact-list { padding: 10px 18px 18px; }
+.club-app-light .agenda-list-day { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 15px; padding: 17px 0; border-bottom: 1px solid #e8edf2; }
+.club-app-light .agenda-list-day:last-child { border-bottom: 0; }
+.club-app-light .agenda-list-date { display: grid; align-content: start; gap: 1px; padding: 10px; border-radius: 12px; background: var(--club-surface-muted); text-align: center; }
+.club-app-light .agenda-list-date strong { color: var(--club-ink); font-size: 22px; line-height: 1; }
+.club-app-light .agenda-list-date span { color: var(--club-lime-dark); font-size: 10px; font-weight: 900; }
+.club-app-light .agenda-list-date small { color: var(--club-muted); font-size: 10px; }
+.club-app-light .agenda-list-events h2 { margin: 0 0 8px; color: var(--club-ink); font-size: 14px; text-transform: capitalize; }
+.club-app-light .agenda-compact-event { display: grid; grid-template-columns: 58px 8px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 76px; padding: 10px 0; border-bottom: 1px solid #edf1f4; }
+.club-app-light .agenda-compact-event:last-child { border-bottom: 0; }
+.club-app-light .agenda-compact-event time { color: var(--club-ink); font-size: 16px; font-weight: 850; }
+.club-app-light .agenda-compact-event > i { width: 8px; height: 8px; border-radius: 50%; background: #28a755; }
+.club-app-light .agenda-compact-event.agenda-match > i { background: #d89e00; }
+.club-app-light .agenda-compact-copy small, .club-app-light .agenda-compact-copy strong, .club-app-light .agenda-compact-copy span { display: block; }
+.club-app-light .agenda-compact-copy small { color: var(--club-lime-dark); font-size: 10px; font-weight: 850; }
+.club-app-light .agenda-compact-copy strong { color: var(--club-ink); font-size: 14px; }
+.club-app-light .agenda-compact-copy span { color: var(--club-muted); font-size: 12px; }
+.club-app-light .agenda-compact-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.club-app-light .agenda-compact-actions a { display: inline-flex; min-height: 33px; align-items: center; padding: 5px 8px; border: 1px solid var(--club-border); border-radius: 8px; color: var(--club-text); background: white; font-size: 11px; font-weight: 800; text-decoration: none; }
+
+@media (min-width: 1760px) {
+  .club-app-light .athlete-premium-grid, .club-app-light .performance-athlete-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1180px) {
+  .club-app-light .athlete-premium-grid, .club-app-light .performance-athlete-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .club-app-light .athlete-filter-bar form { grid-template-columns: minmax(180px, 1fr) repeat(2, minmax(130px, .7fr)) auto; }
+  .club-app-light .athlete-filter-bar form label:nth-of-type(4) { grid-column: 2 / span 1; }
+  .club-app-light .od-main-grid, .club-app-light .od-bottom-grid, .club-app-light .performance-overview-grid { grid-template-columns: 1fr; }
+  .club-app-light .od-performance { grid-column: auto; }
+}
+
+@media (max-width: 900px) {
+  .club-app-light :where(.page-head, .od-header, .performance-hero) { align-items: flex-start; flex-direction: column; }
+  .club-app-light .od-search { width: 100%; }
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .club-app-light .od-area-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .club-app-light .agenda-premium-layout { grid-template-columns: 1fr; }
+  .club-app-light .agenda-side { grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); }
+  .club-app-light .athlete-create-form { grid-template-columns: 1fr; }
+  .club-app-light .athlete-filter-bar { align-items: stretch; flex-direction: column; }
+  .club-app-light .athlete-filter-bar form, .club-app-light .performance-filter-panel form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .club-app-light .athlete-search, .club-app-light .performance-filter-panel label:first-child { grid-column: 1 / -1; }
+  .club-app-light .agenda-toolbar { align-items: stretch; flex-direction: column; }
+  .club-app-light .agenda-filter-form { flex-wrap: wrap; }
+  .club-app-light .agenda-filter-form label { flex: 1 1 180px; }
+}
+
+@media (max-width: 560px) {
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis) { grid-template-columns: 1fr; }
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis) > :where(a, article) { min-height: 96px; }
+  .club-app-light .od-quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .club-app-light .od-quick-actions a { text-align: center; }
+  .club-app-light .od-timeline a { grid-template-columns: 50px 8px minmax(0, 1fr); }
+  .club-app-light .od-timeline a > b { display: none; }
+  .club-app-light .od-game-row { grid-template-columns: 64px minmax(0, 1fr); padding: 10px 0; }
+  .club-app-light .od-game-row em, .club-app-light .od-game-row > b { grid-column: 2; }
+  .club-app-light .od-performance-body { align-items: flex-start; flex-direction: column; }
+  .club-app-light .od-area-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .club-app-light .athlete-premium-category { padding: 16px; }
+  .club-app-light .athlete-premium-grid, .club-app-light .performance-athlete-grid { grid-template-columns: 1fr; }
+  .club-app-light .athlete-create-drawer summary { align-items: flex-start; flex-direction: column; }
+  .club-app-light .athlete-create-form fieldset { grid-template-columns: 1fr; }
+  .club-app-light .athlete-filter-bar form, .club-app-light .performance-filter-panel form { grid-template-columns: 1fr; }
+  .club-app-light .athlete-filter-bar form label:nth-of-type(4) { grid-column: auto; }
+  .club-app-light .performance-hero { min-height: 215px; padding: 22px; }
+  .club-app-light .performance-hero-score { padding: 12px 0 0; border-top: 1px solid rgb(255 255 255 / 20%); border-left: 0; }
+  .club-app-light .agenda-side { grid-template-columns: 1fr; }
+  .club-app-light .agenda-filter-form { display: grid; grid-template-columns: 1fr; }
+  .club-app-light .agenda-view-switch { align-self: flex-start; }
+  .club-app-light .agenda-compact-list { padding-inline: 14px; }
+  .club-app-light .agenda-list-day { grid-template-columns: 54px minmax(0, 1fr); gap: 10px; }
+  .club-app-light .agenda-list-date { padding: 8px 4px; }
+  .club-app-light .agenda-compact-event { grid-template-columns: 46px 7px minmax(0, 1fr); }
+  .club-app-light .agenda-compact-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
