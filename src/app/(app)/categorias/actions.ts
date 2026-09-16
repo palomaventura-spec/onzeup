@@ -9,11 +9,22 @@ function clean(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
 }
 
+function nullable(value: FormDataEntryValue | null) {
+  return clean(value) || null;
+}
+
+function accent(value: FormDataEntryValue | null) {
+  const color = clean(value);
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : "#9DDB16";
+}
+
 export async function createCategory(formData: FormData) {
   const user = await requireOrganizationUser();
   const name = clean(formData.get("name"));
   const birthYearRaw = clean(formData.get("birthYear"));
   const birthYear = birthYearRaw ? Number(birthYearRaw) : null;
+  const description = nullable(formData.get("description"));
+  const accentColor = accent(formData.get("accentColor"));
 
   if (!name) return;
 
@@ -21,6 +32,9 @@ export async function createCategory(formData: FormData) {
     data: {
       name,
       birthYear: Number.isFinite(birthYear) ? birthYear : null,
+      description,
+      accentColor,
+      active: true,
       organizationId: user.organizationId,
     },
   });
@@ -34,6 +48,9 @@ export async function updateCategory(formData: FormData) {
   const name = clean(formData.get("name"));
   const birthYearRaw = clean(formData.get("birthYear"));
   const birthYear = birthYearRaw ? Number(birthYearRaw) : null;
+  const description = nullable(formData.get("description"));
+  const accentColor = accent(formData.get("accentColor"));
+  const active = clean(formData.get("active")) !== "false";
 
   if (!id || !name) return;
 
@@ -42,6 +59,9 @@ export async function updateCategory(formData: FormData) {
     data: {
       name,
       birthYear: Number.isFinite(birthYear) ? birthYear : null,
+      description,
+      accentColor,
+      active,
     },
   });
 

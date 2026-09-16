@@ -6,10 +6,7 @@ import { redirect } from "next/navigation";
 import { requireClubPermission } from "@/lib/club-access";
 import { prisma } from "@/lib/prisma";
 
-type StaffSport =
-  | "FOOTBALL"
-  | "FUTSAL"
-  | "BOTH";
+type StaffSport = "FOOTBALL" | "FUTSAL" | "BOTH";
 
 type StaffLinkData = {
   organizationId: string;
@@ -20,32 +17,20 @@ type StaffLinkData = {
   canManageCallUps: boolean;
 };
 
-function clean(
-  value: FormDataEntryValue | null
-) {
+function clean(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
 }
 
-function nullable(
-  value: FormDataEntryValue | null
-) {
+function nullable(value: FormDataEntryValue | null) {
   const valueCleaned = clean(value);
   return valueCleaned || null;
 }
 
-function validSport(
-  value: string
-): value is StaffSport {
-  return [
-    "FOOTBALL",
-    "FUTSAL",
-    "BOTH",
-  ].includes(value);
+function validSport(value: string): value is StaffSport {
+  return ["FOOTBALL", "FUTSAL", "BOTH"].includes(value);
 }
 
-async function findCoachByEmail(
-  coachEmail: string | null
-) {
+async function findCoachByEmail(coachEmail: string | null) {
   if (!coachEmail) {
     return null;
   }
@@ -66,78 +51,59 @@ async function findCoachByEmail(
   });
 }
 
-async function syncCoachAccess(
-  staff: StaffLinkData
-) {
-  const coach =
-    await findCoachByEmail(
-      staff.coachEmail
-    );
+async function syncCoachAccess(staff: StaffLinkData) {
+  const coach = await findCoachByEmail(staff.coachEmail);
 
   if (!coach) {
     return false;
   }
 
-  const existingAccesses =
-    await prisma
-      .coachOrganizationAccess
-      .findMany({
-        where: {
-          coachId: coach.id,
-          organizationId:
-            staff.organizationId,
-          categoryId:
-            staff.categoryId,
-          sport: staff.sport,
-        },
+  const existingAccesses = await prisma.coachOrganizationAccess.findMany({
+    where: {
+      coachId: coach.id,
+      organizationId: staff.organizationId,
+      categoryId: staff.categoryId,
+      sport: staff.sport,
+    },
 
-        select: {
-          id: true,
-        },
-      });
+    select: {
+      id: true,
+    },
+  });
 
   const accessData = {
     roleTitle: staff.roleTitle,
     canViewRoster: true,
     canViewSchedule: true,
     canViewCallUps: true,
-    canManageCallUps:
-      staff.canManageCallUps,
+    canManageCallUps: staff.canManageCallUps,
   };
 
   if (existingAccesses.length > 0) {
-    await prisma
-      .coachOrganizationAccess
-      .updateMany({
-        where: {
-          id: {
-            in: existingAccesses.map(
-              (access) => access.id
-            ),
-          },
+    await prisma.coachOrganizationAccess.updateMany({
+      where: {
+        id: {
+          in: existingAccesses.map((access) => access.id),
         },
+      },
 
-        data: accessData,
-      });
+      data: accessData,
+    });
 
     return true;
   }
 
-  await prisma
-    .coachOrganizationAccess
-    .create({
-      data: {
-        coachId: coach.id,
-        organizationId:
-          staff.organizationId,
-        categoryId:
-          staff.categoryId,
-        sport: staff.sport,
-        requestedBy: "CLUB",
-        active: false,
-        ...accessData,
-      },
-    });
+  await prisma.coachOrganizationAccess.create({
+    data: {
+      coachId: coach.id,
+      organizationId: staff.organizationId,
+      categoryId: staff.categoryId,
+      sport: staff.sport,
+      requestedBy: "CLUB",
+      active: false,
+      ...accessData,
+    },
+  });
 
   return true;
 }
@@ -149,154 +115,98 @@ async function removeOrphanedCoachAccess({
   staffMemberId: string;
   staff: StaffLinkData;
 }) {
-  const coach =
-    await findCoachByEmail(
-      staff.coachEmail
-    );
+  const coach = await findCoachByEmail(staff.coachEmail);
 
   if (!coach || !staff.coachEmail) {
     return;
   }
 
-  const anotherStaffMember =
-    await prisma.staffMember.findFirst({
-      where: {
-        id: {
-          not: staffMemberId,
-        },
-
-        organizationId:
-          staff.organizationId,
-
-        coachEmail: {
-          equals: staff.coachEmail,
-          mode: "insensitive",
-        },
-
-        categoryId:
-          staff.categoryId,
-
-        sport: staff.sport,
+  const anotherStaffMember = await prisma.staffMember.findFirst({
+    where: {
+      id: {
+        not: staffMemberId,
       },
 
-      select: {
-        id: true,
+      organizationId: staff.organizationId,
+
+      coachEmail: {
+        equals: staff.coachEmail,
+        mode: "insensitive",
       },
-    });
+
+      categoryId: staff.categoryId,
+
+      sport: staff.sport,
+    },
+
+    select: {
+      id: true,
+    },
+  });
 
   if (anotherStaffMember) {
     return;
   }
 
-  await prisma
-    .coachOrganizationAccess
-    .deleteMany({
-      where: {
-        coachId: coach.id,
-        organizationId:
-          staff.organizationId,
-        categoryId:
-          staff.categoryId,
-        sport: staff.sport,
-      },
-    });
+  await prisma.coachOrganizationAccess.deleteMany({
+    where: {
+      coachId: coach.id,
+      organizationId: staff.organizationId,
+      categoryId: staff.categoryId,
+      sport: staff.sport,
+    },
+  });
 }
 
-function sameStaffLink(
-  previous: StaffLinkData,
-  next: StaffLinkData
-) {
+function sameStaffLink(previous: StaffLinkData, next: StaffLinkData) {
   return (
-    previous.organizationId ===
-      next.organizationId &&
-    previous.coachEmail ===
-      next.coachEmail &&
-    previous.categoryId ===
-      next.categoryId &&
+    previous.organizationId === next.organizationId &&
+    previous.coachEmail === next.coachEmail &&
+    previous.categoryId === next.categoryId &&
     previous.sport === next.sport
   );
 }
 
-export async function createStaffMember(
-  formData: FormData
-) {
-  const user =
-    await requireClubPermission(
-      "STAFF_EDIT"
-    );
+export async function createStaffMember(formData: FormData) {
+  const user = await requireClubPermission("STAFF_EDIT");
 
-  const name =
-    clean(formData.get("name"));
+  const name = clean(formData.get("name"));
 
-  const roleTitle =
-    clean(formData.get("roleTitle"));
+  const roleTitle = clean(formData.get("roleTitle"));
 
-  const categoryId =
-    nullable(
-      formData.get("categoryId")
-    );
+  const categoryId = nullable(formData.get("categoryId"));
 
-  const photoUrl =
-    nullable(formData.get("photoUrl"));
+  const photoUrl = nullable(formData.get("photoUrl"));
 
-  const bio =
-    nullable(formData.get("bio"));
+  const bio = nullable(formData.get("bio"));
+
+  const phone = nullable(formData.get("phone"));
+  const professionalRegistration = nullable(
+    formData.get("professionalRegistration"),
+  );
+  const education = nullable(formData.get("education"));
+  const specialties = nullable(formData.get("specialties"));
+  const joinedAtRaw = clean(formData.get("joinedAt"));
+  const joinedAt = joinedAtRaw ? new Date(`${joinedAtRaw}T12:00:00`) : null;
 
   const coachEmail =
-    nullable(
-      formData.get("coachEmail")
-    )?.toLowerCase() || null;
+    nullable(formData.get("coachEmail"))?.toLowerCase() || null;
 
-  const rawSport =
-    clean(formData.get("sport")) ||
-    "BOTH";
+  const rawSport = clean(formData.get("sport")) || "BOTH";
 
-  const sport: StaffSport =
-    validSport(rawSport)
-      ? rawSport
-      : "BOTH";
+  const sport: StaffSport = validSport(rawSport) ? rawSport : "BOTH";
 
-  const canManageCallUps =
-    formData.get(
-      "canManageCallUps"
-    ) === "on";
+  const canManageCallUps = formData.get("canManageCallUps") === "on";
 
   if (!name || !roleTitle) {
     return;
   }
 
   if (categoryId) {
-    const category =
-      await prisma.category.findFirst({
-        where: {
-          id: categoryId,
-          organizationId:
-            user.organizationId,
-        },
-
-        select: {
-          id: true,
-        },
-      });
-
-    if (!category) {
-      return;
-    }
-  }
-
-  const member =
-    await prisma.staffMember.create({
-      data: {
-        name,
-        roleTitle,
-        categoryId,
-        photoUrl,
-        bio,
-        coachEmail,
-        sport,
-        canManageCallUps,
-        organizationId:
-          user.organizationId,
+    const category = await prisma.category.findFirst({
+      where: {
+        id: categoryId,
+        organizationId: user.organizationId,
       },
 
       select: {
@@ -304,155 +214,145 @@ export async function createStaffMember(
       },
     });
 
-  const coachExists =
-    await syncCoachAccess({
-      organizationId:
-        user.organizationId,
-      coachEmail,
-      categoryId,
-      sport,
+    if (!category) {
+      return;
+    }
+  }
+
+  const member = await prisma.staffMember.create({
+    data: {
+      name,
       roleTitle,
+      categoryId,
+      photoUrl,
+      bio,
+      phone,
+      professionalRegistration,
+      education,
+      specialties,
+      joinedAt: joinedAt && !Number.isNaN(joinedAt.getTime()) ? joinedAt : null,
+      active: true,
+      coachEmail,
+      sport,
       canManageCallUps,
-    });
+      organizationId: user.organizationId,
+    },
+
+    select: {
+      id: true,
+    },
+  });
+
+  const coachExists = await syncCoachAccess({
+    organizationId: user.organizationId,
+    coachEmail,
+    categoryId,
+    sport,
+    roleTitle,
+    canManageCallUps,
+  });
 
   revalidatePath("/comissao");
-  revalidatePath(
-    "/coach/dashboard"
-  );
+  revalidatePath("/coach/dashboard");
 
   if (coachEmail) {
-    redirect(
-      `/comissao?coachInvite=${
-        coachExists
-          ? "sent"
-          : "saved"
-      }`
-    );
+    redirect(`/comissao?coachInvite=${coachExists ? "sent" : "saved"}`);
   }
 
   void member;
 }
 
-export async function updateStaffMember(
-  formData: FormData
-) {
-  const user =
-    await requireClubPermission(
-      "STAFF_EDIT"
-    );
+export async function updateStaffMember(formData: FormData) {
+  const user = await requireClubPermission("STAFF_EDIT");
 
-  const id =
-    clean(formData.get("id"));
+  const id = clean(formData.get("id"));
 
-  const name =
-    clean(formData.get("name"));
+  const name = clean(formData.get("name"));
 
-  const roleTitle =
-    clean(formData.get("roleTitle"));
+  const roleTitle = clean(formData.get("roleTitle"));
 
-  const categoryId =
-    nullable(
-      formData.get("categoryId")
-    );
+  const categoryId = nullable(formData.get("categoryId"));
 
-  const photoUrl =
-    nullable(formData.get("photoUrl"));
+  const photoUrl = nullable(formData.get("photoUrl"));
 
-  const bio =
-    nullable(formData.get("bio"));
+  const bio = nullable(formData.get("bio"));
+
+  const phone = nullable(formData.get("phone"));
+  const professionalRegistration = nullable(
+    formData.get("professionalRegistration"),
+  );
+  const education = nullable(formData.get("education"));
+  const specialties = nullable(formData.get("specialties"));
+  const joinedAtRaw = clean(formData.get("joinedAt"));
+  const joinedAt = joinedAtRaw ? new Date(`${joinedAtRaw}T12:00:00`) : null;
+  const active = clean(formData.get("active")) !== "false";
 
   const coachEmail =
-    nullable(
-      formData.get("coachEmail")
-    )?.toLowerCase() || null;
+    nullable(formData.get("coachEmail"))?.toLowerCase() || null;
 
-  const rawSport =
-    clean(formData.get("sport")) ||
-    "BOTH";
+  const rawSport = clean(formData.get("sport")) || "BOTH";
 
-  const sport: StaffSport =
-    validSport(rawSport)
-      ? rawSport
-      : "BOTH";
+  const sport: StaffSport = validSport(rawSport) ? rawSport : "BOTH";
 
-  const canManageCallUps =
-    formData.get(
-      "canManageCallUps"
-    ) === "on";
+  const canManageCallUps = formData.get("canManageCallUps") === "on";
 
-  if (
-    !id ||
-    !name ||
-    !roleTitle
-  ) {
+  if (!id || !name || !roleTitle) {
     return;
   }
 
   if (categoryId) {
-    const category =
-      await prisma.category.findFirst({
-        where: {
-          id: categoryId,
-          organizationId:
-            user.organizationId,
-        },
+    const category = await prisma.category.findFirst({
+      where: {
+        id: categoryId,
+        organizationId: user.organizationId,
+      },
 
-        select: {
-          id: true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
     if (!category) {
       return;
     }
   }
 
-  const previousMember =
-    await prisma.staffMember.findFirst({
-      where: {
-        id,
-        organizationId:
-          user.organizationId,
-      },
+  const previousMember = await prisma.staffMember.findFirst({
+    where: {
+      id,
+      organizationId: user.organizationId,
+    },
 
-      select: {
-        id: true,
-        coachEmail: true,
-        categoryId: true,
-        sport: true,
-        roleTitle: true,
-        canManageCallUps: true,
-      },
-    });
+    select: {
+      id: true,
+      coachEmail: true,
+      categoryId: true,
+      sport: true,
+      roleTitle: true,
+      canManageCallUps: true,
+    },
+  });
 
   if (!previousMember) {
     return;
   }
 
   const previousLink: StaffLinkData = {
-    organizationId:
-      user.organizationId,
+    organizationId: user.organizationId,
 
-    coachEmail:
-      previousMember.coachEmail
-        ?.toLowerCase() || null,
+    coachEmail: previousMember.coachEmail?.toLowerCase() || null,
 
-    categoryId:
-      previousMember.categoryId,
+    categoryId: previousMember.categoryId,
 
-    sport:
-      previousMember.sport,
+    sport: previousMember.sport,
 
-    roleTitle:
-      previousMember.roleTitle,
+    roleTitle: previousMember.roleTitle,
 
-    canManageCallUps:
-      previousMember.canManageCallUps,
+    canManageCallUps: previousMember.canManageCallUps,
   };
 
   const nextLink: StaffLinkData = {
-    organizationId:
-      user.organizationId,
+    organizationId: user.organizationId,
     coachEmail,
     categoryId,
     sport,
@@ -471,21 +371,21 @@ export async function updateStaffMember(
       categoryId,
       photoUrl,
       bio,
+      phone,
+      professionalRegistration,
+      education,
+      specialties,
+      joinedAt: joinedAt && !Number.isNaN(joinedAt.getTime()) ? joinedAt : null,
+      active,
       coachEmail,
       sport,
       canManageCallUps,
     },
   });
 
-  if (
-    !sameStaffLink(
-      previousLink,
-      nextLink
-    )
-  ) {
+  if (!sameStaffLink(previousLink, nextLink)) {
     await removeOrphanedCoachAccess({
-      staffMemberId:
-        previousMember.id,
+      staffMemberId: previousMember.id,
       staff: previousLink,
     });
   }
@@ -493,148 +393,105 @@ export async function updateStaffMember(
   await syncCoachAccess(nextLink);
 
   revalidatePath("/comissao");
-  revalidatePath(
-    "/coach/dashboard"
-  );
+  revalidatePath("/coach/dashboard");
   revalidatePath("/convocacoes");
 
   redirect("/comissao");
 }
 
-export async function approveCoachAccessRequest(
-  formData: FormData
-) {
-  const user =
-    await requireClubPermission(
-      "STAFF_EDIT"
-    );
+export async function approveCoachAccessRequest(formData: FormData) {
+  const user = await requireClubPermission("STAFF_EDIT");
 
-  const accessId =
-    clean(formData.get("accessId"));
+  const accessId = clean(formData.get("accessId"));
 
   if (!accessId) {
     return;
   }
 
-  await prisma
-    .coachOrganizationAccess
-    .updateMany({
-      where: {
-        id: accessId,
-        organizationId:
-          user.organizationId,
-        active: false,
-        requestedBy: "COACH",
-      },
+  await prisma.coachOrganizationAccess.updateMany({
+    where: {
+      id: accessId,
+      organizationId: user.organizationId,
+      active: false,
+      requestedBy: "COACH",
+    },
 
-      data: {
-        active: true,
-      },
-    });
+    data: {
+      active: true,
+    },
+  });
 
   revalidatePath("/comissao");
-  revalidatePath(
-    "/coach/dashboard"
-  );
+  revalidatePath("/coach/dashboard");
 
-  redirect(
-    "/comissao?coachInvite=approved"
-  );
+  redirect("/comissao?coachInvite=approved");
 }
 
-export async function rejectCoachAccessRequest(
-  formData: FormData
-) {
-  const user =
-    await requireClubPermission(
-      "STAFF_EDIT"
-    );
+export async function rejectCoachAccessRequest(formData: FormData) {
+  const user = await requireClubPermission("STAFF_EDIT");
 
-  const accessId =
-    clean(formData.get("accessId"));
+  const accessId = clean(formData.get("accessId"));
 
   if (!accessId) {
     return;
   }
 
-  await prisma
-    .coachOrganizationAccess
-    .deleteMany({
-      where: {
-        id: accessId,
-        organizationId:
-          user.organizationId,
-        active: false,
-        requestedBy: "COACH",
-      },
-    });
+  await prisma.coachOrganizationAccess.deleteMany({
+    where: {
+      id: accessId,
+      organizationId: user.organizationId,
+      active: false,
+      requestedBy: "COACH",
+    },
+  });
 
   revalidatePath("/comissao");
-  revalidatePath(
-    "/coach/dashboard"
-  );
+  revalidatePath("/coach/dashboard");
 
-  redirect(
-    "/comissao?coachInvite=rejected"
-  );
+  redirect("/comissao?coachInvite=rejected");
 }
 
-export async function deleteStaffMember(
-  formData: FormData
-) {
-  const user =
-    await requireClubPermission(
-      "STAFF_EDIT"
-    );
+export async function deleteStaffMember(formData: FormData) {
+  const user = await requireClubPermission("STAFF_EDIT");
 
-  const id =
-    clean(formData.get("id"));
+  const id = clean(formData.get("id"));
 
   if (!id) {
     return;
   }
 
-  const member =
-    await prisma.staffMember.findFirst({
-      where: {
-        id,
-        organizationId:
-          user.organizationId,
-      },
+  const member = await prisma.staffMember.findFirst({
+    where: {
+      id,
+      organizationId: user.organizationId,
+    },
 
-      select: {
-        id: true,
-        coachEmail: true,
-        categoryId: true,
-        sport: true,
-        roleTitle: true,
-        canManageCallUps: true,
-      },
-    });
+    select: {
+      id: true,
+      coachEmail: true,
+      categoryId: true,
+      sport: true,
+      roleTitle: true,
+      canManageCallUps: true,
+    },
+  });
 
   if (!member) {
     return;
   }
 
   const previousLink: StaffLinkData = {
-    organizationId:
-      user.organizationId,
+    organizationId: user.organizationId,
 
-    coachEmail:
-      member.coachEmail
-        ?.toLowerCase() || null,
+    coachEmail: member.coachEmail?.toLowerCase() || null,
 
-    categoryId:
-      member.categoryId,
+    categoryId: member.categoryId,
 
-    sport:
-      member.sport,
+    sport: member.sport,
 
-    roleTitle:
-      member.roleTitle,
+    roleTitle: member.roleTitle,
 
-    canManageCallUps:
-      member.canManageCallUps,
+    canManageCallUps: member.canManageCallUps,
   };
 
   await prisma.staffMember.delete({
@@ -649,8 +506,6 @@ export async function deleteStaffMember(
   });
 
   revalidatePath("/comissao");
-  revalidatePath(
-    "/coach/dashboard"
-  );
+  revalidatePath("/coach/dashboard");
   revalidatePath("/convocacoes");
 }

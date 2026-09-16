@@ -37,14 +37,9 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
-function qtrHref(
-  week: string,
-  category: string
-) {
-  return `/qtr?week=${encodeURIComponent(
-    week
-  )}&category=${encodeURIComponent(
-    category
+function qtrHref(week: string, category: string) {
+  return `/qtr?week=${encodeURIComponent(week)}&category=${encodeURIComponent(
+    category,
   )}`;
 }
 
@@ -69,89 +64,67 @@ export default async function QtrPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const user =
-    await requireClubPermission("QTR_VIEW");
+  const user = await requireClubPermission("QTR_VIEW");
 
-  const canEdit = hasClubPermission(
-    user,
-    "QTR_EDIT"
-  );
+  const canEdit = hasClubPermission(user, "QTR_EDIT");
 
   const params = await searchParams;
 
   const requested = params.week
-    ? new Date(
-        `${params.week}T12:00:00`
-      )
+    ? new Date(`${params.week}T12:00:00`)
     : new Date();
 
   const weekStart = mondayOf(requested);
 
   const weekEnd = new Date(weekStart);
-  weekEnd.setDate(
-    weekEnd.getDate() + 6
-  );
+  weekEnd.setDate(weekEnd.getDate() + 6);
 
   const previous = new Date(weekStart);
-  previous.setDate(
-    previous.getDate() - 7
-  );
+  previous.setDate(previous.getDate() - 7);
 
   const next = new Date(weekStart);
-  next.setDate(
-    next.getDate() + 7
-  );
+  next.setDate(next.getDate() + 7);
 
-  const [qtr, categories] =
-    await Promise.all([
-      prisma.qtr.findUnique({
-        where: {
-          organizationId_weekStart: {
-            organizationId:
-              user.organizationId,
-            weekStart,
-          },
+  const [qtr, categories] = await Promise.all([
+    prisma.qtr.findUnique({
+      where: {
+        organizationId_weekStart: {
+          organizationId: user.organizationId,
+          weekStart,
         },
-      }),
+      },
+    }),
 
-      prisma.category.findMany({
-        where: {
-          organizationId:
-            user.organizationId,
+    prisma.category.findMany({
+      where: {
+        organizationId: user.organizationId,
+      },
+
+      select: {
+        id: true,
+        name: true,
+        birthYear: true,
+      },
+
+      orderBy: [
+        {
+          birthYear: "desc",
         },
-
-        select: {
-          id: true,
-          name: true,
-          birthYear: true,
+        {
+          name: "asc",
         },
-
-        orderBy: [
-          {
-            birthYear: "desc",
-          },
-          {
-            name: "asc",
-          },
-        ],
-      }),
-    ]);
+      ],
+    }),
+  ]);
 
   const validCategory =
     params.category &&
     (params.category === "__all__" ||
-      categories.some(
-        (category) =>
-          category.name ===
-          params.category
-      ))
+      categories.some((category) => category.name === params.category))
       ? params.category
       : null;
 
-  const selectedCategory =
-    validCategory ||
-    categories[0]?.name ||
-    "__all__";
+  const selectedCategory = validCategory || categories[0]?.name || "__all__";
 
   /*
    * Se ainda não existe QTR para a semana,
@@ -159,22 +132,12 @@ export default async function QtrPage({
    *
    * Coach continua apenas visualizando.
    */
-  if (
-    !qtr &&
-    categories.length > 0 &&
-    canEdit
-  ) {
+  if (!qtr && categories.length > 0 && canEdit) {
     const formData = new FormData();
 
-    formData.set(
-      "weekStart",
-      isoDate(weekStart)
-    );
+    formData.set("weekStart", isoDate(weekStart));
 
-    formData.set(
-      "category",
-      selectedCategory
-    );
+    formData.set("category", selectedCategory);
 
     await generateQtr(formData);
   }
@@ -183,28 +146,21 @@ export default async function QtrPage({
 
   if (qtr?.dataJson) {
     try {
-      const parsed = JSON.parse(
-        qtr.dataJson
-      );
+      const parsed = JSON.parse(qtr.dataJson);
 
-      initialRows = Array.isArray(
-        parsed
-      )
-        ? parsed
-        : [];
+      initialRows = Array.isArray(parsed) ? parsed : [];
     } catch {
       initialRows = [];
     }
   }
 
   return (
-    <main className="page-shell">
+    <main className="page-shell qts-premium">
       <section
         style={{
           display: "flex",
           alignItems: "flex-end",
-          justifyContent:
-            "space-between",
+          justifyContent: "space-between",
           gap: 20,
           flexWrap: "wrap",
           marginBottom: 18,
@@ -225,14 +181,13 @@ export default async function QtrPage({
           <h1
             style={{
               margin: 0,
-              fontSize:
-                "clamp(28px, 3vw, 36px)",
+              fontSize: "clamp(28px, 3vw, 36px)",
               lineHeight: 1.05,
               letterSpacing: "-0.03em",
               color: "#0f1720",
             }}
           >
-            QTR
+            QTS
           </h1>
 
           <p
@@ -242,8 +197,7 @@ export default async function QtrPage({
               fontSize: 15,
             }}
           >
-            {formatDate(weekStart)} a{" "}
-            {formatDate(weekEnd)}
+            {formatDate(weekStart)} a {formatDate(weekEnd)}
           </p>
         </div>
 
@@ -255,20 +209,14 @@ export default async function QtrPage({
           }}
         >
           <Link
-            href={qtrHref(
-              isoDate(previous),
-              selectedCategory
-            )}
+            href={qtrHref(isoDate(previous), selectedCategory)}
             style={navButtonStyle}
           >
             ← Semana anterior
           </Link>
 
           <Link
-            href={qtrHref(
-              isoDate(next),
-              selectedCategory
-            )}
+            href={qtrHref(isoDate(next), selectedCategory)}
             style={navButtonStyle}
           >
             Próxima semana →
@@ -276,8 +224,7 @@ export default async function QtrPage({
         </div>
       </section>
 
-      {params.gerado === "1" ||
-      params.salvo === "1" ? (
+      {params.gerado === "1" || params.salvo === "1" ? (
         <div
           role="status"
           style={{
@@ -286,8 +233,7 @@ export default async function QtrPage({
             gap: 8,
             marginBottom: 14,
             padding: "9px 12px",
-            border:
-              "1px solid #d7eadf",
+            border: "1px solid #d7eadf",
             borderRadius: 10,
             background: "#f3fbf6",
             color: "#21643b",
@@ -295,12 +241,10 @@ export default async function QtrPage({
             fontWeight: 700,
           }}
         >
-          <span aria-hidden="true">
-            ✓
-          </span>
+          <span aria-hidden="true">✓</span>
 
           {params.gerado === "1"
-            ? "QTR atualizado com a agenda"
+            ? "QTS atualizado com a agenda"
             : "Alterações salvas com sucesso"}
         </div>
       ) : null}
@@ -310,18 +254,15 @@ export default async function QtrPage({
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent:
-              "space-between",
+            justifyContent: "space-between",
             gap: 18,
             flexWrap: "wrap",
             marginBottom: 18,
             padding: "16px 18px",
-            border:
-              "1px solid #e2e8ef",
+            border: "1px solid #e2e8ef",
             borderRadius: 14,
             background: "#ffffff",
-            boxShadow:
-              "0 4px 14px rgba(15, 23, 32, 0.04)",
+            boxShadow: "0 4px 14px rgba(15, 23, 32, 0.04)",
           }}
         >
           <div>
@@ -342,29 +283,15 @@ export default async function QtrPage({
                 fontSize: 14,
               }}
             >
-              Use somente quando quiser
-              sincronizar novamente os
-              treinos e jogos desta
-              semana.
+              Use somente quando quiser sincronizar novamente os treinos e jogos
+              desta semana.
             </p>
           </div>
 
           <form action={generateQtr}>
-            <input
-              type="hidden"
-              name="weekStart"
-              value={isoDate(
-                weekStart
-              )}
-            />
+            <input type="hidden" name="weekStart" value={isoDate(weekStart)} />
 
-            <input
-              type="hidden"
-              name="category"
-              value={
-                selectedCategory
-              }
-            />
+            <input type="hidden" name="category" value={selectedCategory} />
 
             <QtrGenerateButton />
           </form>
@@ -374,8 +301,7 @@ export default async function QtrPage({
           style={{
             marginBottom: 18,
             padding: "12px 14px",
-            border:
-              "1px solid #e2e8ef",
+            border: "1px solid #e2e8ef",
             borderRadius: 12,
             background: "#ffffff",
             color: "#667585",
@@ -389,9 +315,7 @@ export default async function QtrPage({
           >
             Somente visualização
           </strong>
-          {" — "}
-          O QTR é atualizado pelo Gestor
-          ou Coordenador.
+          {" — "}O QTS é atualizado pelo Gestor ou Coordenador.
         </div>
       )}
 
@@ -402,9 +326,7 @@ export default async function QtrPage({
             marginBottom: 18,
           }}
         >
-          <strong>
-            QTR ainda não disponível
-          </strong>
+          <strong>QTS ainda não disponível</strong>
 
           <p
             className="muted"
@@ -412,27 +334,20 @@ export default async function QtrPage({
               marginBottom: 0,
             }}
           >
-            O Gestor ou Coordenador ainda
-            não gerou o QTR desta semana.
+            O Gestor ou Coordenador ainda não gerou o QTS desta semana.
           </p>
         </div>
       ) : null}
 
       <QtrEditor
-        key={`${isoDate(
-          weekStart
-        )}-${
+        key={`${isoDate(weekStart)}-${
           qtr?.updatedAt?.getTime() ?? 0
         }-${selectedCategory}`}
-        weekStart={isoDate(
-          weekStart
-        )}
+        weekStart={isoDate(weekStart)}
         qtrId={qtr?.id ?? null}
         initialRows={initialRows}
         categories={categories}
-        initialCategory={
-          selectedCategory
-        }
+        initialCategory={selectedCategory}
         saveAction={saveQtr}
         canEdit={canEdit}
       />

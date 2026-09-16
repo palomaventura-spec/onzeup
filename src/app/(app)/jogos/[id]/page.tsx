@@ -9,33 +9,24 @@ import { googleCalendarUrl } from "@/lib/google-calendar";
 import { updateMatch } from "../actions";
 
 function toDateInput(date: Date) {
-  return date
-    .toISOString()
-    .slice(0, 10);
+  return date.toISOString().slice(0, 10);
 }
 
 function toTimeInput(date: Date) {
-  return date
-    .toISOString()
-    .slice(11, 16);
+  return date.toISOString().slice(11, 16);
 }
 
 function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat(
-    "pt-BR",
-    {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }
-  ).format(date);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
-function homeAwayLabel(
-  value: string | null
-) {
+function homeAwayLabel(value: string | null) {
   switch (value) {
     case "HOME":
       return "Mandante";
@@ -71,41 +62,21 @@ export default async function EditMatchPage({
     id: string;
   }>;
 }) {
-  const user =
-    await requireClubPermission(
-      "MATCHES_VIEW"
-    );
+  const user = await requireClubPermission("MATCHES_VIEW");
 
-  const canEdit =
-    hasClubPermission(
-      user,
-      "MATCHES_EDIT"
-    );
+  const canEdit = hasClubPermission(user, "MATCHES_EDIT");
 
-  const canManageCallUps =
-    hasClubPermission(
-      user,
-      "CALLUPS_MANAGE"
-    );
+  const canManageCallUps = hasClubPermission(user, "CALLUPS_MANAGE");
 
-  const canViewCallUps =
-    hasClubPermission(
-      user,
-      "CALLUPS_VIEW"
-    );
+  const canViewCallUps = hasClubPermission(user, "CALLUPS_VIEW");
 
-  const { id } =
-    await params;
+  const { id } = await params;
 
-  const [
-    match,
-    categories,
-  ] = await Promise.all([
+  const [match, categories] = await Promise.all([
     prisma.match.findFirst({
       where: {
         id,
-        organizationId:
-          user.organizationId,
+        organizationId: user.organizationId,
       },
 
       include: {
@@ -117,8 +88,7 @@ export default async function EditMatchPage({
     canEdit
       ? prisma.category.findMany({
           where: {
-            organizationId:
-              user.organizationId,
+            organizationId: user.organizationId,
           },
 
           orderBy: {
@@ -132,36 +102,23 @@ export default async function EditMatchPage({
     notFound();
   }
 
-  const calendarUrl =
-    googleCalendarUrl({
-      title:
-        `${match.category.name} × ${match.opponent}`,
+  const calendarUrl = googleCalendarUrl({
+    title: `${match.category.name} × ${match.opponent}`,
 
-      start:
-        match.startsAt,
+    start: match.startsAt,
 
-      location:
-        match.location,
+    location: match.location,
 
-      details:
-        [
-          match.competition,
-          match.notes,
-        ]
-          .filter(Boolean)
-          .join(" • ") ||
-        "Jogo cadastrado no ONZEUP",
-    });
+    details:
+      [match.competition, match.notes].filter(Boolean).join(" • ") ||
+      "Jogo cadastrado no ONZEUP",
+  });
 
   return (
-    <>
+    <main className="game-detail-premium">
       <div className="page-head">
         <div>
-          <h1>
-            {canEdit
-              ? "Editar jogo"
-              : "Detalhes do jogo"}
-          </h1>
+          <h1>{canEdit ? "Editar jogo" : "Detalhes do jogo"}</h1>
 
           <p className="muted">
             {canEdit
@@ -171,6 +128,12 @@ export default async function EditMatchPage({
         </div>
 
         <div className="actions">
+          <Link className="btn" href={`/jogos/${match.id}/sumula`}>
+            {match.matchSheetStatus === "DRAFT"
+              ? "Preencher súmula"
+              : "Ver súmula"}
+          </Link>
+
           <a
             className="btn btn-secondary"
             href={calendarUrl}
@@ -180,10 +143,7 @@ export default async function EditMatchPage({
             Google Agenda
           </a>
 
-          <Link
-            className="btn btn-secondary"
-            href="/jogos"
-          >
+          <Link className="btn btn-secondary" href="/jogos">
             Voltar
           </Link>
         </div>
@@ -192,14 +152,9 @@ export default async function EditMatchPage({
       {canViewCallUps ? (
         <section className="card match-callup-hub">
           <div>
-            <span className="page-eyebrow">
-              CONVOCAÇÃO
-            </span>
+            <span className="page-eyebrow">CONVOCAÇÃO</span>
 
-            <h2>
-              Atletas convocados:{" "}
-              {match.callUps.length}
-            </h2>
+            <h2>Atletas convocados: {match.callUps.length}</h2>
 
             <p className="muted">
               {canManageCallUps
@@ -208,316 +163,225 @@ export default async function EditMatchPage({
             </p>
           </div>
 
-          <Link
-            className="btn"
-            href={`/convocacoes/${match.id}`}
-          >
-            {canManageCallUps
-              ? "Gerenciar convocação"
-              : "Ver convocação"}
+          <Link className="btn" href={`/convocacoes/${match.id}`}>
+            {canManageCallUps ? "Gerenciar convocação" : "Ver convocação"}
           </Link>
         </section>
       ) : null}
 
       {canEdit ? (
         <section className="card">
-          <form
-            className="form"
-            action={updateMatch}
-          >
-            <input
-              type="hidden"
-              name="id"
-              value={match.id}
-            />
+          <form className="form" action={updateMatch}>
+            <input type="hidden" name="id" value={match.id} />
 
             <label>
               Categoria
-
               <select
                 name="categoryId"
                 defaultValue={match.categoryId}
                 required
               >
-                {categories.map(
-                  (category) => (
-                    <option
-                      key={category.id}
-                      value={category.id}
-                    >
-                      {category.name}
-                    </option>
-                  )
-                )}
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </label>
 
             <label>
-              Competição
-
-              <input
-                name="competition"
-                defaultValue={
-                  match.competition ?? ""
-                }
-              />
+              Modalidade
+              <select name="sport" defaultValue={match.sport} required>
+                <option value="FOOTBALL">Futebol de campo</option>
+                <option value="FUTSAL">Futsal</option>
+              </select>
             </label>
 
             <label>
-              Adversário
-
+              Quantidade de convocados
               <input
-                name="opponent"
-                defaultValue={
-                  match.opponent
-                }
+                name="callUpLimit"
+                type="number"
+                min={match.sport === "FUTSAL" ? 5 : 9}
+                max="30"
+                defaultValue={match.callUpLimit}
                 required
               />
             </label>
 
             <label>
-              Data
+              Competição
+              <input
+                name="competition"
+                defaultValue={match.competition ?? ""}
+              />
+            </label>
 
+            <label>
+              Adversário
+              <input name="opponent" defaultValue={match.opponent} required />
+            </label>
+
+            <label>
+              Data
               <input
                 name="matchDate"
                 type="date"
-                defaultValue={toDateInput(
-                  match.startsAt
-                )}
+                defaultValue={toDateInput(match.startsAt)}
                 required
               />
             </label>
 
             <label>
               Horário
-
               <input
                 name="matchTime"
                 type="time"
-                defaultValue={toTimeInput(
-                  match.startsAt
-                )}
+                defaultValue={toTimeInput(match.startsAt)}
                 required
               />
             </label>
 
             <label>
               Local
-
-              <input
-                name="location"
-                defaultValue={
-                  match.location ?? ""
-                }
-              />
+              <input name="location" defaultValue={match.location ?? ""} />
             </label>
 
             <label>
               Mandante / visitante
+              <select name="homeAway" defaultValue={match.homeAway ?? ""}>
+                <option value="">Não informado</option>
 
-              <select
-                name="homeAway"
-                defaultValue={
-                  match.homeAway ?? ""
-                }
-              >
-                <option value="">
-                  Não informado
-                </option>
+                <option value="HOME">Mandante</option>
 
-                <option value="HOME">
-                  Mandante
-                </option>
+                <option value="AWAY">Visitante</option>
 
-                <option value="AWAY">
-                  Visitante
-                </option>
-
-                <option value="NEUTRAL">
-                  Campo neutro
-                </option>
+                <option value="NEUTRAL">Campo neutro</option>
               </select>
             </label>
 
             <label>
               Status
+              <select name="status" defaultValue={match.status}>
+                <option value="SCHEDULED">Agendado</option>
 
-              <select
-                name="status"
-                defaultValue={
-                  match.status
-                }
-              >
-                <option value="SCHEDULED">
-                  Agendado
-                </option>
+                <option value="FINISHED">Finalizado</option>
 
-                <option value="FINISHED">
-                  Finalizado
-                </option>
-
-                <option value="CANCELLED">
-                  Cancelado
-                </option>
+                <option value="CANCELLED">Cancelado</option>
               </select>
             </label>
 
             <label>
               Gols da organização
-
               <input
                 name="goalsFor"
                 type="number"
                 min="0"
-                defaultValue={
-                  match.goalsFor ?? ""
-                }
+                defaultValue={match.goalsFor ?? ""}
               />
             </label>
 
             <label>
               Gols do adversário
-
               <input
                 name="goalsAgainst"
                 type="number"
                 min="0"
-                defaultValue={
-                  match.goalsAgainst ?? ""
-                }
+                defaultValue={match.goalsAgainst ?? ""}
               />
             </label>
 
             <label>
               Observações
-
               <textarea
                 name="notes"
                 rows={5}
-                defaultValue={
-                  match.notes ?? ""
-                }
+                defaultValue={match.notes ?? ""}
               />
             </label>
 
-            <button type="submit">
-              Salvar alterações
-            </button>
+            <button type="submit">Salvar alterações</button>
           </form>
         </section>
       ) : (
         <section className="card">
-          <span className="page-eyebrow">
-            SOMENTE VISUALIZAÇÃO
-          </span>
+          <span className="page-eyebrow">SOMENTE VISUALIZAÇÃO</span>
 
-          <h2>
-            Informações da partida
-          </h2>
+          <h2>Informações da partida</h2>
 
           <div className="stack">
             <div>
-              <span className="help">
-                Categoria
-              </span>
+              <span className="help">Categoria</span>
 
+              <strong>{match.category.name}</strong>
+            </div>
+
+            <div>
+              <span className="help">Modalidade</span>
               <strong>
-                {match.category.name}
+                {match.sport === "FUTSAL" ? "Futsal" : "Futebol de campo"}
               </strong>
             </div>
 
             <div>
-              <span className="help">
-                Competição
-              </span>
-
-              <strong>
-                {match.competition || "—"}
-              </strong>
+              <span className="help">Limite da convocação</span>
+              <strong>{match.callUpLimit} atletas</strong>
             </div>
 
             <div>
-              <span className="help">
-                Adversário
-              </span>
+              <span className="help">Competição</span>
 
-              <strong>
-                {match.opponent}
-              </strong>
+              <strong>{match.competition || "—"}</strong>
             </div>
 
             <div>
-              <span className="help">
-                Data e horário
-              </span>
+              <span className="help">Adversário</span>
 
-              <strong>
-                {formatDateTime(
-                  match.startsAt
-                )}
-              </strong>
+              <strong>{match.opponent}</strong>
             </div>
 
             <div>
-              <span className="help">
-                Local
-              </span>
+              <span className="help">Data e horário</span>
 
-              <strong>
-                {match.location || "—"}
-              </strong>
+              <strong>{formatDateTime(match.startsAt)}</strong>
             </div>
 
             <div>
-              <span className="help">
-                Mandante / visitante
-              </span>
+              <span className="help">Local</span>
 
-              <strong>
-                {homeAwayLabel(
-                  match.homeAway
-                )}
-              </strong>
+              <strong>{match.location || "—"}</strong>
             </div>
 
             <div>
-              <span className="help">
-                Status
-              </span>
+              <span className="help">Mandante / visitante</span>
 
-              <strong>
-                {statusLabel(
-                  match.status
-                )}
-              </strong>
+              <strong>{homeAwayLabel(match.homeAway)}</strong>
             </div>
 
-            {match.status ===
-            "FINISHED" ? (
+            <div>
+              <span className="help">Status</span>
+
+              <strong>{statusLabel(match.status)}</strong>
+            </div>
+
+            {match.status === "FINISHED" ? (
               <div>
-                <span className="help">
-                  Resultado
-                </span>
+                <span className="help">Resultado</span>
 
                 <strong>
-                  {match.goalsFor ?? 0} ×{" "}
-                  {match.goalsAgainst ?? 0}
+                  {match.goalsFor ?? 0} × {match.goalsAgainst ?? 0}
                 </strong>
               </div>
             ) : null}
 
             <div>
-              <span className="help">
-                Observações
-              </span>
+              <span className="help">Observações</span>
 
-              <strong>
-                {match.notes || "—"}
-              </strong>
+              <strong>{match.notes || "—"}</strong>
             </div>
           </div>
         </section>
       )}
-    </>
+    </main>
   );
 }

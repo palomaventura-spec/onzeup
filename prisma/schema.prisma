@@ -71,6 +71,7 @@ model Organization {
   coachAccesses               CoachOrganizationAccess[]
   matches                     Match[]
   matchAthleteStats           MatchAthleteStat[]
+  matchEvents                 MatchEvent[]
   payments                    Payment[]
   qtrs                        Qtr[]
   staffMembers                StaffMember[]
@@ -149,6 +150,9 @@ model Category {
   id                      String                    @id @default(cuid())
   name                    String
   birthYear               Int?
+  description             String?
+  accentColor             String                    @default("#9DDB16")
+  active                  Boolean                   @default(true)
   organizationId          String
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
@@ -168,20 +172,26 @@ model Category {
 }
 
 model StaffMember {
-  id               String       @id @default(cuid())
-  name             String
-  roleTitle        String
-  photoUrl         String?
-  bio              String?
-  organizationId   String
-  categoryId       String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  canManageCallUps Boolean      @default(false)
-  coachEmail       String?
-  sport            SportType    @default(BOTH)
-  category         Category?    @relation(fields: [categoryId], references: [id])
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                       String       @id @default(cuid())
+  name                     String
+  roleTitle                String
+  photoUrl                 String?
+  bio                      String?
+  phone                    String?
+  professionalRegistration String?
+  education                String?
+  specialties              String?
+  joinedAt                 DateTime?
+  active                   Boolean      @default(true)
+  organizationId           String
+  categoryId               String?
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+  canManageCallUps         Boolean      @default(false)
+  coachEmail               String?
+  sport                    SportType    @default(BOTH)
+  category                 Category?    @relation(fields: [categoryId], references: [id])
+  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([categoryId])
@@ -215,6 +225,7 @@ model Athlete {
   performanceGoals     AthletePerformanceGoal[]
   performanceReports   PerformanceReport[]
   matchStats           MatchAthleteStat[]
+  matchEvents          MatchEvent[]
   trainingAttendances  TrainingAttendance[]
   bodyMeasurements     AthleteBodyMeasurement[]
   wellbeingEntries     AthleteWellbeingEntry[]
@@ -704,6 +715,8 @@ model PerformanceReport {
 
 model Match {
   id               String             @id @default(cuid())
+  sport            SportType          @default(FOOTBALL)
+  callUpLimit      Int                @default(18)
   competition      String?
   round            String?
   opponent         String
@@ -714,6 +727,11 @@ model Match {
   goalsFor         Int?
   goalsAgainst     Int?
   notes            String?
+  presentationTime String?
+  uniform          String?
+  referee          String?
+  assistantReferee String?
+  matchSheetNotes  String?
   formation        String?
   matchSheetStatus MatchSheetStatus   @default(DRAFT)
   finalizedAt      DateTime?
@@ -724,11 +742,32 @@ model Match {
   callUps          CallUp[]
   charges          Charge[]
   athleteStats     MatchAthleteStat[]
+  events           MatchEvent[]
   category         Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, startsAt])
   @@index([categoryId, startsAt])
+}
+
+model MatchEvent {
+  id             String         @id @default(cuid())
+  organizationId String
+  matchId        String
+  athleteId      String?
+  type           MatchEventType
+  team           MatchEventTeam @default(OURS)
+  minute         Int?
+  period         String?
+  notes          String?
+  createdAt      DateTime       @default(now())
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  match          Match          @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  athlete        Athlete?       @relation(fields: [athleteId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, matchId, createdAt])
+  @@index([matchId, minute])
+  @@index([athleteId])
 }
 
 model MatchAthleteStat {
@@ -744,6 +783,8 @@ model MatchAthleteStat {
   minutesPlayed    Int?
   positionPlayed   String?
   jerseyNumber     Int?
+  isCaptain        Boolean                  @default(false)
+  lineupOrder      Int?
   goals            Int                      @default(0)
   assists          Int                      @default(0)
   yellowCards      Int                      @default(0)
@@ -1195,6 +1236,23 @@ enum MatchLineupRole {
   STARTER
   SUBSTITUTE
   DID_NOT_PLAY
+}
+
+enum MatchEventType {
+  GOAL
+  ASSIST
+  YELLOW_CARD
+  RED_CARD
+  SUBSTITUTION
+  INJURY
+  PENALTY
+  OWN_GOAL
+  OTHER
+}
+
+enum MatchEventTeam {
+  OURS
+  OPPONENT
 }
 
 enum TrainingSessionStatus {

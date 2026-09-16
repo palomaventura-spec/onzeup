@@ -80,7 +80,9 @@ export default async function AthletePerformancePage({
         },
       },
     }),
-    prisma.subscription.findUnique({ where: { organizationId: user.organizationId } }),
+    prisma.subscription.findUnique({
+      where: { organizationId: user.organizationId },
+    }),
     prisma.organization.findUnique({
       where: { id: user.organizationId },
       select: { accessStatus: true, complimentaryUntil: true },
@@ -128,12 +130,12 @@ export default async function AthletePerformancePage({
   }
 
   const finalizedEvaluations = athlete.evaluations.filter(
-    (evaluation) => evaluation.status === "FINALIZED"
+    (evaluation) => evaluation.status === "FINALIZED",
   );
   const latestEvaluation = finalizedEvaluations[0];
   const comparableEvaluations = latestEvaluation
     ? finalizedEvaluations.filter(
-        (evaluation) => evaluation.athleteRole === latestEvaluation.athleteRole
+        (evaluation) => evaluation.athleteRole === latestEvaluation.athleteRole,
       )
     : [];
   const firstComparableEvaluation =
@@ -143,16 +145,17 @@ export default async function AthletePerformancePage({
 
   const averageForArea = (
     evaluation: (typeof athlete.evaluations)[number] | null | undefined,
-    area: string
+    area: string,
   ) => {
-    const scores = evaluation?.scores.filter((score) => score.area === area) || [];
+    const scores =
+      evaluation?.scores.filter((score) => score.area === area) || [];
     return scores.length
       ? scores.reduce((total, item) => total + item.score, 0) / scores.length
       : null;
   };
 
   const averageForEvaluation = (
-    evaluation: (typeof athlete.evaluations)[number] | null | undefined
+    evaluation: (typeof athlete.evaluations)[number] | null | undefined,
   ) => {
     const scores =
       evaluation?.scores.filter((score) => score.area in AREA_LABELS) || [];
@@ -180,10 +183,10 @@ export default async function AthletePerformancePage({
   });
 
   const countedAttendances = athlete.trainingAttendances.filter((item) =>
-    ATTENDANCE_COUNTED.has(item.status)
+    ATTENDANCE_COUNTED.has(item.status),
   );
   const presentAttendances = countedAttendances.filter((item) =>
-    ATTENDANCE_PRESENT.has(item.status)
+    ATTENDANCE_PRESENT.has(item.status),
   );
   const attendanceRate = countedAttendances.length
     ? Math.round((presentAttendances.length / countedAttendances.length) * 100)
@@ -191,13 +194,15 @@ export default async function AthletePerformancePage({
 
   const matchTotals = athlete.matchStats.reduce(
     (total, item) => ({
-      matches: total.matches + (item.minutesPlayed || item.goals || item.assists ? 1 : 0),
+      matches:
+        total.matches +
+        (item.minutesPlayed || item.goals || item.assists ? 1 : 0),
       goals: total.goals + item.goals,
       assists: total.assists + item.assists,
       yellowCards: total.yellowCards + item.yellowCards,
       redCards: total.redCards + item.redCards,
     }),
-    { matches: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0 }
+    { matches: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0 },
   );
 
   const measurement = athlete.bodyMeasurements[0];
@@ -207,7 +212,7 @@ export default async function AthletePerformancePage({
   const bmi = decimalNumber(measurement?.bmi);
 
   return (
-    <>
+    <main className="athlete-performance-page">
       <div className="page-head">
         <div>
           <span className="page-eyebrow">ONZEUP PERFORMANCE • CLUB ELITE</span>
@@ -229,7 +234,10 @@ export default async function AthletePerformancePage({
               Relatório de evolução
             </Link>
           ) : null}
-          <Link className="btn" href={`/atletas/${athlete.id}/performance/avaliacoes/nova`}>
+          <Link
+            className="btn"
+            href={`/atletas/${athlete.id}/performance/avaliacoes/nova`}
+          >
             Nova avaliação
           </Link>
         </div>
@@ -252,7 +260,9 @@ export default async function AthletePerformancePage({
         ].map(([label, value]) => (
           <article className="card" key={label} style={{ padding: 18 }}>
             <span className="help">{label}</span>
-            <strong style={{ display: "block", fontSize: 28, marginTop: 5 }}>{value}</strong>
+            <strong style={{ display: "block", fontSize: 28, marginTop: 5 }}>
+              {value}
+            </strong>
           </article>
         ))}
       </section>
@@ -276,7 +286,13 @@ export default async function AthletePerformancePage({
           <div className="stack" style={{ marginTop: 20 }}>
             {areaAverages.map(({ area, average }) => (
               <div key={area}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                  }}
+                >
                   <strong>{AREA_LABELS[area]}</strong>
                   <span>
                     {average !== null
@@ -316,7 +332,8 @@ export default async function AthletePerformancePage({
                 <div key={goal.id}>
                   <strong>{goal.title}</strong>
                   <div className="help">
-                    {AREA_LABELS[goal.area] || goal.area} • até {formatDate(goal.targetDate)}
+                    {AREA_LABELS[goal.area] || goal.area} • até{" "}
+                    {formatDate(goal.targetDate)}
                   </div>
                 </div>
               ))}
@@ -330,10 +347,22 @@ export default async function AthletePerformancePage({
           <span className="page-eyebrow">DADOS FÍSICOS</span>
           <h2>Última medição</h2>
           <div className="stack" style={{ marginTop: 18 }}>
-            <div><span className="help">Altura</span><strong>{height ? `${height} cm` : "—"}</strong></div>
-            <div><span className="help">Peso</span><strong>{weight ? `${weight} kg` : "—"}</strong></div>
-            <div><span className="help">IMC</span><strong>{bmi?.toFixed(1) || "—"}</strong></div>
-            <div><span className="help">Medição</span><strong>{formatDate(measurement?.measuredAt)}</strong></div>
+            <div>
+              <span className="help">Altura</span>
+              <strong>{height ? `${height} cm` : "—"}</strong>
+            </div>
+            <div>
+              <span className="help">Peso</span>
+              <strong>{weight ? `${weight} kg` : "—"}</strong>
+            </div>
+            <div>
+              <span className="help">IMC</span>
+              <strong>{bmi?.toFixed(1) || "—"}</strong>
+            </div>
+            <div>
+              <span className="help">Medição</span>
+              <strong>{formatDate(measurement?.measuredAt)}</strong>
+            </div>
           </div>
         </article>
 
@@ -341,10 +370,24 @@ export default async function AthletePerformancePage({
           <span className="page-eyebrow">BEM-ESTAR</span>
           <h2>Registro mais recente</h2>
           <div className="stack" style={{ marginTop: 18 }}>
-            <div><span className="help">Sono</span><strong>{decimalNumber(wellbeing?.sleepHours) ?? "—"} h</strong></div>
-            <div><span className="help">Qualidade do sono</span><strong>{wellbeing?.sleepQuality ?? "—"}</strong></div>
-            <div><span className="help">Energia</span><strong>{wellbeing?.energyLevel ?? "—"}</strong></div>
-            <div><span className="help">Dor relatada</span><strong>{wellbeing?.hasPain ? wellbeing.painLocation || "Sim" : "Não"}</strong></div>
+            <div>
+              <span className="help">Sono</span>
+              <strong>{decimalNumber(wellbeing?.sleepHours) ?? "—"} h</strong>
+            </div>
+            <div>
+              <span className="help">Qualidade do sono</span>
+              <strong>{wellbeing?.sleepQuality ?? "—"}</strong>
+            </div>
+            <div>
+              <span className="help">Energia</span>
+              <strong>{wellbeing?.energyLevel ?? "—"}</strong>
+            </div>
+            <div>
+              <span className="help">Dor relatada</span>
+              <strong>
+                {wellbeing?.hasPain ? wellbeing.painLocation || "Sim" : "Não"}
+              </strong>
+            </div>
           </div>
         </article>
 
@@ -352,8 +395,14 @@ export default async function AthletePerformancePage({
           <span className="page-eyebrow">SÚMULA</span>
           <h2>Resumo dos jogos</h2>
           <div className="stack" style={{ marginTop: 18 }}>
-            <div><span className="help">Cartões amarelos</span><strong>{matchTotals.yellowCards}</strong></div>
-            <div><span className="help">Cartões vermelhos</span><strong>{matchTotals.redCards}</strong></div>
+            <div>
+              <span className="help">Cartões amarelos</span>
+              <strong>{matchTotals.yellowCards}</strong>
+            </div>
+            <div>
+              <span className="help">Cartões vermelhos</span>
+              <strong>{matchTotals.redCards}</strong>
+            </div>
           </div>
         </article>
 
@@ -365,7 +414,11 @@ export default async function AthletePerformancePage({
               {athlete.externalTrainings.map((training) => (
                 <div key={training.id}>
                   <strong>{training.activity}</strong>
-                  <div className="help">{training.providerName || training.modality || "Atividade externa"}</div>
+                  <div className="help">
+                    {training.providerName ||
+                      training.modality ||
+                      "Atividade externa"}
+                  </div>
                 </div>
               ))}
             </div>
@@ -399,7 +452,9 @@ export default async function AthletePerformancePage({
                 </thead>
                 <tbody>
                   <tr style={{ background: "#f5f8f9" }}>
-                    <td><strong>Resultado geral — 5 valências</strong></td>
+                    <td>
+                      <strong>Resultado geral — 5 valências</strong>
+                    </td>
                     <td>
                       <strong>
                         {initialOverallAverage !== null
@@ -433,7 +488,9 @@ export default async function AthletePerformancePage({
                   </tr>
                   {areaAverages.map(({ area, initial, average, delta }) => (
                     <tr key={area}>
-                      <td><strong>{AREA_LABELS[area]}</strong></td>
+                      <td>
+                        <strong>{AREA_LABELS[area]}</strong>
+                      </td>
                       <td>
                         {initial !== null
                           ? `${initial.toFixed(1)} (${scorePercent(initial)}%)`
@@ -480,7 +537,9 @@ export default async function AthletePerformancePage({
             <span className="page-eyebrow">HISTÓRICO</span>
             <h2>Avaliações do atleta</h2>
           </div>
-          <span className="badge">{athlete.evaluations.length} registro(s)</span>
+          <span className="badge">
+            {athlete.evaluations.length} registro(s)
+          </span>
         </div>
 
         {athlete.evaluations.length ? (
@@ -500,7 +559,9 @@ export default async function AthletePerformancePage({
               <tbody>
                 {athlete.evaluations.map((evaluation) => (
                   <tr key={evaluation.id}>
-                    <td><strong>{evaluation.title || "Avaliação"}</strong></td>
+                    <td>
+                      <strong>{evaluation.title || "Avaliação"}</strong>
+                    </td>
                     <td>
                       {evaluation.athleteRole === "GOALKEEPER"
                         ? "Goleiro"
@@ -539,6 +600,6 @@ export default async function AthletePerformancePage({
           <p className="muted">Nenhuma avaliação cadastrada.</p>
         )}
       </section>
-    </>
+    </main>
   );
 }

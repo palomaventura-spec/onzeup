@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { MatchStatus } from "@prisma/client";
+import { MatchStatus, SportType } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireClubPermission } from "@/lib/club-access";
@@ -25,53 +25,35 @@ function nullableNumber(value: FormDataEntryValue | null) {
 
   const n = Number(raw);
 
-  return Number.isFinite(n)
-    ? n
-    : null;
+  return Number.isFinite(n) ? n : null;
 }
 
-async function validateCategory(
-  categoryId: string,
-  organizationId: string
-) {
-  const category =
-    await prisma.category.findFirst({
-      where: {
-        id: categoryId,
-        organizationId,
-      },
+async function validateCategory(categoryId: string, organizationId: string) {
+  const category = await prisma.category.findFirst({
+    where: {
+      id: categoryId,
+      organizationId,
+    },
 
-      select: {
-        id: true,
-      },
-    });
+    select: {
+      id: true,
+    },
+  });
 
   return category?.id ?? null;
 }
 
-function parseDateTime(
-  date: string,
-  time: string
-) {
+function parseDateTime(date: string, time: string) {
   if (!date || !time) {
     return null;
   }
 
-  const parsed =
-    new Date(
-      `${date}T${time}:00`
-    );
+  const parsed = new Date(`${date}T${time}:00`);
 
-  return Number.isNaN(
-    parsed.getTime()
-  )
-    ? null
-    : parsed;
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function parseStatus(
-  value: string
-): MatchStatus {
+function parseStatus(value: string): MatchStatus {
   if (value === "FINISHED") {
     return MatchStatus.FINISHED;
   }
@@ -83,68 +65,47 @@ function parseStatus(
   return MatchStatus.SCHEDULED;
 }
 
-export async function createMatch(
-  formData: FormData
-) {
-  const user =
-    await requireClubPermission(
-      "MATCHES_EDIT"
-    );
+function parseSport(value: string): SportType {
+  return value === "FUTSAL" ? SportType.FUTSAL : SportType.FOOTBALL;
+}
 
-  const categoryId =
-    await validateCategory(
-      clean(
-        formData.get("categoryId")
-      ),
-      user.organizationId
-    );
+function parseCallUpLimit(value: FormDataEntryValue | null, sport: SportType) {
+  const parsed = Number(clean(value));
+  const minimum = sport === SportType.FUTSAL ? 5 : 9;
+  const fallback = sport === SportType.FUTSAL ? 14 : 18;
+  return Number.isInteger(parsed) && parsed >= minimum && parsed <= 30
+    ? parsed
+    : fallback;
+}
 
-  const opponent =
-    clean(
-      formData.get("opponent")
-    );
+export async function createMatch(formData: FormData) {
+  const user = await requireClubPermission("MATCHES_EDIT");
 
-  const competition =
-    nullable(
-      formData.get("competition")
-    );
+  const categoryId = await validateCategory(
+    clean(formData.get("categoryId")),
+    user.organizationId,
+  );
 
-  const matchDate =
-    clean(
-      formData.get("matchDate")
-    );
+  const opponent = clean(formData.get("opponent"));
 
-  const matchTime =
-    clean(
-      formData.get("matchTime")
-    );
+  const competition = nullable(formData.get("competition"));
 
-  const startsAt =
-    parseDateTime(
-      matchDate,
-      matchTime
-    );
+  const matchDate = clean(formData.get("matchDate"));
 
-  const location =
-    nullable(
-      formData.get("location")
-    );
+  const matchTime = clean(formData.get("matchTime"));
 
-  const homeAway =
-    nullable(
-      formData.get("homeAway")
-    );
+  const startsAt = parseDateTime(matchDate, matchTime);
 
-  const notes =
-    nullable(
-      formData.get("notes")
-    );
+  const location = nullable(formData.get("location"));
 
-  if (
-    !categoryId ||
-    !opponent ||
-    !startsAt
-  ) {
+  const homeAway = nullable(formData.get("homeAway"));
+
+  const notes = nullable(formData.get("notes"));
+
+  const sport = parseSport(clean(formData.get("sport")));
+  const callUpLimit = parseCallUpLimit(formData.get("callUpLimit"), sport);
+
+  if (!categoryId || !opponent || !startsAt) {
     return;
   }
 
@@ -156,102 +117,53 @@ export async function createMatch(
       location,
       homeAway,
       notes,
+      sport,
+      callUpLimit,
       categoryId,
-      organizationId:
-        user.organizationId,
-      status:
-        MatchStatus.SCHEDULED,
+      organizationId: user.organizationId,
+      status: MatchStatus.SCHEDULED,
     },
   });
 
   revalidatePath("/jogos");
 }
 
-export async function updateMatch(
-  formData: FormData
-) {
-  const user =
-    await requireClubPermission(
-      "MATCHES_EDIT"
-    );
+export async function updateMatch(formData: FormData) {
+  const user = await requireClubPermission("MATCHES_EDIT");
 
-  const id =
-    clean(
-      formData.get("id")
-    );
+  const id = clean(formData.get("id"));
 
-  const categoryId =
-    await validateCategory(
-      clean(
-        formData.get("categoryId")
-      ),
-      user.organizationId
-    );
+  const categoryId = await validateCategory(
+    clean(formData.get("categoryId")),
+    user.organizationId,
+  );
 
-  const opponent =
-    clean(
-      formData.get("opponent")
-    );
+  const opponent = clean(formData.get("opponent"));
 
-  const competition =
-    nullable(
-      formData.get("competition")
-    );
+  const competition = nullable(formData.get("competition"));
 
-  const matchDate =
-    clean(
-      formData.get("matchDate")
-    );
+  const matchDate = clean(formData.get("matchDate"));
 
-  const matchTime =
-    clean(
-      formData.get("matchTime")
-    );
+  const matchTime = clean(formData.get("matchTime"));
 
-  const startsAt =
-    parseDateTime(
-      matchDate,
-      matchTime
-    );
+  const startsAt = parseDateTime(matchDate, matchTime);
 
-  const location =
-    nullable(
-      formData.get("location")
-    );
+  const location = nullable(formData.get("location"));
 
-  const homeAway =
-    nullable(
-      formData.get("homeAway")
-    );
+  const homeAway = nullable(formData.get("homeAway"));
 
-  const notes =
-    nullable(
-      formData.get("notes")
-    );
+  const notes = nullable(formData.get("notes"));
 
-  const status =
-    parseStatus(
-      clean(
-        formData.get("status")
-      )
-    );
+  const sport = parseSport(clean(formData.get("sport")));
+  const callUpLimit = parseCallUpLimit(formData.get("callUpLimit"), sport);
 
-  const goalsFor =
-    nullableNumber(
-      formData.get("goalsFor")
-    );
+  const status = parseStatus(clean(formData.get("status")));
 
-  const goalsAgainst =
-    nullableNumber(
-      formData.get("goalsAgainst")
-    );
+  const goalsFor = nullableNumber(formData.get("goalsFor"));
 
-  if (
-    !id ||
-    !categoryId ||
-    !opponent ||
-    !startsAt
-  ) {
+  const goalsAgainst = nullableNumber(formData.get("goalsAgainst"));
+
+  if (!id || !categoryId || !opponent || !startsAt) {
     return;
   }
 
@@ -269,8 +181,7 @@ export async function updateMatch(
   await prisma.match.updateMany({
     where: {
       id,
-      organizationId:
-        user.organizationId,
+      organizationId: user.organizationId,
     },
 
     data: {
@@ -280,6 +191,8 @@ export async function updateMatch(
       location,
       homeAway,
       notes,
+      sport,
+      callUpLimit,
       categoryId,
       status,
       ...resultData,
@@ -290,18 +203,10 @@ export async function updateMatch(
   redirect("/jogos");
 }
 
-export async function deleteMatch(
-  formData: FormData
-) {
-  const user =
-    await requireClubPermission(
-      "MATCHES_EDIT"
-    );
+export async function deleteMatch(formData: FormData) {
+  const user = await requireClubPermission("MATCHES_EDIT");
 
-  const id =
-    clean(
-      formData.get("id")
-    );
+  const id = clean(formData.get("id"));
 
   if (!id) {
     return;
@@ -310,55 +215,34 @@ export async function deleteMatch(
   await prisma.match.deleteMany({
     where: {
       id,
-      organizationId:
-        user.organizationId,
+      organizationId: user.organizationId,
     },
   });
 
   revalidatePath("/jogos");
 }
 
-export async function markMatchFinished(
-  formData: FormData
-) {
-  const user =
-    await requireClubPermission(
-      "MATCHES_EDIT"
-    );
+export async function markMatchFinished(formData: FormData) {
+  const user = await requireClubPermission("MATCHES_EDIT");
 
-  const id =
-    clean(
-      formData.get("id")
-    );
+  const id = clean(formData.get("id"));
 
-  const goalsFor =
-    nullableNumber(
-      formData.get("goalsFor")
-    );
+  const goalsFor = nullableNumber(formData.get("goalsFor"));
 
-  const goalsAgainst =
-    nullableNumber(
-      formData.get("goalsAgainst")
-    );
+  const goalsAgainst = nullableNumber(formData.get("goalsAgainst"));
 
-  if (
-    !id ||
-    goalsFor === null ||
-    goalsAgainst === null
-  ) {
+  if (!id || goalsFor === null || goalsAgainst === null) {
     return;
   }
 
   await prisma.match.updateMany({
     where: {
       id,
-      organizationId:
-        user.organizationId,
+      organizationId: user.organizationId,
     },
 
     data: {
-      status:
-        MatchStatus.FINISHED,
+      status: MatchStatus.FINISHED,
       goalsFor,
       goalsAgainst,
     },
