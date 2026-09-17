@@ -1,4 +1,6 @@
 import Link from "next/link";
+import ImageUpload from "@/components/ImageUpload";
+import SafeAvatar from "@/components/SafeAvatar";
 import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -69,13 +71,7 @@ export default async function EditAthletePage({
     <main className="athlete-profile-page">
       <section className="athlete-profile-hero">
         <div className="athlete-profile-avatar">
-          {athlete.photoUrl ? (
-            <img src={athlete.photoUrl} alt={athlete.name} />
-          ) : (
-            <span>
-              {(athlete.nickname || athlete.name).slice(0, 2).toUpperCase()}
-            </span>
-          )}
+          <SafeAvatar src={athlete.photoUrl} name={athlete.nickname || athlete.name} />
         </div>
         <div>
           <span className="page-eyebrow">PERFIL DO ATLETA</span>
@@ -186,14 +182,7 @@ export default async function EditAthletePage({
               </select>
             </label>
 
-            <label>
-              URL da foto
-              <input
-                name="photoUrl"
-                type="url"
-                defaultValue={athlete.photoUrl ?? ""}
-              />
-            </label>
+            <ImageUpload name="photoUrl" defaultValue={athlete.photoUrl} label="Foto do atleta — incluir ou substituir" recommended="JPEG, PNG ou WEBP até 4 MB. Após enviar ou remover, clique em Salvar alterações." />
 
             <label>
               Status
@@ -259,7 +248,7 @@ export default async function EditAthletePage({
           <div className="stack">
             {athlete.photoUrl ? (
               <div className="admin-athlete-photo">
-                <img src={athlete.photoUrl} alt={athlete.name} />
+                <SafeAvatar src={athlete.photoUrl} name={athlete.name} />
               </div>
             ) : null}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 const MAX_IMAGE_SIDE = 2200;
 
@@ -61,9 +61,46 @@ export default function ImageUpload({
   const [url, setUrl] = useState(defaultValue || "");
   const [status, setStatus] = useState<"idle" | "uploading" | "error" | "success">("idle");
   const [message, setMessage] = useState("");
+  const inputId = useId();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const blockedRef = useRef(false);
+  const [failedPreview, setFailedPreview] = useState(false);
+
+  useEffect(() => {
+    const form = containerRef.current?.closest("form");
+    if (!form) return;
+    function guard(event: Event) {
+      if (!blockedRef.current) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setMessage("A foto ainda não foi enviada. Aguarde ou cancele a tentativa antes de salvar.");
+      fileRef.current?.focus();
+    }
+    form.addEventListener("submit", guard, true);
+    return () => form.removeEventListener("submit", guard, true);
+  }, []);
+
+  function cancelAttempt() {
+    blockedRef.current = false;
+    setStatus("idle");
+    setMessage("Tentativa cancelada. A foto anterior foi preservada.");
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function removePhoto() {
+    if (!window.confirm("Remover a foto do perfil ao salvar as alterações?")) return;
+    setUrl("");
+    setFailedPreview(false);
+    blockedRef.current = false;
+    setStatus("idle");
+    setMessage("Foto removida da prévia. Salve para confirmar a remoção do perfil.");
+    if (fileRef.current) fileRef.current.value = "";
+  }
 
   async function upload(file?: File) {
     if (!file) return;
+    blockedRef.current = true;
     setStatus("uploading");
     setMessage("");
 
@@ -101,8 +138,10 @@ export default function ImageUpload({
       }
 
       setUrl(json.url);
+      setFailedPreview(false);
+      blockedRef.current = false;
       setStatus("success");
-      setMessage("Imagem enviada. Agora salve as configurações.");
+      setMessage("Foto enviada. Clique em Salvar para vinculá-la ao cadastro.");
     } catch {
       setStatus("error");
       setMessage("Não foi possível processar ou enviar a imagem.");
@@ -112,27 +151,31 @@ export default function ImageUpload({
   const previewClass = purpose === "cover" ? "image-upload-preview cover" : "image-upload-preview logo";
 
   return (
-    <div className="image-upload-field">
-      <label>{label}</label>
+    <div className="image-upload-field" ref={containerRef}>
+      <label htmlFor={inputId}>{label}</label>
       {recommended ? <small className="help">{recommended}</small> : null}
-      {url ? (
+      {url && !failedPreview ? (
         <div className={previewClass}>
-          <img src={url} alt="Pré-visualização" />
+          <img src={url} alt="Pré-visualização" onError={() => setFailedPreview(true)} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
       ) : (
-        <div className={`${previewClass} empty`}>Nenhuma imagem definida</div>
+        <div className={`${previewClass} empty`}>{url ? "Foto indisponível. Você pode selecionar outra abaixo." : "Nenhuma imagem definida"}</div>
       )}
       <input
+        id={inputId}
+        ref={fileRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
         disabled={status === "uploading"}
         onChange={(event) => upload(event.target.files?.[0])}
       />
       <input type="hidden" name={name} value={url} />
+      {url ? <button type="button" className="btn-secondary" disabled={status === "uploading"} onClick={removePhoto}>Remover foto do perfil</button> : null}
+      {status === "error" ? <button type="button" className="btn-secondary" onClick={cancelAttempt}>Cancelar tentativa e manter foto anterior</button> : null}
       {status === "uploading" ? (
         <small className="uploading-line"><i className="pending-button-spinner" /> Enviando imagem...</small>
       ) : null}
-      {message ? <small className={status === "error" ? "form-error" : "form-success"}>{message}</small> : null}
+      {message ? <small role={status === "error" ? "alert" : "status"} className={status === "error" ? "form-error" : "form-success"}>{message}</small> : null}
     </div>
   );
 }
