@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ImageUpload from "@/components/ImageUpload";
 import SafeAvatar from "@/components/SafeAvatar";
+import AthleteSaveButton from "@/components/AthleteSaveButton";
 import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -236,7 +237,7 @@ export default async function EditAthletePage({
               />
             </label>
 
-            <button type="submit">Salvar alterações</button>
+            <AthleteSaveButton />
           </form>
         </section>
       ) : (

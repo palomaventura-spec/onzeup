@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import styles from "./MobileClubNavigation.module.css";
 
@@ -280,6 +280,25 @@ export default function MobileClubNavigation({
   moreItems,
 }: MobileClubNavigationProps) {
   const pathname = usePathname();
+  const bottomNavRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const nav = bottomNavRef.current;
+    const shell = nav?.closest<HTMLElement>(".club-app-light");
+    if (!nav || !shell) return;
+    const update = () => {
+      shell.style.setProperty("--club-bottom-nav-height", `${Math.ceil(nav.getBoundingClientRect().height)}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(nav);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+      shell.style.removeProperty("--club-bottom-nav-height");
+    };
+  }, []);
 
   const [moreOpen, setMoreOpen] =
     useState(false);
@@ -367,6 +386,7 @@ export default function MobileClubNavigation({
 
       <nav
         className={styles.bottomNav}
+        ref={bottomNavRef}
         aria-label="Navegação principal"
       >
         {primaryItems.map((item) => {

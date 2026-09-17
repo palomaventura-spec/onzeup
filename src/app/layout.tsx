@@ -5,6 +5,7 @@ import "./onzeup-module-pages.css";
 import "./onzeup-performance-text-fix.css";
 import "./onzeup-sidebar-fix.css";
 import "./onzeup-mobile-hotfix.css";
+import "./onzeup-mobile-atletas.css";
 
 import type { Metadata, Viewport } from "next";
 
