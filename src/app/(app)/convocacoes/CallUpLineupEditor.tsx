@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState, useTransition } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { saveCallUpLineup } from "./actions";
+import SafeConvocationImage from "./SafeConvocationImage";
 
 type AthleteLineup = {
   id: string;
@@ -34,8 +35,14 @@ const FUTSAL_SLOTS = [
   ["FIXO", "Fixo"],
   ["ALA_LEFT", "Ala esquerdo"],
   ["ALA_RIGHT", "Ala direito"],
-  ["PIVO", "Pivô"],
+  ["PIVO", "PivÃ´"],
 ] as const;
+
+function safeImageUrl(value: string | null) {
+  if (!value) return null;
+  if (value.startsWith("/") || value.startsWith("data:")) return value;
+  return `/api/image-proxy?url=${encodeURIComponent(value)}`;
+}
 
 export default function CallUpLineupEditor({
   matchId,
@@ -102,10 +109,10 @@ export default function CallUpLineupEditor({
         <div>
           <span className="page-eyebrow">
             {sport === "FUTSAL"
-              ? "FUTSAL • FORMAÇÃO 1–2–1"
-              : "CAMPO • FORMAÇÃO 3–3–2"}
+              ? "FUTSAL â€¢ FORMAÃ‡ÃƒO 1â€“2â€“1"
+              : "CAMPO â€¢ FORMAÃ‡ÃƒO 3â€“3â€“2"}
           </span>
-          <h2>Montar escalação</h2>
+          <h2>Montar escalaÃ§Ã£o</h2>
           <p className="muted">
             {slots.length} titulares e {Math.max(0, squadLimit - slots.length)}{" "}
             reservas.
@@ -114,12 +121,12 @@ export default function CallUpLineupEditor({
         <span
           className={`status ${complete ? "status-confirmed" : "status-pending"}`}
         >
-          {starters.length}/{slots.length} posições
+          {starters.length}/{slots.length} posiÃ§Ãµes
         </span>
       </div>
 
       <div className="lineup-layout">
-        <div className="mini-pitch" aria-label="Prévia da formação">
+        <div className="mini-pitch" aria-label="PrÃ©via da formaÃ§Ã£o">
           {slots.map(([slot, label]) => {
             const athlete = rows.find((item) => item.slot === slot);
             return (
@@ -127,17 +134,17 @@ export default function CallUpLineupEditor({
                 className={`pitch-slot pitch-${slot.toLowerCase()}`}
                 key={slot}
               >
-                {athlete?.photoUrl ? (
-                  <img src={athlete.photoUrl} alt="" />
-                ) : (
-                  <span>
-                    {athlete
+                <SafeConvocationImage
+                  src={safeImageUrl(athlete?.photoUrl || null)}
+                  alt={athlete ? athlete.nickname || athlete.name : label}
+                  fallback={
+                    athlete
                       ? (athlete.nickname || athlete.name)
                           .slice(0, 2)
                           .toUpperCase()
-                      : "+"}
-                  </span>
-                )}
+                      : "+"
+                  }
+                />
                 <small>
                   {athlete ? athlete.nickname || athlete.name : label}
                 </small>
@@ -151,9 +158,9 @@ export default function CallUpLineupEditor({
             <thead>
               <tr>
                 <th>Atleta</th>
-                <th>Posição na arte</th>
-                <th>Nº</th>
-                <th>Capitão</th>
+                <th>PosiÃ§Ã£o na arte</th>
+                <th>NÂº</th>
+                <th>CapitÃ£o</th>
               </tr>
             </thead>
             <tbody>
@@ -198,7 +205,7 @@ export default function CallUpLineupEditor({
                       checked={captainId === athlete.id}
                       disabled={!canEdit || athlete.slot === "SUBSTITUTE"}
                       onChange={() => setCaptainId(athlete.id)}
-                      aria-label={`Marcar ${athlete.name} como capitão`}
+                      aria-label={`Marcar ${athlete.name} como capitÃ£o`}
                     />
                   </td>
                 </tr>
@@ -209,18 +216,20 @@ export default function CallUpLineupEditor({
       </div>
       {canEdit ? (
         <button className="btn" type="submit" disabled={isPending}>
-          {isPending ? "Salvando..." : "Salvar escalação"}
+          {isPending ? "Salvando..." : "Salvar escalaÃ§Ã£o"}
         </button>
       ) : null}
       {saved ? (
-        <p className="success-message">Escalação salva com sucesso.</p>
+        <p className="success-message">EscalaÃ§Ã£o salva com sucesso.</p>
       ) : null}
       {!complete ? (
         <p className="help">
-          Preencha todas as posições titulares para liberar a arte da
-          convocação.
+          Preencha todas as posiÃ§Ãµes titulares para liberar a arte da
+          convocaÃ§Ã£o.
         </p>
       ) : null}
     </form>
   );
 }
+
+

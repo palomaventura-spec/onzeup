@@ -3,6 +3,22 @@
 import { useState } from "react";
 import { toPng } from "html-to-image";
 
+async function waitForPosterImages(poster: HTMLElement) {
+  const images = Array.from(poster.querySelectorAll("img"));
+  await Promise.all(
+    images.map(
+      (image) =>
+        new Promise<void>((resolve) => {
+          if (image.complete) return resolve();
+          image.addEventListener("load", () => resolve(), { once: true });
+          image.addEventListener("error", () => resolve(), { once: true });
+        }),
+    ),
+  );
+  // Lets SafeAvatar swap a failed image for initials before html-to-image reads it.
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+}
+
 export default function ConvocationPrintActions() {
   const [generating, setGenerating] = useState(false);
 
@@ -11,6 +27,7 @@ export default function ConvocationPrintActions() {
     if (!poster) throw new Error("Poster não encontrado.");
 
     await document.fonts?.ready;
+    await waitForPosterImages(poster);
     return toPng(poster, {
       cacheBust: true,
       pixelRatio: 2,
@@ -39,9 +56,7 @@ export default function ConvocationPrintActions() {
       link.href = dataUrl;
       link.click();
     } catch {
-      window.alert(
-        "Não foi possível gerar a imagem. Atualize a página e tente novamente.",
-      );
+      window.alert("Não foi possível gerar a imagem. Atualize a página e tente novamente.");
     } finally {
       setGenerating(false);
     }
@@ -60,30 +75,15 @@ export default function ConvocationPrintActions() {
       printWindow.opener = null;
       printWindow.document.open();
       printWindow.document.write(`<!doctype html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <title>Convocação oficial</title>
-    <style>
-      @page { size: A4 portrait; margin: 0; }
-      html, body { margin: 0; width: 210mm; height: 297mm; background: #061018; overflow: hidden; }
-      img { display: block; width: 210mm; height: 297mm; object-fit: fill; }
-    </style>
-  </head>
-  <body>
-    <img src="${dataUrl}" alt="Convocação oficial" />
-    <script>
-      const image = document.querySelector("img");
-      image.addEventListener("load", () => setTimeout(() => window.print(), 250));
-    <\/script>
-  </body>
-</html>`);
+<html lang="pt-BR"><head><meta charset="utf-8" /><title>Convocação oficial</title>
+<style>@page { size: A4 portrait; margin: 0; } html, body { margin: 0; width: 210mm; height: 297mm; background: #061018; overflow: hidden; } img { display: block; width: 210mm; height: 297mm; object-fit: fill; }</style>
+</head><body><img src="${dataUrl}" alt="Convocação oficial" />
+<script>document.querySelector("img").addEventListener("load", () => setTimeout(() => window.print(), 250));<\/script>
+</body></html>`);
       printWindow.document.close();
     } catch {
       printWindow.close();
-      window.alert(
-        "Não foi possível preparar o PDF. Atualize a página e tente novamente.",
-      );
+      window.alert("Não foi possível preparar o PDF. Atualize a página e tente novamente.");
     } finally {
       setGenerating(false);
     }
@@ -91,20 +91,10 @@ export default function ConvocationPrintActions() {
 
   return (
     <div className="actions convocation-no-print">
-      <button
-        className="btn"
-        type="button"
-        onClick={downloadImage}
-        disabled={generating}
-      >
+      <button className="btn" type="button" onClick={downloadImage} disabled={generating}>
         {generating ? "Gerando imagem..." : "Baixar imagem (PNG)"}
       </button>
-      <button
-        className="btn btn-secondary"
-        type="button"
-        onClick={printPoster}
-        disabled={generating}
-      >
+      <button className="btn btn-secondary" type="button" onClick={printPoster} disabled={generating}>
         {generating ? "Preparando arte..." : "Gerar PDF / imprimir"}
       </button>
     </div>

@@ -1,3 +1,4 @@
+﻿import SafeAvatar from "@/components/SafeAvatar";
 import ModuleTour from "@/components/help/ModuleTour";
 import Link from "next/link";
 
@@ -130,10 +131,10 @@ export default async function AthletesPage({
     <>
       <div className="page-head athlete-premium-head">
         <div>
-          <span className="page-eyebrow">GESTÃO DO ELENCO</span>
+          <span className="page-eyebrow">GESTÃƒO DO ELENCO</span>
           <h1>Atletas</h1>
           <p className="muted">
-            Visão completa do elenco, documentação, desempenho e vínculo
+            VisÃ£o completa do elenco, documentaÃ§Ã£o, desempenho e vÃ­nculo
             familiar.
           </p>
         </div>
@@ -155,12 +156,12 @@ export default async function AthletesPage({
           <span>grupos esportivos</span>
         </article>
         <article>
-          <small>VÍNCULOS PLAYER</small>
+          <small>VÃNCULOS PLAYER</small>
           <strong>{linkedCount}</strong>
           <span>perfis confirmados</span>
         </article>
         <article className={documentAlertCount ? "attention" : ""}>
-          <small>ATENÇÃO</small>
+          <small>ATENÃ‡ÃƒO</small>
           <strong>{documentAlertCount + missingDataCount}</strong>
           <span>documentos ou cadastros</span>
         </article>
@@ -174,7 +175,7 @@ export default async function AthletesPage({
               <h2>Adicionar atleta ao elenco</h2>
               <p>Dados do atleta e documentos em um fluxo simples.</p>
             </div>
-            <span className="btn">＋ Novo atleta</span>
+            <span className="btn">ï¼‹ Novo atleta</span>
           </summary>
           <AthleteCreateForm categories={categories} />
         </details>
@@ -203,7 +204,7 @@ export default async function AthletesPage({
             </select>
           </label>
           <label>
-            Posição
+            PosiÃ§Ã£o
             <select name="position" defaultValue={positionFilter}>
               <option value="ALL">Todas</option>
               {positions.map((position) => (
@@ -231,10 +232,10 @@ export default async function AthletesPage({
 
       {!canEdit ? (
         <section className="card">
-          <span className="page-eyebrow">SOMENTE VISUALIZAÇÃO</span>
+          <span className="page-eyebrow">SOMENTE VISUALIZAÃ‡ÃƒO</span>
           <h2>Elenco do clube</h2>
           <p className="muted">
-            Dados privados da família permanecem restritos à gestão autorizada.
+            Dados privados da famÃ­lia permanecem restritos Ã  gestÃ£o autorizada.
           </p>
         </section>
       ) : null}
@@ -267,13 +268,7 @@ export default async function AthletesPage({
                     key={athlete.id}
                   >
                     <div className="athlete-profile-visual">
-                      {athlete.photoUrl ? (
-                        <img src={athlete.photoUrl} alt={athlete.name} />
-                      ) : (
-                        <span>
-                          {initials(athlete.nickname || athlete.name)}
-                        </span>
-                      )}
+                      <SafeAvatar src={athlete.photoUrl} name={athlete.nickname || athlete.name} alt={athlete.name} />
                       {athlete.jerseyNumber != null ? (
                         <b>#{athlete.jerseyNumber}</b>
                       ) : null}
@@ -290,19 +285,19 @@ export default async function AthletesPage({
                           <h3>{athlete.nickname || athlete.name}</h3>
                           {athlete.nickname ? <p>{athlete.name}</p> : null}
                         </div>
-                        {playerLinked ? <span>PLAYER ✓</span> : null}
+                        {playerLinked ? <span>PLAYER âœ“</span> : null}
                       </div>
                       <div className="athlete-profile-data">
                         <span>
-                          <small>POSIÇÃO</small>
-                          <strong>{athlete.position || "—"}</strong>
+                          <small>POSIÃ‡ÃƒO</small>
+                          <strong>{athlete.position || "â€”"}</strong>
                         </span>
                         <span>
                           <small>IDADE</small>
-                          <strong>{age ? `${age} anos` : "—"}</strong>
+                          <strong>{age ? `${age} anos` : "â€”"}</strong>
                         </span>
                         <span>
-                          <small>AVALIAÇÕES</small>
+                          <small>AVALIAÃ‡Ã•ES</small>
                           <strong>{athlete.evaluations.length}</strong>
                         </span>
                       </div>
@@ -315,16 +310,16 @@ export default async function AthletesPage({
                           ) : null}
                           {athlete.callUps.length ? (
                             <span>
-                              {athlete.callUps.length} confirmação(ões)
+                              {athlete.callUps.length} confirmaÃ§Ã£o(Ãµes)
                             </span>
                           ) : null}
                           {athlete.charges.length ? (
-                            <span>{athlete.charges.length} cobrança(s)</span>
+                            <span>{athlete.charges.length} cobranÃ§a(s)</span>
                           ) : null}
                         </div>
                       ) : (
                         <div className="athlete-profile-ok">
-                          Cadastro sem pendências operacionais
+                          Cadastro sem pendÃªncias operacionais
                         </div>
                       )}
                       <div className="athlete-profile-actions">
@@ -392,3 +387,5 @@ export default async function AthletesPage({
     </>
   );
 }
+
+

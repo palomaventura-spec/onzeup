@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 
@@ -9,6 +9,7 @@ import {
 import { prisma } from "@/lib/prisma";
 
 import ConvocationPrintActions from "../../ConvocationPrintActions";
+import SafeConvocationImage from "../../SafeConvocationImage";
 
 const SLOT_CLASS: Record<string, string> = {
   GOALKEEPER: "art-goalkeeper",
@@ -39,6 +40,12 @@ function dateParts(date: Date) {
   return { dateText, timeText };
 }
 
+function safeImageUrl(value: string | null) {
+  if (!value) return null;
+  if (value.startsWith("/") || value.startsWith("data:")) return value;
+  return `/api/image-proxy?url=${encodeURIComponent(value)}`;
+}
+
 function AthleteBadge({
   athlete,
   number,
@@ -53,11 +60,12 @@ function AthleteBadge({
     <div className="art-athlete">
       <div className="art-photo">
         <div className="art-photo-crop">
-          {athlete.photoUrl ? (
-            <img src={athlete.photoUrl} alt={name} />
-          ) : (
-            <span>{name.slice(0, 2).toUpperCase()}</span>
-          )}
+          <SafeConvocationImage
+            src={safeImageUrl(athlete.photoUrl)}
+            alt={name}
+            fallback={name.slice(0, 2).toUpperCase()}
+            className="art-athlete-image"
+          />
         </div>
         {captain ? <i>C</i> : null}
       </div>
@@ -93,6 +101,7 @@ export default async function ConvocationArtworkPage({
         include: { athlete: true },
         orderBy: [{ lineupOrder: "asc" }, { athlete: { name: "asc" } }],
       },
+      staffAssignments: { include: { staffMember: true } },
     },
   });
   if (!match) notFound();
@@ -135,7 +144,8 @@ export default async function ConvocationArtworkPage({
   const { dateText, timeText } = dateParts(match.startsAt);
   const clubName = match.organization.publicName || match.organization.name;
   const accent = match.organization.accentColor || "#9DDB16";
-  const coach = match.category.staffMembers[0];
+  const selectedStaff = match.staffAssignments.map((item) => item.staffMember);
+  const coach = selectedStaff[0] || match.category.staffMembers[0];
   const cover = match.organization.coverUrl
     ? `url("${match.organization.coverUrl}")`
     : "none";
@@ -152,27 +162,28 @@ export default async function ConvocationArtworkPage({
     >
       <div className="convocation-art-toolbar convocation-no-print">
         <Link className="btn btn-secondary" href={`/convocacoes/${match.id}`}>
-          Voltar à convocação
+          Voltar Ã  convocaÃ§Ã£o
         </Link>
         <ConvocationPrintActions />
       </div>
 
       <main className="convocation-poster" id="convocation-poster">
         {!isComplete ? (
-          <div className="poster-preview-label">PRÉVIA • LISTA INCOMPLETA</div>
+          <div className="poster-preview-label">PRÃ‰VIA â€¢ LISTA INCOMPLETA</div>
         ) : null}
         <header className="poster-header poster-header-premium">
           <div className="poster-institutional">
             <div className="poster-brand">
-              {match.organization.logoUrl ? (
-                <img src={match.organization.logoUrl} alt={clubName} />
-              ) : (
-                <span>{clubName.slice(0, 2).toUpperCase()}</span>
-              )}
+              <SafeConvocationImage
+                src={safeImageUrl(match.organization.logoUrl)}
+                alt={clubName}
+                fallback={clubName.slice(0, 2).toUpperCase()}
+                className="poster-club-logo"
+              />
               <div>
                 <h2>{clubName}</h2>
                 <p>Departamento de futebol de base</p>
-                <small>Formação • desenvolvimento • grandes histórias</small>
+                <small>FormaÃ§Ã£o â€¢ desenvolvimento â€¢ grandes histÃ³rias</small>
               </div>
             </div>
             <div className="poster-values">
@@ -182,14 +193,13 @@ export default async function ConvocationArtworkPage({
               <br />
               TRABALHO
               <br />
-              EVOLUÇÃO
+              EVOLUÃ‡ÃƒO
               <b>
                 ONZE<span>UP</span>
               </b>
             </div>
           </div>
-
-          <h1 className="poster-main-title">CONVOCAÇÃO OFICIAL</h1>
+          <h1 className="poster-main-title">CONVOCAÃ‡ÃƒO OFICIAL</h1>
 
           <div className="poster-match">
             <span className="poster-category">{match.category.name}</span>
@@ -197,26 +207,26 @@ export default async function ConvocationArtworkPage({
               {match.competition || "Jogo amistoso"}
             </span>
             <strong>{clubName}</strong>
-            <b>×</b>
+            <b>Ã—</b>
             <strong>{match.opponent}</strong>
             <em>JOGO CONFIRMADO</em>
           </div>
           <div className="poster-details">
             <span>
-              <small>▣ DATA</small>
+              <small>â–£ DATA</small>
               {dateText}
             </span>
             <span>
-              <small>◷ HORÁRIO DO JOGO</small>
+              <small>â—· HORÃRIO DO JOGO</small>
               {timeText}
             </span>
             <span>
-              <small>● LOCAL</small>
+              <small>â— LOCAL</small>
               {match.location || "A definir"}
             </span>
             <span>
-              <small>◈ MODALIDADE</small>
-              {isFutsal ? "Futsal • 1–2–1" : "Campo • 3–3–2"}
+              <small>â—· CHEGADA</small>
+              {match.presentationTime || "A definir"}
             </span>
           </div>
         </header>
@@ -241,7 +251,7 @@ export default async function ConvocationArtworkPage({
           <br />
           GRANDES
           <br />
-          HISTÓRIAS
+          HISTÃ“RIAS
         </aside>
 
         <section className="poster-field" aria-label="Titulares no campo">
@@ -278,31 +288,42 @@ export default async function ConvocationArtworkPage({
 
         <section className="poster-service-info">
           <div>
-            <small>TÉCNICO</small>
+            <small>TÃ‰CNICO</small>
             <strong>{coach?.name || "A definir"}</strong>
           </div>
           <div>
-            <small>COMISSÃO</small>
-            <strong>{coach?.roleTitle || "Comissão técnica"}</strong>
+            <small>COMISSÃƒO</small>
+            <strong>
+              {selectedStaff.length
+                ? selectedStaff.map((member) => member.name).join(" â€¢ ")
+                : coach?.roleTitle || "ComissÃ£o tÃ©cnica"}
+            </strong>
           </div>
           <div>
-            <small>OBSERVAÇÃO</small>
+            <small>UNIFORME E EQUIPAMENTO</small>
             <strong>
-              {match.notes || "Apresentar-se no horário informado pelo clube."}
+              {match.arrivalAttire === "TRAINING_UNIFORM"
+                ? "Treino â€¢ troca no local"
+                : "Jogo â€¢ chegar uniformizado"}
+              {match.uniform ? ` â€¢ ${match.uniform}` : ""}
+              {match.sockRequirement ? ` â€¢ ${match.sockRequirement}` : ""}
+              {match.shinGuardsRequired ? " â€¢ caneleira" : ""}
             </strong>
           </div>
         </section>
 
         <footer className="poster-footer">
           <span>
-            Convocação gerada pelo <strong>ONZEUP</strong>
+            ConvocaÃ§Ã£o gerada pelo <strong>ONZEUP</strong>
           </span>
-          <span>{isComplete ? "DOCUMENTO OFICIAL" : "MODELO DE PRÉVIA"}</span>
+          <span>{isComplete ? "DOCUMENTO OFICIAL" : "MODELO DE PRÃ‰VIA"}</span>
           <span>
-            {match.category.name} • {dateText}
+            {match.category.name} â€¢ {dateText}
           </span>
         </footer>
       </main>
     </div>
   );
 }
+
+
