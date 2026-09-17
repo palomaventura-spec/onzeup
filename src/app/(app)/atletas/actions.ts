@@ -62,9 +62,11 @@ export async function createAthlete(formData: FormData) {
     user.organizationId
   );
 
-  if (!name) return;
+  if (!name) {
+    return { error: "Informe o nome do atleta." };
+  }
 
-  await prisma.athlete.create({
+  const athlete = await prisma.athlete.create({
     data: {
       name,
       nickname,
@@ -81,9 +83,12 @@ export async function createAthlete(formData: FormData) {
       organizationId: user.organizationId,
       active: true,
     },
+    select: { id: true, name: true },
   });
 
   revalidatePath("/atletas");
+
+  return { athleteId: athlete.id, athleteName: athlete.name };
 }
 
 export async function updateAthlete(formData: FormData) {

@@ -1,4 +1,3 @@
-import ImageUpload from "@/components/ImageUpload";
 import ModuleTour from "@/components/help/ModuleTour";
 import Link from "next/link";
 
@@ -6,7 +5,8 @@ import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
 
-import { createAthlete, deleteAthlete, toggleAthleteStatus } from "./actions";
+import { deleteAthlete, toggleAthleteStatus } from "./actions";
+import AthleteCreateForm from "./AthleteCreateForm";
 
 type AthleteFilters = {
   q?: string;
@@ -172,93 +172,11 @@ export default async function AthletesPage({
             <div>
               <span className="page-eyebrow">NOVO CADASTRO</span>
               <h2>Adicionar atleta ao elenco</h2>
-              <p>Dados esportivos e contato privado da família.</p>
+              <p>Dados do atleta e documentos em um fluxo simples.</p>
             </div>
             <span className="btn">＋ Novo atleta</span>
           </summary>
-          <form className="athlete-create-form" action={createAthlete}>
-            <fieldset>
-              <legend>Dados esportivos</legend>
-              <label>
-                Nome
-                <input name="name" placeholder="Nome completo" required />
-              </label>
-              <label>
-                Nome esportivo / apelido
-                <input name="nickname" placeholder="Ex.: G9" />
-              </label>
-              <label>
-                Categoria
-                <select name="categoryId" defaultValue="">
-                  <option value="">Sem categoria</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Ano de nascimento
-                <input
-                  name="birthYear"
-                  type="number"
-                  min="2000"
-                  max="2035"
-                  placeholder="2018"
-                />
-              </label>
-              <label>
-                Número
-                <input
-                  name="jerseyNumber"
-                  type="number"
-                  min="0"
-                  max="99"
-                  placeholder="9"
-                />
-              </label>
-              <label>
-                Posição
-                <input name="position" placeholder="Ex.: Atacante" />
-              </label>
-              <label>
-                Pé dominante
-                <select name="dominantFoot" defaultValue="">
-                  <option value="">Não informado</option>
-                  <option value="RIGHT">Direito</option>
-                  <option value="LEFT">Esquerdo</option>
-                  <option value="BOTH">Ambidestro</option>
-                </select>
-              </label>
-              <div className="athlete-create-photo">
-                <ImageUpload name="photoUrl" label="Foto (JPEG/PNG/WEBP)" />
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend>Família e responsável • privado</legend>
-              <label>
-                Nome do responsável
-                <input name="guardianName" placeholder="Nome completo" />
-              </label>
-              <label>
-                Parentesco / relação
-                <input
-                  name="guardianRelation"
-                  placeholder="Ex.: Mãe, Pai, Tutor"
-                />
-              </label>
-              <label>
-                WhatsApp / telefone
-                <input name="guardianPhone" />
-              </label>
-              <label>
-                E-mail
-                <input name="guardianEmail" type="email" />
-              </label>
-            </fieldset>
-            <button type="submit">Cadastrar atleta</button>
-          </form>
+          <AthleteCreateForm categories={categories} />
         </details>
       ) : null}
 

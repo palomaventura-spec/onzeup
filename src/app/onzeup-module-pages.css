@@ -399,3 +399,43 @@
   .club-app-light .agenda-compact-event { grid-template-columns: 46px 7px minmax(0, 1fr); }
   .club-app-light .agenda-compact-actions { grid-column: 1 / -1; justify-content: flex-start; }
 }
+
+/* Cadastro de atleta em etapas — mantém o foco no fluxo e não na lista. */
+.club-app-light .athlete-create-drawer[open] { max-width: 1120px; margin: 0 auto 22px; }
+.club-app-light .athlete-create-drawer[open] ~ .athlete-filter-bar,
+.club-app-light .athlete-create-drawer[open] ~ .athlete-premium-groups { display: none; }
+.club-app-light .athlete-create-drawer summary { min-height: 82px; padding: 18px 24px; }
+.club-app-light .athlete-create-drawer[open] summary { border-bottom: 1px solid var(--club-border); }
+.club-app-light .athlete-create-drawer[open] summary .btn { display: none; }
+.club-app-light .athlete-create-form,
+.club-app-light .athlete-create-document-step { width: min(100%, 980px); margin: 0 auto; padding: 24px; }
+.club-app-light .athlete-create-form { grid-template-columns: 1fr; gap: 20px; }
+.club-app-light .athlete-create-form fieldset { padding: 0; gap: 16px; }
+.club-app-light .athlete-create-form legend { margin-bottom: 4px; font-size: 16px; }
+.club-app-light .athlete-create-form label { gap: 7px; font-size: 13px; }
+.club-app-light .athlete-create-form :is(input, select) { min-height: 44px; }
+.club-app-light .athlete-create-photo { max-width: 260px; }
+.club-app-light .athlete-create-documents-hint { padding: 16px 18px; border: 1px solid #dceab3; border-radius: 14px; background: #f8fcec; }
+.club-app-light .athlete-create-documents-hint strong { display: block; margin: 5px 0; color: var(--club-ink); font-size: 15px; }
+.club-app-light .athlete-create-documents-hint p { margin: 0; font-size: 13px; line-height: 1.5; }
+.club-app-light .athlete-create-stepper { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 9px 12px; border: 1px solid var(--club-border); border-radius: 12px; color: var(--club-muted); background: var(--club-surface-muted); font-size: 13px; font-weight: 750; }
+.club-app-light .athlete-create-stepper b { display: inline-grid; width: 24px; height: 24px; place-items: center; border-radius: 999px; color: #152000; background: var(--club-lime); }
+.club-app-light .athlete-create-stepper strong { color: var(--club-ink); }
+.club-app-light .athlete-create-stepper span:last-child { margin-left: auto; }
+.club-app-light .athlete-create-document-step { padding-top: 26px; padding-bottom: 28px; }
+.club-app-light .athlete-create-document-step h3 { margin: 6px 0 7px; color: var(--club-ink); font-size: 24px; }
+.club-app-light .athlete-create-document-step > p { max-width: 680px; margin: 0; line-height: 1.55; }
+.club-app-light .athlete-create-document-step .form { max-width: none; margin-top: 22px !important; padding: 20px; border: 1px solid var(--club-border); border-radius: 14px; background: #fff; }
+.club-app-light .athlete-create-document-step .form label { color: var(--club-text); font-size: 13px; }
+
+@media (max-width: 700px) {
+  .club-app-light .athlete-create-drawer[open] { margin-inline: 0; }
+  .club-app-light .athlete-create-drawer summary,
+  .club-app-light .athlete-create-form,
+  .club-app-light .athlete-create-document-step { padding-inline: 16px; }
+  .club-app-light .athlete-create-form fieldset { grid-template-columns: 1fr; }
+  .club-app-light .athlete-create-stepper { align-items: flex-start; flex-wrap: wrap; }
+  .club-app-light .athlete-create-stepper span:last-child { width: 100%; margin-left: 34px; }
+  .club-app-light .athlete-create-document-step .actions { display: grid; grid-template-columns: 1fr; }
+  .club-app-light .athlete-create-document-step .actions > a { justify-content: center; }
+}

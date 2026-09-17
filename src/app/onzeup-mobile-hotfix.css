@@ -1,0 +1,77 @@
+/* ONZEUP — hotfix global de leitura e largura para iPhone, Android e iPad compacto. */
+@media screen and (max-width: 768px), screen and (max-device-width: 768px) {
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { max-width: 100%; overflow-x: hidden; }
+
+  .club-app-light,
+  .club-app-light .main,
+  .club-app-light .od-dashboard,
+  .club-app-light .games-premium,
+  .club-app-light .callup-detail-premium,
+  .club-app-light .qts-premium,
+  .club-app-light .performance-page { min-width: 0; max-width: 100%; }
+
+  .club-app-light .main { padding: 18px 16px calc(96px + env(safe-area-inset-bottom)); }
+  .club-app-light :where(.page-head, .od-header, .performance-hero) { gap: 14px; margin-bottom: 18px; padding-bottom: 16px; }
+  .club-app-light :where(.page-head h1, .od-header h1, .performance-hero h1) { font-size: 28px; }
+  .club-app-light :where(.page-head .actions, .od-quick-actions) { width: 100%; justify-content: stretch; }
+  .club-app-light .page-head .actions > :where(a, button, .btn),
+  .club-app-light .od-quick-actions > a { flex: 1 1 145px; min-width: 0; }
+
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis, .module-kpis, .match-operation-summary) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100%;
+    min-width: 0;
+    gap: 10px;
+  }
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis, .module-kpis, .match-operation-summary) > :where(a, article) {
+    min-width: 0;
+    min-height: 116px;
+    padding: 14px;
+  }
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis, .module-kpis, .match-operation-summary) small { font-size: 10px; letter-spacing: .06em; }
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis, .module-kpis, .match-operation-summary) strong { font-size: 27px; }
+  .club-app-light .od-kpis em { margin-top: 7px; font-size: 11px; }
+
+  .club-app-light :where(.od-main-grid, .od-bottom-grid, .performance-overview-grid, .games-premium > .two-col, .callup-detail-premium > .two-col, .training-detail-grid, .two-col, .agenda-premium-layout, .agenda-side) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+  .club-app-light .od-panel,
+  .club-app-light .performance-panel,
+  .club-app-light .card { min-width: 0; padding: 16px; }
+
+  .club-app-light .od-quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .club-app-light .od-quick-actions a { min-height: 44px; padding: 8px; font-size: 12px; text-align: center; }
+  .club-app-light .od-performance-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .club-app-light .od-performance svg { width: min(100%, 250px); height: auto; margin-inline: auto; }
+  .club-app-light .od-area-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .club-app-light :where(.athlete-premium-grid, .performance-athlete-grid, .staff-premium-grid, .category-premium-grid) { grid-template-columns: minmax(0, 1fr) !important; }
+  .club-app-light :where(.athlete-filter-bar, .performance-filter-panel) { padding: 14px; }
+  .club-app-light :where(.athlete-filter-bar form, .performance-filter-panel form, .category-create-form, .staff-create-form) { grid-template-columns: minmax(0, 1fr) !important; }
+
+  .club-app-light .callup-match-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .club-app-light .callup-match-card { grid-template-columns: 58px minmax(0, 1fr) !important; gap: 12px; }
+  .club-app-light .callup-match-card > :last-child { grid-column: 1 / -1; }
+  .club-app-light .game-detail-premium > .card > .form,
+  .club-app-light .athlete-profile-page .form,
+  .club-app-light .form-grid-2 { grid-template-columns: minmax(0, 1fr) !important; }
+
+  .club-app-light :where(input, select, textarea, button, .btn) { max-width: 100%; }
+  .club-app-light :where(input, select, button, .btn) { min-height: 44px; }
+  .club-app-light .table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .club-app-light .table { min-width: 680px; }
+  .club-app-light .qts-premium { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .club-mobile-navigation { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+}
+
+@media screen and (max-width: 420px), screen and (max-device-width: 420px) {
+  .club-app-light .main { padding-inline: 14px; }
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis, .module-kpis, .match-operation-summary) { gap: 8px; }
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis, .module-kpis, .match-operation-summary) > :where(a, article) { min-height: 112px; padding: 12px; }
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis, .module-kpis, .match-operation-summary) small { font-size: 9px; }
+  .club-app-light :where(.od-kpis, .athlete-kpis, .agenda-kpis, .performance-kpis, .module-kpis, .match-operation-summary) strong { font-size: 25px; }
+}
