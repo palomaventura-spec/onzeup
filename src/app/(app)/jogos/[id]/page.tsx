@@ -6,7 +6,7 @@ import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { googleCalendarUrl } from "@/lib/google-calendar";
 
-import { updateMatch } from "../actions";
+import { deleteMatch, updateMatch } from "../actions";
 
 function toDateInput(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -72,7 +72,7 @@ export default async function EditMatchPage({
 
   const { id } = await params;
 
-  const [match, categories] = await Promise.all([
+  const [match, categories, staffMembers] = await Promise.all([
     prisma.match.findFirst({
       where: {
         id,
@@ -82,6 +82,7 @@ export default async function EditMatchPage({
       include: {
         category: true,
         callUps: true,
+        staffAssignments: { include: { staffMember: true } },
       },
     }),
 
@@ -94,6 +95,13 @@ export default async function EditMatchPage({
           orderBy: {
             name: "asc",
           },
+        })
+      : Promise.resolve([]),
+    canEdit
+      ? prisma.staffMember.findMany({
+          where: { organizationId: user.organizationId, active: true },
+          include: { category: true },
+          orderBy: { name: "asc" },
         })
       : Promise.resolve([]),
   ]);
@@ -146,6 +154,15 @@ export default async function EditMatchPage({
           <Link className="btn btn-secondary" href="/jogos">
             Voltar
           </Link>
+
+          {canEdit ? (
+            <form action={deleteMatch}>
+              <input type="hidden" name="id" value={match.id} />
+              <button className="btn btn-danger" type="submit">
+                Excluir jogo
+              </button>
+            </form>
+          ) : null}
         </div>
       </div>
 
@@ -208,6 +225,112 @@ export default async function EditMatchPage({
                 required
               />
             </label>
+
+            <label>
+              Tipo de convocação
+              <select
+                name="callUpMode"
+                defaultValue={match.callUpMode}
+                required
+              >
+                <option value="CONFIRMATION_REQUIRED">
+                  Confirmação obrigatória
+                </option>
+                <option value="INFORMATION_ONLY">Somente informativa</option>
+              </select>
+              <span className="help">
+                Define se responsáveis precisam responder à convocação.
+              </span>
+            </label>
+
+            <label>
+              Horário de chegada / apresentação
+              <input
+                name="presentationTime"
+                type="time"
+                defaultValue={match.presentationTime ?? ""}
+              />
+            </label>
+
+            <label>
+              Como o atleta deve chegar
+              <select name="arrivalAttire" defaultValue={match.arrivalAttire}>
+                <option value="GAME_UNIFORM">
+                  Uniforme de jogo — já uniformizado
+                </option>
+                <option value="TRAINING_UNIFORM">
+                  Uniforme de treino — troca no local
+                </option>
+              </select>
+            </label>
+
+            <label>
+              Uniforme / padrão
+              <input name="uniform" defaultValue={match.uniform ?? ""} />
+            </label>
+
+            <label>
+              Meião
+              <input
+                name="sockRequirement"
+                defaultValue={match.sockRequirement ?? ""}
+              />
+            </label>
+
+            <label className="check-row">
+              <input
+                name="shinGuardsRequired"
+                type="checkbox"
+                defaultChecked={match.shinGuardsRequired}
+              />
+              Caneleira obrigatória
+            </label>
+
+            <label>
+              Calçado
+              <select
+                name="footwearType"
+                defaultValue={
+                  match.footwearType ??
+                  (match.sport === "FUTSAL" ? "FUTSAL_SHOES" : "FIELD_CLEATS")
+                }
+              >
+                <option value="FIELD_CLEATS">Chuteira de trava — campo</option>
+                <option value="SOCIETY_CLEATS">Chuteira society — campo</option>
+                <option value="FUTSAL_SHOES">Tênis/chuteira de futsal</option>
+              </select>
+            </label>
+
+            <label>
+              Outras orientações de equipamento
+              <textarea
+                name="equipmentNotes"
+                rows={3}
+                defaultValue={match.equipmentNotes ?? ""}
+              />
+            </label>
+
+            <fieldset className="staff-game-fieldset">
+              <legend>Comissão técnica presente</legend>
+              <div className="staff-game-options">
+                {staffMembers.map((member) => (
+                  <label className="check-row" key={member.id}>
+                    <input
+                      name="staffIds"
+                      type="checkbox"
+                      value={member.id}
+                      defaultChecked={match.staffAssignments.some(
+                        (assignment) => assignment.staffMemberId === member.id,
+                      )}
+                    />
+                    <span>
+                      <strong>{member.name}</strong>
+                      <small>{member.roleTitle}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
             <label>
               Competição
@@ -326,6 +449,58 @@ export default async function EditMatchPage({
             <div>
               <span className="help">Limite da convocação</span>
               <strong>{match.callUpLimit} atletas</strong>
+            </div>
+
+            <div>
+              <span className="help">Horários</span>
+              <strong>Chegada: {match.presentationTime || "A definir"}</strong>
+              <small>Jogo: {formatDateTime(match.startsAt)}</small>
+            </div>
+
+            <div>
+              <span className="help">Uniforme de chegada</span>
+              <strong>
+                {match.arrivalAttire === "TRAINING_UNIFORM"
+                  ? "Uniforme de treino — troca no local"
+                  : "Uniforme de jogo — já uniformizado"}
+              </strong>
+              <small>{match.uniform || "Padrão a definir"}</small>
+            </div>
+
+            <div>
+              <span className="help">Equipamentos</span>
+              <strong>{match.sockRequirement || "Meião oficial"}</strong>
+              <small>
+                {match.shinGuardsRequired
+                  ? "Caneleira obrigatória"
+                  : "Caneleira opcional"}{" "}
+                •{" "}
+                {match.footwearType === "SOCIETY_CLEATS"
+                  ? "Chuteira society"
+                  : match.footwearType === "FUTSAL_SHOES"
+                    ? "Tênis/chuteira de futsal"
+                    : "Chuteira de trava"}
+              </small>
+            </div>
+
+            <div>
+              <span className="help">Comissão presente</span>
+              <strong>
+                {match.staffAssignments.length
+                  ? match.staffAssignments
+                      .map((item) => item.staffMember.name)
+                      .join(", ")
+                  : "A definir"}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">Tipo de convocação</span>
+              <strong>
+                {match.callUpMode === "INFORMATION_ONLY"
+                  ? "Somente informativa"
+                  : "Confirmação obrigatória"}
+              </strong>
             </div>
 
             <div>

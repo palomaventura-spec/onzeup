@@ -1,10 +1,13 @@
 "use server";
 
 import {
+  CallUpMode,
   CallUpStatus,
   MatchLineupRole,
   MatchParticipationStatus,
+  Prisma,
 } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -38,7 +41,8 @@ export async function createCallUps(formData: FormData) {
     select: {
       id: true,
       categoryId: true,
-      sport: true,
+      callUpLimit: true,
+      callUpMode: true,
     },
   });
 
@@ -60,7 +64,7 @@ export async function createCallUps(formData: FormData) {
     },
   });
 
-  const squadLimit = match.sport === "FUTSAL" ? 14 : 18;
+  const squadLimit = match.callUpLimit;
   const availablePlaces = Math.max(0, squadLimit - currentCount);
   if (availablePlaces === 0) return;
 
@@ -101,12 +105,25 @@ export async function createCallUps(formData: FormData) {
           },
         },
 
-        update: {},
+        update: {
+          status:
+            match.callUpMode === CallUpMode.INFORMATION_ONLY
+              ? CallUpStatus.INFORMED
+              : CallUpStatus.PENDING,
+        },
 
         create: {
           matchId: match.id,
           athleteId: athlete.id,
           organizationId: user.organizationId,
+          status:
+            match.callUpMode === CallUpMode.INFORMATION_ONLY
+              ? CallUpStatus.INFORMED
+              : CallUpStatus.PENDING,
+          responseToken:
+            match.callUpMode === CallUpMode.CONFIRMATION_REQUIRED
+              ? randomUUID()
+              : null,
         },
       }),
     ),
@@ -136,6 +153,7 @@ export async function deleteCallUp(formData: FormData) {
       match: {
         select: {
           categoryId: true,
+          callUpMode: true,
         },
       },
     },
@@ -184,10 +202,12 @@ export async function updateCallUpStatus(formData: FormData) {
     select: {
       id: true,
       matchId: true,
+      responseHistory: true,
 
       match: {
         select: {
           categoryId: true,
+          callUpMode: true,
         },
       },
     },
@@ -205,11 +225,26 @@ export async function updateCallUpStatus(formData: FormData) {
   }
 
   const status =
-    rawStatus === "CONFIRMED"
-      ? CallUpStatus.CONFIRMED
-      : rawStatus === "DECLINED"
-        ? CallUpStatus.DECLINED
-        : CallUpStatus.PENDING;
+    callUp.match.callUpMode === CallUpMode.INFORMATION_ONLY
+      ? CallUpStatus.INFORMED
+      : rawStatus === "CONFIRMED"
+        ? CallUpStatus.CONFIRMED
+        : rawStatus === "DECLINED"
+          ? CallUpStatus.DECLINED
+          : CallUpStatus.PENDING;
+
+  const previousHistory = Array.isArray(callUp.responseHistory)
+    ? callUp.responseHistory
+    : [];
+  const responseHistory = [
+    ...previousHistory,
+    {
+      status,
+      source: "CLUB_MANUAL",
+      at: new Date().toISOString(),
+      userId: user.id,
+    },
+  ] as Prisma.InputJsonArray;
 
   await prisma.callUp.update({
     where: {
@@ -220,6 +255,8 @@ export async function updateCallUpStatus(formData: FormData) {
       status,
 
       respondedAt: status === CallUpStatus.PENDING ? null : new Date(),
+      responseSource: "CLUB_MANUAL",
+      responseHistory,
     },
   });
 
@@ -242,6 +279,7 @@ export async function markCallUpsSent(formData: FormData) {
     select: {
       id: true,
       categoryId: true,
+      callUpMode: true,
     },
   });
 
@@ -256,16 +294,32 @@ export async function markCallUpsSent(formData: FormData) {
     return;
   }
 
-  await prisma.callUp.updateMany({
+  const callUps = await prisma.callUp.findMany({
     where: {
       matchId: match.id,
       organizationId: user.organizationId,
     },
-
-    data: {
-      sentAt: new Date(),
-    },
+    select: { id: true, responseToken: true },
   });
+
+  await prisma.$transaction(
+    callUps.map((callUp) =>
+      prisma.callUp.update({
+        where: { id: callUp.id },
+        data: {
+          sentAt: new Date(),
+          status:
+            match.callUpMode === CallUpMode.INFORMATION_ONLY
+              ? CallUpStatus.INFORMED
+              : undefined,
+          responseToken:
+            match.callUpMode === CallUpMode.CONFIRMATION_REQUIRED
+              ? callUp.responseToken || randomUUID()
+              : null,
+        },
+      }),
+    ),
+  );
 
   revalidatePath(`/convocacoes/${match.id}`);
 }
@@ -334,7 +388,7 @@ export async function saveCallUpLineup(formData: FormData) {
   );
   const starterSlots: readonly string[] =
     match.sport === "FUTSAL" ? FUTSAL_SLOTS : FOOTBALL_SLOTS;
-  const squadLimit = match.sport === "FUTSAL" ? 14 : 18;
+  const squadLimit = match.callUpLimit;
   if (!categoryAccess.canManage || match.callUps.length > squadLimit) return;
 
   const entries = match.callUps.map((callUp, index) => {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 
 import CopyButton from "@/components/CopyButton";
 import {
@@ -109,14 +110,46 @@ export default async function MatchCallUpsPage({
   const orgName =
     user.organization?.publicName || user.organization?.name || "ONZEUP";
   const location = match.location || "Local a definir";
+  const requestHeaders = await headers();
+  const requestHost =
+    requestHeaders.get("x-forwarded-host") || requestHeaders.get("host");
+  const requestProtocol = requestHeaders.get("x-forwarded-proto") || "https";
+  const appBaseUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    (requestHost ? `${requestProtocol}://${requestHost}` : "")
+  ).replace(/\/$/, "");
   const calendarUrl = googleCalendarUrl({
     title: `${match.category.name} × ${match.opponent}`,
     start: match.startsAt,
     location: match.location,
     details: `Convocação • ${match.competition || "Jogo"} • ${orgName}`,
   });
-  const baseMessage = (name: string) =>
-    `⚽ CONVOCAÇÃO — ${match.category.name}\n\nOlá! ${name} está convocado(a) para a próxima partida.\n\n🆚 ${match.opponent}\n📅 ${fmt(match.startsAt)}\n📍 ${location}\n🏆 ${match.competition || "Jogo"}\n\nPor favor, confirme a presença com o coordenador.\n\n${orgName}`;
+  const baseMessage = (name: string, token: string | null) => {
+    const confirmationUrl =
+      token && appBaseUrl
+        ? `${appBaseUrl}/confirmar-convocacao/${token}`
+        : null;
+    const ending =
+      match.callUpMode === "INFORMATION_ONLY"
+        ? "Esta convocação é somente informativa e não exige confirmação."
+        : confirmationUrl
+          ? `Confirme a presença ou informe a ausência:\n${confirmationUrl}`
+          : "Por favor, confirme a presença com a comissão técnica.";
+
+    const footwear =
+      match.footwearType === "SOCIETY_CLEATS"
+        ? "Chuteira society"
+        : match.footwearType === "FUTSAL_SHOES"
+          ? "Tênis/chuteira de futsal"
+          : "Chuteira de trava";
+    // A comissão específica por jogo ainda será persistida no schema em uma
+    // próxima etapa. Não consultar uma relação inexistente mantém a página
+    // compatível com o Prisma Client gerado no deploy.
+    const staff = "A definir";
+
+    return `⚽ CONVOCAÇÃO — ${match.category.name}\n\nOlá! ${name} está convocado(a) para a próxima partida.\n\n🆚 ${match.opponent}\n📅 ${fmt(match.startsAt)}\n⏰ Chegada: ${match.presentationTime || "A definir"}\n📍 ${location}\n🏆 ${match.competition || "Jogo"}\n👕 ${match.arrivalAttire === "TRAINING_UNIFORM" ? "Chegar com uniforme de treino; troca no local" : "Chegar uniformizado para o jogo"}\n🧦 ${match.sockRequirement || "Meião oficial"}\n🛡️ ${match.shinGuardsRequired ? "Caneleira obrigatória" : "Caneleira opcional"}\n👟 ${footwear}\n👥 Comissão: ${staff}\n${match.equipmentNotes ? `📌 ${match.equipmentNotes}\n` : ""}\n${ending}\n\n${orgName}`;
+  };
 
   return (
     <main className="callup-detail-premium">
@@ -131,6 +164,17 @@ export default async function MatchCallUpsPage({
           <p className="muted">
             {fmt(match.startsAt)} • {match.callUps.length}/{squadLimit} atletas
           </p>
+          <span className="status status-informed">
+            {match.callUpMode === "INFORMATION_ONLY"
+              ? "Somente informativa"
+              : "Confirmação obrigatória"}
+          </span>
+          {match.callUpMode === "CONFIRMATION_REQUIRED" ? (
+            <small className="help">
+              As respostas de presença são acompanhadas separadamente e não
+              bloqueiam a lista nem a arte da convocação.
+            </small>
+          ) : null}
         </div>
         <div className="actions">
           {startersReady ? (
@@ -142,7 +186,7 @@ export default async function MatchCallUpsPage({
           ) : (
             <span
               className="btn btn-disabled"
-              title="Adicione 18 atletas e complete as oito posições"
+              title={`Adicione ${squadLimit} atletas e complete as posições titulares`}
             >
               Escalação incompleta
             </span>
@@ -167,6 +211,38 @@ export default async function MatchCallUpsPage({
           convocação, mas não alterá-la.
         </div>
       ) : null}
+      <section className="card match-operation-summary">
+        <div>
+          <span className="help">Horário do jogo</span>
+          <strong>{fmt(match.startsAt)}</strong>
+        </div>
+        <div>
+          <span className="help">Chegada</span>
+          <strong>{match.presentationTime || "A definir"}</strong>
+        </div>
+        <div>
+          <span className="help">Uniforme</span>
+          <strong>
+            {match.arrivalAttire === "TRAINING_UNIFORM"
+              ? "Treino — troca no local"
+              : "Jogo — já uniformizado"}
+          </strong>
+          <small>{match.uniform || "Padrão a definir"}</small>
+        </div>
+        <div>
+          <span className="help">Equipamentos</span>
+          <strong>{match.sockRequirement || "Meião oficial"}</strong>
+          <small>
+            {match.shinGuardsRequired
+              ? "Caneleira obrigatória"
+              : "Caneleira opcional"}
+          </small>
+        </div>
+        <div>
+          <span className="help">Comissão presente</span>
+          <strong>A definir</strong>
+        </div>
+      </section>
       <div className="two-col">
         <section className="card">
           <h2>Selecionar atletas</h2>
@@ -223,7 +299,7 @@ export default async function MatchCallUpsPage({
             <div className="stack">
               {match.callUps.map((callUp) => {
                 const name = callUp.athlete.nickname || callUp.athlete.name;
-                const message = baseMessage(name);
+                const message = baseMessage(name, callUp.responseToken);
                 const wa = whatsappUrl(callUp.athlete.guardianPhone, message);
                 return (
                   <article className="callup-card" key={callUp.id}>
@@ -241,7 +317,9 @@ export default async function MatchCallUpsPage({
                           ? "Confirmado"
                           : callUp.status === "DECLINED"
                             ? "Não poderá"
-                            : "Aguardando"}
+                            : callUp.status === "INFORMED"
+                              ? "Informado"
+                              : "Aguardando"}
                       </span>
                     </div>
                     <div className="callup-meta">
@@ -253,6 +331,12 @@ export default async function MatchCallUpsPage({
                         Telefone:{" "}
                         {callUp.athlete.guardianPhone || "Não informado"}
                       </span>
+                      {callUp.respondedAt ? (
+                        <span>Resposta: {fmt(callUp.respondedAt)}</span>
+                      ) : null}
+                      {callUp.responseByName ? (
+                        <span>Respondido por: {callUp.responseByName}</span>
+                      ) : null}
                     </div>
                     <div className="actions">
                       <CopyButton text={message} />
@@ -268,34 +352,46 @@ export default async function MatchCallUpsPage({
                       ) : null}
                       {canManage ? (
                         <>
-                          <form action={updateCallUpStatus}>
-                            <input type="hidden" name="id" value={callUp.id} />
-                            <input
-                              type="hidden"
-                              name="status"
-                              value="CONFIRMED"
-                            />
-                            <button
-                              className="btn-secondary btn-small"
-                              type="submit"
-                            >
-                              Confirmar
-                            </button>
-                          </form>
-                          <form action={updateCallUpStatus}>
-                            <input type="hidden" name="id" value={callUp.id} />
-                            <input
-                              type="hidden"
-                              name="status"
-                              value="DECLINED"
-                            />
-                            <button
-                              className="btn-danger btn-small"
-                              type="submit"
-                            >
-                              Não poderá
-                            </button>
-                          </form>
+                          {match.callUpMode === "CONFIRMATION_REQUIRED" ? (
+                            <>
+                              <form action={updateCallUpStatus}>
+                                <input
+                                  type="hidden"
+                                  name="id"
+                                  value={callUp.id}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="status"
+                                  value="CONFIRMED"
+                                />
+                                <button
+                                  className="btn-secondary btn-small"
+                                  type="submit"
+                                >
+                                  Confirmar
+                                </button>
+                              </form>
+                              <form action={updateCallUpStatus}>
+                                <input
+                                  type="hidden"
+                                  name="id"
+                                  value={callUp.id}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="status"
+                                  value="DECLINED"
+                                />
+                                <button
+                                  className="btn-danger btn-small"
+                                  type="submit"
+                                >
+                                  Não poderá
+                                </button>
+                              </form>
+                            </>
+                          ) : null}
                           <form action={deleteCallUp}>
                             <input type="hidden" name="id" value={callUp.id} />
                             <button

@@ -61,12 +61,12 @@ export default async function CategoryHubPage({
                 : "Categoria de formação")}
           </p>
         </div>
-        <div className="actions">
-          <Link className="btn-secondary" href="/categorias">
+        <div className="actions category-hub-actions">
+          <Link className="btn btn-secondary" href="/categorias">
             Todas as categorias
           </Link>
           <Link
-            className="btn-secondary"
+            className="btn btn-secondary"
             href={`/agenda?category=${category.id}`}
           >
             Agenda da categoria
@@ -75,6 +75,7 @@ export default async function CategoryHubPage({
             className="btn"
             href={`/o/${user.organization?.slug}/categorias/${category.id}`}
             target="_blank"
+            rel="noreferrer"
           >
             Ver página pública
           </Link>

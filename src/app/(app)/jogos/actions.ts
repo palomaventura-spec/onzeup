@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { MatchStatus, SportType } from "@prisma/client";
+import {
+  CallUpMode,
+  CallUpStatus,
+  MatchArrivalAttire,
+  MatchFootwearType,
+  MatchStatus,
+  SportType,
+} from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireClubPermission } from "@/lib/club-access";
@@ -69,6 +76,12 @@ function parseSport(value: string): SportType {
   return value === "FUTSAL" ? SportType.FUTSAL : SportType.FOOTBALL;
 }
 
+function parseCallUpMode(value: string): CallUpMode {
+  return value === "INFORMATION_ONLY"
+    ? CallUpMode.INFORMATION_ONLY
+    : CallUpMode.CONFIRMATION_REQUIRED;
+}
+
 function parseCallUpLimit(value: FormDataEntryValue | null, sport: SportType) {
   const parsed = Number(clean(value));
   const minimum = sport === SportType.FUTSAL ? 5 : 9;
@@ -76,6 +89,36 @@ function parseCallUpLimit(value: FormDataEntryValue | null, sport: SportType) {
   return Number.isInteger(parsed) && parsed >= minimum && parsed <= 30
     ? parsed
     : fallback;
+}
+
+function parseArrivalAttire(value: string): MatchArrivalAttire {
+  return value === "TRAINING_UNIFORM"
+    ? MatchArrivalAttire.TRAINING_UNIFORM
+    : MatchArrivalAttire.GAME_UNIFORM;
+}
+
+function parseFootwear(value: string, sport: SportType) {
+  if (sport === SportType.FUTSAL) return MatchFootwearType.FUTSAL_SHOES;
+  return value === "SOCIETY_CLEATS"
+    ? MatchFootwearType.SOCIETY_CLEATS
+    : MatchFootwearType.FIELD_CLEATS;
+}
+
+async function validStaffIds(
+  values: FormDataEntryValue[],
+  organizationId: string,
+) {
+  const ids = Array.from(new Set(values.map(String).filter(Boolean)));
+  if (!ids.length) return [];
+  const staff = await prisma.staffMember.findMany({
+    where: {
+      id: { in: ids },
+      organizationId,
+      active: true,
+    },
+    select: { id: true },
+  });
+  return staff.map((member) => member.id);
 }
 
 export async function createMatch(formData: FormData) {
@@ -104,10 +147,28 @@ export async function createMatch(formData: FormData) {
 
   const sport = parseSport(clean(formData.get("sport")));
   const callUpLimit = parseCallUpLimit(formData.get("callUpLimit"), sport);
+  const callUpMode = parseCallUpMode(clean(formData.get("callUpMode")));
+  const presentationTime = nullable(formData.get("presentationTime"));
+  const arrivalAttire = parseArrivalAttire(
+    clean(formData.get("arrivalAttire")),
+  );
+  const uniform = nullable(formData.get("uniform"));
+  const sockRequirement = nullable(formData.get("sockRequirement"));
+  const shinGuardsRequired = formData.get("shinGuardsRequired") === "on";
+  const footwearType = parseFootwear(
+    clean(formData.get("footwearType")),
+    sport,
+  );
+  const equipmentNotes = nullable(formData.get("equipmentNotes"));
 
   if (!categoryId || !opponent || !startsAt) {
     return;
   }
+
+  const staffIds = await validStaffIds(
+    formData.getAll("staffIds"),
+    user.organizationId,
+  );
 
   await prisma.match.create({
     data: {
@@ -119,9 +180,23 @@ export async function createMatch(formData: FormData) {
       notes,
       sport,
       callUpLimit,
+      callUpMode,
+      presentationTime,
+      arrivalAttire,
+      uniform,
+      sockRequirement,
+      shinGuardsRequired,
+      footwearType,
+      equipmentNotes,
       categoryId,
       organizationId: user.organizationId,
       status: MatchStatus.SCHEDULED,
+      staffAssignments: {
+        create: staffIds.map((staffMemberId) => ({
+          staffMemberId,
+          organizationId: user.organizationId,
+        })),
+      },
     },
   });
 
@@ -156,6 +231,19 @@ export async function updateMatch(formData: FormData) {
 
   const sport = parseSport(clean(formData.get("sport")));
   const callUpLimit = parseCallUpLimit(formData.get("callUpLimit"), sport);
+  const callUpMode = parseCallUpMode(clean(formData.get("callUpMode")));
+  const presentationTime = nullable(formData.get("presentationTime"));
+  const arrivalAttire = parseArrivalAttire(
+    clean(formData.get("arrivalAttire")),
+  );
+  const uniform = nullable(formData.get("uniform"));
+  const sockRequirement = nullable(formData.get("sockRequirement"));
+  const shinGuardsRequired = formData.get("shinGuardsRequired") === "on";
+  const footwearType = parseFootwear(
+    clean(formData.get("footwearType")),
+    sport,
+  );
+  const equipmentNotes = nullable(formData.get("equipmentNotes"));
 
   const status = parseStatus(clean(formData.get("status")));
 
@@ -166,6 +254,11 @@ export async function updateMatch(formData: FormData) {
   if (!id || !categoryId || !opponent || !startsAt) {
     return;
   }
+
+  const staffIds = await validStaffIds(
+    formData.getAll("staffIds"),
+    user.organizationId,
+  );
 
   const resultData =
     status === MatchStatus.FINISHED
@@ -193,9 +286,49 @@ export async function updateMatch(formData: FormData) {
       notes,
       sport,
       callUpLimit,
+      callUpMode,
+      presentationTime,
+      arrivalAttire,
+      uniform,
+      sockRequirement,
+      shinGuardsRequired,
+      footwearType,
+      equipmentNotes,
       categoryId,
       status,
       ...resultData,
+    },
+  });
+
+  await prisma.matchStaffAssignment.deleteMany({
+    where: { matchId: id, organizationId: user.organizationId },
+  });
+  if (staffIds.length) {
+    await prisma.matchStaffAssignment.createMany({
+      data: staffIds.map((staffMemberId) => ({
+        matchId: id,
+        staffMemberId,
+        organizationId: user.organizationId,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  await prisma.callUp.updateMany({
+    where: {
+      matchId: id,
+      organizationId: user.organizationId,
+      status:
+        callUpMode === CallUpMode.INFORMATION_ONLY
+          ? { in: [CallUpStatus.PENDING, CallUpStatus.INFORMED] }
+          : CallUpStatus.INFORMED,
+    },
+    data: {
+      status:
+        callUpMode === CallUpMode.INFORMATION_ONLY
+          ? CallUpStatus.INFORMED
+          : CallUpStatus.PENDING,
+      respondedAt: null,
     },
   });
 
@@ -220,6 +353,7 @@ export async function deleteMatch(formData: FormData) {
   });
 
   revalidatePath("/jogos");
+  redirect("/jogos");
 }
 
 export async function markMatchFinished(formData: FormData) {

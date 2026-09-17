@@ -29,7 +29,7 @@ export default async function MatchesPage() {
 
   const canViewCallUps = hasClubPermission(user, "CALLUPS_VIEW");
 
-  const [matches, categories] = await Promise.all([
+  const [matches, categories, staffMembers] = await Promise.all([
     prisma.match.findMany({
       where: {
         organizationId: user.organizationId,
@@ -53,6 +53,11 @@ export default async function MatchesPage() {
       orderBy: {
         name: "asc",
       },
+    }),
+    prisma.staffMember.findMany({
+      where: { organizationId: user.organizationId, active: true },
+      include: { category: true },
+      orderBy: { name: "asc" },
     }),
   ]);
 
@@ -126,6 +131,125 @@ export default async function MatchesPage() {
                     Sugestão: 18 no campo ou 14 no futsal. O clube pode alterar.
                   </span>
                 </label>
+
+                <label>
+                  Tipo de convocação
+                  <select
+                    name="callUpMode"
+                    defaultValue="CONFIRMATION_REQUIRED"
+                    required
+                  >
+                    <option value="CONFIRMATION_REQUIRED">
+                      Confirmação obrigatória
+                    </option>
+                    <option value="INFORMATION_ONLY">
+                      Somente informativa
+                    </option>
+                  </select>
+                  <span className="help">
+                    Escolinha: coleta respostas. Clube: apenas informa os
+                    convocados.
+                  </span>
+                </label>
+
+                <label>
+                  Horário de chegada / apresentação
+                  <input name="presentationTime" type="time" />
+                  <span className="help">
+                    O horário do jogo será o informado no campo Horário.
+                  </span>
+                </label>
+
+                <label>
+                  Como o atleta deve chegar
+                  <select name="arrivalAttire" defaultValue="GAME_UNIFORM">
+                    <option value="GAME_UNIFORM">
+                      Uniforme de jogo — já uniformizado
+                    </option>
+                    <option value="TRAINING_UNIFORM">
+                      Uniforme de treino — troca no local
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  Uniforme / padrão
+                  <input
+                    name="uniform"
+                    placeholder="Ex.: camisa branca, short preto"
+                  />
+                </label>
+
+                <label>
+                  Meião
+                  <input
+                    name="sockRequirement"
+                    placeholder="Ex.: meião preto oficial"
+                  />
+                </label>
+
+                <label className="check-row">
+                  <input
+                    name="shinGuardsRequired"
+                    type="checkbox"
+                    defaultChecked
+                  />
+                  Caneleira obrigatória
+                </label>
+
+                <label>
+                  Calçado
+                  <select name="footwearType" defaultValue="FIELD_CLEATS">
+                    <option value="FIELD_CLEATS">
+                      Chuteira de trava — campo
+                    </option>
+                    <option value="SOCIETY_CLEATS">
+                      Chuteira society — campo
+                    </option>
+                    <option value="FUTSAL_SHOES">
+                      Tênis/chuteira de futsal
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  Outras orientações de equipamento
+                  <textarea
+                    name="equipmentNotes"
+                    rows={3}
+                    placeholder="Ex.: levar garrafa de água e documento"
+                  />
+                </label>
+
+                <fieldset className="staff-game-fieldset">
+                  <legend>Comissão técnica presente</legend>
+                  {staffMembers.length ? (
+                    <div className="staff-game-options">
+                      {staffMembers.map((member) => (
+                        <label className="check-row" key={member.id}>
+                          <input
+                            name="staffIds"
+                            type="checkbox"
+                            value={member.id}
+                          />
+                          <span>
+                            <strong>{member.name}</strong>
+                            <small>
+                              {member.roleTitle}
+                              {member.category
+                                ? ` • ${member.category.name}`
+                                : " • Geral"}
+                            </small>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="help">
+                      Cadastre profissionais em Comissão técnica.
+                    </span>
+                  )}
+                </fieldset>
 
                 <label>
                   Competição
@@ -284,7 +408,7 @@ export default async function MatchesPage() {
                               className="btn btn-secondary btn-small"
                               href={`/jogos/${match.id}`}
                             >
-                              {canEdit ? "Abrir jogo" : "Ver jogo"}
+                              {canEdit ? "Editar jogo" : "Ver jogo"}
                             </Link>
 
                             <Link
