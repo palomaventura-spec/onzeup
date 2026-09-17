@@ -162,14 +162,14 @@ export default async function ConvocationArtworkPage({
     >
       <div className="convocation-art-toolbar convocation-no-print">
         <Link className="btn btn-secondary" href={`/convocacoes/${match.id}`}>
-          Voltar Ã  convocaÃ§Ã£o
+          Voltar à convocação
         </Link>
         <ConvocationPrintActions />
       </div>
 
       <main className="convocation-poster" id="convocation-poster">
         {!isComplete ? (
-          <div className="poster-preview-label">PRÃ‰VIA â€¢ LISTA INCOMPLETA</div>
+          <div className="poster-preview-label">PRÉVIA • LISTA INCOMPLETA</div>
         ) : null}
         <header className="poster-header poster-header-premium">
           <div className="poster-institutional">
@@ -183,7 +183,7 @@ export default async function ConvocationArtworkPage({
               <div>
                 <h2>{clubName}</h2>
                 <p>Departamento de futebol de base</p>
-                <small>FormaÃ§Ã£o â€¢ desenvolvimento â€¢ grandes histÃ³rias</small>
+                <small>Formação • desenvolvimento • grandes histórias</small>
               </div>
             </div>
             <div className="poster-values">
@@ -193,13 +193,13 @@ export default async function ConvocationArtworkPage({
               <br />
               TRABALHO
               <br />
-              EVOLUÃ‡ÃƒO
+              EVOLUÇÃO
               <b>
                 ONZE<span>UP</span>
               </b>
             </div>
           </div>
-          <h1 className="poster-main-title">CONVOCAÃ‡ÃƒO OFICIAL</h1>
+          <h1 className="poster-main-title">CONVOCAÇÃO OFICIAL</h1>
 
           <div className="poster-match">
             <span className="poster-category">{match.category.name}</span>
@@ -207,25 +207,25 @@ export default async function ConvocationArtworkPage({
               {match.competition || "Jogo amistoso"}
             </span>
             <strong>{clubName}</strong>
-            <b>Ã—</b>
+            <b>×</b>
             <strong>{match.opponent}</strong>
             <em>JOGO CONFIRMADO</em>
           </div>
           <div className="poster-details">
             <span>
-              <small>â–£ DATA</small>
+              <small>▣ DATA</small>
               {dateText}
             </span>
             <span>
-              <small>â—· HORÃRIO DO JOGO</small>
+              <small>◷ HORÁRIO DO JOGO</small>
               {timeText}
             </span>
             <span>
-              <small>â— LOCAL</small>
+              <small>● LOCAL</small>
               {match.location || "A definir"}
             </span>
             <span>
-              <small>â—· CHEGADA</small>
+              <small>◷ CHEGADA</small>
               {match.presentationTime || "A definir"}
             </span>
           </div>
@@ -251,7 +251,7 @@ export default async function ConvocationArtworkPage({
           <br />
           GRANDES
           <br />
-          HISTÃ“RIAS
+          HISTÓRIAS
         </aside>
 
         <section className="poster-field" aria-label="Titulares no campo">
@@ -288,37 +288,37 @@ export default async function ConvocationArtworkPage({
 
         <section className="poster-service-info">
           <div>
-            <small>TÃ‰CNICO</small>
+            <small>TÉCNICO</small>
             <strong>{coach?.name || "A definir"}</strong>
           </div>
           <div>
-            <small>COMISSÃƒO</small>
+            <small>COMISSÃO</small>
             <strong>
               {selectedStaff.length
-                ? selectedStaff.map((member) => member.name).join(" â€¢ ")
-                : coach?.roleTitle || "ComissÃ£o tÃ©cnica"}
+                ? selectedStaff.map((member) => member.name).join(" • ")
+                : coach?.roleTitle || "Comissão técnica"}
             </strong>
           </div>
           <div>
             <small>UNIFORME E EQUIPAMENTO</small>
             <strong>
               {match.arrivalAttire === "TRAINING_UNIFORM"
-                ? "Treino â€¢ troca no local"
-                : "Jogo â€¢ chegar uniformizado"}
-              {match.uniform ? ` â€¢ ${match.uniform}` : ""}
-              {match.sockRequirement ? ` â€¢ ${match.sockRequirement}` : ""}
-              {match.shinGuardsRequired ? " â€¢ caneleira" : ""}
+                ? "Treino • troca no local"
+                : "Jogo • chegar uniformizado"}
+              {match.uniform ? ` • ${match.uniform}` : ""}
+              {match.sockRequirement ? ` • ${match.sockRequirement}` : ""}
+              {match.shinGuardsRequired ? " • caneleira" : ""}
             </strong>
           </div>
         </section>
 
         <footer className="poster-footer">
           <span>
-            ConvocaÃ§Ã£o gerada pelo <strong>ONZEUP</strong>
+            Convocação gerada pelo <strong>ONZEUP</strong>
           </span>
-          <span>{isComplete ? "DOCUMENTO OFICIAL" : "MODELO DE PRÃ‰VIA"}</span>
+          <span>{isComplete ? "DOCUMENTO OFICIAL" : "MODELO DE PRÉVIA"}</span>
           <span>
-            {match.category.name} â€¢ {dateText}
+            {match.category.name} • {dateText}
           </span>
         </footer>
       </main>

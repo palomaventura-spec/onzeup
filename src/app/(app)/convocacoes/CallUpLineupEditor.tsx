@@ -35,7 +35,7 @@ const FUTSAL_SLOTS = [
   ["FIXO", "Fixo"],
   ["ALA_LEFT", "Ala esquerdo"],
   ["ALA_RIGHT", "Ala direito"],
-  ["PIVO", "PivÃ´"],
+  ["PIVO", "Pivô"],
 ] as const;
 
 function safeImageUrl(value: string | null) {
@@ -109,10 +109,10 @@ export default function CallUpLineupEditor({
         <div>
           <span className="page-eyebrow">
             {sport === "FUTSAL"
-              ? "FUTSAL â€¢ FORMAÃ‡ÃƒO 1â€“2â€“1"
-              : "CAMPO â€¢ FORMAÃ‡ÃƒO 3â€“3â€“2"}
+              ? "FUTSAL • FORMAÇÃO 1–2–1"
+              : "CAMPO • FORMAÇÃO 3–3–2"}
           </span>
-          <h2>Montar escalaÃ§Ã£o</h2>
+          <h2>Montar escalação</h2>
           <p className="muted">
             {slots.length} titulares e {Math.max(0, squadLimit - slots.length)}{" "}
             reservas.
@@ -121,12 +121,12 @@ export default function CallUpLineupEditor({
         <span
           className={`status ${complete ? "status-confirmed" : "status-pending"}`}
         >
-          {starters.length}/{slots.length} posiÃ§Ãµes
+          {starters.length}/{slots.length} posições
         </span>
       </div>
 
       <div className="lineup-layout">
-        <div className="mini-pitch" aria-label="PrÃ©via da formaÃ§Ã£o">
+        <div className="mini-pitch" aria-label="Prévia da formação">
           {slots.map(([slot, label]) => {
             const athlete = rows.find((item) => item.slot === slot);
             return (
@@ -158,9 +158,9 @@ export default function CallUpLineupEditor({
             <thead>
               <tr>
                 <th>Atleta</th>
-                <th>PosiÃ§Ã£o na arte</th>
-                <th>NÂº</th>
-                <th>CapitÃ£o</th>
+                <th>Posição na arte</th>
+                <th>Nº</th>
+                <th>Capitão</th>
               </tr>
             </thead>
             <tbody>
@@ -205,7 +205,7 @@ export default function CallUpLineupEditor({
                       checked={captainId === athlete.id}
                       disabled={!canEdit || athlete.slot === "SUBSTITUTE"}
                       onChange={() => setCaptainId(athlete.id)}
-                      aria-label={`Marcar ${athlete.name} como capitÃ£o`}
+                      aria-label={`Marcar ${athlete.name} como capitão`}
                     />
                   </td>
                 </tr>
@@ -216,16 +216,16 @@ export default function CallUpLineupEditor({
       </div>
       {canEdit ? (
         <button className="btn" type="submit" disabled={isPending}>
-          {isPending ? "Salvando..." : "Salvar escalaÃ§Ã£o"}
+          {isPending ? "Salvando..." : "Salvar escalação"}
         </button>
       ) : null}
       {saved ? (
-        <p className="success-message">EscalaÃ§Ã£o salva com sucesso.</p>
+        <p className="success-message">Escalação salva com sucesso.</p>
       ) : null}
       {!complete ? (
         <p className="help">
-          Preencha todas as posiÃ§Ãµes titulares para liberar a arte da
-          convocaÃ§Ã£o.
+          Preencha todas as posições titulares para liberar a arte da
+          convocação.
         </p>
       ) : null}
     </form>

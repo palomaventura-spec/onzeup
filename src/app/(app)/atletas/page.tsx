@@ -131,10 +131,10 @@ export default async function AthletesPage({
     <>
       <div className="page-head athlete-premium-head">
         <div>
-          <span className="page-eyebrow">GESTÃƒO DO ELENCO</span>
+          <span className="page-eyebrow">GESTÃO DO ELENCO</span>
           <h1>Atletas</h1>
           <p className="muted">
-            VisÃ£o completa do elenco, documentaÃ§Ã£o, desempenho e vÃ­nculo
+            Visão completa do elenco, documentação, desempenho e vínculo
             familiar.
           </p>
         </div>
@@ -156,12 +156,12 @@ export default async function AthletesPage({
           <span>grupos esportivos</span>
         </article>
         <article>
-          <small>VÃNCULOS PLAYER</small>
+          <small>VÍNCULOS PLAYER</small>
           <strong>{linkedCount}</strong>
           <span>perfis confirmados</span>
         </article>
         <article className={documentAlertCount ? "attention" : ""}>
-          <small>ATENÃ‡ÃƒO</small>
+          <small>ATENÇÃO</small>
           <strong>{documentAlertCount + missingDataCount}</strong>
           <span>documentos ou cadastros</span>
         </article>
@@ -175,7 +175,7 @@ export default async function AthletesPage({
               <h2>Adicionar atleta ao elenco</h2>
               <p>Dados do atleta e documentos em um fluxo simples.</p>
             </div>
-            <span className="btn">ï¼‹ Novo atleta</span>
+            <span className="btn">＋ Novo atleta</span>
           </summary>
           <AthleteCreateForm categories={categories} />
         </details>
@@ -204,7 +204,7 @@ export default async function AthletesPage({
             </select>
           </label>
           <label>
-            PosiÃ§Ã£o
+            Posição
             <select name="position" defaultValue={positionFilter}>
               <option value="ALL">Todas</option>
               {positions.map((position) => (
@@ -232,10 +232,10 @@ export default async function AthletesPage({
 
       {!canEdit ? (
         <section className="card">
-          <span className="page-eyebrow">SOMENTE VISUALIZAÃ‡ÃƒO</span>
+          <span className="page-eyebrow">SOMENTE VISUALIZAÇÃO</span>
           <h2>Elenco do clube</h2>
           <p className="muted">
-            Dados privados da famÃ­lia permanecem restritos Ã  gestÃ£o autorizada.
+            Dados privados da família permanecem restritos à gestão autorizada.
           </p>
         </section>
       ) : null}
@@ -285,19 +285,19 @@ export default async function AthletesPage({
                           <h3>{athlete.nickname || athlete.name}</h3>
                           {athlete.nickname ? <p>{athlete.name}</p> : null}
                         </div>
-                        {playerLinked ? <span>PLAYER âœ“</span> : null}
+                        {playerLinked ? <span>PLAYER ✓</span> : null}
                       </div>
                       <div className="athlete-profile-data">
                         <span>
-                          <small>POSIÃ‡ÃƒO</small>
-                          <strong>{athlete.position || "â€”"}</strong>
+                          <small>POSIÇÃO</small>
+                          <strong>{athlete.position || "—"}</strong>
                         </span>
                         <span>
                           <small>IDADE</small>
-                          <strong>{age ? `${age} anos` : "â€”"}</strong>
+                          <strong>{age ? `${age} anos` : "—"}</strong>
                         </span>
                         <span>
-                          <small>AVALIAÃ‡Ã•ES</small>
+                          <small>AVALIAÇÕES</small>
                           <strong>{athlete.evaluations.length}</strong>
                         </span>
                       </div>
@@ -310,21 +310,21 @@ export default async function AthletesPage({
                           ) : null}
                           {athlete.callUps.length ? (
                             <span>
-                              {athlete.callUps.length} confirmaÃ§Ã£o(Ãµes)
+                              {athlete.callUps.length} confirmação(ões)
                             </span>
                           ) : null}
                           {athlete.charges.length ? (
-                            <span>{athlete.charges.length} cobranÃ§a(s)</span>
+                            <span>{athlete.charges.length} cobrança(s)</span>
                           ) : null}
                         </div>
                       ) : (
                         <div className="athlete-profile-ok">
-                          Cadastro sem pendÃªncias operacionais
+                          Cadastro sem pendências operacionais
                         </div>
                       )}
                       <div className="athlete-profile-actions">
                         <Link className="btn" href={`/atletas/${athlete.id}`}>
-                          Abrir ficha
+                          {canEdit ? "Editar atleta" : "Abrir ficha"}
                         </Link>
                         <Link href={`/atletas/${athlete.id}/dados`}>
                           Documentos
