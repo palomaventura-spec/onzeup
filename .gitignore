@@ -1,6 +1,14 @@
-.next
-node_modules
+.next/
+node_modules/
+
 .env
 .env.local
+.env*
+!.env.example
+
 *.log
 prisma.zip
+.vercel/
+
+arquivos-para-revisao/
+revisao-card-*.txt

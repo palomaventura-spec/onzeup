@@ -1,4 +1,4 @@
-/* Scoped mobile corrections; imported after the existing mobile stylesheet. */
+/* ONZEUP cards v5. Existing mobile navigation/form spacing is preserved. */
 @media screen and (max-width: 900px) {
   .club-app-light.shell {
     min-width: 0;
@@ -40,60 +40,278 @@
   }
 }
 
-@media screen and (max-width: 768px) {
-  .club-app-light .athlete-premium-category { padding: 14px; min-width: 0; }
-  .club-app-light .athlete-premium-category-head { flex-wrap: wrap; }
-  .club-app-light .athlete-premium-grid { grid-template-columns: minmax(0, 1fr); }
-  .club-app-light .athlete-profile-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    min-width: 0;
-    min-height: 0;
-    width: 100%;
-  }
-  .club-app-light .athlete-profile-visual {
-    height: 180px;
-    min-height: 0;
-    width: 100%;
-  }
-  .club-app-light .athlete-profile-visual img {
-    display: block;
-    width: 100%;
-    height: 180px;
-    object-fit: contain;
-    object-position: center;
-  }
-  .club-app-light .athlete-profile-visual::after { display: none; }
-  .club-app-light .athlete-profile-body { min-width: 0; padding: 14px; }
-  .club-app-light .athlete-profile-title { flex-wrap: wrap; }
-  .club-app-light .athlete-profile-title h3 { overflow-wrap: anywhere; }
-  .club-app-light .athlete-profile-data {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-  .club-app-light .athlete-profile-data span { padding: 0; border: 0; }
-  .club-app-light .athlete-profile-data small,
-  .club-app-light .athlete-profile-title small { font-size: 12px; letter-spacing: .02em; }
-  .club-app-light .athlete-profile-data strong {
-    font-size: 14px;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-  .club-app-light .athlete-profile-ok,
-  .club-app-light .athlete-profile-alerts span { font-size: 14px; overflow-wrap: anywhere; }
-  .club-app-light .athlete-profile-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-  }
-  .club-app-light .athlete-profile-actions a {
-    min-width: 0;
-    min-height: 44px;
-    width: 100%;
-    padding: 10px;
-    font-size: 14px;
-    white-space: normal;
-    text-align: center;
-  }
-  .club-app-light .athlete-manage summary { min-height: 44px; padding-block: 12px; }
+/* Athlete list only: do not affect the profile, uploads or other modules. */
+.club-app-light .athlete-premium-category { min-width: 0; }
+.club-app-light .athlete-premium-category-head { flex-wrap: wrap; }
+.club-app-light .athlete-premium-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(360px, calc((100% - 60px) / 4))), 1fr)) !important;
+  grid-auto-rows: 1fr;
+  align-items: stretch;
+  gap: 20px;
+  min-width: 0;
+}
+.club-app-light .athlete-profile-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 560px;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #dce4ec;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 5px 20px rgb(15 35 50 / 5%);
+  transform: none;
+}
+.club-app-light .athlete-profile-card:hover { transform: none; }
+.club-app-light .athlete-profile-card.inactive { opacity: 1; filter: none; }
+.club-app-light .athlete-profile-card .athlete-profile-visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 220px;
+  width: 100%;
+  height: 220px;
+  min-height: 220px;
+  padding: 0 0 40px;
+  background: #102633;
+  color: #a8e000;
+  overflow: hidden;
+}
+.club-app-light .athlete-profile-card .athlete-profile-visual::after { content: none; }
+.club-app-light .athlete-profile-card .athlete-profile-visual > img {
+  display: block;
+  width: 100%;
+  height: 180px;
+  min-height: 0;
+  object-fit: cover;
+  object-position: center 22%;
+  border-radius: 0;
+}
+.club-app-light .athlete-profile-card .athlete-profile-visual > span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 180px;
+  font-size: 48px;
+  font-weight: 800;
+}
+.club-app-light .athlete-profile-card .athlete-profile-visual > i {
+  position: absolute;
+  inset: auto 12px 8px auto;
+  width: max-content;
+  max-width: calc(100% - 88px);
+  height: 24px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: #e4eaf0;
+  color: #334155;
+  font-size: 12px;
+  line-height: 18px;
+  font-style: normal;
+  font-weight: 800;
+}
+.club-app-light .athlete-profile-card .athlete-profile-visual > i.active {
+  background: #eaf7cf;
+  color: #315300;
+}
+.club-app-light .athlete-profile-card .athlete-profile-visual > b {
+  position: absolute;
+  inset: auto auto 8px 12px;
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #203d4e;
+  color: #fff;
+  font-size: 12px;
+}
+.club-app-light .athlete-profile-card .athlete-profile-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+}
+.club-app-light .athlete-profile-card .athlete-profile-title {
+  position: relative;
+  display: block;
+  min-width: 0;
+  min-height: 108px;
+  padding: 0;
+}
+.club-app-light .athlete-profile-title > div { min-width: 0; }
+.club-app-light .athlete-profile-card .athlete-profile-title small {
+  display: block;
+  padding-right: 90px;
+  color: #4d6b0a;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.club-app-light .athlete-profile-card .athlete-profile-title h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  min-height: 52px;
+  margin: 6px 0 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: #102633;
+  font-size: 21px;
+  line-height: 26px;
+  font-weight: 800;
+}
+.club-app-light .athlete-profile-card .athlete-profile-title p {
+  margin: 4px 0 0;
+  color: #526477;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.club-app-light .athlete-profile-card .athlete-profile-title > span {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 6px;
+  font-size: 12px;
+  line-height: 18px;
+  background: #edf7dc;
+  color: #38570b;
+}
+.club-app-light .athlete-profile-card .athlete-profile-data {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 14px 0;
+  border-block: 1px solid #e7edf2;
+}
+.club-app-light .athlete-profile-card .athlete-profile-data span {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 6px;
+  border: 0;
+  text-align: center;
+}
+.club-app-light .athlete-profile-card .athlete-profile-data span + span { border-left: 1px solid #e7edf2; }
+.club-app-light .athlete-profile-card .athlete-profile-data small {
+  color: #526477;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.club-app-light .athlete-profile-card .athlete-profile-data strong {
+  color: #102633;
+  font-size: 17px;
+  line-height: 24px;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+.club-app-light .athlete-profile-card .athlete-profile-ok,
+.club-app-light .athlete-profile-card .athlete-profile-alerts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f1f7e8;
+  color: #3e5916;
+  font-size: 14px;
+  line-height: 21px;
+  overflow-wrap: anywhere;
+}
+.club-app-light .athlete-profile-card .athlete-profile-alerts { background: #fff7e8; color: #805400; }
+.club-app-light .athlete-profile-card .athlete-profile-alerts span {
+  padding: 2px 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  line-height: 20px;
+}
+.club-app-light .athlete-profile-card .athlete-profile-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  margin: auto 0 0;
+  padding-top: 4px;
+}
+.club-app-light .athlete-profile-card .athlete-profile-actions a,
+.club-app-light .athlete-profile-card .athlete-profile-actions a:not(.btn) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  height: 100%;
+  padding: 10px 4px;
+  border: 1px solid #d8e1e9;
+  border-radius: 10px;
+  background: #fff;
+  color: #102633;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-align: center;
+  text-decoration: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.club-app-light .athlete-profile-card .athlete-profile-actions a.btn {
+  background: #a8e000;
+  border-color: #a8e000;
+  color: #152300;
+}
+.club-app-light .athlete-profile-card .athlete-manage {
+  margin: 0;
+  padding-top: 4px;
+  border-top: 1px solid #e7edf2;
+}
+.club-app-light .athlete-profile-card .athlete-manage summary {
+  min-height: 44px;
+  padding: 12px 0;
+  color: #526477;
+  font-size: 14px;
+  line-height: 20px;
+  cursor: pointer;
+}
+.club-app-light .athlete-profile-card .athlete-manage > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.club-app-light .athlete-profile-card .athlete-manage button { min-height: 44px; }
+.club-app-light .athlete-profile-card :is(a, summary, button):focus-visible {
+  outline: 3px solid #3675b8;
+  outline-offset: 2px;
+}
+@media screen and (max-width: 600px) {
+  .club-app-light .athlete-premium-category { padding: 12px; }
+  .club-app-light .athlete-profile-card .athlete-profile-body { padding: 12px; }
+  .club-app-light .athlete-profile-card .athlete-profile-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .club-app-light .athlete-profile-card .athlete-profile-actions a:first-child { grid-column: 1 / -1; }
+  .club-app-light .athlete-profile-card .athlete-profile-data span { padding-inline: 2px; }
+}
+@media screen and (max-width: 359px) {
+  .club-app-light .athlete-profile-card .athlete-profile-actions { grid-template-columns: minmax(0, 1fr); }
 }

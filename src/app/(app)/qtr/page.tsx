@@ -127,7 +127,7 @@ export default async function QtrPage({
   const selectedCategory = validCategory || categories[0]?.name || "__all__";
 
   /*
-   * Se ainda não existe QTR para a semana,
+   * Se ainda não existe QTS para a semana,
    * somente Gestor/Coordenador podem gerar.
    *
    * Coach continua apenas visualizando.

@@ -743,7 +743,7 @@ export default function QtrEditor({
             altere Treinos/Jogos na Agenda
             quando a mudança for oficial.
             Use a edição abaixo apenas para
-            um ajuste específico deste QTR.
+            um ajuste específico deste QTS.
           </div>
         ) : null}
 
