@@ -146,9 +146,8 @@ export default async function ConvocationArtworkPage({
   const accent = match.organization.accentColor || "#9DDB16";
   const selectedStaff = match.staffAssignments.map((item) => item.staffMember);
   const coach = selectedStaff[0] || match.category.staffMembers[0];
-  const cover = match.organization.coverUrl
-    ? `url("${match.organization.coverUrl}")`
-    : "none";
+  const coverUrl = safeImageUrl(match.organization.coverUrl);
+  const cover = coverUrl ? `url("${coverUrl}")` : "none";
 
   return (
     <div
