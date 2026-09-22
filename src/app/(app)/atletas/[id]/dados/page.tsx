@@ -130,6 +130,11 @@ export default async function AthletePrivateDataPage({
           <Link className="btn btn-secondary" href={`/atletas/${athlete.id}`}>
             Voltar ao atleta
           </Link>
+
+          <Link className="btn btn-secondary" href="#documentos">
+            Documentos ({athlete.documents.length})
+          </Link>
+
           <Link className="btn" href={`/atletas/${athlete.id}/performance`}>
             Performance
           </Link>
@@ -371,7 +376,11 @@ export default async function AthletePrivateDataPage({
         ) : <p className="muted" style={{ marginTop: 18 }}>Nenhuma medição registrada.</p>}
       </section>
 
-      <section className="card" style={{ marginTop: 18 }}>
+      <section
+        id="documentos"
+        className="card"
+        style={{ marginTop: 18, scrollMarginTop: 100 }}
+      >
         <span className="page-eyebrow">DOCUMENTOS E EXAMES</span>
         <h2>Central de arquivos privados</h2>
         <p className="muted">
