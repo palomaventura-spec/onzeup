@@ -6,26 +6,46 @@ import { isPastGrace } from "@/lib/billing-entitlements";
 
 const COOKIE_NAME = "onzeup_session";
 
-export async function createSession(userId: string) {
+export async function createSession(
+  userId: string,
+  remember = false,
+) {
   const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
 
-  await prisma.session.create({ data: { token, userId, expiresAt } });
+  const duration = remember
+    ? 1000 * 60 * 60 * 24 * 30
+    : 1000 * 60 * 60 * 24 * 7;
+
+  const expiresAt = new Date(Date.now() + duration);
+
+  await prisma.session.create({
+    data: {
+      token,
+      userId,
+      expiresAt,
+    },
+  });
 
   const store = await cookies();
+
   store.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    domain: process.env.NODE_ENV === "production" ? ".onzeup.com.br" : undefined,
+    domain:
+      process.env.NODE_ENV === "production"
+        ? ".onzeup.com.br"
+        : undefined,
     expires: expiresAt,
+    maxAge: Math.floor(duration / 1000),
   });
 }
 
 export async function getCurrentUser() {
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
+
   if (!token) return null;
 
   return prisma.user.findFirst({
@@ -38,13 +58,17 @@ export async function getCurrentUser() {
         },
       },
     },
-    include: { organization: true },
+    include: {
+      organization: true,
+    },
   });
 }
 
 export async function requireUser() {
   const user = await getCurrentUser();
+
   if (!user) redirect("/login");
+
   return user;
 }
 
@@ -53,34 +77,64 @@ export async function requireOrganizationUser() {
 
   if (user.role === "GUARDIAN") redirect("/responsavel");
   if (user.role === "COACH") redirect("/coach/dashboard");
-  if (user.role === "SUPER_ADMIN" && !user.organizationId) redirect("/admin");
-  if (!user.organizationId) redirect("/login");
+
+  if (user.role === "SUPER_ADMIN" && !user.organizationId) {
+    redirect("/admin");
+  }
+
+  if (!user.organizationId) {
+    redirect("/login");
+  }
 
   const organization = await prisma.organization.findUnique({
-    where: { id: user.organizationId },
+    where: {
+      id: user.organizationId,
+    },
     select: {
       accessStatus: true,
       complimentaryUntil: true,
-      subscription: { select: { status: true, currentPeriodEnd: true } },
+      subscription: {
+        select: {
+          status: true,
+          currentPeriodEnd: true,
+        },
+      },
     },
   });
-  if (!organization) redirect("/login");
 
-  if (organization.accessStatus === "SUSPENDED") redirect("/acesso-bloqueado?status=suspended");
-  if (organization.accessStatus === "CANCELLED") redirect("/acesso-bloqueado?status=cancelled");
+  if (!organization) {
+    redirect("/login");
+  }
+
+  if (organization.accessStatus === "SUSPENDED") {
+    redirect("/acesso-bloqueado?status=suspended");
+  }
+
+  if (organization.accessStatus === "CANCELLED") {
+    redirect("/acesso-bloqueado?status=cancelled");
+  }
 
   if (organization.accessStatus === "COMPLIMENTARY") {
-    if (organization.complimentaryUntil && organization.complimentaryUntil < new Date()) {
+    if (
+      organization.complimentaryUntil &&
+      organization.complimentaryUntil < new Date()
+    ) {
       redirect("/acesso-bloqueado?status=expired");
     }
+
     return user as typeof user & { organizationId: string };
   }
 
   const subscription = organization.subscription;
+
   if (subscription?.status === "CANCELLED") {
     redirect("/acesso-bloqueado?status=billing_cancelled");
   }
-  if (subscription?.status === "PAST_DUE" && isPastGrace(subscription.currentPeriodEnd)) {
+
+  if (
+    subscription?.status === "PAST_DUE" &&
+    isPastGrace(subscription.currentPeriodEnd)
+  ) {
     redirect("/acesso-bloqueado?status=past_due");
   }
 
@@ -92,15 +146,22 @@ export async function destroySession() {
   const token = store.get(COOKIE_NAME)?.value;
 
   if (token) {
-    await prisma.session.deleteMany({ where: { token } });
+    await prisma.session.deleteMany({
+      where: {
+        token,
+      },
+    });
   }
 
   store.delete(COOKIE_NAME);
 }
 
-
 export async function requireSuperAdmin() {
   const user = await requireUser();
-  if (user.role !== "SUPER_ADMIN") redirect("/dashboard");
+
+  if (user.role !== "SUPER_ADMIN") {
+    redirect("/dashboard");
+  }
+
   return user;
 }

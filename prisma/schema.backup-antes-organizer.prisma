@@ -82,175 +82,7 @@ model Organization {
   trainingAttendances         TrainingAttendance[]
   userPermissionOverrides     ClubUserPermissionOverride[]
   users                       User[]
-  competitions                 Competition[]
-  linkedCompetitionTeams       CompetitionTeam[] @relation("LinkedCompetitionOrganization")
 }
-model Competition {
-  id                String            @id @default(cuid())
-  organizationId    String
-  name              String
-  slug              String
-  description       String?
-  season            String?
-  sport             SportType         @default(FOOTBALL)
-  status            CompetitionStatus @default(DRAFT)
-  format            CompetitionFormat @default(CUSTOM)
-  startDate         DateTime?
-  endDate           DateTime?
-  registrationStart DateTime?
-  registrationEnd   DateTime?
-  maxTeams          Int?
-  logoUrl           String?
-  coverUrl          String?
-  isPublic          Boolean           @default(false)
-  publishedAt       DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  categories   CompetitionCategory[]
-  teams        CompetitionTeam[]
-  venues       CompetitionVenue[]
-
-  @@unique([organizationId, slug])
-  @@index([organizationId, status])
-  @@index([sport, status])
-  @@index([startDate])
-}
-
-model CompetitionCategory {
-  id                   String   @id @default(cuid())
-  competitionId        String
-  name                 String
-  code                 String?
-  birthYearFrom        Int?
-  birthYearTo          Int?
-  maxTeams             Int?
-  rosterLimit          Int?
-  matchDurationMinutes Int      @default(20)
-  transitionMinutes    Int      @default(5)
-  sortOrder            Int      @default(0)
-  active               Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  competition Competition      @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  teams       CompetitionTeam[]
-
-  @@unique([competitionId, name])
-  @@index([competitionId, active])
-  @@index([competitionId, sortOrder])
-}
-
-model CompetitionTeam {
-  id                   String                @id @default(cuid())
-  competitionId        String
-  categoryId           String
-  linkedOrganizationId String?
-  name                 String
-  shortName            String?
-  logoUrl              String?
-  city                 String?
-  state                String?
-  responsibleName      String?
-  responsibleEmail     String?
-  responsiblePhone     String?
-  status               CompetitionTeamStatus @default(PENDING)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-
-  competition        Competition         @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  category           CompetitionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  linkedOrganization Organization?       @relation("LinkedCompetitionOrganization", fields: [linkedOrganizationId], references: [id], onDelete: SetNull)
-
-  @@unique([competitionId, categoryId, name])
-  @@index([competitionId, status])
-  @@index([categoryId, status])
-  @@index([linkedOrganizationId])
-  athletes             CompetitionAthlete[]
-}
-model CompetitionAthlete {
-  id               String                   @id @default(cuid())
-  teamId           String
-  sourceAthleteId  String?
-  source           CompetitionAthleteSource @default(MANUAL)
-
-  name             String
-  birthDate        DateTime?
-  photoUrl         String?
-  jerseyNumber     Int?
-  position         String?
-
-  sourceSnapshotAt DateTime?
-  status           CompetitionAthleteStatus @default(APPROVED)
-
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-
-  team          CompetitionTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  sourceAthlete Athlete?        @relation("CompetitionAthleteSource", fields: [sourceAthleteId], references: [id], onDelete: SetNull)
-
-  @@index([teamId, status])
-  @@index([teamId, name])
-  @@index([birthDate])
-  @@index([sourceAthleteId])
-}
-
-enum CompetitionAthleteSource {
-  MANUAL
-  CLUB_SHARED
-}
-
-enum CompetitionAthleteStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  WITHDRAWN
-}
-
-
-model CompetitionVenue {
-  id            String   @id @default(cuid())
-  competitionId String
-  name          String
-  address       String?
-  city          String?
-  state         String?
-  fieldCount    Int      @default(1)
-  notes         String?
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-
-  @@unique([competitionId, name])
-  @@index([competitionId, active])
-}
-
-enum CompetitionStatus {
-  DRAFT
-  REGISTRATION_OPEN
-  REGISTRATION_CLOSED
-  IN_PROGRESS
-  FINISHED
-  ARCHIVED
-}
-
-enum CompetitionFormat {
-  GROUP_STAGE_KNOCKOUT
-  ROUND_ROBIN
-  KNOCKOUT
-  CUSTOM
-}
-
-enum CompetitionTeamStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  WITHDRAWN
-}
-
 
 model User {
   id                           String                       @id @default(cuid())
@@ -409,7 +241,6 @@ model Athlete {
   @@index([organizationId])
   @@index([categoryId])
   @@index([name])
-  competitionEntries   CompetitionAthlete[] @relation("CompetitionAthleteSource")
 }
 
 model ClubUserPermissionOverride {
@@ -1317,7 +1148,6 @@ enum OrganizationType {
   PROJECT
   ACADEMY
   PERSONAL_TRAINING
-  ORGANIZER
 }
 
 enum SportType {

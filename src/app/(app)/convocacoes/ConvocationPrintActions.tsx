@@ -33,7 +33,7 @@ async function waitForPosterImages(poster: HTMLElement) {
 
   await Promise.all(
     images.map(async (image) => {
-      if (image.complete) return;
+      if (image.complete && image.naturalWidth > 0) return;
 
       await Promise.race([
         new Promise<void>((resolve) => {
@@ -47,7 +47,6 @@ async function waitForPosterImages(poster: HTMLElement) {
     }),
   );
 
-  // Dá tempo para o fallback de imagem substituir uma foto que falhou.
   await new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );
@@ -59,8 +58,81 @@ async function waitForPosterFonts() {
   try {
     await waitWithTimeout(document.fonts.ready, FONT_WAIT_TIMEOUT_MS);
   } catch {
-    // A arte ainda pode ser gerada usando a fonte já disponível no navegador.
+    // segue mesmo sem travar
   }
+}
+
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () =>
+      reject(reader.error || new Error("Não foi possível converter a imagem."));
+
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function inlinePosterImages(poster: HTMLElement) {
+  const images = Array.from(poster.querySelectorAll("img"));
+  const restore: Array<() => void> = [];
+
+  await Promise.all(
+    images.map(async (image) => {
+      const originalAttribute = image.getAttribute("src");
+      const source = image.currentSrc || image.src;
+
+      if (!source || source.startsWith("data:")) return;
+
+      try {
+        const response = await fetch(source, {
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Falha ao carregar imagem (${response.status}).`);
+        }
+
+        const blob = await response.blob();
+
+        if (!blob.type.startsWith("image/")) {
+          throw new Error("O recurso carregado não é uma imagem.");
+        }
+
+        const dataUrl = await blobToDataUrl(blob);
+
+        restore.push(() => {
+          if (originalAttribute == null) {
+            image.removeAttribute("src");
+          } else {
+            image.setAttribute("src", originalAttribute);
+          }
+        });
+
+        image.src = dataUrl;
+
+        try {
+          await image.decode();
+        } catch {
+          await new Promise<void>((resolve) =>
+            window.setTimeout(resolve, 80),
+          );
+        }
+      } catch (error) {
+        console.warn("CONVOCATION_IMAGE_INLINE_FAILED", source, error);
+      }
+    }),
+  );
+
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+
+  return () => {
+    restore.forEach((restoreImage) => restoreImage());
+  };
 }
 
 function downloadDataUrl(dataUrl: string, fileName: string) {
@@ -103,33 +175,34 @@ export default function ConvocationPrintActions() {
     await waitForPosterFonts();
     await waitForPosterImages(poster);
 
-    /*
-     * No desktop mantemos a arte em alta resolução.
-     * No mobile usamos 940×1329 para reduzir fortemente o consumo de memória,
-     * evitando falhas do canvas/html-to-image em iPhone e Android.
-     */
-    const pixelRatio = mobileRender ? 1 : 2;
+    const restoreImages = await inlinePosterImages(poster);
 
-    return waitWithTimeout(
-      toPng(poster, {
-        cacheBust: true,
-        pixelRatio,
-        backgroundColor: "#061018",
-        width: 940,
-        height: 1329,
-        canvasWidth: 940 * pixelRatio,
-        canvasHeight: 1329 * pixelRatio,
-        style: {
-          width: "940px",
-          height: "1329px",
-          minHeight: "1329px",
-          maxWidth: "none",
-          margin: "0",
-          transform: "none",
-        },
-      }),
-      mobileRender ? 20000 : 30000,
-    );
+    try {
+      const pixelRatio = mobileRender ? 1 : 2;
+
+      return await waitWithTimeout(
+        toPng(poster, {
+          cacheBust: false,
+          pixelRatio,
+          backgroundColor: "#061018",
+          width: 940,
+          height: 1329,
+          canvasWidth: 940 * pixelRatio,
+          canvasHeight: 1329 * pixelRatio,
+          style: {
+            width: "940px",
+            height: "1329px",
+            minHeight: "1329px",
+            maxWidth: "none",
+            margin: "0",
+            transform: "none",
+          },
+        }),
+        mobileRender ? 20000 : 30000,
+      );
+    } finally {
+      restoreImages();
+    }
   }
 
   async function saveOrShareImage() {
@@ -140,11 +213,6 @@ export default function ConvocationPrintActions() {
       const dataUrl = await renderPoster({ mobile: mobileRender });
       const fileName = "convocacao-onzeup.png";
 
-      /*
-       * Em celular, o compartilhamento nativo é mais confiável do que
-       * link.click() e permite salvar em Fotos/Arquivos ou enviar direto
-       * para WhatsApp, Instagram, e-mail etc.
-       */
       if (mobileRender && navigator.share) {
         const file = await dataUrlToFile(dataUrl, fileName);
 
@@ -157,10 +225,7 @@ export default function ConvocationPrintActions() {
             });
             return;
           } catch (error) {
-            if (
-              error instanceof DOMException &&
-              error.name === "AbortError"
-            ) {
+            if (error instanceof DOMException && error.name === "AbortError") {
               return;
             }
 
@@ -181,10 +246,6 @@ export default function ConvocationPrintActions() {
   }
 
   async function printPoster() {
-    /*
-     * Abrimos a janela antes do processamento para evitar bloqueio de popup,
-     * principalmente no Safari/iPhone.
-     */
     const printWindow = window.open("", "_blank", "width=900,height=1100");
 
     if (!printWindow) {
@@ -268,6 +329,13 @@ export default function ConvocationPrintActions() {
       >
         {generating ? "Preparando arte..." : "Gerar PDF / imprimir"}
       </button>
+
+      {mobile ? (
+        <small className="help" style={{ width: "100%" }}>
+          No iPhone/iPad: toque em “Compartilhar / salvar arte” e escolha
+          “Salvar Imagem” para gravar na Fototeca.
+        </small>
+      ) : null}
     </div>
   );
 }

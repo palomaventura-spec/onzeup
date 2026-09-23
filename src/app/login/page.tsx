@@ -95,6 +95,36 @@ export default async function LoginPage({
             />
           </label>
 
+          <label
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "10px",
+              marginTop: "-4px",
+              cursor: "pointer",
+            }}
+          >
+            <input
+              name="remember"
+              type="checkbox"
+              value="1"
+              style={{
+                marginTop: "4px",
+                width: "16px",
+                height: "16px",
+                flex: "0 0 auto",
+              }}
+            />
+
+            <span>
+              Manter conectado neste dispositivo
+              <br />
+              <small className="muted">
+                Ideal para uso no seu celular pessoal.
+              </small>
+            </span>
+          </label>
+
           <button
             className="btn"
             type="submit"

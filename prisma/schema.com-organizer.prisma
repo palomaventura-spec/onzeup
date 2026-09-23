@@ -167,47 +167,7 @@ model CompetitionTeam {
   @@index([competitionId, status])
   @@index([categoryId, status])
   @@index([linkedOrganizationId])
-  athletes             CompetitionAthlete[]
 }
-model CompetitionAthlete {
-  id               String                   @id @default(cuid())
-  teamId           String
-  sourceAthleteId  String?
-  source           CompetitionAthleteSource @default(MANUAL)
-
-  name             String
-  birthDate        DateTime?
-  photoUrl         String?
-  jerseyNumber     Int?
-  position         String?
-
-  sourceSnapshotAt DateTime?
-  status           CompetitionAthleteStatus @default(APPROVED)
-
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-
-  team          CompetitionTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  sourceAthlete Athlete?        @relation("CompetitionAthleteSource", fields: [sourceAthleteId], references: [id], onDelete: SetNull)
-
-  @@index([teamId, status])
-  @@index([teamId, name])
-  @@index([birthDate])
-  @@index([sourceAthleteId])
-}
-
-enum CompetitionAthleteSource {
-  MANUAL
-  CLUB_SHARED
-}
-
-enum CompetitionAthleteStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  WITHDRAWN
-}
-
 
 model CompetitionVenue {
   id            String   @id @default(cuid())
@@ -409,7 +369,6 @@ model Athlete {
   @@index([organizationId])
   @@index([categoryId])
   @@index([name])
-  competitionEntries   CompetitionAthlete[] @relation("CompetitionAthleteSource")
 }
 
 model ClubUserPermissionOverride {

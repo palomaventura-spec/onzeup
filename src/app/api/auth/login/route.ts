@@ -25,6 +25,7 @@ export async function POST(req: Request) {
   const password = String(form.get("password") || "");
   const requestedNext = String(form.get("next") || "").trim();
   const adminOnly = String(form.get("adminOnly") || "") === "1";
+  const remember = String(form.get("remember") || "") === "1";
 
   const failureUrl = adminOnly ? "/admin/login?erro=1" : "/login?erro=1";
 
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
       });
 
       await prisma.session.deleteMany({ where: { userId: admin.id } });
-      await createSession(admin.id);
+      await createSession(admin.id, remember);
 
       return NextResponse.redirect(new URL("/admin", req.url), 303);
     }
@@ -91,7 +92,7 @@ export async function POST(req: Request) {
     return NextResponse.redirect(new URL("/admin/login?erro=1", req.url), 303);
   }
 
-  await createSession(user.id);
+  await createSession(user.id, remember);
 
   const fallback =
     user.role === "SUPER_ADMIN"
