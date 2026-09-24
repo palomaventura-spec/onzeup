@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+import ModuleFilterBar from "@/components/ModuleFilterBar";
+import ModuleHero from "@/components/ModuleHero";
+import ModuleKpiGrid from "@/components/ModuleKpiGrid";
+
 import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { googleCalendarUrl } from "@/lib/google-calendar";
@@ -220,95 +224,112 @@ export default async function AgendaPage({
 
   return (
     <>
-      <div className="page-head agenda-premium-head">
-        <div>
-          <span className="page-eyebrow">CENTRAL OPERACIONAL</span>
-          <h1>Agenda do clube</h1>
-          <p className="muted">
+      <ModuleHero
+        eyebrow="CENTRAL OPERACIONAL"
+        title="Agenda do clube"
+        description={
+          <p>
             Treinos, jogos e compromissos organizados em uma única visão.
           </p>
-        </div>
-        {canEdit ? (
-          <div className="actions">
-            <Link className="btn" href="/treinos#novo-treino">
-              ＋ Novo treino
+        }
+        aside={
+          canEdit ? (
+            <div className="actions">
+              <Link className="btn" href="/treinos#novo-treino">
+                ＋ Novo treino
+              </Link>
+              <Link className="btn btn-secondary" href="/jogos#novo-jogo">
+                ＋ Novo jogo
+              </Link>
+            </div>
+          ) : (
+            <span className="badge">Somente visualização</span>
+          )
+        }
+      />
+
+      <ModuleKpiGrid
+        className="agenda-kpis"
+        ariaLabel="Indicadores da Agenda"
+        items={[
+          {
+            label: "HOJE",
+            value: todayCount,
+            description: "compromisso(s)",
+          },
+          {
+            label: "PRÓXIMOS 7 DIAS",
+            value: weekTrainings,
+            description: "treino(s)",
+          },
+          {
+            label: "JOGOS DA SEMANA",
+            value: weekMatches,
+            description: "partida(s)",
+          },
+          {
+            label: "AGENDA VISÍVEL",
+            value: items.length,
+            description: "eventos filtrados",
+          },
+        ]}
+      />
+
+      <ModuleFilterBar
+        className="agenda-toolbar card"
+        formClassName="agenda-filter-form"
+        ariaLabel="Filtros da Agenda"
+        trailing={
+          <div
+            className="agenda-view-switch"
+            aria-label="Visualização da agenda"
+          >
+            <Link
+              className={view === "calendar" ? "active" : ""}
+              href={agendaUrl("calendar", type, categoryFilter)}
+            >
+              Calendário
             </Link>
-            <Link className="btn btn-secondary" href="/jogos#novo-jogo">
-              ＋ Novo jogo
+            <Link
+              className={view === "list" ? "active" : ""}
+              href={agendaUrl("list", type, categoryFilter)}
+            >
+              Lista
             </Link>
           </div>
-        ) : (
-          <span className="badge">Somente visualização</span>
-        )}
-      </div>
+        }
+      >
+        <input type="hidden" name="view" value={view} />
 
-      <section className="agenda-kpis">
-        <article>
-          <small>HOJE</small>
-          <strong>{todayCount}</strong>
-          <span>compromisso(s)</span>
-        </article>
-        <article>
-          <small>PRÓXIMOS 7 DIAS</small>
-          <strong>{weekTrainings}</strong>
-          <span>treino(s)</span>
-        </article>
-        <article>
-          <small>JOGOS DA SEMANA</small>
-          <strong>{weekMatches}</strong>
-          <span>partida(s)</span>
-        </article>
-        <article>
-          <small>AGENDA VISÍVEL</small>
-          <strong>{items.length}</strong>
-          <span>eventos filtrados</span>
-        </article>
-      </section>
+        <label>
+          Tipo
+          <select name="type" defaultValue={type}>
+            <option value="ALL">Todos</option>
+            <option value="TRAINING">Treinos</option>
+            <option value="MATCH">Jogos</option>
+          </select>
+        </label>
 
-      <section className="agenda-toolbar card">
-        <form method="get" className="agenda-filter-form">
-          <input type="hidden" name="view" value={view} />
-          <label>
-            Tipo
-            <select name="type" defaultValue={type}>
-              <option value="ALL">Todos</option>
-              <option value="TRAINING">Treinos</option>
-              <option value="MATCH">Jogos</option>
-            </select>
-          </label>
-          <label>
-            Categoria
-            <select name="category" defaultValue={categoryFilter}>
-              <option value="ALL">Todas as categorias</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="submit" className="btn-secondary">
-            Aplicar filtros
-          </button>
-          {type !== "ALL" || categoryFilter !== "ALL" ? (
-            <Link href={agendaUrl(view, "ALL", "ALL")}>Limpar</Link>
-          ) : null}
-        </form>
-        <div className="agenda-view-switch" aria-label="Visualização da agenda">
-          <Link
-            className={view === "calendar" ? "active" : ""}
-            href={agendaUrl("calendar", type, categoryFilter)}
-          >
-            Calendário
-          </Link>
-          <Link
-            className={view === "list" ? "active" : ""}
-            href={agendaUrl("list", type, categoryFilter)}
-          >
-            Lista
-          </Link>
-        </div>
-      </section>
+        <label>
+          Categoria
+          <select name="category" defaultValue={categoryFilter}>
+            <option value="ALL">Todas as categorias</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button type="submit" className="btn-secondary">
+          Aplicar filtros
+        </button>
+
+        {type !== "ALL" || categoryFilter !== "ALL" ? (
+          <Link href={agendaUrl(view, "ALL", "ALL")}>Limpar</Link>
+        ) : null}
+      </ModuleFilterBar>
 
       <div className="agenda-premium-layout">
         <aside className="agenda-side stack">

@@ -11,22 +11,6 @@ import { prisma } from "@/lib/prisma";
 import ConvocationPrintActions from "../../ConvocationPrintActions";
 import SafeConvocationImage from "../../SafeConvocationImage";
 
-const SLOT_CLASS: Record<string, string> = {
-  GOALKEEPER: "art-goalkeeper",
-  DEFENDER_LEFT: "art-defender-left",
-  DEFENDER_CENTER: "art-defender-center",
-  DEFENDER_RIGHT: "art-defender-right",
-  MIDFIELDER_LEFT: "art-midfielder-left",
-  MIDFIELDER_CENTER: "art-midfielder-center",
-  MIDFIELDER_RIGHT: "art-midfielder-right",
-  FORWARD_LEFT: "art-forward-left",
-  FORWARD_RIGHT: "art-forward-right",
-  FIXO: "art-fixo",
-  ALA_LEFT: "art-ala-left",
-  ALA_RIGHT: "art-ala-right",
-  PIVO: "art-pivo",
-};
-
 function dateParts(date: Date) {
   const dateText = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -48,8 +32,39 @@ function safeImageUrl(value: string | null) {
   return `/api/image-proxy?url=${encodeURIComponent(value)}`;
 }
 
+async function embeddedImageUrl(value: string | null) {
+  if (!value) return null;
+  if (value.startsWith("data:") || value.startsWith("/")) return value;
+
+  try {
+    const response = await fetch(value, { cache: "force-cache" });
+
+    if (!response.ok) {
+      return safeImageUrl(value);
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+
+    if (!contentType.startsWith("image/")) {
+      return safeImageUrl(value);
+    }
+
+    const bytes = Buffer.from(await response.arrayBuffer());
+
+    // Evita transformar arquivos muito grandes em base64 dentro do HTML.
+    if (bytes.length > 8 * 1024 * 1024) {
+      return safeImageUrl(value);
+    }
+
+    return `data:${contentType};base64,${bytes.toString("base64")}`;
+  } catch {
+    return safeImageUrl(value);
+  }
+}
+
 function AthleteBadge({
   athlete,
+  photoUrl,
   number,
   captain,
 }: {
@@ -58,6 +73,7 @@ function AthleteBadge({
     nickname: string | null;
     photoUrl: string | null;
   };
+  photoUrl?: string | null;
   number: number | null;
   captain: boolean;
 }) {
@@ -68,7 +84,7 @@ function AthleteBadge({
       <div className="art-photo">
         <div className="art-photo-crop">
           <SafeConvocationImage
-            src={safeImageUrl(athlete.photoUrl)}
+            src={photoUrl ?? safeImageUrl(athlete.photoUrl)}
             alt={name}
             fallback={name.slice(0, 2).toUpperCase()}
             className="art-athlete-image"
@@ -136,6 +152,14 @@ export default async function ConvocationArtworkPage({
           staffMember: true,
         },
       },
+      formationTemplate: {
+        include: {
+          slots: {
+            where: { active: true },
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+      },
     },
   });
 
@@ -150,32 +174,168 @@ export default async function ConvocationArtworkPage({
 
   const isFutsal = match.sport === "FUTSAL";
 
-  const requiredSlots = isFutsal
-    ? ["GOALKEEPER", "FIXO", "ALA_LEFT", "ALA_RIGHT", "PIVO"]
+  const legacySlots = isFutsal
+    ? [
+        {
+          code: "GOALKEEPER",
+          label: "Goleiro",
+          slotType: "GOALKEEPER",
+          x: 50,
+          y: 88,
+          sortOrder: 0,
+        },
+        {
+          code: "FIXO",
+          label: "Fixo",
+          slotType: "OUTFIELD",
+          x: 50,
+          y: 65,
+          sortOrder: 1,
+        },
+        {
+          code: "ALA_LEFT",
+          label: "Ala esquerdo",
+          slotType: "OUTFIELD",
+          x: 24,
+          y: 43,
+          sortOrder: 2,
+        },
+        {
+          code: "ALA_RIGHT",
+          label: "Ala direito",
+          slotType: "OUTFIELD",
+          x: 76,
+          y: 43,
+          sortOrder: 3,
+        },
+        {
+          code: "PIVO",
+          label: "Pivô",
+          slotType: "OUTFIELD",
+          x: 50,
+          y: 18,
+          sortOrder: 4,
+        },
+      ]
     : [
-        "GOALKEEPER",
-        "DEFENDER_LEFT",
-        "DEFENDER_CENTER",
-        "DEFENDER_RIGHT",
-        "MIDFIELDER_LEFT",
-        "MIDFIELDER_CENTER",
-        "MIDFIELDER_RIGHT",
-        "FORWARD_LEFT",
-        "FORWARD_RIGHT",
+        {
+          code: "GOALKEEPER",
+          label: "Goleiro",
+          slotType: "GOALKEEPER",
+          x: 50,
+          y: 88,
+          sortOrder: 0,
+        },
+        {
+          code: "DEFENDER_LEFT",
+          label: "Defensor esquerdo",
+          slotType: "OUTFIELD",
+          x: 22,
+          y: 69,
+          sortOrder: 1,
+        },
+        {
+          code: "DEFENDER_CENTER",
+          label: "Defensor central",
+          slotType: "OUTFIELD",
+          x: 50,
+          y: 66,
+          sortOrder: 2,
+        },
+        {
+          code: "DEFENDER_RIGHT",
+          label: "Defensor direito",
+          slotType: "OUTFIELD",
+          x: 78,
+          y: 69,
+          sortOrder: 3,
+        },
+        {
+          code: "MIDFIELDER_LEFT",
+          label: "Meia esquerdo",
+          slotType: "OUTFIELD",
+          x: 19,
+          y: 45,
+          sortOrder: 4,
+        },
+        {
+          code: "MIDFIELDER_CENTER",
+          label: "Meia central",
+          slotType: "OUTFIELD",
+          x: 50,
+          y: 49,
+          sortOrder: 5,
+        },
+        {
+          code: "MIDFIELDER_RIGHT",
+          label: "Meia direito",
+          slotType: "OUTFIELD",
+          x: 81,
+          y: 45,
+          sortOrder: 6,
+        },
+        {
+          code: "FORWARD_LEFT",
+          label: "Atacante esquerdo",
+          slotType: "OUTFIELD",
+          x: 34,
+          y: 18,
+          sortOrder: 7,
+        },
+        {
+          code: "FORWARD_RIGHT",
+          label: "Atacante direito",
+          slotType: "OUTFIELD",
+          x: 66,
+          y: 18,
+          sortOrder: 8,
+        },
       ];
 
-  const squadLimit = match.callUpLimit;
+  const formationSlots = match.formationTemplate?.slots.length
+    ? match.formationTemplate.slots.map((slot) => ({
+        code: slot.code,
+        label: slot.label,
+        slotType: slot.slotType,
+        x: slot.x,
+        y: slot.y,
+        sortOrder: slot.sortOrder,
+      }))
+    : legacySlots;
+
+  const requiredSlots = formationSlots.map((slot) => slot.code);
+
+  const configuredGoalkeepers =
+    match.starterGoalkeeperCount ?? 1;
+
+  const configuredOutfield =
+    match.starterOutfieldCount ??
+    Math.max(0, formationSlots.length - configuredGoalkeepers);
+
+  const configuredStarters =
+    configuredGoalkeepers + configuredOutfield;
+
+  const reserveLimit =
+    match.reserveCount ??
+    Math.max(0, match.callUpLimit - configuredStarters);
+
+  const squadLimit =
+    match.starterGoalkeeperCount != null &&
+    match.starterOutfieldCount != null &&
+    match.reserveCount != null
+      ? configuredStarters + reserveLimit
+      : match.callUpLimit;
+
+  const formationName =
+    match.formationTemplate?.name ||
+    match.formation ||
+    (isFutsal ? "1-2-1" : "3-3-2");
 
   const starterStats = match.athleteStats.filter(
     (stat) =>
       stat.lineupRole === "STARTER" &&
       stat.positionPlayed &&
       requiredSlots.includes(stat.positionPlayed),
-  );
-
-  const reserveLimit = Math.max(
-    0,
-    squadLimit - requiredSlots.length,
   );
 
   const substituteStats = match.athleteStats
@@ -192,7 +352,9 @@ export default async function ConvocationArtworkPage({
     notFound();
   }
 
-  const isComplete = match.callUps.length === squadLimit;
+  const isComplete =
+    match.callUps.length === squadLimit &&
+    starterStats.length === formationSlots.length;
 
   const { dateText, timeText } = dateParts(match.startsAt);
 
@@ -211,15 +373,37 @@ export default async function ConvocationArtworkPage({
     selectedStaff[0] ||
     match.category.staffMembers[0];
 
-  const coverUrl = safeImageUrl(
-    match.organization.coverUrl,
+  const athletePhotoPairs = await Promise.all(
+    match.athleteStats.map(async (stat) => [
+      stat.athleteId,
+      await embeddedImageUrl(stat.athlete.photoUrl),
+    ] as const),
   );
+
+  const athletePhotoById = new Map(athletePhotoPairs);
+
+  const [logoUrl, coverUrl] = await Promise.all([
+    embeddedImageUrl(match.organization.logoUrl),
+    embeddedImageUrl(match.organization.coverUrl),
+  ]);
 
   const cover = coverUrl
     ? `url("${coverUrl}")`
     : "none";
 
   const sportLabel = isFutsal ? "Futsal" : "Futebol";
+
+  const fieldDensityClass =
+    formationSlots.length >= 13
+      ? "poster-field-dense"
+      : formationSlots.length >= 10
+        ? "poster-field-compact"
+        : "";
+
+  const benchDensityClass =
+    substituteStats.length > 8
+      ? "poster-bench poster-bench-dense"
+      : "poster-bench";
 
   return (
     <div
@@ -616,8 +800,41 @@ export default async function ConvocationArtworkPage({
         }
 
         .convocation-poster-v2 .poster-field > [class^="art-"] {
+          position: absolute;
           z-index: 4;
           transform: translate(-50%, -50%);
+        }
+
+        .convocation-poster-v2 .poster-field-compact .art-athlete {
+          width: 100px;
+        }
+
+        .convocation-poster-v2 .poster-field-compact .art-photo {
+          width: 64px;
+          height: 64px;
+        }
+
+        .convocation-poster-v2 .poster-field-compact .art-nameplate {
+          width: 92px;
+        }
+
+        .convocation-poster-v2 .poster-field-dense .art-athlete {
+          width: 88px;
+        }
+
+        .convocation-poster-v2 .poster-field-dense .art-photo {
+          width: 56px;
+          height: 56px;
+        }
+
+        .convocation-poster-v2 .poster-field-dense .art-nameplate {
+          width: 80px;
+          min-height: 21px;
+        }
+
+        .convocation-poster-v2 .poster-field-dense .art-nameplate strong {
+          max-width: 58px;
+          font-size: 8px;
         }
 
         .convocation-poster-v2 .art-athlete {
@@ -801,6 +1018,26 @@ export default async function ConvocationArtworkPage({
           font-size: 9px;
         }
 
+        .convocation-poster-v2 .poster-bench-dense .bench-grid {
+          grid-template-columns: repeat(8, 1fr);
+          gap: 7px 3px;
+        }
+
+        .convocation-poster-v2 .poster-bench-dense .art-photo {
+          width: 44px;
+          height: 44px;
+        }
+
+        .convocation-poster-v2 .poster-bench-dense .art-nameplate {
+          width: 78px;
+          min-height: 19px;
+        }
+
+        .convocation-poster-v2 .poster-bench-dense .art-nameplate strong {
+          max-width: 54px;
+          font-size: 8px;
+        }
+
         .convocation-poster-v2 .poster-service-info {
           display: grid;
           grid-template-columns: .85fr 1.15fr 1.7fr;
@@ -921,7 +1158,7 @@ export default async function ConvocationArtworkPage({
           <div className="poster-institutional-v2">
             <div className="poster-brand-v2">
               <SafeConvocationImage
-                src={safeImageUrl(match.organization.logoUrl)}
+                src={logoUrl ?? safeImageUrl(match.organization.logoUrl)}
                 alt={clubName}
                 fallback={clubName.slice(0, 2).toUpperCase()}
                 className="poster-club-logo"
@@ -1002,33 +1239,49 @@ export default async function ConvocationArtworkPage({
         <section className="poster-lineup-v2">
           <div className="poster-lineup-head-v2">
             <strong>Formação inicial</strong>
-            <span>{sportLabel} • titulares</span>
+            <span>
+              {sportLabel} • {formationName} • {formationSlots.length} titulares
+            </span>
           </div>
 
           <div
-            className="poster-field"
-            aria-label="Titulares no campo"
+            className={`poster-field ${fieldDensityClass}`}
+            aria-label={`Titulares no campo • formação ${formationName}`}
           >
             <div className="field-mark field-center" />
             <div className="field-mark field-area-top" />
             <div className="field-mark field-area-bottom" />
 
-            {starterStats.map((stat) => (
-              <div
-                className={SLOT_CLASS[stat.positionPlayed!]}
-                key={stat.id}
-              >
-                <AthleteBadge
-                  athlete={stat.athlete}
-                  number={stat.jerseyNumber}
-                  captain={stat.isCaptain}
-                />
-              </div>
-            ))}
+            {starterStats.map((stat) => {
+              const slot = formationSlots.find(
+                (item) => item.code === stat.positionPlayed,
+              );
+
+              if (!slot) return null;
+
+              return (
+                <div
+                  className="art-dynamic-slot"
+                  key={stat.id}
+                  style={{
+                    left: `${slot.x}%`,
+                    top: `${slot.y}%`,
+                  }}
+                  title={slot.label}
+                >
+                  <AthleteBadge
+                    athlete={stat.athlete}
+                    photoUrl={athletePhotoById.get(stat.athleteId)}
+                    number={stat.jerseyNumber}
+                    captain={stat.isCaptain}
+                  />
+                </div>
+              );
+            })}
           </div>
         </section>
 
-        <section className="poster-bench">
+        <section className={benchDensityClass}>
           <div className="poster-section-title">
             <span>Reservas</span>
             <b>
@@ -1044,6 +1297,7 @@ export default async function ConvocationArtworkPage({
               <AthleteBadge
                 key={stat.id}
                 athlete={stat.athlete}
+                photoUrl={athletePhotoById.get(stat.athleteId)}
                 number={stat.jerseyNumber}
                 captain={false}
               />

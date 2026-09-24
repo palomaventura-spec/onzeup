@@ -1,3 +1,4 @@
+import type { SportType } from "@prisma/client";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -10,6 +11,21 @@ import {
 
 type OrganizationUser = Awaited<
   ReturnType<typeof requireOrganizationUser>
+>;
+
+type StaffScopedPermission = Extract<
+  ClubPermission,
+  | "TRAINING_ATTENDANCE_VIEW"
+  | "TRAINING_ATTENDANCE_MANAGE"
+  | "PERFORMANCE_VIEW"
+  | "PERFORMANCE_MANAGE"
+  | "PERFORMANCE_REPORT_GENERATE"
+  | "PERFORMANCE_REPORT_REVIEW"
+  | "PERFORMANCE_REPORT_APPROVE"
+  | "PERFORMANCE_REPORT_SEND"
+  | "GPS_VIEW"
+  | "GPS_IMPORT"
+  | "GPS_MANAGE"
 >;
 
 export async function requireClubPermission(
@@ -34,16 +50,214 @@ async function findInternalCoachStaffLinks(
   return prisma.staffMember.findMany({
     where: {
       organizationId: user.organizationId,
-      coachEmail: {
-        equals: user.email,
-        mode: "insensitive",
-      },
+      active: true,
+      OR: [
+        {
+          userId: user.id,
+        },
+        {
+          coachEmail: {
+            equals: user.email,
+            mode: "insensitive",
+          },
+        },
+      ],
     },
     select: {
       categoryId: true,
       canManageCallUps: true,
     },
   });
+}
+
+async function findStaffCategoryPermissions(
+  user: OrganizationUser,
+  categoryId: string,
+  sport: SportType = "BOTH"
+): Promise<Set<StaffScopedPermission>> {
+  const allowedSports: SportType[] =
+    sport === "BOTH"
+      ? ["BOTH"]
+      : ["BOTH", sport];
+
+  const staffLinks = await prisma.staffMember.findMany({
+    where: {
+      organizationId: user.organizationId,
+      active: true,
+      OR: [
+        {
+          userId: user.id,
+        },
+        {
+          coachEmail: {
+            equals: user.email,
+            mode: "insensitive",
+          },
+        },
+      ],
+    },
+    select: {
+      categoryPermissions: {
+        where: {
+          organizationId: user.organizationId,
+          categoryId,
+          enabled: true,
+          sport: {
+            in: allowedSports,
+          },
+        },
+        select: {
+          permission: true,
+        },
+      },
+    },
+  });
+
+  const permissions = new Set<StaffScopedPermission>();
+
+  for (const staffLink of staffLinks) {
+    for (const item of staffLink.categoryPermissions) {
+      permissions.add(item.permission as StaffScopedPermission);
+    }
+  }
+
+  return permissions;
+}
+
+function hasRoleOrScopedPermission(
+  user: OrganizationUser,
+  scopedPermissions: Set<StaffScopedPermission>,
+  permission: StaffScopedPermission
+) {
+  return (
+    hasClubPermission(user, permission) ||
+    scopedPermissions.has(permission)
+  );
+}
+
+export async function getClubTrainingCategoryAccess(
+  user: OrganizationUser,
+  categoryId: string,
+  sport: SportType = "BOTH"
+) {
+  const scopedPermissions =
+    await findStaffCategoryPermissions(
+      user,
+      categoryId,
+      sport
+    );
+
+  const canManageAttendance =
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "TRAINING_ATTENDANCE_MANAGE"
+    );
+
+  const canViewAttendance =
+    canManageAttendance ||
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "TRAINING_ATTENDANCE_VIEW"
+    );
+
+  const canManagePerformance =
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "PERFORMANCE_MANAGE"
+    );
+
+  const canViewPerformance =
+    canManagePerformance ||
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "PERFORMANCE_VIEW"
+    );
+
+  const canGeneratePerformanceReport =
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "PERFORMANCE_REPORT_GENERATE"
+    );
+
+  const canReviewPerformanceReport =
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "PERFORMANCE_REPORT_REVIEW"
+    );
+
+  const canApprovePerformanceReport =
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "PERFORMANCE_REPORT_APPROVE"
+    );
+
+  const canSendPerformanceReport =
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "PERFORMANCE_REPORT_SEND"
+    );
+
+  const canManageGps =
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "GPS_MANAGE"
+    );
+
+  const canImportGps =
+    canManageGps ||
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "GPS_IMPORT"
+    );
+
+  const canViewGps =
+    canImportGps ||
+    hasRoleOrScopedPermission(
+      user,
+      scopedPermissions,
+      "GPS_VIEW"
+    );
+
+  const canEditTraining =
+    hasClubPermission(
+      user,
+      "TRAININGS_EDIT"
+    );
+
+  const canViewTraining =
+    hasClubPermission(
+      user,
+      "TRAININGS_VIEW"
+    ) ||
+    canViewAttendance ||
+    canViewPerformance ||
+    canViewGps;
+
+  return {
+    canViewTraining,
+    canEditTraining,
+    canViewAttendance,
+    canManageAttendance,
+    canViewPerformance,
+    canManagePerformance,
+    canGeneratePerformanceReport,
+    canReviewPerformanceReport,
+    canApprovePerformanceReport,
+    canSendPerformanceReport,
+    canViewGps,
+    canImportGps,
+    canManageGps,
+  };
 }
 
 export async function getClubCallUpCategoryIds(

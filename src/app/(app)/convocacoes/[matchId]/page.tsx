@@ -10,9 +10,15 @@ import {
 import { googleCalendarUrl } from "@/lib/google-calendar";
 import { prisma } from "@/lib/prisma";
 
+import CallUpConfigurationForm from "../CallUpConfigurationForm";
 import CallUpLineupEditor from "../CallUpLineupEditor";
 import CallUpSelectionForm from "../CallUpSelectionForm";
-import { deleteCallUp, markCallUpsSent, updateCallUpStatus } from "../actions";
+import CallUpSubmitButton from "../CallUpSubmitButton";
+import {
+  deleteCallUp,
+  markCallUpsSent,
+  updateCallUpStatus,
+} from "../actions";
 
 function fmt(date: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -45,6 +51,14 @@ export default async function MatchCallUpsPage({
         orderBy: { athlete: { name: "asc" } },
       },
       athleteStats: true,
+      formationTemplate: {
+        include: {
+          slots: {
+            where: { active: true },
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+      },
     },
   });
   if (!match) notFound();
@@ -59,9 +73,21 @@ export default async function MatchCallUpsPage({
   const athletes = await prisma.athlete.findMany({
     where: {
       organizationId: user.organizationId,
-      categoryId: match.categoryId,
       active: true,
       id: { notIn: Array.from(alreadyCalled) },
+      OR: [
+        { categoryId: match.categoryId },
+        {
+          memberships: {
+            some: {
+              organizationId: user.organizationId,
+              categoryId: match.categoryId,
+              status: "ACTIVE",
+              sport: { in: ["BOTH", match.sport] },
+            },
+          },
+        },
+      ],
     },
     orderBy: { name: "asc" },
     select: {
@@ -90,23 +116,104 @@ export default async function MatchCallUpsPage({
     };
   });
   const isFutsal = match.sport === "FUTSAL";
-  const squadLimit = match.callUpLimit;
-  const requiredSlots = isFutsal
-    ? ["GOALKEEPER", "FIXO", "ALA_LEFT", "ALA_RIGHT", "PIVO"]
+
+  const legacySlots = isFutsal
+    ? [
+        { code: "GOALKEEPER", label: "Goleiro", slotType: "GOALKEEPER", x: 50, y: 88, sortOrder: 0 },
+        { code: "FIXO", label: "Fixo", slotType: "OUTFIELD", x: 50, y: 65, sortOrder: 1 },
+        { code: "ALA_LEFT", label: "Ala esquerdo", slotType: "OUTFIELD", x: 24, y: 43, sortOrder: 2 },
+        { code: "ALA_RIGHT", label: "Ala direito", slotType: "OUTFIELD", x: 76, y: 43, sortOrder: 3 },
+        { code: "PIVO", label: "Pivô", slotType: "OUTFIELD", x: 50, y: 18, sortOrder: 4 },
+      ]
     : [
-        "GOALKEEPER",
-        "DEFENDER_LEFT",
-        "DEFENDER_CENTER",
-        "DEFENDER_RIGHT",
-        "MIDFIELDER_LEFT",
-        "MIDFIELDER_CENTER",
-        "MIDFIELDER_RIGHT",
-        "FORWARD_LEFT",
-        "FORWARD_RIGHT",
+        { code: "GOALKEEPER", label: "Goleiro", slotType: "GOALKEEPER", x: 50, y: 88, sortOrder: 0 },
+        { code: "DEFENDER_LEFT", label: "Defensor esquerdo", slotType: "OUTFIELD", x: 22, y: 69, sortOrder: 1 },
+        { code: "DEFENDER_CENTER", label: "Defensor central", slotType: "OUTFIELD", x: 50, y: 66, sortOrder: 2 },
+        { code: "DEFENDER_RIGHT", label: "Defensor direito", slotType: "OUTFIELD", x: 78, y: 69, sortOrder: 3 },
+        { code: "MIDFIELDER_LEFT", label: "Meia esquerdo", slotType: "OUTFIELD", x: 19, y: 45, sortOrder: 4 },
+        { code: "MIDFIELDER_CENTER", label: "Meia central", slotType: "OUTFIELD", x: 50, y: 49, sortOrder: 5 },
+        { code: "MIDFIELDER_RIGHT", label: "Meia direito", slotType: "OUTFIELD", x: 81, y: 45, sortOrder: 6 },
+        { code: "FORWARD_LEFT", label: "Atacante esquerdo", slotType: "OUTFIELD", x: 34, y: 18, sortOrder: 7 },
+        { code: "FORWARD_RIGHT", label: "Atacante direito", slotType: "OUTFIELD", x: 66, y: 18, sortOrder: 8 },
       ];
+
+  const formationSlots = match.formationTemplate?.slots.length
+    ? match.formationTemplate.slots.map((slot) => ({
+        code: slot.code,
+        label: slot.label,
+        slotType: slot.slotType,
+        x: slot.x,
+        y: slot.y,
+        sortOrder: slot.sortOrder,
+      }))
+    : legacySlots;
+
+  const configuredGoalkeepers =
+    match.starterGoalkeeperCount ?? 1;
+
+  const configuredOutfield =
+    match.starterOutfieldCount ??
+    Math.max(0, formationSlots.length - configuredGoalkeepers);
+
+  const configuredStarters =
+    configuredGoalkeepers + configuredOutfield;
+
+  const configuredReserves =
+    match.reserveCount ??
+    Math.max(0, match.callUpLimit - configuredStarters);
+
+  const squadLimit =
+    match.starterGoalkeeperCount != null &&
+    match.starterOutfieldCount != null &&
+    match.reserveCount != null
+      ? configuredStarters + configuredReserves
+      : match.callUpLimit;
+
+  const formationName =
+    match.formationTemplate?.name ||
+    match.formation ||
+    (isFutsal ? "1-2-1" : "3-3-2");
+
+  const requiredSlots = formationSlots.map((slot) => slot.code);
   const usedSlots = new Set(lineupAthletes.map((item) => item.slot));
   const startersReady = requiredSlots.every((slot) => usedSlots.has(slot));
   const artworkComplete = match.callUps.length === squadLimit && startersReady;
+
+  const defaultRule = await prisma.competitionCallUpRule.findFirst({
+    where: {
+      organizationId: user.organizationId,
+      categoryId: match.categoryId,
+      competitionName: match.competition,
+      sport: match.sport,
+      active: true,
+    },
+    include: {
+      defaultFormation: true,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const formGoalkeepers =
+    match.starterGoalkeeperCount ??
+    defaultRule?.goalkeeperStarterCount ??
+    configuredGoalkeepers;
+
+  const formOutfield =
+    match.starterOutfieldCount ??
+    defaultRule?.outfieldStarterCount ??
+    configuredOutfield;
+
+  const formReserves =
+    match.reserveCount ??
+    defaultRule?.reserveCount ??
+    configuredReserves;
+
+  const formFormation =
+    match.formationTemplate?.name ||
+    match.formation ||
+    defaultRule?.defaultFormation?.name ||
+    formationName;
+
   const orgName =
     user.organization?.publicName || user.organization?.name || "ONZEUP";
   const location = match.location || "Local a definir";
@@ -243,13 +350,62 @@ export default async function MatchCallUpsPage({
           <strong>A definir</strong>
         </div>
       </section>
+
+      {canManage ? (
+        <CallUpConfigurationForm
+          matchId={match.id}
+          competitionLabel={match.competition}
+          categoryName={match.category.name}
+          initialGoalkeepers={formGoalkeepers}
+          initialOutfield={formOutfield}
+          initialReserves={formReserves}
+          initialFormation={formFormation}
+          currentCallUps={match.callUps.length}
+          isActive={
+            match.starterOutfieldCount != null &&
+            match.starterGoalkeeperCount != null &&
+            match.reserveCount != null
+          }
+          defaultRuleSummary={defaultRule
+            ? `${defaultRule.goalkeeperStarterCount + defaultRule.outfieldStarterCount} titulares • ${defaultRule.reserveCount} reservas${defaultRule.defaultFormation ? ` • formação ${defaultRule.defaultFormation.name}` : ""}`
+            : null}
+        />
+      ) : (
+        <section
+          className="card"
+          style={{
+            marginTop: 16,
+            border: "1px solid rgba(157, 219, 22, .22)",
+          }}
+        >
+          <span className="page-eyebrow">REGRA DA CONVOCAÇÃO</span>
+          <h2>Configuração de titulares e reservas</h2>
+
+          <div className="stack" style={{ marginTop: 14 }}>
+            <div>
+              <span className="help">Titulares</span>
+              <strong>{configuredStarters}</strong>
+            </div>
+
+            <div>
+              <span className="help">Reservas</span>
+              <strong>{configuredReserves}</strong>
+            </div>
+
+            <div>
+              <span className="help">Formação</span>
+              <strong>{formationName}</strong>
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="two-col">
         <section className="card">
           <h2>Selecionar atletas</h2>
           <p className="muted">
-            {isFutsal
-              ? `Futsal: 5 titulares e ${Math.max(0, squadLimit - 5)} reservas.`
-              : `Campo: 9 titulares e ${Math.max(0, squadLimit - 9)} reservas.`}
+            {configuredStarters} titulares • {configuredReserves} reservas •
+            formação {formationName}.
           </p>
           {!canManage ? (
             <div className="empty">
@@ -261,7 +417,14 @@ export default async function MatchCallUpsPage({
             </div>
           ) : athletes.length === 0 ? (
             <div className="empty">
-              Não há outros atletas ativos nesta categoria.
+              <strong>Nenhum atleta disponível nesta categoria.</strong>
+              <p className="help" style={{ margin: "8px 0 12px" }}>
+                O ONZEUP procura atletas vinculados diretamente à categoria
+                ou por vínculo ativo no clube.
+              </p>
+              <Link className="btn btn-secondary btn-small" href="/atletas">
+                Ver atletas
+              </Link>
             </div>
           ) : (
             <CallUpSelectionForm
@@ -287,9 +450,12 @@ export default async function MatchCallUpsPage({
             {canManage && match.callUps.length ? (
               <form action={markCallUpsSent}>
                 <input type="hidden" name="matchId" value={match.id} />
-                <button className="btn-secondary" type="submit">
+                <CallUpSubmitButton
+                  className="btn-secondary"
+                  pendingText="Marcando..."
+                >
                   Marcar mensagens como enviadas
-                </button>
+                </CallUpSubmitButton>
               </form>
             ) : null}
           </div>
@@ -365,12 +531,12 @@ export default async function MatchCallUpsPage({
                                   name="status"
                                   value="CONFIRMED"
                                 />
-                                <button
+                                <CallUpSubmitButton
                                   className="btn-secondary btn-small"
-                                  type="submit"
+                                  pendingText="Confirmando..."
                                 >
                                   Confirmar
-                                </button>
+                                </CallUpSubmitButton>
                               </form>
                               <form action={updateCallUpStatus}>
                                 <input
@@ -383,23 +549,23 @@ export default async function MatchCallUpsPage({
                                   name="status"
                                   value="DECLINED"
                                 />
-                                <button
+                                <CallUpSubmitButton
                                   className="btn-danger btn-small"
-                                  type="submit"
+                                  pendingText="Salvando..."
                                 >
                                   Não poderá
-                                </button>
+                                </CallUpSubmitButton>
                               </form>
                             </>
                           ) : null}
                           <form action={deleteCallUp}>
                             <input type="hidden" name="id" value={callUp.id} />
-                            <button
+                            <CallUpSubmitButton
                               className="btn-secondary btn-small"
-                              type="submit"
+                              pendingText="Removendo..."
                             >
                               Remover
-                            </button>
+                            </CallUpSubmitButton>
                           </form>
                         </>
                       ) : null}
@@ -419,6 +585,10 @@ export default async function MatchCallUpsPage({
           canEdit={canManage}
           sport={isFutsal ? "FUTSAL" : "FOOTBALL"}
           squadLimit={squadLimit}
+          formationName={formationName}
+          starterCount={configuredStarters}
+          reserveCount={configuredReserves}
+          slots={formationSlots}
         />
       ) : null}
     </main>
