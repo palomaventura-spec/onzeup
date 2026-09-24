@@ -143,8 +143,10 @@ function attendanceMinutes(input: {
 
 function normalizeAttendanceStatus(
   value: string,
-): TrainingAttendanceStatus {
+): TrainingAttendanceStatus | null {
   switch (value) {
+    case "PRESENT":
+      return TrainingAttendanceStatus.PRESENT;
     case "ABSENT":
       return TrainingAttendanceStatus.ABSENT;
     case "JUSTIFIED_ABSENCE":
@@ -154,7 +156,7 @@ function normalizeAttendanceStatus(
     case "PARTIAL":
       return TrainingAttendanceStatus.PARTIAL;
     default:
-      return TrainingAttendanceStatus.PRESENT;
+      return null;
   }
 }
 
@@ -202,6 +204,39 @@ async function findTrainingForAttendance(
       sport: true,
       trainingType: true,
       responsibleStaffMemberId: true,
+    },
+  });
+}
+
+async function findEligibleTrainingAthletes(
+  organizationId: string,
+  categoryId: string,
+  sport: "FOOTBALL" | "FUTSAL" | "BOTH",
+) {
+  return prisma.athlete.findMany({
+    where: {
+      organizationId,
+      active: true,
+      OR: [
+        {
+          categoryId,
+        },
+        {
+          memberships: {
+            some: {
+              organizationId,
+              categoryId,
+              status: "ACTIVE",
+              sport: {
+                in: ["BOTH", sport],
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
     },
   });
 }
@@ -491,35 +526,10 @@ export async function saveTrainingAttendance(
     redirect("/dashboard?erro=sem-permissao");
   }
 
-  const athletes = await prisma.athlete.findMany({
-    where: {
-      organizationId: user.organizationId,
-      active: true,
-      OR: [
-        {
-          categoryId: training.categoryId,
-        },
-        {
-          memberships: {
-            some: {
-              organizationId: user.organizationId,
-              categoryId: training.categoryId,
-              status: "ACTIVE",
-              sport: {
-                in: ["BOTH", training.sport],
-              },
-            },
-          },
-        },
-      ],
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  const athleteIds = new Set(
-    athletes.map((athlete) => athlete.id),
+  const athletes = await findEligibleTrainingAthletes(
+    user.organizationId,
+    training.categoryId,
+    training.sport,
   );
 
   const startsAt = dateWithTime(
@@ -533,6 +543,75 @@ export async function saveTrainingAttendance(
   );
 
   if (!startsAt) return;
+
+  const preparedAttendance = athletes.map((athlete) => {
+    const rawStatus = clean(
+      formData.get(`status_${athlete.id}`),
+    );
+
+    const status = normalizeAttendanceStatus(rawStatus);
+
+    if (!status) {
+      throw new Error(
+        "A lista de presença está incompleta. Registre a situação de todos os atletas antes de salvar.",
+      );
+    }
+
+    const arrivalValue = clean(
+      formData.get(`arrival_${athlete.id}`),
+    );
+
+    const exitValue = clean(
+      formData.get(`exit_${athlete.id}`),
+    );
+
+    const arrivedAt =
+      status === TrainingAttendanceStatus.LATE ||
+      status === TrainingAttendanceStatus.PARTIAL
+        ? dateWithTime(trainingDate, arrivalValue)
+        : null;
+
+    const leftAt =
+      status === TrainingAttendanceStatus.PARTIAL
+        ? dateWithTime(trainingDate, exitValue)
+        : null;
+
+    if (
+      status === TrainingAttendanceStatus.LATE &&
+      !arrivedAt
+    ) {
+      throw new Error(
+        "Informe o horário de chegada de todos os atletas marcados como atraso.",
+      );
+    }
+
+    if (
+      status === TrainingAttendanceStatus.PARTIAL &&
+      !arrivedAt &&
+      !leftAt
+    ) {
+      throw new Error(
+        "Informe a entrada e/ou a saída de todos os atletas com participação parcial.",
+      );
+    }
+
+    const justification =
+      status === TrainingAttendanceStatus.JUSTIFIED_ABSENCE
+        ? nullable(
+            formData.get(
+              `justification_${athlete.id}`,
+            ),
+          )
+        : null;
+
+    return {
+      athleteId: athlete.id,
+      status,
+      arrivedAt,
+      leftAt,
+      justification,
+    };
+  });
 
   await prisma.$transaction(async (tx) => {
     let session = await tx.trainingSession.findFirst({
@@ -565,6 +644,16 @@ export async function saveTrainingAttendance(
       });
     }
 
+    if (
+      session.status === TrainingSessionStatus.COMPLETED ||
+      session.status === TrainingSessionStatus.CANCELLED ||
+      session.status === TrainingSessionStatus.ARCHIVED
+    ) {
+      throw new Error(
+        "Este treino já está encerrado e a chamada não pode mais ser alterada.",
+      );
+    }
+
     const bounds = effectiveSessionBounds(session);
 
     let recorded = 0;
@@ -572,64 +661,11 @@ export async function saveTrainingAttendance(
     let justified = 0;
     let partial = 0;
 
-    for (const athleteId of athleteIds) {
-      const rawStatus = clean(
-        formData.get(`status_${athleteId}`),
-      );
-
-      if (!rawStatus) continue;
-
-      const status =
-        normalizeAttendanceStatus(rawStatus);
-
-      const arrivalValue = clean(
-        formData.get(`arrival_${athleteId}`),
-      );
-
-      const exitValue = clean(
-        formData.get(`exit_${athleteId}`),
-      );
-
-      const arrivedAt =
-        status === TrainingAttendanceStatus.LATE ||
-        status === TrainingAttendanceStatus.PARTIAL
-          ? dateWithTime(trainingDate, arrivalValue)
-          : null;
-
-      const leftAt =
-        status === TrainingAttendanceStatus.PARTIAL
-          ? dateWithTime(trainingDate, exitValue)
-          : null;
-
-      if (
-        status === TrainingAttendanceStatus.LATE &&
-        !arrivedAt
-      ) {
-        continue;
-      }
-
-      if (
-        status === TrainingAttendanceStatus.PARTIAL &&
-        !arrivedAt &&
-        !leftAt
-      ) {
-        continue;
-      }
-
-      const justification =
-        status ===
-        TrainingAttendanceStatus.JUSTIFIED_ABSENCE
-          ? nullable(
-              formData.get(
-                `justification_${athleteId}`,
-              ),
-            )
-          : null;
-
+    for (const item of preparedAttendance) {
       const minutesPresent = attendanceMinutes({
-        status,
-        arrivedAt,
-        leftAt,
+        status: item.status,
+        arrivedAt: item.arrivedAt,
+        leftAt: item.leftAt,
         sessionStart: bounds.start,
         sessionEnd: bounds.end,
       });
@@ -639,26 +675,26 @@ export async function saveTrainingAttendance(
           where: {
             sessionId_athleteId: {
               sessionId: session.id,
-              athleteId,
+              athleteId: item.athleteId,
             },
           },
           update: {
-            status,
-            arrivedAt,
-            leftAt,
+            status: item.status,
+            arrivedAt: item.arrivedAt,
+            leftAt: item.leftAt,
             minutesPresent,
-            justification,
+            justification: item.justification,
             recordedByUserId: user.id,
           },
           create: {
             organizationId: user.organizationId,
             sessionId: session.id,
-            athleteId,
-            status,
-            arrivedAt,
-            leftAt,
+            athleteId: item.athleteId,
+            status: item.status,
+            arrivedAt: item.arrivedAt,
+            leftAt: item.leftAt,
             minutesPresent,
-            justification,
+            justification: item.justification,
             recordedByUserId: user.id,
           },
         });
@@ -666,27 +702,27 @@ export async function saveTrainingAttendance(
       recorded += 1;
 
       if (
-        status === TrainingAttendanceStatus.ABSENT
+        item.status === TrainingAttendanceStatus.ABSENT
       ) {
         absent += 1;
       }
 
       if (
-        status ===
+        item.status ===
         TrainingAttendanceStatus.JUSTIFIED_ABSENCE
       ) {
         justified += 1;
       }
 
       if (
-        status === TrainingAttendanceStatus.LATE ||
-        status === TrainingAttendanceStatus.PARTIAL
+        item.status === TrainingAttendanceStatus.LATE ||
+        item.status === TrainingAttendanceStatus.PARTIAL
       ) {
         partial += 1;
       }
 
       if (
-        status ===
+        item.status ===
         TrainingAttendanceStatus.JUSTIFIED_ABSENCE
       ) {
         await createTrainingAudit(tx, {
@@ -699,6 +735,12 @@ export async function saveTrainingAttendance(
             TrainingAuditAction.ATTENDANCE_JUSTIFIED,
         });
       }
+    }
+
+    if (recorded !== preparedAttendance.length) {
+      throw new Error(
+        "A lista de presença não foi salva por completo. Nenhuma alteração foi confirmada.",
+      );
     }
 
     await tx.trainingSession.update({
@@ -719,6 +761,7 @@ export async function saveTrainingAttendance(
       action: TrainingAuditAction.ATTENDANCE_RECORDED,
       metadata: {
         recorded,
+        expectedAthletes: preparedAttendance.length,
         absent,
         justified,
         partial,
@@ -762,11 +805,6 @@ export async function completeTrainingSession(
     training.startTime,
   );
 
-  const endsAt = dateWithTime(
-    trainingDate,
-    training.endTime,
-  );
-
   if (!startsAt) return;
 
   const requestedEnd = clean(
@@ -777,8 +815,18 @@ export async function completeTrainingSession(
     formData.get("actualStartTime"),
   );
 
+  const expectedAthletes = await findEligibleTrainingAthletes(
+    user.organizationId,
+    training.categoryId,
+    training.sport,
+  );
+
+  const expectedAthleteIds = new Set(
+    expectedAthletes.map((athlete) => athlete.id),
+  );
+
   await prisma.$transaction(async (tx) => {
-    let session = await tx.trainingSession.findFirst({
+    const session = await tx.trainingSession.findFirst({
       where: {
         organizationId: user.organizationId,
         scheduleId: training.id,
@@ -791,7 +839,11 @@ export async function completeTrainingSession(
       },
     });
 
-    if (!session) return;
+    if (!session) {
+      throw new Error(
+        "Não existe chamada salva para este treino.",
+      );
+    }
 
     if (
       session.status === TrainingSessionStatus.COMPLETED ||
@@ -801,7 +853,35 @@ export async function completeTrainingSession(
       return;
     }
 
-    if (!requestedEnd) return;
+    const attendanceByAthlete = new Map(
+      session.attendances.map((attendance) => [
+        attendance.athleteId,
+        attendance,
+      ]),
+    );
+
+    const missingAthletes = Array.from(
+      expectedAthleteIds,
+    ).filter((athleteId) => {
+      const attendance = attendanceByAthlete.get(athleteId);
+
+      return (
+        !attendance ||
+        attendance.status === TrainingAttendanceStatus.PENDING
+      );
+    });
+
+    if (missingAthletes.length > 0) {
+      throw new Error(
+        `Não é possível finalizar o treino. Existem ${missingAthletes.length} atleta(s) sem chamada salva.`,
+      );
+    }
+
+    if (!requestedEnd) {
+      throw new Error(
+        "Informe o horário real de término do treino.",
+      );
+    }
 
     const actualStartedAt =
       session.actualStartedAt ??
@@ -814,10 +894,16 @@ export async function completeTrainingSession(
       requestedEnd,
     );
 
-    if (!actualStartedAt || !actualEndedAt) return;
+    if (!actualStartedAt || !actualEndedAt) {
+      throw new Error(
+        "Os horários reais de início e término do treino são obrigatórios.",
+      );
+    }
 
     if (actualEndedAt <= actualStartedAt) {
-      return;
+      throw new Error(
+        "O horário de término deve ser posterior ao horário de início.",
+      );
     }
 
     await tx.trainingSession.update({
@@ -835,6 +921,10 @@ export async function completeTrainingSession(
     });
 
     for (const attendance of session.attendances) {
+      if (!expectedAthleteIds.has(attendance.athleteId)) {
+        continue;
+      }
+
       const minutesPresent = attendanceMinutes({
         status: attendance.status,
         arrivedAt: attendance.arrivedAt,
@@ -869,6 +959,8 @@ export async function completeTrainingSession(
           actualStartedAt,
           actualEndedAt,
         ),
+        attendanceValidated: true,
+        expectedAthletes: expectedAthleteIds.size,
       },
     });
 
@@ -879,7 +971,7 @@ export async function completeTrainingSession(
       actorUserId: user.id,
       action: TrainingAuditAction.MINUTES_RECALCULATED,
       metadata: {
-        athletes: session.attendances.length,
+        athletes: expectedAthleteIds.size,
         durationSource:
           TrainingDurationSource.ACTUAL_DURATION_USED,
       },

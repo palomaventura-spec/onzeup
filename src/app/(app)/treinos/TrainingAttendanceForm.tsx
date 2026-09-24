@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
 import {
@@ -36,14 +36,25 @@ type AthleteRow = {
   minutesPresent?: number | null;
 };
 
+function makeEditableRows(athletes: AthleteRow[]) {
+  return athletes.map((athlete) => ({
+    ...athlete,
+    status: athlete.status,
+    exitTime: athlete.exitTime ?? "",
+    justification: athlete.justification ?? "",
+  }));
+}
+
 function PendingButton({
   children,
   pendingText,
   className,
+  disabled = false,
 }: {
   children: ReactNode;
   pendingText: string;
   className?: string;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
 
@@ -51,7 +62,7 @@ function PendingButton({
     <button
       className={className}
       type="submit"
-      disabled={pending}
+      disabled={pending || disabled}
       aria-busy={pending}
     >
       {pending ? pendingText : children}
@@ -106,12 +117,46 @@ function percentageFor(
     return null;
   }
 
-  const percentage = (minutesPresent / sessionDurationMinutes) * 100;
+  const percentage =
+    (minutesPresent / sessionDurationMinutes) * 100;
 
   return Math.max(
     0,
     Math.min(100, Math.round(percentage * 10) / 10),
   );
+}
+
+function effectiveMinutesForDisplay(
+  status: AttendanceStatus | null,
+  minutesPresent: number | null | undefined,
+  sessionDurationMinutes: number | null | undefined,
+) {
+  if (
+    minutesPresent !== null &&
+    minutesPresent !== undefined
+  ) {
+    return minutesPresent;
+  }
+
+  if (
+    !sessionDurationMinutes ||
+    sessionDurationMinutes <= 0
+  ) {
+    return null;
+  }
+
+  if (status === "PRESENT") {
+    return sessionDurationMinutes;
+  }
+
+  if (
+    status === "ABSENT" ||
+    status === "JUSTIFIED_ABSENCE"
+  ) {
+    return 0;
+  }
+
+  return null;
 }
 
 function percentageTone(percentage: number | null) {
@@ -140,28 +185,59 @@ export default function TrainingAttendanceForm({
   sessionDurationMinutes?: number | null;
 }) {
   const [rows, setRows] = useState(() =>
-    athletes.map((athlete) => ({
-      ...athlete,
-      status: athlete.status ?? ("PRESENT" as AttendanceStatus),
-      exitTime: athlete.exitTime ?? "",
-      justification: athlete.justification ?? "",
-    })),
+    makeEditableRows(athletes),
   );
+  const [isDirty, setIsDirty] = useState(false);
+
+  useEffect(() => {
+    setRows(makeEditableRows(athletes));
+    setIsDirty(false);
+  }, [athletes]);
 
   const counts = useMemo(
     () => ({
-      present: rows.filter((row) => row.status === "PRESENT").length,
-      absent: rows.filter((row) => row.status === "ABSENT").length,
+      present: rows.filter(
+        (row) => row.status === "PRESENT",
+      ).length,
+      absent: rows.filter(
+        (row) => row.status === "ABSENT",
+      ).length,
       justified: rows.filter(
         (row) => row.status === "JUSTIFIED_ABSENCE",
       ).length,
-      late: rows.filter((row) => row.status === "LATE").length,
-      partial: rows.filter((row) => row.status === "PARTIAL").length,
+      late: rows.filter(
+        (row) => row.status === "LATE",
+      ).length,
+      partial: rows.filter(
+        (row) => row.status === "PARTIAL",
+      ).length,
+      unrecorded: rows.filter((row) => row.status === null)
+        .length,
     }),
     [rows],
   );
 
-  function updateStatus(id: string, status: AttendanceStatus) {
+  const persistedRecordedCount = useMemo(
+    () =>
+      athletes.filter((athlete) => athlete.status !== null)
+        .length,
+    [athletes],
+  );
+
+  const persistedAttendanceComplete =
+    athletes.length > 0 &&
+    persistedRecordedCount === athletes.length;
+
+  const currentSelectionComplete =
+    rows.length > 0 &&
+    rows.every((row) => row.status !== null);
+
+  function updateStatus(
+    id: string,
+    status: AttendanceStatus,
+  ) {
+    setIsDirty(true);
+
     setRows((current) =>
       current.map((row) =>
         row.id === id
@@ -169,10 +245,14 @@ export default function TrainingAttendanceForm({
               ...row,
               status,
               arrivalTime:
-                status === "LATE" || status === "PARTIAL"
+                status === "LATE" ||
+                status === "PARTIAL"
                   ? row.arrivalTime
                   : "",
-              exitTime: status === "PARTIAL" ? row.exitTime : "",
+              exitTime:
+                status === "PARTIAL"
+                  ? row.exitTime
+                  : "",
               justification:
                 status === "JUSTIFIED_ABSENCE"
                   ? row.justification
@@ -184,6 +264,8 @@ export default function TrainingAttendanceForm({
   }
 
   function markAllPresent() {
+    setIsDirty(true);
+
     setRows((current) =>
       current.map((row) => ({
         ...row,
@@ -207,12 +289,18 @@ export default function TrainingAttendanceForm({
       sessionStatus === "CANCELLED" ||
       sessionStatus === "ARCHIVED");
 
+  const canFinalizePersistedAttendance =
+    persistedAttendanceComplete && !isDirty;
+
   return (
     <div className="attendance-workspace">
       {sessionStatus !== undefined ? (
         <section className="attendance-session-control">
           <div>
-            <span className="page-eyebrow">TEMPO REAL DO TREINO</span>
+            <span className="page-eyebrow">
+              TEMPO REAL DO TREINO
+            </span>
+
             <h3>
               {sessionStatus === "COMPLETED"
                 ? "Treino finalizado"
@@ -233,60 +321,129 @@ export default function TrainingAttendanceForm({
             ) : null}
           </div>
 
-          {canOperateSession && sessionStatus !== "IN_PROGRESS" ? (
-            <form action={startTrainingSession}>
-              <input type="hidden" name="scheduleId" value={scheduleId} />
-
-              <label>
-                <span>Início real</span>
-                <input
-                  type="time"
-                  name="actualStartTime"
-                  defaultValue={actualStartTime}
-                  required
-                />
-              </label>
-
-              <PendingButton
-                className="btn"
-                pendingText="Iniciando treino..."
-              >
-                Iniciar treino
-              </PendingButton>
-            </form>
-          ) : null}
-
-          {canOperateSession && sessionStatus === "IN_PROGRESS" ? (
-            <form action={completeTrainingSession}>
-              <input type="hidden" name="scheduleId" value={scheduleId} />
-
-              {actualStartTime ? (
+          {canOperateSession &&
+          sessionStatus !== "IN_PROGRESS" ? (
+            <div>
+              <form action={startTrainingSession}>
                 <input
                   type="hidden"
-                  name="actualStartTime"
-                  value={actualStartTime}
+                  name="scheduleId"
+                  value={scheduleId}
                 />
+
+                <label>
+                  <span>Início real</span>
+                  <input
+                    type="time"
+                    name="actualStartTime"
+                    defaultValue={actualStartTime}
+                    required
+                  />
+                </label>
+
+                <PendingButton
+                  className="btn"
+                  pendingText="Iniciando treino..."
+                  disabled={isDirty}
+                >
+                  Iniciar treino
+                </PendingButton>
+              </form>
+
+              {isDirty ? (
+                <small className="muted">
+                  Salve a lista de presença antes de iniciar o
+                  treino para não perder alterações.
+                </small>
               ) : null}
+            </div>
+          ) : null}
 
-              <label>
-                <span>Fim real</span>
+          {canOperateSession &&
+          sessionStatus === "IN_PROGRESS" ? (
+            <div>
+              <form action={completeTrainingSession}>
                 <input
-                  type="time"
-                  name="actualEndTime"
-                  defaultValue={actualEndTime}
-                  required
+                  type="hidden"
+                  name="scheduleId"
+                  value={scheduleId}
                 />
-              </label>
 
-              <PendingButton
-                className="btn"
-                pendingText="Finalizando treino..."
-              >
-                Finalizar treino
-              </PendingButton>
-            </form>
+                {actualStartTime ? (
+                  <input
+                    type="hidden"
+                    name="actualStartTime"
+                    value={actualStartTime}
+                  />
+                ) : null}
+
+                <label>
+                  <span>Fim real</span>
+                  <input
+                    type="time"
+                    name="actualEndTime"
+                    defaultValue={actualEndTime}
+                    required
+                  />
+                </label>
+
+                <PendingButton
+                  className="btn"
+                  pendingText="Finalizando treino..."
+                  disabled={!canFinalizePersistedAttendance}
+                >
+                  Finalizar treino
+                </PendingButton>
+              </form>
+
+              {!persistedAttendanceComplete ? (
+                <small className="muted">
+                  Finalização bloqueada: salve a chamada de todos
+                  os atletas primeiro.
+                </small>
+              ) : isDirty ? (
+                <small className="muted">
+                  Existem alterações não salvas. Salve a lista
+                  antes de finalizar o treino.
+                </small>
+              ) : null}
+            </div>
           ) : null}
         </section>
+      ) : null}
+
+      {!isHistoricalReadOnly ? (
+        <div
+          className="notice"
+          role="status"
+          style={{ marginBottom: 16 }}
+        >
+          {isDirty ? (
+            <>
+              <strong>Alterações ainda não salvas.</strong>{" "}
+              Clique em “Salvar lista de presença” antes de iniciar
+              ou finalizar o treino.
+            </>
+          ) : persistedAttendanceComplete ? (
+            <>
+              <strong>✓ Lista de presença salva.</strong>{" "}
+              {persistedRecordedCount} de {athletes.length} atletas
+              têm chamada registrada no banco.
+            </>
+          ) : persistedRecordedCount > 0 ? (
+            <>
+              <strong>Chamada incompleta.</strong>{" "}
+              {persistedRecordedCount} de {athletes.length} atletas
+              têm registro salvo.
+            </>
+          ) : (
+            <>
+              <strong>Chamada ainda não salva.</strong>{" "}
+              Nenhum atleta será considerado presente
+              automaticamente.
+            </>
+          )}
+        </div>
       ) : null}
 
       <div className="attendance-toolbar">
@@ -310,6 +467,12 @@ export default function TrainingAttendanceForm({
           <span className="is-justified">
             <b>{counts.justified}</b> justificadas
           </span>
+
+          {counts.unrecorded > 0 ? (
+            <span>
+              <b>{counts.unrecorded}</b> não registrados
+            </span>
+          ) : null}
         </div>
 
         {canEdit ? (
@@ -326,8 +489,15 @@ export default function TrainingAttendanceForm({
       {isHistoricalReadOnly ? (
         <div className="attendance-history-list">
           {rows.map((athlete) => {
+            const effectiveMinutes =
+              effectiveMinutesForDisplay(
+                athlete.status,
+                athlete.minutesPresent,
+                sessionDurationMinutes,
+              );
+
             const percentage = percentageFor(
-              athlete.minutesPresent,
+              effectiveMinutes,
               sessionDurationMinutes,
             );
 
@@ -348,7 +518,9 @@ export default function TrainingAttendanceForm({
                   )}
 
                   <div>
-                    <strong>{athlete.nickname || athlete.name}</strong>
+                    <strong>
+                      {athlete.nickname || athlete.name}
+                    </strong>
 
                     <small>
                       {athlete.jerseyNumber
@@ -392,7 +564,11 @@ export default function TrainingAttendanceForm({
 
                 <div className="attendance-history-minutes">
                   <span>MINUTOS</span>
-                  <strong>{athlete.minutesPresent ?? 0} min</strong>
+                  <strong>
+                    {effectiveMinutes !== null
+                      ? `${effectiveMinutes} min`
+                      : "Não registrado"}
+                  </strong>
                 </div>
 
                 <div className="attendance-history-percentage">
@@ -414,12 +590,22 @@ export default function TrainingAttendanceForm({
           })}
         </div>
       ) : (
-        <form action={saveTrainingAttendance} className="attendance-form">
-          <input type="hidden" name="scheduleId" value={scheduleId} />
+        <form
+          action={saveTrainingAttendance}
+          className="attendance-form"
+        >
+          <input
+            type="hidden"
+            name="scheduleId"
+            value={scheduleId}
+          />
 
           <div className="attendance-list">
             {rows.map((athlete) => (
-              <article className="attendance-athlete" key={athlete.id}>
+              <article
+                className="attendance-athlete"
+                key={athlete.id}
+              >
                 <div className="attendance-athlete-id">
                   {athlete.photoUrl ? (
                     <img src={athlete.photoUrl} alt="" />
@@ -432,7 +618,9 @@ export default function TrainingAttendanceForm({
                   )}
 
                   <div>
-                    <strong>{athlete.nickname || athlete.name}</strong>
+                    <strong>
+                      {athlete.nickname || athlete.name}
+                    </strong>
 
                     <small>
                       {athlete.jerseyNumber
@@ -476,6 +664,7 @@ export default function TrainingAttendanceForm({
                         name={`status_${athlete.id}`}
                         value={status}
                         checked={athlete.status === status}
+                        required
                         disabled={!canEdit}
                         onChange={() =>
                           updateStatus(athlete.id, status)
@@ -497,7 +686,8 @@ export default function TrainingAttendanceForm({
                         value={athlete.arrivalTime}
                         required
                         disabled={!canEdit}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setIsDirty(true);
                           setRows((current) =>
                             current.map((row) =>
                               row.id === athlete.id
@@ -507,8 +697,8 @@ export default function TrainingAttendanceForm({
                                   }
                                 : row,
                             ),
-                          )
-                        }
+                          );
+                        }}
                       />
                     </label>
                   ) : null}
@@ -522,19 +712,19 @@ export default function TrainingAttendanceForm({
                           name={`arrival_${athlete.id}`}
                           value={athlete.arrivalTime}
                           disabled={!canEdit}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            setIsDirty(true);
                             setRows((current) =>
                               current.map((row) =>
                                 row.id === athlete.id
                                   ? {
                                       ...row,
-                                      arrivalTime:
-                                        event.target.value,
+                                      arrivalTime: event.target.value,
                                     }
                                   : row,
                               ),
-                            )
-                          }
+                            );
+                          }}
                         />
                       </label>
 
@@ -545,7 +735,8 @@ export default function TrainingAttendanceForm({
                           name={`exit_${athlete.id}`}
                           value={athlete.exitTime}
                           disabled={!canEdit}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            setIsDirty(true);
                             setRows((current) =>
                               current.map((row) =>
                                 row.id === athlete.id
@@ -555,14 +746,14 @@ export default function TrainingAttendanceForm({
                                     }
                                   : row,
                               ),
-                            )
-                          }
+                            );
+                          }}
                         />
                       </label>
 
                       <small className="muted">
-                        Informe ao menos entrada ou saída para participação
-                        parcial.
+                        Informe ao menos entrada ou saída para
+                        participação parcial.
                       </small>
                     </>
                   ) : null}
@@ -576,19 +767,19 @@ export default function TrainingAttendanceForm({
                         value={athlete.justification}
                         placeholder="Motivo informado"
                         disabled={!canEdit}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setIsDirty(true);
                           setRows((current) =>
                             current.map((row) =>
                               row.id === athlete.id
                                 ? {
                                     ...row,
-                                    justification:
-                                      event.target.value,
+                                    justification: event.target.value,
                                   }
                                 : row,
                             ),
-                          )
-                        }
+                          );
+                        }}
                       />
                     </label>
                   ) : null}
@@ -598,12 +789,22 @@ export default function TrainingAttendanceForm({
           </div>
 
           {canEdit ? (
-            <PendingButton
-              className="attendance-submit"
-              pendingText="Salvando chamada..."
-            >
-              Salvar lista de presença
-            </PendingButton>
+            <div>
+              <PendingButton
+                className="attendance-submit"
+                pendingText="Salvando chamada..."
+                disabled={!currentSelectionComplete}
+              >
+                Salvar lista de presença
+              </PendingButton>
+
+              {!currentSelectionComplete ? (
+                <p className="muted">
+                  Registre a situação de todos os atletas para
+                  habilitar o salvamento.
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </form>
       )}
