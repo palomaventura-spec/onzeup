@@ -1,11 +1,16 @@
 import Link from "next/link";
 
 import ClubSidebarNavigation from "@/components/ClubSidebarNavigation";
-import MobileClubNavigation, { type MobileClubNavItem } from "@/components/MobileClubNavigation";
+import MobileClubNavigation, {
+  type MobileClubNavItem,
+} from "@/components/MobileClubNavigation";
 import NotificationBell from "@/components/NotificationBell";
 import { brand } from "@/config/brand";
 import { getCurrentUser } from "@/lib/auth";
-import { hasClubPermission, type ClubPermission } from "@/lib/club-permissions";
+import {
+  hasClubPermission,
+  type ClubPermission,
+} from "@/lib/club-permissions";
 
 type MenuItem = {
   href: string;
@@ -145,7 +150,6 @@ export default async function AppShell({ children }: { children: React.ReactNode
       <div className="club-workspace">
         <header className="club-system-topbar">
           <div className="club-system-context">
-            <span className="club-system-mark" aria-hidden="true">11</span>
             <div>
               <strong>ONZEUP Club</strong>
               <span>Gestão esportiva</span>
