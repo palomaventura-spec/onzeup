@@ -334,6 +334,7 @@ model Category {
   birthYear                Int?
   description              String?
   accentColor              String                    @default("#9DDB16")
+  type                     CategoryType              @default(STANDARD)
   active                   Boolean                   @default(true)
   organizationId           String
   createdAt                DateTime                  @default(now())
@@ -354,6 +355,7 @@ model Category {
 
   @@unique([organizationId, name])
   @@index([organizationId])
+  @@index([organizationId, type, active])
 }
 
 model StaffMember {
@@ -1636,6 +1638,11 @@ enum PaymentProduct {
   CLUB_PRO_ANNUAL
   CLUB_ELITE_MONTHLY
   CLUB_ELITE_ANNUAL
+}
+
+enum CategoryType {
+  STANDARD
+  EVALUATION
 }
 
 enum AthleteEvaluationStatus {

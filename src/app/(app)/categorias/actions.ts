@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+
 import { requireOrganizationUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 function clean(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -18,13 +19,19 @@ function accent(value: FormDataEntryValue | null) {
   return /^#[0-9a-f]{6}$/i.test(color) ? color : "#9DDB16";
 }
 
+function categoryType(value: FormDataEntryValue | null) {
+  return clean(value) === "EVALUATION" ? "EVALUATION" : "STANDARD";
+}
+
 export async function createCategory(formData: FormData) {
   const user = await requireOrganizationUser();
+
   const name = clean(formData.get("name"));
   const birthYearRaw = clean(formData.get("birthYear"));
   const birthYear = birthYearRaw ? Number(birthYearRaw) : null;
   const description = nullable(formData.get("description"));
   const accentColor = accent(formData.get("accentColor"));
+  const type = categoryType(formData.get("type"));
 
   if (!name) return;
 
@@ -34,49 +41,65 @@ export async function createCategory(formData: FormData) {
       birthYear: Number.isFinite(birthYear) ? birthYear : null,
       description,
       accentColor,
+      type,
       active: true,
       organizationId: user.organizationId,
     },
   });
 
   revalidatePath("/categorias");
+  revalidatePath("/atletas");
 }
 
 export async function updateCategory(formData: FormData) {
   const user = await requireOrganizationUser();
+
   const id = clean(formData.get("id"));
   const name = clean(formData.get("name"));
   const birthYearRaw = clean(formData.get("birthYear"));
   const birthYear = birthYearRaw ? Number(birthYearRaw) : null;
   const description = nullable(formData.get("description"));
   const accentColor = accent(formData.get("accentColor"));
+  const type = categoryType(formData.get("type"));
   const active = clean(formData.get("active")) !== "false";
 
   if (!id || !name) return;
 
   await prisma.category.updateMany({
-    where: { id, organizationId: user.organizationId },
+    where: {
+      id,
+      organizationId: user.organizationId,
+    },
     data: {
       name,
       birthYear: Number.isFinite(birthYear) ? birthYear : null,
       description,
       accentColor,
+      type,
       active,
     },
   });
 
   revalidatePath("/categorias");
+  revalidatePath(`/categorias/${id}`);
+  revalidatePath("/atletas");
+
   redirect("/categorias");
 }
 
 export async function deleteCategory(formData: FormData) {
   const user = await requireOrganizationUser();
   const id = clean(formData.get("id"));
+
   if (!id) return;
 
   await prisma.category.deleteMany({
-    where: { id, organizationId: user.organizationId },
+    where: {
+      id,
+      organizationId: user.organizationId,
+    },
   });
 
   revalidatePath("/categorias");
+  revalidatePath("/atletas");
 }
