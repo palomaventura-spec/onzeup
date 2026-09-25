@@ -488,6 +488,81 @@ export async function toggleAthleteStatus(formData: FormData) {
   revalidatePath("/categorias");
 }
 
+
+export async function rejectEvaluationAthlete(formData: FormData) {
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
+  const athleteId = clean(formData.get("athleteId"));
+  const reason = clean(formData.get("reason"));
+
+  if (!athleteId || !reason) return;
+
+  await prisma.$transaction(async (tx) => {
+    const athlete = await tx.athlete.findFirst({
+      where: {
+        id: athleteId,
+        organizationId: user.organizationId,
+      },
+      select: {
+        id: true,
+        categoryId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+          },
+        },
+      },
+    });
+
+    if (
+      !athlete ||
+      !athlete.category ||
+      athlete.category.type !== "EVALUATION"
+    ) {
+      return;
+    }
+
+    await tx.athlete.update({
+      where: {
+        id: athlete.id,
+      },
+      data: {
+        categoryId: null,
+      },
+    });
+
+    await tx.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        actorUserId: user.id,
+        action: AthleteDataAuditAction.UPDATED,
+        entityType: "ATHLETE_CATEGORY",
+        entityId: athlete.id,
+        metadataJson: JSON.stringify({
+          event: "EVALUATION_REJECTED",
+          reason,
+          fromCategory: {
+            id: athlete.category.id,
+            name: athlete.category.name,
+            type: athlete.category.type,
+          },
+          toCategory: null,
+        }),
+      },
+    });
+  });
+
+  revalidatePath("/atletas");
+  revalidatePath(`/atletas/${athleteId}`);
+  revalidatePath("/categorias");
+
+  redirect(`/atletas/${athleteId}`);
+}
+
+
 export async function createAthleteMembership(formData: FormData) {
   const user = await requireClubPermission("ATHLETES_EDIT");
 

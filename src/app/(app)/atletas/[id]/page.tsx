@@ -9,10 +9,11 @@ import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
 
-import { updateAthlete } from "../actions";
+import { rejectEvaluationAthlete, updateAthlete } from "../actions";
 
 type CategoryAuditMetadata = {
   event?: string;
+  reason?: string;
   fromCategory?: {
     id?: string;
     name?: string;
@@ -43,6 +44,8 @@ function categoryAuditLabel(event?: string) {
       return "Entrada em avaliação";
     case "EVALUATION_APPROVED":
       return "Aprovado para o elenco";
+    case "EVALUATION_REJECTED":
+      return "Não aprovado na avaliação";
     case "EVALUATION_TRANSFER":
       return "Transferência entre avaliações";
     case "CATEGORY_TRANSFER":
@@ -309,6 +312,41 @@ export default async function EditAthletePage({
             atual por uma categoria do elenco no formulário
             abaixo. Não é necessário criar outro cadastro.
           </p>
+
+          <details style={{ marginTop: 16 }}>
+            <summary style={{ cursor: "pointer", fontWeight: 800 }}>
+              Registrar como não aprovado
+            </summary>
+
+            <form
+              action={rejectEvaluationAthlete}
+              className="form"
+              style={{ marginTop: 14 }}
+            >
+              <input
+                type="hidden"
+                name="athleteId"
+                value={athlete.id}
+              />
+
+              <label>
+                Motivo / observação da decisão
+                <textarea
+                  name="reason"
+                  rows={4}
+                  required
+                  placeholder="Registre de forma objetiva o motivo da não aprovação."
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="btn-danger"
+              >
+                Confirmar não aprovação
+              </button>
+            </form>
+          </details>
         </section>
       ) : null}
 
@@ -352,6 +390,12 @@ export default async function EditAthletePage({
                       ? ` · ${item.actor.name}`
                       : ""}
                   </p>
+
+                  {metadata?.reason ? (
+                    <p className="muted" style={{ marginTop: 4 }}>
+                      Motivo: {metadata.reason}
+                    </p>
+                  ) : null}
                 </div>
               );
             })}
