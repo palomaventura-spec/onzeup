@@ -295,7 +295,7 @@ export default async function CategoriesPage() {
                     className="btn-danger btn-small"
                     type="submit"
                   >
-                    Excluir categoria
+                    Inativar categoria
                   </button>
                 </form>
               </details>

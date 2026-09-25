@@ -3632,6 +3632,7 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
   line-height: 1.5;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 .staff-tags {
   display: flex;
@@ -5251,3 +5252,50 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
   font-size:10px;
   font-weight:600;
 }
+
+/* ============================================================
+   ONZEUP — Category Hub light content cards
+   Equipe técnica, Treinos e Próximos jogos
+   ============================================================ */
+.category-staff-list > a,
+.category-training-admin > a,
+.category-match-admin > a {
+  background: #ffffff !important;
+  border-color: #dfe5e9 !important;
+  color: #111820 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.category-staff-list > a:hover,
+.category-training-admin > a:hover,
+.category-match-admin > a:hover {
+  border-color: #cbd5dc !important;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.07);
+  transform: translateY(-1px);
+}
+
+.category-staff-list strong,
+.category-training-admin strong,
+.category-match-admin strong {
+  color: #111820 !important;
+}
+
+.category-staff-list small,
+.category-training-admin small,
+.category-match-admin small,
+.category-training-admin span,
+.category-match-admin span {
+  color: #66727a !important;
+}
+
+.category-staff-list > a > b {
+  color: #6f9400 !important;
+}
+
+.staff-mini-avatar {
+  background: #f1f5f7 !important;
+  color: #34434b !important;
+  border: 1px solid #dfe5e9;
+}
+

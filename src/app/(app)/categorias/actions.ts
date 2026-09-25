@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireOrganizationUser } from "@/lib/auth";
+import { requireClubPermission } from "@/lib/club-access";
 import { prisma } from "@/lib/prisma";
 
 function clean(value: FormDataEntryValue | null) {
@@ -24,7 +24,7 @@ function categoryType(value: FormDataEntryValue | null) {
 }
 
 export async function createCategory(formData: FormData) {
-  const user = await requireOrganizationUser();
+  const user = await requireClubPermission("CATEGORIES_EDIT");
 
   const name = clean(formData.get("name"));
   const birthYearRaw = clean(formData.get("birthYear"));
@@ -52,7 +52,7 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function updateCategory(formData: FormData) {
-  const user = await requireOrganizationUser();
+  const user = await requireClubPermission("CATEGORIES_EDIT");
 
   const id = clean(formData.get("id"));
   const name = clean(formData.get("name"));
@@ -88,18 +88,22 @@ export async function updateCategory(formData: FormData) {
 }
 
 export async function deleteCategory(formData: FormData) {
-  const user = await requireOrganizationUser();
+  const user = await requireClubPermission("CATEGORIES_EDIT");
   const id = clean(formData.get("id"));
 
   if (!id) return;
 
-  await prisma.category.deleteMany({
+  await prisma.category.updateMany({
     where: {
       id,
       organizationId: user.organizationId,
     },
+    data: {
+      active: false,
+    },
   });
 
   revalidatePath("/categorias");
+  revalidatePath(`/categorias/${id}`);
   revalidatePath("/atletas");
 }
