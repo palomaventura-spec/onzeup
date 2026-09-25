@@ -89,3 +89,35 @@ export async function deleteInactivePlayer(formData: FormData) {
   revalidatePath(`/player/${player.slug}`);
   redirect("/admin/players?deleted=1");
 }
+
+// Transfere somente o Player selecionado para um responsável já cadastrado.
+export async function updatePremiumPlayerGuardian(formData: FormData) {
+  await requireSuperAdmin();
+  const playerId = String(formData.get("playerId") || "").trim();
+  const previousGuardianId = String(formData.get("previousGuardianId") || "").trim();
+  const email = String(formData.get("guardianEmail") || "").trim().toLowerCase();
+  if (!playerId || !previousGuardianId || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    redirect(playerAdminUrl(playerId, "error=invalid_email"));
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const player = await tx.playerProfile.findUnique({ where: { id: playerId } });
+    if (!player || player.plan !== "PREMIUM") return "not_premium";
+    // Evita substituir silenciosamente uma alteração feita em outra sessão.
+    if (player.guardianId !== previousGuardianId) return "stale_guardian";
+    const guardians = await tx.guardianProfile.findMany({
+      where: { user: { email: { equals: email, mode: "insensitive" } } },
+      select: { id: true },
+      take: 2,
+    });
+    if (guardians.length !== 1) return "guardian_not_found";
+    const updated = await tx.playerProfile.updateMany({
+      where: { id: playerId, guardianId: previousGuardianId, plan: "PREMIUM" },
+      data: { guardianId: guardians[0].id },
+    });
+    return updated.count === 1 ? "ok" : "stale_guardian";
+  });
+  if (result !== "ok") redirect(playerAdminUrl(playerId, `error=${result}`));
+  revalidatePath("/", "layout");
+  redirect(playerAdminUrl(playerId, "saved=guardian"));
+}

@@ -6,6 +6,7 @@ import {
   deactivatePlayer,
   deleteInactivePlayer,
   reactivatePlayer,
+  updatePremiumPlayerGuardian,
 } from "./actions";
 
 function isInactive(status: string) {
@@ -83,7 +84,9 @@ export default async function AdminPlayers({
         <div className="admin-success">
           {query.saved === "deactivated"
             ? "Player desativado. Ele saiu do catálogo e agora pode ser excluído definitivamente."
-            : "Player reativado com sucesso."}
+            : query.saved === "guardian"
+              ? "Responsável do Premium atualizado. Os demais Players, o plano e os vínculos existentes foram preservados."
+              : "Player reativado com sucesso."}
         </div>
       ) : null}
 
@@ -95,7 +98,15 @@ export default async function AdminPlayers({
         <div className="notice error">
           {query.error === "must_deactivate"
             ? "Para excluir um Player, desative o perfil primeiro."
-            : "Não foi possível concluir a ação solicitada."}
+            : query.error === "invalid_email"
+              ? "Informe um e-mail válido."
+              : query.error === "guardian_not_found"
+                ? "Não foi encontrada uma conta única de responsável com esse e-mail. Cadastre ou confira a conta de responsável no Players antes de tentar novamente."
+                : query.error === "not_premium"
+                  ? "Esta alteração está disponível somente para um Player Premium."
+                  : query.error === "stale_guardian"
+                    ? "O responsável mudou desde que a página foi aberta. Atualize a página e confira o cadastro."
+                    : "Não foi possível concluir a ação solicitada."}
         </div>
       ) : null}
 
@@ -147,6 +158,22 @@ export default async function AdminPlayers({
                     <td>
                       {p.guardian.user.name}
                       <div className="help">{p.guardian.user.email}</div>
+                      {p.plan === "PREMIUM" ? (
+                        <details style={{ marginTop: 12 }}>
+                          <summary style={{ cursor: "pointer" }}>Alterar e-mail do responsável</summary>
+                          <form action={updatePremiumPlayerGuardian} style={{ display: "grid", gap: 10, marginTop: 12, minWidth: 220, maxWidth: 340 }}>
+                            <input type="hidden" name="playerId" value={p.id} />
+                            <input type="hidden" name="previousGuardianId" value={p.guardianId} />
+                            <label htmlFor={`guardian-email-${p.id}`}>E-mail da conta de responsável</label>
+                            <input id={`guardian-email-${p.id}`} name="guardianEmail" type="email" required maxLength={254} defaultValue={p.guardian.user.email} />
+                            <p className="help">Somente este Premium passará para a conta informada. Ela poderá gerenciar o perfil. O cadastro Free não será alterado.</p>
+                            <AdminConfirmSubmit
+                              label="Salvar responsável"
+                              confirmText={`Transferir a gestão do Premium de ${p.name} para a conta do e-mail informado? Confira o e-mail antes de confirmar. Os demais Players não serão alterados.`}
+                            />
+                          </form>
+                        </details>
+                      ) : null}
                     </td>
                     <td>
                       <span className="badge">{p.plan}</span>
