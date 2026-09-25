@@ -10,6 +10,7 @@ import AthleteDocumentInvitePanel from "./AthleteDocumentInvitePanel";
 import AthleteDocumentManager from "./AthleteDocumentManager";
 
 import {
+  confirmAthleteDocumentation,
   createBodyMeasurement,
   deleteAthleteGuardian,
   deleteBodyMeasurement,
@@ -106,17 +107,83 @@ export default async function AthletePrivateDataPage({
   if (!athlete) notFound();
 
   const privateData = athlete.privateData;
-  const approvedDocuments = athlete.documents.filter(
+  const now = new Date();
+
+  const activeDocuments = athlete.documents.filter(
+    (document) => document.status !== "ARCHIVED"
+  );
+
+  const approvedDocuments = activeDocuments.filter(
     (document) => document.status === "APPROVED"
   ).length;
-  const pendingDocuments = athlete.documents.filter(
+
+  const pendingDocuments = activeDocuments.filter(
     (document) => document.status === "PENDING"
   ).length;
-  const expiredDocuments = athlete.documents.filter(
+
+  const rejectedDocuments = activeDocuments.filter(
+    (document) => document.status === "REJECTED"
+  ).length;
+
+  const expiredDocuments = activeDocuments.filter(
     (document) =>
       document.status === "EXPIRED" ||
-      (document.expiresAt && document.expiresAt < new Date())
+      Boolean(document.expiresAt && document.expiresAt < now)
   ).length;
+
+  const hasPendingRequest = athlete.registrationRequests.some(
+    (request) => request.status === "PENDING"
+  );
+
+  const documentationConfirmedAt = athlete.documentationConfirmedAt;
+
+  const hasDocumentsAfterConfirmation = documentationConfirmedAt
+    ? activeDocuments.some(
+        (document) => document.createdAt > documentationConfirmedAt
+      )
+    : false;
+
+  const documentationInDay =
+    Boolean(documentationConfirmedAt) &&
+    activeDocuments.length > 0 &&
+    pendingDocuments === 0 &&
+    rejectedDocuments === 0 &&
+    expiredDocuments === 0 &&
+    !hasPendingRequest &&
+    !hasDocumentsAfterConfirmation;
+
+  const canConfirmDocumentation =
+    activeDocuments.length > 0 &&
+    approvedDocuments === activeDocuments.length &&
+    expiredDocuments === 0 &&
+    !hasPendingRequest &&
+    !documentationInDay;
+
+  const documentStatusLabel =
+    expiredDocuments > 0
+      ? "Documento vencido"
+      : pendingDocuments > 0 || rejectedDocuments > 0
+        ? "Aguardando conferência"
+        : hasPendingRequest
+          ? "Documentos solicitados"
+          : activeDocuments.length === 0
+            ? "Faltam documentos"
+            : documentationInDay
+              ? "Documentação em dia"
+              : "Aguardando confirmação";
+
+  const documentStatusDescription =
+    expiredDocuments > 0
+      ? "Há documento com validade expirada. Atualize a documentação do atleta."
+      : pendingDocuments > 0 || rejectedDocuments > 0
+        ? "Existem documentos que ainda precisam de revisão ou substituição."
+        : hasPendingRequest
+          ? "A solicitação foi enviada. Aguardando o responsável concluir o envio."
+          : activeDocuments.length === 0
+            ? "Nenhum documento ativo foi cadastrado. Solicite os documentos ao responsável."
+            : documentationInDay
+              ? "A documentação foi revisada pelo gestor e está regular."
+              : "Todos os documentos estão aprovados. Confirme a conferência para marcar a documentação como em dia.";
 
   return (
     <>
@@ -390,6 +457,48 @@ export default async function AthletePrivateDataPage({
           Anexe documentos pessoais, autorizações, exames, laudos e atestados.
           Os arquivos ficam no armazenamento privado e restritos à equipe autorizada.
         </p>
+        <div
+          style={{
+            marginTop: 16,
+            padding: 16,
+            borderRadius: 14,
+            border: documentationInDay
+              ? "1px solid rgba(34, 197, 94, 0.35)"
+              : expiredDocuments > 0
+                ? "1px solid rgba(239, 68, 68, 0.35)"
+                : "1px solid rgba(245, 158, 11, 0.35)",
+            background: documentationInDay
+              ? "rgba(34, 197, 94, 0.08)"
+              : expiredDocuments > 0
+                ? "rgba(239, 68, 68, 0.08)"
+                : "rgba(245, 158, 11, 0.08)",
+          }}
+        >
+          <strong style={{ display: "block", marginBottom: 6 }}>
+            {documentationInDay
+              ? "✓ "
+              : expiredDocuments > 0
+                ? "⚠ "
+                : "● "}
+            {documentStatusLabel}
+          </strong>
+
+          <p className="muted" style={{ margin: 0 }}>
+            {documentStatusDescription}
+          </p>
+
+          {canConfirmDocumentation ? (
+            <form
+              action={confirmAthleteDocumentation}
+              style={{ marginTop: 14 }}
+            >
+              <input type="hidden" name="athleteId" value={athlete.id} />
+              <button type="submit">
+                Confirmar documentação em dia
+              </button>
+            </form>
+          ) : null}
+        </div>
         <div className="actions" style={{ marginTop: 14 }}>
           <span className="badge">{athlete.documents.length} arquivo(s)</span>
           <span className="badge">{pendingDocuments} pendente(s)</span>

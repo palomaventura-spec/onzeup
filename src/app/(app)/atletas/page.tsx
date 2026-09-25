@@ -76,11 +76,24 @@ export default async function AthletesPage({
           },
         },
         documents: {
+          where: { deletedAt: null },
           select: {
             id: true,
             status: true,
             expiresAt: true,
             category: true,
+            createdAt: true,
+          },
+        },
+        registrationRequests: {
+          where: {
+            status: "PENDING",
+          },
+          select: {
+            id: true,
+            status: true,
+            expiresAt: true,
+            createdAt: true,
           },
         },
         evaluations: {
@@ -158,16 +171,50 @@ export default async function AthletesPage({
 
   const now = new Date();
 
-  const documentAlertCount = athletes.filter(
-    (athlete) =>
-      athlete.documents.length === 0 ||
-      athlete.documents.some(
-        (document) =>
-          document.status === "PENDING" ||
-          document.status === "EXPIRED" ||
-          (document.expiresAt && document.expiresAt < now),
-      ),
-  ).length;
+  const documentAlertCount = athletes.filter((athlete) => {
+    const activeDocuments = athlete.documents.filter(
+      (document) => document.status !== "ARCHIVED",
+    );
+
+    const expiredDocuments = activeDocuments.filter(
+      (document) =>
+        document.status === "EXPIRED" ||
+        Boolean(document.expiresAt && document.expiresAt < now),
+    ).length;
+
+    const pendingDocuments = activeDocuments.filter(
+      (document) => document.status === "PENDING",
+    ).length;
+
+    const rejectedDocuments = activeDocuments.filter(
+      (document) => document.status === "REJECTED",
+    ).length;
+
+    const hasPendingRequest = athlete.registrationRequests.some(
+      (request) =>
+        request.status === "PENDING" &&
+        request.expiresAt >= now,
+    );
+
+    const confirmedAt = athlete.documentationConfirmedAt;
+
+    const hasDocumentsAfterConfirmation = confirmedAt
+      ? activeDocuments.some(
+          (document) => document.createdAt > confirmedAt,
+        )
+      : false;
+
+    const documentationInDay =
+      Boolean(confirmedAt) &&
+      activeDocuments.length > 0 &&
+      pendingDocuments === 0 &&
+      rejectedDocuments === 0 &&
+      expiredDocuments === 0 &&
+      !hasPendingRequest &&
+      !hasDocumentsAfterConfirmation;
+
+    return !documentationInDay;
+  }).length;
 
   const filteredAthletes = athletes.filter((athlete) => {
     const searchable =
@@ -456,29 +503,82 @@ export default async function AthletesPage({
                       (link) => link.verified,
                     );
 
-                  const totalDocuments =
-                    athlete.documents.length;
-
-                  const hasNoDocuments =
-                    totalDocuments === 0;
-
-                  const expiredDocuments =
+                  const activeDocuments =
                     athlete.documents.filter(
                       (document) =>
+                        document.status !== "ARCHIVED",
+                    );
+
+                  const hasNoDocuments =
+                    activeDocuments.length === 0;
+
+                  const expiredDocuments =
+                    activeDocuments.filter(
+                      (document) =>
                         document.status === "EXPIRED" ||
-                        (document.expiresAt &&
-                          document.expiresAt < now),
+                        Boolean(
+                          document.expiresAt &&
+                            document.expiresAt < now,
+                        ),
                     ).length;
 
                   const pendingDocuments =
-                    athlete.documents.filter(
+                    activeDocuments.filter(
                       (document) =>
-                        document.status === "PENDING" &&
-                        !(
-                          document.expiresAt &&
-                          document.expiresAt < now
-                        ),
+                        document.status === "PENDING",
                     ).length;
+
+                  const rejectedDocuments =
+                    activeDocuments.filter(
+                      (document) =>
+                        document.status === "REJECTED",
+                    ).length;
+
+                  const hasPendingRequest =
+                    athlete.registrationRequests.some(
+                      (request) =>
+                        request.status === "PENDING" &&
+                        request.expiresAt >= now,
+                    );
+
+                  const documentationConfirmedAt =
+                    athlete.documentationConfirmedAt;
+
+                  const hasDocumentsAfterConfirmation =
+                    documentationConfirmedAt
+                      ? activeDocuments.some(
+                          (document) =>
+                            document.createdAt >
+                            documentationConfirmedAt,
+                        )
+                      : false;
+
+                  const documentationInDay =
+                    Boolean(documentationConfirmedAt) &&
+                    activeDocuments.length > 0 &&
+                    pendingDocuments === 0 &&
+                    rejectedDocuments === 0 &&
+                    expiredDocuments === 0 &&
+                    !hasPendingRequest &&
+                    !hasDocumentsAfterConfirmation;
+
+                  const documentStatusLabel =
+                    expiredDocuments > 0
+                      ? "Documento vencido"
+                      : pendingDocuments > 0 ||
+                          rejectedDocuments > 0
+                        ? documentationConfirmedAt
+                          ? "Novo documento para conferir"
+                          : "Aguardando conferência"
+                        : hasPendingRequest
+                          ? "Documentos solicitados"
+                          : hasNoDocuments
+                            ? "Faltam documentos"
+                            : documentationInDay
+                              ? "Documentação em dia"
+                              : hasDocumentsAfterConfirmation
+                                ? "Nova documentação para confirmar"
+                                : "Aguardando confirmação";
 
                   const age = ageFromYear(
                     athlete.birthYear,
@@ -603,63 +703,40 @@ export default async function AthletesPage({
                           </span>
                         </div>
 
-                        {hasNoDocuments ||
-                        pendingDocuments ||
-                        expiredDocuments ||
-                        athlete.callUps.length ||
+                        {documentationInDay ? (
+                          <div className="athlete-profile-ok">
+                            ✓ Documentação em dia
+                          </div>
+                        ) : (
+                          <div className="athlete-profile-alerts">
+                            <span>{documentStatusLabel}</span>
+
+                            <Link
+                              href={`/atletas/${athlete.id}/dados#documentos`}
+                            >
+                              {hasNoDocuments && !hasPendingRequest
+                                ? "Solicitar documentos"
+                                : "Ver documentos"}
+                            </Link>
+                          </div>
+                        )}
+
+                        {athlete.callUps.length ||
                         athlete.charges.length ? (
                           <div className="athlete-profile-alerts">
-                            {hasNoDocuments ? (
-                              <span>
-                                Sem documentos cadastrados
-                              </span>
-                            ) : (
-                              <span>
-                                {totalDocuments} documento(s) cadastrado(s)
-                              </span>
-                            )}
-
-                            {pendingDocuments ? (
-                              <span>
-                                {pendingDocuments} aguardando aprovação
-                              </span>
-                            ) : null}
-
-                            {expiredDocuments ? (
-                              <span>
-                                {expiredDocuments} documento(s) vencido(s)
-                              </span>
-                            ) : null}
-
                             {athlete.callUps.length ? (
                               <span>
-                                {
-                                  athlete.callUps
-                                    .length
-                                }{" "}
-                                confirmação(ões)
+                                {athlete.callUps.length} confirmação(ões)
                               </span>
                             ) : null}
 
                             {athlete.charges.length ? (
                               <span>
-                                {
-                                  athlete.charges
-                                    .length
-                                }{" "}
-                                cobrança(s)
+                                {athlete.charges.length} cobrança(s)
                               </span>
                             ) : null}
                           </div>
-                        ) : (
-                          <div className="athlete-profile-ok">
-                            {`${totalDocuments} documento(s) • ${
-                              athleteInEvaluation
-                                ? "cadastro de avaliação ativo"
-                                : "documentação em dia"
-                            }`}
-                          </div>
-                        )}
+                        ) : null}
 
                         <div className="athlete-profile-actions">
                           <Link

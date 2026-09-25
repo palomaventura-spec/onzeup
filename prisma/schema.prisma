@@ -279,10 +279,10 @@ model User {
   athleteEvaluations           AthleteEvaluation[]          @relation("AthleteEvaluationAuthor")
   athletePerformanceGoals      AthletePerformanceGoal[]     @relation("AthletePerformanceGoalAuthor")
   performanceReports           PerformanceReport[]          @relation("PerformanceReportAuthor")
-  monthlyReportsCreated        MonthlyAthleteReport[]        @relation("MonthlyAthleteReportCreator")
-  monthlyReportsReviewed       MonthlyAthleteReport[]        @relation("MonthlyAthleteReportReviewer")
-  monthlyReportsApproved       MonthlyAthleteReport[]        @relation("MonthlyAthleteReportApprover")
-  monthlyReportsSent           MonthlyAthleteReport[]        @relation("MonthlyAthleteReportSender")
+  monthlyReportsCreated        MonthlyAthleteReport[]       @relation("MonthlyAthleteReportCreator")
+  monthlyReportsReviewed       MonthlyAthleteReport[]       @relation("MonthlyAthleteReportReviewer")
+  monthlyReportsApproved       MonthlyAthleteReport[]       @relation("MonthlyAthleteReportApprover")
+  monthlyReportsSent           MonthlyAthleteReport[]       @relation("MonthlyAthleteReportSender")
   permissionOverrides          ClubUserPermissionOverride[]
   createdRegistrationRequests  AthleteRegistrationRequest[] @relation("AthleteRegistrationRequestCreator")
   reviewedRegistrationRequests AthleteRegistrationRequest[] @relation("AthleteRegistrationRequestReviewer")
@@ -392,46 +392,47 @@ model StaffMember {
 }
 
 model Athlete {
-  id                   String                       @id @default(cuid())
-  name                 String
-  nickname             String?
-  jerseyNumber         Int?
-  position             String?
-  dominantFoot         String?
-  birthYear            Int?
-  photoUrl             String?
-  active               Boolean                      @default(true)
-  guardianName         String?
-  guardianPhone        String?
-  guardianEmail        String?
-  organizationId       String
-  categoryId           String?
-  createdAt            DateTime                     @default(now())
-  updatedAt            DateTime                     @updatedAt
-  guardianRelation     String?
-  category             Category?                    @relation(fields: [categoryId], references: [id])
-  organization         Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  memberships          AthleteMembership[]
-  callUps              CallUp[]
-  charges              Charge[]
-  playerLinks          PlayerAthleteLink[]
-  evaluations          AthleteEvaluation[]
-  performanceGoals     AthletePerformanceGoal[]
-  performanceReports   PerformanceReport[]
-  monthlyReports       MonthlyAthleteReport[]
-  matchStats           MatchAthleteStat[]
-  matchEvents          MatchEvent[]
-  trainingAttendances  TrainingAttendance[]
-  bodyMeasurements     AthleteBodyMeasurement[]
-  wellbeingEntries     AthleteWellbeingEntry[]
-  externalTrainings    AthleteExternalTraining[]
-  privateData          AthletePrivateData?
-  guardians            AthleteGuardian[]
-  documents            AthleteDocument[]
-  registrationRequests AthleteRegistrationRequest[]
-  sportRegistrations   AthleteSportRegistration[]
-  dataAuditLogs        AthleteDataAuditLog[]
-  competitionEntries   CompetitionAthlete[]         @relation("CompetitionAthleteSource")
+  id                       String                       @id @default(cuid())
+  name                     String
+  nickname                 String?
+  jerseyNumber             Int?
+  position                 String?
+  dominantFoot             String?
+  birthYear                Int?
+  photoUrl                 String?
+  active                   Boolean                      @default(true)
+  guardianName             String?
+  guardianPhone            String?
+  guardianEmail            String?
+  organizationId           String
+  categoryId               String?
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
+  documentationConfirmedAt DateTime?
+  guardianRelation         String?
+  category                 Category?                    @relation(fields: [categoryId], references: [id])
+  organization             Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships              AthleteMembership[]
+  callUps                  CallUp[]
+  charges                  Charge[]
+  playerLinks              PlayerAthleteLink[]
+  evaluations              AthleteEvaluation[]
+  performanceGoals         AthletePerformanceGoal[]
+  performanceReports       PerformanceReport[]
+  monthlyReports           MonthlyAthleteReport[]
+  matchStats               MatchAthleteStat[]
+  matchEvents              MatchEvent[]
+  trainingAttendances      TrainingAttendance[]
+  bodyMeasurements         AthleteBodyMeasurement[]
+  wellbeingEntries         AthleteWellbeingEntry[]
+  externalTrainings        AthleteExternalTraining[]
+  privateData              AthletePrivateData?
+  guardians                AthleteGuardian[]
+  documents                AthleteDocument[]
+  registrationRequests     AthleteRegistrationRequest[]
+  sportRegistrations       AthleteSportRegistration[]
+  dataAuditLogs            AthleteDataAuditLog[]
+  competitionEntries       CompetitionAthlete[]         @relation("CompetitionAthleteSource")
 
   @@index([organizationId])
   @@index([categoryId])
@@ -460,6 +461,7 @@ model AthleteSportRegistration {
   @@index([organizationId, sport, authorityType])
   @@index([registrationNumber])
 }
+
 model ClubUserPermissionOverride {
   id             String             @id @default(cuid())
   organizationId String

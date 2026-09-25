@@ -330,3 +330,70 @@ export async function deleteBodyMeasurement(formData: FormData) {
 
   refresh(athleteId);
 }
+export async function confirmAthleteDocumentation(formData: FormData) {
+  const user = await requireClubPermission("ATHLETES_EDIT");
+  const athleteId = clean(formData.get("athleteId"));
+
+  const athlete = await ownedAthlete(athleteId, user.organizationId);
+  if (!athlete) return;
+
+  const now = new Date();
+
+  const [documents, pendingRequests] = await Promise.all([
+    prisma.athleteDocument.findMany({
+      where: {
+        athleteId,
+        organizationId: user.organizationId,
+        deletedAt: null,
+        status: { not: "ARCHIVED" },
+      },
+      select: {
+        id: true,
+        status: true,
+        expiresAt: true,
+      },
+    }),
+    prisma.athleteRegistrationRequest.count({
+      where: {
+        athleteId,
+        organizationId: user.organizationId,
+        status: "PENDING",
+      },
+    }),
+  ]);
+
+  if (!documents.length || pendingRequests > 0) return;
+
+  const hasDocumentIssue = documents.some(
+    (document) =>
+      document.status !== "APPROVED" ||
+      Boolean(document.expiresAt && document.expiresAt < now),
+  );
+
+  if (hasDocumentIssue) return;
+
+  const confirmedAt = new Date();
+
+  await prisma.$transaction([
+    prisma.athlete.update({
+      where: { id: athleteId },
+      data: { documentationConfirmedAt: confirmedAt },
+    }),
+    prisma.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId,
+        actorUserId: user.id,
+        action: "UPDATED",
+        entityType: "AthleteDocumentation",
+        entityId: athleteId,
+        metadataJson: JSON.stringify({
+          documentationConfirmedAt: confirmedAt.toISOString(),
+          documentCount: documents.length,
+        }),
+      },
+    }),
+  ]);
+
+  refresh(athleteId);
+}
