@@ -9,11 +9,14 @@ export const dynamic = "force-dynamic";
 
 const labels: Record<string, string> = {
   IDENTITY: "Documento de identificação",
-  MEDICAL_EXAM: "Exame médico",
+  MEDICAL_EXAM: "Outro exame médico",
   MEDICAL_CLEARANCE: "Atestado / liberação médica",
+  ELECTROCARDIOGRAM: "Eletrocardiograma",
+  ECHOCARDIOGRAM: "Ecocardiograma",
   AUTHORIZATION: "Autorização",
   SPORTS_REGISTRATION: "Registro esportivo",
-  SCHOOL: "Documento escolar",
+  SCHOOL: "Outro documento escolar",
+  SCHOOL_DECLARATION: "Declaração escolar",
   OTHER: "Outro documento",
 };
 
@@ -81,9 +84,16 @@ export default async function FamilyDocumentSubmissionPage({
         <section className="card" style={{ textAlign: "center" }}>
           {invitation.organization.logoUrl ? <img src={invitation.organization.logoUrl} alt={organizationName} style={{ width: 72, height: 72, objectFit: "contain", marginBottom: 14 }} /> : null}
           <span className="page-eyebrow">ONZEUP • ENVIO SEGURO</span>
-          <h1>Documentos enviados</h1>
-          <p className="muted">Os documentos de {athleteName} foram enviados para conferência de {organizationName}.</p>
-          <p><strong>Você já pode fechar esta página.</strong></p>
+          <h1>Link encerrado</h1>
+          <p className="muted">
+            O envio de documentos de {athleteName} foi finalizado e
+            enviado para conferência de {organizationName}.
+          </p>
+          <p>
+            <strong>
+              Este link não aceita novos arquivos.
+            </strong>
+          </p>
         </section>
       </main>
     );
@@ -109,7 +119,12 @@ export default async function FamilyDocumentSubmissionPage({
 
       <FamilyDocumentSubmissionForm
         token={token}
-        requestedDocuments={requested.map((item) => ({ key: item.key, label: item.label, received: received.has(item.key) }))}
+        requestedDocuments={requested.map((item) => ({
+          key: item.key,
+          label: item.label,
+          category: item.category,
+          received: received.has(item.key),
+        }))}
       />
     </main>
   );

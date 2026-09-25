@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { birthdayInfo } from "@/lib/athlete-birthdays";
 
 const AREA_LABELS = {
   PHYSICAL: "Física",
@@ -46,7 +47,7 @@ export default async function Dashboard() {
   const expiryLimit = new Date(todayStart); expiryLimit.setDate(expiryLimit.getDate() + 30);
 
   const [athletes, todaySessions, recurringTrainings, upcomingMatches, pendingDocuments,
-    expiringDocuments, overdueCharges, pendingCallUps, attendances, latestEvaluation] = await Promise.all([
+    expiringDocuments, overdueCharges, pendingCallUps, attendances, latestEvaluation, birthdayAthletes] = await Promise.all([
     prisma.athlete.count({ where: { organizationId: orgId, active: true } }),
     prisma.trainingSession.findMany({
       where: { organizationId: orgId, startsAt: { gte: todayStart, lt: tomorrow }, status: "SCHEDULED" },
@@ -74,8 +75,49 @@ export default async function Dashboard() {
     prisma.athleteEvaluation.findFirst({
       where: { organizationId: orgId, status: "FINALIZED" }, include: { scores: true }, orderBy: { evaluatedAt: "desc" },
     }),
+    prisma.athlete.findMany({
+      where: {
+        organizationId: orgId,
+        active: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        nickname: true,
+        privateData: {
+          select: {
+            birthDate: true,
+          },
+        },
+      },
+    }),
   ]);
 
+  const upcomingBirthdays = birthdayAthletes
+    .flatMap((athlete) => {
+      const birthDate = athlete.privateData?.birthDate;
+      if (!birthDate) return [];
+
+      const info = birthdayInfo(birthDate, now, timeZone);
+
+      if (info.days < 0 || info.days > 7) return [];
+
+      return [{
+        id: athlete.id,
+        name: athlete.name,
+        nickname: athlete.nickname,
+        ...info,
+      }];
+    })
+    .sort(
+      (a, b) =>
+        a.days - b.days ||
+        a.name.localeCompare(b.name, "pt-BR"),
+    );
+
+  const birthdaysToday = upcomingBirthdays.filter(
+    (athlete) => athlete.days === 0,
+  );
   const presentStatuses = new Set(["PRESENT", "LATE", "PARTIAL"]);
   const presence = attendances.length
     ? Math.round(attendances.filter((item) => presentStatuses.has(item.status)).length / attendances.length * 100)
@@ -150,7 +192,20 @@ export default async function Dashboard() {
           <Link href="/atletas"><i className="amber">⌁</i><div><strong>{expiringDocuments} exames vencem em 30 dias</strong><span>Acompanhamento médico</span></div><b>{expiringDocuments}</b></Link>
           <Link href="/financeiro"><i className="red">$</i><div><strong>{overdueCharges} cobranças em atraso</strong><span>Mensalidades e taxas</span></div><b>{overdueCharges}</b></Link>
           <Link href="/convocacoes"><i className="blue">✓</i><div><strong>{pendingCallUps} confirmações pendentes</strong><span>Convocações enviadas</span></div><b>{pendingCallUps}</b></Link>
-        </article>
+                  <Link href="/notificacoes">
+            <i className="blue">🎂</i>
+            <div>
+              <strong>
+                {upcomingBirthdays.length} aniversário(s) nos próximos 7 dias
+              </strong>
+              <span>
+                {birthdaysToday.length
+                  ? `${birthdaysToday.length} aniversário(s) hoje`
+                  : "Nenhum aniversário hoje"}
+              </span>
+            </div>
+            <b>{upcomingBirthdays.length}</b>
+          </Link></article>
 
         <article className="card od-panel od-performance">
           <div className="od-panel-head"><div><span className="od-eyebrow">PERFORMANCE</span><h2>Mapa do elenco</h2></div><Link href="/performance">Detalhes →</Link></div>

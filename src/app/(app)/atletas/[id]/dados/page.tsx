@@ -38,11 +38,14 @@ const relationLabels = {
 
 const documentCategoryLabels = {
   IDENTITY: "Identificação",
-  MEDICAL_EXAM: "Exame médico",
+  MEDICAL_EXAM: "Outro exame médico",
   MEDICAL_CLEARANCE: "Atestado médico",
+  ELECTROCARDIOGRAM: "Eletrocardiograma",
+  ECHOCARDIOGRAM: "Ecocardiograma",
   AUTHORIZATION: "Autorização",
   SPORTS_REGISTRATION: "Registro esportivo",
-  SCHOOL: "Documento escolar",
+  SCHOOL: "Outro documento escolar",
+  SCHOOL_DECLARATION: "Declaração escolar",
   OTHER: "Outro",
 } as const;
 

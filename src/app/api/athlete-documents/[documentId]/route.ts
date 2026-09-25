@@ -9,6 +9,13 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const EXPIRY_REQUIRED_CATEGORIES = new Set([
+  "MEDICAL_CLEARANCE",
+  "ELECTROCARDIOGRAM",
+  "ECHOCARDIOGRAM",
+  "SCHOOL_DECLARATION",
+]);
+
 function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -89,6 +96,24 @@ export async function PATCH(request: Request, route: { params: Promise<{ documen
     const issuedAt = optionalDate(body.issuedAt);
     const expiresAt = optionalDate(body.expiresAt);
     const now = new Date();
+
+    if (
+      ["UPDATE_DATES", "APPROVE"].includes(action) &&
+      EXPIRY_REQUIRED_CATEGORIES.has(document.category) &&
+      !expiresAt
+    ) {
+      return NextResponse.json(
+        { error: "Este tipo de documento exige data de validade." },
+        { status: 400 },
+      );
+    }
+
+    if (issuedAt && expiresAt && expiresAt < issuedAt) {
+      return NextResponse.json(
+        { error: "A validade não pode ser anterior à data de emissão." },
+        { status: 400 },
+      );
+    }
 
     let data: Prisma.AthleteDocumentUncheckedUpdateInput;
     let auditAction: "UPDATED" | "APPROVED" | "REJECTED";

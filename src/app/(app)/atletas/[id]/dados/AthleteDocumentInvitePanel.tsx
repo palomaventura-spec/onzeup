@@ -16,8 +16,8 @@ type RequestedItem = { key: string; label: string; category: string; subject: "A
 
 const presetItems = [
   ["medical_clearance", "Atestado médico para futebol competitivo / alto rendimento", "MEDICAL_CLEARANCE", "ATHLETE"],
-  ["electrocardiogram", "Eletrocardiograma (ECG) com laudo e imagens", "MEDICAL_EXAM", "ATHLETE"],
-  ["echocardiogram", "Ecocardiograma com laudo e imagens", "MEDICAL_EXAM", "ATHLETE"],
+  ["electrocardiogram", "Eletrocardiograma (ECG) com laudo e imagens", "ELECTROCARDIOGRAM", "ATHLETE"],
+  ["echocardiogram", "Ecocardiograma com laudo e imagens", "ECHOCARDIOGRAM", "ATHLETE"],
   ["blood_count", "Hemograma completo", "MEDICAL_EXAM", "ATHLETE"],
   ["lipid_glycemic_profile", "Perfil lipídico e glicêmico", "MEDICAL_EXAM", "ATHLETE"],
   ["registration_form", "Ficha cadastral preenchida", "OTHER", "ATHLETE"],
@@ -27,7 +27,7 @@ const presetItems = [
   ["athlete_cpf", "CPF do atleta, quando não constar na identidade", "IDENTITY", "ATHLETE"],
   ["guardian_cpf", "CPF do responsável, quando não constar na identidade", "IDENTITY", "GUARDIAN"],
   ["birth_certificate", "Certidão de nascimento", "IDENTITY", "ATHLETE"],
-  ["school_declaration", "Declaração escolar atualizada", "SCHOOL", "ATHLETE"],
+  ["school_declaration", "Declaração escolar atualizada", "SCHOOL_DECLARATION", "ATHLETE"],
   ["vaccination_card", "Carteira de vacinação", "MEDICAL_EXAM", "ATHLETE"],
   ["health_card", "Carteira do plano de saúde ou cartão do SUS", "OTHER", "ATHLETE"],
   ["sports_registration", "Registro ou inscrição esportiva", "SPORTS_REGISTRATION", "ATHLETE"],

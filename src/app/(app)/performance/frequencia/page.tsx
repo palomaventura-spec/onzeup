@@ -506,7 +506,11 @@ export default async function TrainingPerformancePage({
         <Link className="active" href="/performance/frequencia">
           Frequência e rendimento
         </Link>
+        <Link href={`/performance/relatorios?month=${period.value}`}>
+          Relatórios
+        </Link>
         <Link href="/treinos">Treinos</Link>
+        <Link href="/performance/gps">GPS</Link>
       </nav>
 
       <section className="performance-kpis">

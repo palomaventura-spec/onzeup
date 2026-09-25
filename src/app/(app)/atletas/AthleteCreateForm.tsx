@@ -274,7 +274,59 @@ export default function AthleteCreateForm({
         </div>
       </fieldset>
 
-      <fieldset>
+            <fieldset>
+        <legend>Registros esportivos</legend>
+
+        <p
+          className="muted"
+          style={{ gridColumn: "1 / -1" }}
+        >
+          Preencha apenas os registros que o atleta possui.
+          O mesmo atleta pode ter inscrição no futsal e no
+          futebol de campo.
+        </p>
+
+        <label>
+          Futsal · Federação
+          <input
+            name="futsalFederationName"
+            placeholder="Ex.: Federação estadual"
+          />
+        </label>
+
+        <label>
+          Futsal · Nº de inscrição na Federação
+          <input
+            name="futsalFederationNumber"
+            placeholder="Número de inscrição"
+          />
+        </label>
+
+        <label>
+          Campo · Federação
+          <input
+            name="footballFederationName"
+            placeholder="Ex.: Federação estadual"
+          />
+        </label>
+
+        <label>
+          Campo · Nº de inscrição na Federação
+          <input
+            name="footballFederationNumber"
+            placeholder="Número de inscrição"
+          />
+        </label>
+
+        <label style={{ gridColumn: "1 / -1" }}>
+          Campo · Nº de registro CBF
+          <input
+            name="cbfRegistrationNumber"
+            placeholder="Número de registro CBF"
+          />
+        </label>
+      </fieldset>
+<fieldset>
         <legend>Família e responsável • privado</legend>
 
         <label>

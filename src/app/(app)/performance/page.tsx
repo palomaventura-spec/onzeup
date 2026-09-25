@@ -591,8 +591,16 @@ export default async function PerformancePage({
             href: "/performance/frequencia",
           },
           {
+            label: "Relatórios",
+            href: "/performance/relatorios",
+          },
+          {
             label: "Treinos",
             href: "/treinos",
+          },
+          {
+            label: "GPS",
+            href: "/performance/gps",
           },
         ]}
       />

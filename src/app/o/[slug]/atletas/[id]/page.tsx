@@ -6,7 +6,15 @@ export default async function PublicAthletePage({ params }: { params: Promise<{ 
   const { slug, id } = await params;
   const org = await prisma.organization.findFirst({ where: { slug, active: true, showAthletesPublicly: true } });
   if (!org) notFound();
-  const athlete = await prisma.athlete.findFirst({ where: { id, organizationId: org.id, active: true }, include: { category: true } });
+  const athlete = await prisma.athlete.findFirst({ where: {
+    id,
+    organizationId: org.id,
+    active: true,
+    category: {
+      type: "STANDARD",
+      active: true,
+    },
+  }, include: { category: true } });
   if (!athlete) notFound();
   return <main className="athlete-public" style={{"--club-accent": org.accentColor || "#9DDB16"} as React.CSSProperties}>
     <div className="athlete-public-wrap">

@@ -3,7 +3,12 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type RequestedDocument = { key: string; label: string; received: boolean };
+type RequestedDocument = {
+  key: string;
+  label: string;
+  category: string;
+  received: boolean;
+};
 
 export default function FamilyDocumentSubmissionForm({
   token,
@@ -17,6 +22,18 @@ export default function FamilyDocumentSubmissionForm({
   const [finishing, setFinishing] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [selectedKey, setSelectedKey] = useState("");
+
+  const selectedDocument = requestedDocuments.find(
+    (item) => item.key === selectedKey,
+  );
+
+  const requiresExpiry = [
+    "MEDICAL_CLEARANCE",
+    "ELECTROCARDIOGRAM",
+    "ECHOCARDIOGRAM",
+    "SCHOOL_DECLARATION",
+  ].includes(selectedDocument?.category || "");
   const complete = requestedDocuments.length > 0 && requestedDocuments.every((item) => item.received);
 
   async function upload(event: FormEvent<HTMLFormElement>) {
@@ -33,6 +50,7 @@ export default function FamilyDocumentSubmissionForm({
       const result = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(result.error || "Não foi possível enviar o arquivo.");
       formElement.reset();
+      setSelectedKey("");
       setMessage("Arquivo recebido com segurança.");
       router.refresh();
     } catch (cause) {
@@ -50,8 +68,7 @@ export default function FamilyDocumentSubmissionForm({
       const response = await fetch(`/api/athlete-registration-requests/${token}/upload`, { method: "PATCH" });
       const result = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(result.error || "Não foi possível finalizar.");
-      setMessage("Documentos enviados ao clube para conferência.");
-      router.refresh();
+      window.location.replace(window.location.href);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível finalizar.");
     } finally {
@@ -104,14 +121,31 @@ export default function FamilyDocumentSubmissionForm({
           <div className="form-grid-2">
             <label>
               Tipo de documento
-              <select name="requestItemKey" required defaultValue="">
+              <select
+                name="requestItemKey"
+                required
+                value={selectedKey}
+                onChange={(event) => setSelectedKey(event.target.value)}
+              >
                 <option value="" disabled>Selecione</option>
                 {requestedDocuments.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
               </select>
             </label>
             <label>Título<input name="title" required placeholder="Ex.: Atestado médico setembro/2026" /></label>
             <label>Data de emissão<input type="date" name="issuedAt" /></label>
-            <label>Data de validade<input type="date" name="expiresAt" /></label>
+            <label>
+              Data de validade{requiresExpiry ? " *" : ""}
+              <input
+                type="date"
+                name="expiresAt"
+                required={requiresExpiry}
+              />
+              {requiresExpiry ? (
+                <span className="help">
+                  Obrigatória para este documento.
+                </span>
+              ) : null}
+            </label>
             <label style={{ gridColumn: "1 / -1" }}>
               Arquivo
               <input type="file" name="file" required accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" />

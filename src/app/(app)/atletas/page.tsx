@@ -1,4 +1,4 @@
-﻿import type { CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import SafeAvatar from "@/components/SafeAvatar";
@@ -128,13 +128,20 @@ export default async function AthletesPage({
   ) as string[];
 
   const activeCount = athletes.filter(
-    (athlete) => athlete.active,
+    (athlete) =>
+      athlete.active &&
+      athlete.category?.type === "STANDARD",
   ).length;
 
   const evaluationCount = athletes.filter(
     (athlete) =>
       athlete.active &&
       athlete.category?.type === "EVALUATION",
+  ).length;
+  const standardCategoryCount = categories.filter(
+    (category) =>
+      category.active &&
+      category.type === "STANDARD",
   ).length;
 
   const linkedCount = athletes.filter((athlete) =>
@@ -151,13 +158,15 @@ export default async function AthletesPage({
 
   const now = new Date();
 
-  const documentAlertCount = athletes.filter((athlete) =>
-    athlete.documents.some(
-      (document) =>
-        document.status === "PENDING" ||
-        document.status === "EXPIRED" ||
-        (document.expiresAt && document.expiresAt < now),
-    ),
+  const documentAlertCount = athletes.filter(
+    (athlete) =>
+      athlete.documents.length === 0 ||
+      athlete.documents.some(
+        (document) =>
+          document.status === "PENDING" ||
+          document.status === "EXPIRED" ||
+          (document.expiresAt && document.expiresAt < now),
+      ),
   ).length;
 
   const filteredAthletes = athletes.filter((athlete) => {
@@ -244,7 +253,7 @@ export default async function AthletesPage({
         <article>
           <small>ELENCO ATIVO</small>
           <strong>{activeCount}</strong>
-          <span>de {athletes.length} cadastrados</span>
+          <span>em categorias oficiais</span>
         </article>
 
         <article>
@@ -255,8 +264,8 @@ export default async function AthletesPage({
 
         <article>
           <small>CATEGORIAS</small>
-          <strong>{categories.length}</strong>
-          <span>grupos esportivos</span>
+          <strong>{standardCategoryCount}</strong>
+          <span>categorias oficiais</span>
         </article>
 
         <article className={documentAlertCount ? "attention" : ""}>
@@ -447,13 +456,28 @@ export default async function AthletesPage({
                       (link) => link.verified,
                     );
 
-                  const pendingDocuments =
+                  const totalDocuments =
+                    athlete.documents.length;
+
+                  const hasNoDocuments =
+                    totalDocuments === 0;
+
+                  const expiredDocuments =
                     athlete.documents.filter(
                       (document) =>
-                        document.status === "PENDING" ||
                         document.status === "EXPIRED" ||
                         (document.expiresAt &&
                           document.expiresAt < now),
+                    ).length;
+
+                  const pendingDocuments =
+                    athlete.documents.filter(
+                      (document) =>
+                        document.status === "PENDING" &&
+                        !(
+                          document.expiresAt &&
+                          document.expiresAt < now
+                        ),
                     ).length;
 
                   const age = ageFromYear(
@@ -579,14 +603,31 @@ export default async function AthletesPage({
                           </span>
                         </div>
 
-                        {pendingDocuments ||
+                        {hasNoDocuments ||
+                        pendingDocuments ||
+                        expiredDocuments ||
                         athlete.callUps.length ||
                         athlete.charges.length ? (
                           <div className="athlete-profile-alerts">
+                            {hasNoDocuments ? (
+                              <span>
+                                Sem documentos cadastrados
+                              </span>
+                            ) : (
+                              <span>
+                                {totalDocuments} documento(s) cadastrado(s)
+                              </span>
+                            )}
+
                             {pendingDocuments ? (
                               <span>
-                                {pendingDocuments}{" "}
-                                documento(s)
+                                {pendingDocuments} aguardando aprovação
+                              </span>
+                            ) : null}
+
+                            {expiredDocuments ? (
+                              <span>
+                                {expiredDocuments} documento(s) vencido(s)
                               </span>
                             ) : null}
 
@@ -612,9 +653,11 @@ export default async function AthletesPage({
                           </div>
                         ) : (
                           <div className="athlete-profile-ok">
-                            {athleteInEvaluation
-                              ? "Cadastro de avaliação ativo"
-                              : "Cadastro sem pendências operacionais"}
+                            {`${totalDocuments} documento(s) • ${
+                              athleteInEvaluation
+                                ? "cadastro de avaliação ativo"
+                                : "documentação em dia"
+                            }`}
                           </div>
                         )}
 

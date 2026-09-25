@@ -16,13 +16,23 @@ const CATEGORIES = [
   "IDENTITY",
   "MEDICAL_EXAM",
   "MEDICAL_CLEARANCE",
+  "ELECTROCARDIOGRAM",
+  "ECHOCARDIOGRAM",
   "AUTHORIZATION",
   "SPORTS_REGISTRATION",
   "SCHOOL",
+  "SCHOOL_DECLARATION",
   "OTHER",
 ] as const;
 
 type DocumentCategory = (typeof CATEGORIES)[number];
+
+const EXPIRY_REQUIRED_CATEGORIES = new Set<DocumentCategory>([
+  "MEDICAL_CLEARANCE",
+  "ELECTROCARDIOGRAM",
+  "ECHOCARDIOGRAM",
+  "SCHOOL_DECLARATION",
+]);
 
 function clean(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -84,6 +94,27 @@ export async function POST(request: Request) {
     const category = CATEGORIES.includes(categoryInput as DocumentCategory)
       ? (categoryInput as DocumentCategory)
       : null;
+
+    const issuedAt = optionalDate(formData.get("issuedAt"));
+    const expiresAt = optionalDate(formData.get("expiresAt"));
+
+    if (
+      category &&
+      EXPIRY_REQUIRED_CATEGORIES.has(category) &&
+      !expiresAt
+    ) {
+      return NextResponse.json(
+        { error: "Informe a data de validade deste documento." },
+        { status: 400 },
+      );
+    }
+
+    if (issuedAt && expiresAt && expiresAt < issuedAt) {
+      return NextResponse.json(
+        { error: "A validade não pode ser anterior à data de emissão." },
+        { status: 400 },
+      );
+    }
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Selecione um arquivo." }, { status: 400 });
@@ -167,8 +198,8 @@ export async function POST(request: Request) {
           mimeType: file.type,
           sizeBytes: file.size,
           checksumSha256: checksum,
-          issuedAt: optionalDate(formData.get("issuedAt")),
-          expiresAt: optionalDate(formData.get("expiresAt")),
+          issuedAt,
+          expiresAt,
         },
         select: { id: true },
       });

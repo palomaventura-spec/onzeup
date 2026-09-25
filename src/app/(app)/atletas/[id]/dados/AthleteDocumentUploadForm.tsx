@@ -22,6 +22,14 @@ export default function AthleteDocumentUploadForm({
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [category, setCategory] = useState("");
+
+  const requiresExpiry = [
+    "MEDICAL_CLEARANCE",
+    "ELECTROCARDIOGRAM",
+    "ECHOCARDIOGRAM",
+    "SCHOOL_DECLARATION",
+  ].includes(category);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,7 +49,9 @@ export default function AthleteDocumentUploadForm({
       }
 
       formRef.current?.reset();
-      setMessage("Documento anexado com segurança.");
+      setCategory("");
+      setMessage("Documento anexado com sucesso. Aguardando aprovação do gestor.");
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível anexar o arquivo.");
@@ -67,14 +77,34 @@ export default function AthleteDocumentUploadForm({
 
         <label>
           Categoria
-          <select name="category" required defaultValue="">
+          <select
+            name="category"
+            required
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+          >
             <option value="" disabled>Selecione</option>
             <option value="IDENTITY">Documento de identificação</option>
-            <option value="MEDICAL_EXAM">Exame médico</option>
-            <option value="MEDICAL_CLEARANCE">Atestado / liberação médica</option>
+            <option value="MEDICAL_CLEARANCE">
+              Atestado / liberação médica
+            </option>
+            <option value="ELECTROCARDIOGRAM">
+              Eletrocardiograma
+            </option>
+            <option value="ECHOCARDIOGRAM">
+              Ecocardiograma
+            </option>
+            <option value="MEDICAL_EXAM">
+              Outro exame médico
+            </option>
             <option value="AUTHORIZATION">Autorização</option>
             <option value="SPORTS_REGISTRATION">Registro esportivo</option>
-            <option value="SCHOOL">Documento escolar</option>
+            <option value="SCHOOL_DECLARATION">
+              Declaração escolar
+            </option>
+            <option value="SCHOOL">
+              Outro documento escolar
+            </option>
             <option value="OTHER">Outro</option>
           </select>
         </label>
@@ -108,8 +138,17 @@ export default function AthleteDocumentUploadForm({
         </label>
 
         <label>
-          Data de validade
-          <input type="date" name="expiresAt" />
+          Data de validade{requiresExpiry ? " *" : ""}
+          <input
+            type="date"
+            name="expiresAt"
+            required={requiresExpiry}
+          />
+          {requiresExpiry ? (
+            <span className="help">
+              Obrigatória para este tipo de documento.
+            </span>
+          ) : null}
         </label>
       </div>
 

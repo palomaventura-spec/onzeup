@@ -60,6 +60,8 @@ export default async function PublicCategoryPage({
     where: {
       id,
       organizationId: org.id,
+      active: true,
+      type: "STANDARD",
     },
     include: {
       athletes: {

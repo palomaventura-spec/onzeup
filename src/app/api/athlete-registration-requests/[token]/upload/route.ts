@@ -11,8 +11,26 @@ export const dynamic = "force-dynamic";
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"] as const;
-const CATEGORIES = ["IDENTITY", "MEDICAL_EXAM", "MEDICAL_CLEARANCE", "AUTHORIZATION", "SPORTS_REGISTRATION", "SCHOOL", "OTHER"] as const;
+const CATEGORIES = [
+  "IDENTITY",
+  "MEDICAL_EXAM",
+  "MEDICAL_CLEARANCE",
+  "ELECTROCARDIOGRAM",
+  "ECHOCARDIOGRAM",
+  "AUTHORIZATION",
+  "SPORTS_REGISTRATION",
+  "SCHOOL",
+  "SCHOOL_DECLARATION",
+  "OTHER",
+] as const;
 type Category = (typeof CATEGORIES)[number];
+
+const EXPIRY_REQUIRED_CATEGORIES = new Set<Category>([
+  "MEDICAL_CLEARANCE",
+  "ELECTROCARDIOGRAM",
+  "ECHOCARDIOGRAM",
+  "SCHOOL_DECLARATION",
+]);
 type RequestedItem = { key: string; label: string; category: Category; subject: "ATHLETE" | "GUARDIAN" };
 
 function hash(value: string | Buffer) {
@@ -96,6 +114,26 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     const requestItemKey = clean(formData.get("requestItemKey"));
     const requestedItem = payload.requestedItems.find((item) => item.key === requestItemKey);
     const title = clean(formData.get("title"));
+    const issuedAt = optionalDate(formData.get("issuedAt"));
+    const expiresAt = optionalDate(formData.get("expiresAt"));
+
+    if (
+      requestedItem &&
+      EXPIRY_REQUIRED_CATEGORIES.has(requestedItem.category) &&
+      !expiresAt
+    ) {
+      return NextResponse.json(
+        { error: "Informe a data de validade deste documento." },
+        { status: 400 },
+      );
+    }
+
+    if (issuedAt && expiresAt && expiresAt < issuedAt) {
+      return NextResponse.json(
+        { error: "A validade não pode ser anterior à data de emissão." },
+        { status: 400 },
+      );
+    }
 
     if (!(file instanceof File)) return NextResponse.json({ error: "Selecione um arquivo." }, { status: 400 });
     if (!requestedItem) {
@@ -143,8 +181,8 @@ export async function POST(request: Request, context: { params: Promise<{ token:
           mimeType: file.type,
           sizeBytes: file.size,
           checksumSha256: checksum,
-          issuedAt: optionalDate(formData.get("issuedAt")),
-          expiresAt: optionalDate(formData.get("expiresAt")),
+          issuedAt,
+          expiresAt,
         },
         select: { id: true },
       });

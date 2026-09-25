@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { birthdayInfo } from "@/lib/athlete-birthdays";
 import { requireOrganizationUser } from "@/lib/auth";
 
 function money(cents: number) {
@@ -8,11 +9,12 @@ function money(cents: number) {
 
 export default async function NotificationsPage() {
   const user = await requireOrganizationUser();
+  const timeZone = user.organization?.timezone || "America/Sao_Paulo";
   const now = new Date();
   const inSevenDays = new Date(now);
   inSevenDays.setDate(inSevenDays.getDate() + 7);
 
-  const [pendingCallUps, pendingCharges, upcomingMatches] = await Promise.all([
+  const [pendingCallUps, pendingCharges, upcomingMatches, birthdayAthletes] = await Promise.all([
     prisma.callUp.findMany({
       where: { organizationId: user.organizationId, status: "PENDING" },
       include: { athlete: true, match: { include: { category: true } } },
@@ -37,10 +39,51 @@ export default async function NotificationsPage() {
       include: { category: true, callUps: true },
       orderBy: { startsAt: "asc" },
     }),
+    prisma.athlete.findMany({
+      where: {
+        organizationId: user.organizationId,
+        active: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        nickname: true,
+        privateData: {
+          select: {
+            birthDate: true,
+          },
+        },
+      },
+    }),
   ]);
 
+  const upcomingBirthdays = birthdayAthletes
+    .flatMap((athlete) => {
+      const birthDate = athlete.privateData?.birthDate;
+      if (!birthDate) return [];
+
+      const info = birthdayInfo(birthDate, now, timeZone);
+
+      if (info.days < 0 || info.days > 7) return [];
+
+      return [{
+        id: athlete.id,
+        name: athlete.name,
+        nickname: athlete.nickname,
+        ...info,
+      }];
+    })
+    .sort(
+      (a, b) =>
+        a.days - b.days ||
+        a.name.localeCompare(b.name, "pt-BR"),
+    );
   const overdue = pendingCharges.filter((charge) => charge.dueDate < now);
-  const total = pendingCallUps.length + overdue.length + upcomingMatches.length;
+  const total =
+    pendingCallUps.length +
+    overdue.length +
+    upcomingMatches.length +
+    upcomingBirthdays.length;
 
   return (
     <>
@@ -54,6 +97,52 @@ export default async function NotificationsPage() {
       </div>
 
       <div className="notification-sections">
+        <section className="card">
+          <div className="section-title-row">
+            <div>
+              <span className="page-eyebrow">ANIVERSÁRIOS</span>
+              <h2>Hoje e próximos 7 dias</h2>
+            </div>
+            <Link href="/atletas">Ver atletas</Link>
+          </div>
+
+          <div className="notification-list">
+            {upcomingBirthdays.map((athlete) => (
+              <Link
+                href={`/atletas/${athlete.id}`}
+                key={athlete.id}
+              >
+                <span className="notification-dot info" />
+
+                <div>
+                  <strong>
+                    {athlete.nickname || athlete.name}
+                  </strong>
+
+                  <p>
+                    {athlete.days === 0
+                      ? `Aniversário hoje • ${athlete.age} anos`
+                      : `${athlete.dateLabel} • completa ${athlete.age} anos`}
+                  </p>
+                </div>
+
+                <b>
+                  {athlete.days === 0
+                    ? "Hoje 🎂"
+                    : athlete.days === 1
+                      ? "Amanhã →"
+                      : `Em ${athlete.days} dias →`}
+                </b>
+              </Link>
+            ))}
+
+            {!upcomingBirthdays.length ? (
+              <div className="empty compact-empty">
+                Nenhum aniversário nos próximos 7 dias.
+              </div>
+            ) : null}
+          </div>
+        </section>
         <section className="card">
           <div className="section-title-row">
             <div><span className="page-eyebrow">CONVOCAÇÕES</span><h2>Aguardando resposta</h2></div>

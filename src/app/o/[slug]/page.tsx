@@ -15,10 +15,32 @@ export default async function PublicOrganizationPage({ params }: { params: Promi
   const org = await prisma.organization.findFirst({
     where: { slug, active: true },
     include: {
-      categories: { orderBy: [{ birthYear: "desc" }, { name: "asc" }] },
-      staffMembers: { include: { category: true }, orderBy: [{ roleTitle: "asc" }, { name: "asc" }] },
-      athletes: { where: { active: true }, include: { category: true }, orderBy: [{ category: { name: "asc" } }, { name: "asc" }] },
-      matches: { include: { category: true }, orderBy: { startsAt: "asc" } },
+      categories: { where: { active: true, type: "STANDARD" }, orderBy: [{ birthYear: "desc" }, { name: "asc" }] },
+      staffMembers: {
+        where: {
+          OR: [
+            { categoryId: null },
+            { category: { type: "STANDARD", active: true } },
+          ],
+        },
+        include: { category: true },
+        orderBy: [{ roleTitle: "asc" }, { name: "asc" }],
+      },
+      athletes: {
+        where: {
+          active: true,
+          category: { type: "STANDARD", active: true },
+        },
+        include: { category: true },
+        orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
+      },
+      matches: {
+        where: {
+          category: { type: "STANDARD", active: true },
+        },
+        include: { category: true },
+        orderBy: { startsAt: "asc" },
+      },
     },
   });
   if (!org) notFound();

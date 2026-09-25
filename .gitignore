@@ -12,3 +12,6 @@ prisma.zip
 
 arquivos-para-revisao/
 revisao-card-*.txt
+*.backup-*
+.neon/
+.neon

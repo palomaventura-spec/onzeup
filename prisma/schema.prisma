@@ -57,6 +57,7 @@ model Organization {
   athleteAuditLogs            AthleteDataAuditLog[]
   athleteDocuments            AthleteDocument[]
   athleteRegistrationRequests AthleteRegistrationRequest[]
+  athleteSportRegistrations   AthleteSportRegistration[]
   athleteMemberships          AthleteMembership[]
   athleteEvaluations          AthleteEvaluation[]
   athletePerformanceGoals     AthletePerformanceGoal[]
@@ -428,6 +429,7 @@ model Athlete {
   guardians            AthleteGuardian[]
   documents            AthleteDocument[]
   registrationRequests AthleteRegistrationRequest[]
+  sportRegistrations   AthleteSportRegistration[]
   dataAuditLogs        AthleteDataAuditLog[]
   competitionEntries   CompetitionAthlete[]         @relation("CompetitionAthleteSource")
 
@@ -436,6 +438,28 @@ model Athlete {
   @@index([name])
 }
 
+model AthleteSportRegistration {
+  id                 String                       @id @default(cuid())
+  organizationId     String
+  athleteId          String
+  sport              SportType
+  authorityType      AthleteRegistrationAuthority
+  authorityName      String?
+  registrationNumber String
+  status             AthleteRegistrationStatus    @default(ACTIVE)
+  issuedAt           DateTime?
+  expiresAt          DateTime?
+  notes              String?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete      Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  @@unique([athleteId, sport, authorityType])
+  @@index([organizationId, sport, authorityType])
+  @@index([registrationNumber])
+}
 model ClubUserPermissionOverride {
   id             String             @id @default(cuid())
   organizationId String
@@ -1557,6 +1581,17 @@ enum SportType {
   BOTH
 }
 
+enum AthleteRegistrationAuthority {
+  FEDERATION
+  CBF
+}
+
+enum AthleteRegistrationStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
 enum MatchStatus {
   SCHEDULED
   FINISHED
@@ -1822,9 +1857,12 @@ enum AthleteDocumentCategory {
   IDENTITY
   MEDICAL_EXAM
   MEDICAL_CLEARANCE
+  ELECTROCARDIOGRAM
+  ECHOCARDIOGRAM
   AUTHORIZATION
   SPORTS_REGISTRATION
   SCHOOL
+  SCHOOL_DECLARATION
   OTHER
 }
 

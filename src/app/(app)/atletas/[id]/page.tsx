@@ -11,6 +11,51 @@ import { prisma } from "@/lib/prisma";
 
 import { updateAthlete } from "../actions";
 
+type CategoryAuditMetadata = {
+  event?: string;
+  fromCategory?: {
+    id?: string;
+    name?: string;
+    type?: string;
+  } | null;
+  toCategory?: {
+    id?: string;
+    name?: string;
+    type?: string;
+  } | null;
+};
+
+function parseCategoryAuditMetadata(
+  value: string | null,
+) {
+  if (!value) return null;
+
+  try {
+    return JSON.parse(value) as CategoryAuditMetadata;
+  } catch {
+    return null;
+  }
+}
+
+function categoryAuditLabel(event?: string) {
+  switch (event) {
+    case "EVALUATION_ENTRY":
+      return "Entrada em avaliação";
+    case "EVALUATION_APPROVED":
+      return "Aprovado para o elenco";
+    case "EVALUATION_TRANSFER":
+      return "Transferência entre avaliações";
+    case "CATEGORY_TRANSFER":
+      return "Transferência de categoria";
+    case "CATEGORY_REMOVAL":
+      return "Retirado da categoria";
+    case "CATEGORY_ASSIGNMENT":
+      return "Vinculado à categoria";
+    default:
+      return "Alteração de categoria";
+  }
+}
+
 function dominantFootLabel(value: string | null) {
   switch (value) {
     case "RIGHT":
@@ -52,6 +97,7 @@ export default async function EditAthletePage({
       },
       include: {
         category: true,
+        sportRegistrations: true,
       },
     }),
 
@@ -78,6 +124,29 @@ export default async function EditAthletePage({
     notFound();
   }
 
+  const categoryHistory =
+    await prisma.athleteDataAuditLog.findMany({
+      where: {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        entityType: "ATHLETE_CATEGORY",
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 20,
+      select: {
+        id: true,
+        metadataJson: true,
+        createdAt: true,
+        actor: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
   const standardCategories = categories.filter(
     (category) => category.type === "STANDARD",
   );
@@ -93,6 +162,26 @@ export default async function EditAthletePage({
   const accentColor =
     athlete.category?.accentColor || "#9DDB16";
 
+  const futsalFederation =
+    athlete.sportRegistrations.find(
+      (registration) =>
+        registration.sport === "FUTSAL" &&
+        registration.authorityType === "FEDERATION",
+    );
+
+  const footballFederation =
+    athlete.sportRegistrations.find(
+      (registration) =>
+        registration.sport === "FOOTBALL" &&
+        registration.authorityType === "FEDERATION",
+    );
+
+  const cbfRegistration =
+    athlete.sportRegistrations.find(
+      (registration) =>
+        registration.sport === "FOOTBALL" &&
+        registration.authorityType === "CBF",
+    );
   return (
     <main className="athlete-profile-page">
       <section
@@ -223,6 +312,53 @@ export default async function EditAthletePage({
         </section>
       ) : null}
 
+      {categoryHistory.length ? (
+        <section
+          className="card"
+          style={{ marginBottom: 18 }}
+        >
+          <span className="page-eyebrow">
+            HISTÃ“RICO DE CATEGORIA
+          </span>
+
+          <h2>Movimentações do atleta</h2>
+
+          <div className="stack">
+            {categoryHistory.map((item) => {
+              const metadata =
+                parseCategoryAuditMetadata(
+                  item.metadataJson,
+                );
+
+              return (
+                <div key={item.id}>
+                  <strong>
+                    {categoryAuditLabel(
+                      metadata?.event,
+                    )}
+                  </strong>
+
+                  <p className="muted">
+                    {metadata?.fromCategory?.name
+                      ? `${metadata.fromCategory.name} â†’ `
+                      : ""}
+                    {metadata?.toCategory?.name ||
+                      "Sem categoria"}
+                    {" · "}
+                    {item.createdAt.toLocaleString(
+                      "pt-BR",
+                    )}
+                    {item.actor?.name
+                      ? ` · ${item.actor.name}`
+                      : ""}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
       {canEdit ? (
         <section className="card">
           <form
@@ -345,7 +481,7 @@ export default async function EditAthletePage({
               />
             </label>
 
-            <label>
+            <label style={{ alignSelf: "start" }}>
               Pé dominante
               <select
                 name="dominantFoot"
@@ -371,6 +507,76 @@ export default async function EditAthletePage({
               </select>
             </label>
 
+            <div
+              className="form-divider"
+              style={{
+                gridColumn: "1 / -1",
+              }}
+            >
+              <span>REGISTROS ESPORTIVOS</span>
+            </div>
+
+            <p
+              className="muted"
+              style={{
+                gridColumn: "1 / -1",
+              }}
+            >
+              O mesmo atleta pode ter inscrição no futsal,
+              no futebol de campo e registro CBF.
+            </p>
+
+            <label>
+              Futsal · Federação
+              <input
+                name="futsalFederationName"
+                defaultValue={
+                  futsalFederation?.authorityName ?? ""
+                }
+                placeholder="Ex.: Federação estadual"
+              />
+            </label>
+
+            <label>
+              Futsal · Nº de inscrição
+              <input
+                name="futsalFederationNumber"
+                defaultValue={
+                  futsalFederation?.registrationNumber ?? ""
+                }
+              />
+            </label>
+
+            <label>
+              Campo · Federação
+              <input
+                name="footballFederationName"
+                defaultValue={
+                  footballFederation?.authorityName ?? ""
+                }
+                placeholder="Ex.: Federação estadual"
+              />
+            </label>
+
+            <label>
+              Campo · Nº de inscrição
+              <input
+                name="footballFederationNumber"
+                defaultValue={
+                  footballFederation?.registrationNumber ?? ""
+                }
+              />
+            </label>
+
+            <label style={{ gridColumn: "1 / -1" }}>
+              Campo · Nº de registro CBF
+              <input
+                name="cbfRegistrationNumber"
+                defaultValue={
+                  cbfRegistration?.registrationNumber ?? ""
+                }
+              />
+            </label>
             <ImageUpload
               name="photoUrl"
               defaultValue={athlete.photoUrl}
@@ -378,7 +584,7 @@ export default async function EditAthletePage({
               recommended="JPEG, PNG ou WEBP até 4 MB. Após enviar ou remover, clique em Salvar alterações."
             />
 
-            <label>
+            <label style={{ alignSelf: "start" }}>
               Status
               <select
                 name="active"
@@ -543,6 +749,36 @@ export default async function EditAthletePage({
               </strong>
             </div>
 
+            <div>
+              <span className="help">
+                Futsal · Federação
+              </span>
+              <strong>
+                {futsalFederation
+                  ? `${futsalFederation.authorityName || "Federação"} · ${futsalFederation.registrationNumber}`
+                  : "â€”"}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">
+                Campo · Federação
+              </span>
+              <strong>
+                {footballFederation
+                  ? `${footballFederation.authorityName || "Federação"} · ${footballFederation.registrationNumber}`
+                  : "â€”"}
+              </strong>
+            </div>
+
+            <div>
+              <span className="help">
+                Campo · CBF
+              </span>
+              <strong>
+                {cbfRegistration?.registrationNumber || "â€”"}
+              </strong>
+            </div>
             <div>
               <span className="help">
                 Status

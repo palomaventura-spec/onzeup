@@ -10,7 +10,15 @@ export default async function PublicGamesPage({ params }: { params: Promise<{ sl
   const { slug } = await params;
   const org = await prisma.organization.findFirst({
     where: { slug, active: true },
-    include: { matches: { include: { category: true }, orderBy: { startsAt: "asc" } } },
+    include: {
+      matches: {
+        where: {
+          category: { type: "STANDARD", active: true },
+        },
+        include: { category: true },
+        orderBy: { startsAt: "asc" },
+      },
+    },
   });
   if (!org || !org.showMatchesPublicly) notFound();
 

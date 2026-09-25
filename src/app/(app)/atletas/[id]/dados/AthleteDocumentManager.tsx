@@ -32,10 +32,12 @@ export default function AthleteDocumentManager({ documents }: { documents: Docum
   );
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   async function update(documentId: string, action: string, rejectionReason?: string) {
     setBusy(documentId);
     setError("");
+    setMessage("");
     try {
       const response = await fetch(`/api/athlete-documents/${documentId}`, {
         method: "PATCH",
@@ -44,6 +46,19 @@ export default function AthleteDocumentManager({ documents }: { documents: Docum
       });
       const result = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(result.error || "Não foi possível atualizar.");
+
+      const successMessages: Record<string, string> = {
+        UPDATE_DATES: "Datas do documento atualizadas com sucesso.",
+        APPROVE: "Documento aprovado com sucesso.",
+        REJECT: "Documento rejeitado. O motivo foi registrado.",
+        ARCHIVE: "Documento arquivado com sucesso.",
+      };
+
+      setMessage(
+        successMessages[action] ||
+          "Documento atualizado com sucesso.",
+      );
+
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível atualizar.");
@@ -77,6 +92,16 @@ export default function AthleteDocumentManager({ documents }: { documents: Docum
 
   return (
     <div className="stack" style={{ marginTop: 22 }}>
+      {message ? (
+        <div
+          className="form-success"
+          role="status"
+          style={{ padding: 14, borderRadius: 10, fontWeight: 700 }}
+        >
+          ✓ {message}
+        </div>
+      ) : null}
+
       {error ? <p className="form-error" role="alert">{error}</p> : null}
       {documents.map((document) => (
         <article key={document.id} style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 16 }}>
