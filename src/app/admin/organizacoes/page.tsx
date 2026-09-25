@@ -2,6 +2,10 @@ import Link from "next/link";
 import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+function planLabel(plan: string | null | undefined) {
+  return ({ STARTER: "Essencial", PRO: "Pro", BUSINESS: "Elite" } as Record<string, string>)[plan || ""] || plan || "Sem plano";
+}
+
 function label(status: string) {
   return ({
     ACTIVE: "Ativo",
@@ -43,7 +47,32 @@ export default async function OrganizationsAdminPage({
   });
 
   return (
-    <>
+    <main className="onzeup-admin-plans">
+      <style>{`
+        .onzeup-admin-plans { color: #e5e7eb; background: #111827; padding: clamp(12px, 2vw, 24px); border-radius: 16px; min-width: 0; }
+        .onzeup-admin-plans h1, .onzeup-admin-plans h2, .onzeup-admin-plans strong,
+        .onzeup-admin-plans label { color: #f8fafc !important; }
+        .onzeup-admin-plans .card { background: #1e293b !important; color: #e5e7eb; border: 1px solid #475569; }
+        .onzeup-admin-plans .muted, .onzeup-admin-plans .help,
+        .onzeup-admin-plans .page-eyebrow { color: #cbd5e1 !important; }
+        .onzeup-admin-plans input, .onzeup-admin-plans select {
+          background: #0f172a !important; color: #f8fafc !important; border: 1px solid #64748b; max-width: 100%; min-width: 0; color-scheme: dark;
+        }
+        .onzeup-admin-plans input::placeholder { color: #94a3b8; }
+        .onzeup-admin-plans .table th, .onzeup-admin-plans .table td { color: #e5e7eb !important; background: #1e293b; }
+        .onzeup-admin-plans .table-wrap { overflow-x: auto; }
+        .onzeup-admin-plans .admin-plan-form { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; margin-top: 16px; }
+        .onzeup-admin-plans .admin-plan-form label { display: grid; gap: 8px; flex: 1 1 220px; }
+        .onzeup-admin-plans .admin-plan-form select { width: 100%; padding: 12px; border-radius: 8px; }
+        .onzeup-admin-plans .admin-plan-card { margin-bottom: 20px; }
+        @media (max-width: 640px) {
+          .onzeup-admin-plans .admin-access-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .onzeup-admin-plans .admin-access-form { display: grid; grid-template-columns: minmax(0, 1fr); }
+          .onzeup-admin-plans .admin-access-form > * { grid-column: 1; min-width: 0; }
+          .onzeup-admin-plans .admin-plan-form button { width: 100%; }
+        }
+      `}</style>
+
       <div className="page-head">
         <div>
           <h1>Organizações</h1>
@@ -91,7 +120,7 @@ export default async function OrganizationsAdminPage({
                     <div className="help">{org.slug}</div>
                   </td>
                   <td>
-                    {org.subscription?.plan ?? "Sem plano"}
+                    {planLabel(org.subscription?.plan)}
                     <div className="help">{org.subscription?.status ?? "—"}</div>
                   </td>
                   <td>
@@ -126,6 +155,6 @@ export default async function OrganizationsAdminPage({
           </table>
         </div>
       </section>
-    </>
+    </main>
   );
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { PlanCode } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +10,44 @@ const VALID = new Set(["ACTIVE", "COMPLIMENTARY", "SUSPENDED", "CANCELLED"]);
 
 function adminOrganizationUrl(id: string, params: string) {
   return `/admin/organizacoes/${id}?${params}`;
+}
+
+// Alteração isolada do plano: não modifica cortesia, cobrança ou permissões.
+export async function updateOrganizationPlan(formData: FormData) {
+  await requireSuperAdmin();
+  const organizationId = String(formData.get("organizationId") || "").trim();
+  const requestedPlan = String(formData.get("plan") || "").trim();
+  if (!organizationId) redirect("/admin/organizacoes?error=missing");
+
+  const plan = Object.values(PlanCode).find((value) => value === requestedPlan);
+  if (!plan) redirect(adminOrganizationUrl(organizationId, "error=invalid_plan"));
+
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { id: true, accessStatus: true, complimentaryUntil: true },
+  });
+  if (!organization) redirect("/admin/organizacoes?error=not_found");
+
+  // Uma assinatura existente recebe somente o novo plano.
+  // Na ausência de assinatura, respeita a cortesia já registrada.
+  const complimentary = organization.accessStatus === "COMPLIMENTARY";
+  await prisma.subscription.upsert({
+    where: { organizationId },
+    create: {
+      organizationId,
+      plan,
+      status: complimentary ? "ACTIVE" : "TRIAL",
+      provider: complimentary ? "MANUAL_COMPLIMENTARY" : null,
+      currentPeriodEnd: complimentary ? organization.complimentaryUntil : null,
+    },
+    update: { plan },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/organizacoes");
+  revalidatePath(`/admin/organizacoes/${organizationId}`);
+  revalidatePath("/", "layout");
+  redirect(adminOrganizationUrl(organizationId, "saved=plan"));
 }
 
 export async function updateOrganizationAccess(formData: FormData) {
