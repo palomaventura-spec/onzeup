@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default async function LoginPage({
@@ -20,8 +21,18 @@ export default async function LoginPage({
           method="post"
           autoComplete="on"
         >
-          <Link href="/" className="brand login-brand-link">
-            ONZE<span>UP</span>
+          <Link
+            href="/"
+            className="login-brand-link"
+            aria-label="11UP"
+          >
+            <Image
+              src="/brand/11up/logos/11up-logo-transparent-dark.svg"
+              alt="11UP"
+              width={150}
+              height={48}
+              priority
+            />
           </Link>
 
           <div>
@@ -30,12 +41,12 @@ export default async function LoginPage({
             </span>
 
             <h2>
-              Acesse sua conta ONZEUP
+              Acesse sua conta 11UP
             </h2>
 
             <p className="muted">
-              Entre com seu e-mail ONZEUP. A plataforma identifica
-              automaticamente seu perfil.
+              Entre com seu e-mail. A plataforma identifica automaticamente
+              seu perfil.
             </p>
           </div>
 
@@ -67,7 +78,7 @@ export default async function LoginPage({
 
           {q.erro === "confirme-email" ? (
             <div className="notice error">
-              Confirme seu e-mail antes de acessar o ONZEUP.
+              Confirme seu e-mail antes de acessar o 11UP.
             </div>
           ) : null}
 
@@ -144,22 +155,22 @@ export default async function LoginPage({
             </span>
 
             <Link href="/cadastro-clube">
-              ONZEUP Club — criar conta →
+              11UP Club — criar conta →
             </Link>
 
             <Link href="/cadastro">
-              ONZEUP Player — criar grátis →
+              11UP Player — criar grátis →
             </Link>
 
             <Link href="/cadastro-coach">
-              ONZEUP Coach — criar grátis →
+              11UP Coach — criar grátis →
             </Link>
           </div>
         </form>
 
         <aside className="login-side-message">
           <span className="marketing-kicker">
-            ONZEUP
+            11UP
           </span>
 
           <h1>
@@ -169,8 +180,8 @@ export default async function LoginPage({
           </h1>
 
           <p>
-            Clubes, escolinhas, famílias e atletas conectados em uma única
-            plataforma esportiva.
+            Organizações, equipes, profissionais, famílias e atletas conectados
+            em uma única plataforma esportiva.
           </p>
 
           <Link href="/">

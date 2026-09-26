@@ -1,28 +1,8 @@
 "use client";
 
-import {
-  BarChart3,
-  BellRing,
-  CalendarDays,
-  ChevronRight,
-  CircleDollarSign,
-  ClipboardList,
-  Dumbbell,
-  FolderKanban,
-  Gauge,
-  HelpCircle,
-  LayoutDashboard,
-  Link2,
-  LucideIcon,
-  MessageSquareText,
-  Settings,
-  ShieldCheck,
-  Trophy,
-  UserRoundCog,
-  UsersRound,
-} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { CSSProperties } from "react";
 
 export type ClubSidebarItem = {
   href: string;
@@ -34,54 +14,107 @@ export type ClubSidebarGroup = {
   items: ClubSidebarItem[];
 };
 
-const iconByPath: Array<[string, LucideIcon]> = [
-  ["/dashboard", LayoutDashboard],
-  ["/agenda", CalendarDays],
-  ["/atletas", UsersRound],
-  ["/categorias", FolderKanban],
-  ["/comissao", UserRoundCog],
-  ["/performance", BarChart3],
-  ["/treinos", Dumbbell],
-  ["/jogos", Trophy],
-  ["/convocacoes", BellRing],
-  ["/qtr", ClipboardList],
-  ["/comunicacao", MessageSquareText],
-  ["/vinculos-player", Link2],
-  ["/financeiro", CircleDollarSign],
-  ["/acessos", ShieldCheck],
-  ["/integracoes", Link2],
-  ["/organizacao", Settings],
-  ["/planos", Gauge],
-  ["/ajuda", HelpCircle],
+const iconByPath: Array<[string, string]> = [
+  ["/dashboard", "/brand/11up/icons/dashboard.svg"],
+  ["/agenda", "/brand/11up/icons/agenda.svg"],
+
+  ["/atletas", "/brand/11up/icons/athletes.svg"],
+  ["/categorias", "/brand/11up/icons/categories.svg"],
+  ["/comissao", "/brand/11up/icons/staff.svg"],
+  ["/performance", "/brand/11up/icons/performance.svg"],
+
+  ["/treinos", "/brand/11up/icons/training.svg"],
+  ["/jogos", "/brand/11up/icons/games.svg"],
+  ["/convocacoes", "/brand/11up/icons/convocations.svg"],
+  ["/qtr", "/brand/11up/icons/qtr.svg"],
+
+  ["/comunicacao", "/brand/11up/icons/communication.svg"],
+  ["/vinculos-player", "/brand/11up/icons/player-links.svg"],
+
+  ["/financeiro", "/brand/11up/icons/finance.svg"],
+  ["/acessos", "/brand/11up/icons/users.svg"],
+  ["/integracoes", "/brand/11up/icons/connections.svg"],
+  ["/organizacao", "/brand/11up/icons/settings.svg"],
+  ["/planos", "/brand/11up/icons/subscription.svg"],
+  ["/ajuda", "/brand/11up/icons/help.svg"],
 ];
 
 function isCurrentPath(pathname: string, href: string) {
-  if (href === "/dashboard") return pathname === href;
-  return pathname === href || pathname.startsWith(`${href}/`);
+  if (href === "/dashboard") {
+    return pathname === href;
+  }
+
+  return (
+    pathname === href ||
+    pathname.startsWith(`${href}/`)
+  );
 }
 
-export default function ClubSidebarNavigation({ groups }: { groups: ClubSidebarGroup[] }) {
+function getIcon(href: string) {
+  return iconByPath.find(([path]) =>
+    href.startsWith(path)
+  )?.[1];
+}
+
+function iconStyle(icon: string): CSSProperties {
+  return {
+    WebkitMaskImage: `url("${icon}")`,
+    maskImage: `url("${icon}")`,
+  };
+}
+
+export default function ClubSidebarNavigation({
+  groups,
+}: {
+  groups: ClubSidebarGroup[];
+}) {
   const pathname = usePathname();
 
   return (
     <div className="club-menu-groups">
       {groups.map((group) => (
-        <section className="club-menu-group" key={group.title}>
+        <section
+          className="club-menu-group"
+          key={group.title}
+        >
           <h3>{group.title}</h3>
+
           <nav aria-label={group.title}>
             {group.items.map((item) => {
-              const Icon = iconByPath.find(([path]) => item.href.startsWith(path))?.[1] ?? ChevronRight;
-              const active = isCurrentPath(pathname, item.href);
+              const icon = getIcon(item.href);
+
+              const active = isCurrentPath(
+                pathname,
+                item.href
+              );
 
               return (
                 <Link
                   href={item.href}
                   key={item.href}
-                  className={active ? "is-active" : undefined}
-                  aria-current={active ? "page" : undefined}
+                  className={
+                    active ? "is-active" : undefined
+                  }
+                  aria-current={
+                    active ? "page" : undefined
+                  }
                   title={item.label}
                 >
-                  <Icon aria-hidden="true" size={19} strokeWidth={1.8} />
+                  {icon ? (
+                    <span
+                      className="club-nav-icon"
+                      style={iconStyle(icon)}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <span
+                      className="club-nav-icon-fallback"
+                      aria-hidden="true"
+                    >
+                      ›
+                    </span>
+                  )}
+
                   <span>{item.label}</span>
                 </Link>
               );

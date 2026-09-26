@@ -1,4 +1,27 @@
 /* Ajuste de largura, legibilidade e estado ativo da navegação Club. */
+
+/* 11UP — identidade da sidebar */
+.club-app-light .club-sidebar-head .brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  line-height: 1 !important;
+}
+
+.club-app-light .club-sidebar-head .brand img {
+  display: block !important;
+  width: auto !important;
+  height: 38px !important;
+  max-width: 150px !important;
+  object-fit: contain !important;
+}
+
+.club-app-light .club-sidebar-head p {
+  margin-top: 8px !important;
+}
+
+/* Desktop */
 @media (min-width: 1181px) {
   .club-app-light.shell {
     grid-template-columns: 248px minmax(0, 1fr) !important;
@@ -37,17 +60,100 @@
 
   .club-app-light .club-menu-group nav a.is-active {
     color: #ffffff !important;
-    background: linear-gradient(90deg, rgb(157 221 24 / 28%), rgb(157 221 24 / 9%)) !important;
+    background:
+      linear-gradient(
+        90deg,
+        rgb(157 221 24 / 28%),
+        rgb(157 221 24 / 9%)
+      ) !important;
   }
 
   .club-app-light .club-menu-group nav a.is-active svg {
-    color: #9ddd18 !important;
+    color: #9ddb16 !important;
   }
 }
 
+/* Tablet / sidebar compacta */
 @media (min-width: 901px) and (max-width: 1180px) {
-  .club-app-light.shell { grid-template-columns: 88px minmax(0, 1fr) !important; }
-  .club-app-light .club-sidebar-final { width: 88px !important; min-width: 88px !important; max-width: 88px !important; flex-basis: 88px !important; }
-  .club-app-light .club-menu-group nav a { justify-content: center !important; }
-  .club-app-light .club-menu-group nav a span { display: none !important; }
+  .club-app-light.shell {
+    grid-template-columns: 88px minmax(0, 1fr) !important;
+  }
+
+  .club-app-light .club-sidebar-final {
+    width: 88px !important;
+    min-width: 88px !important;
+    max-width: 88px !important;
+    flex-basis: 88px !important;
+  }
+
+  .club-app-light .club-menu-group nav a {
+    justify-content: center !important;
+  }
+
+  .club-app-light .club-menu-group nav a span {
+    display: none !important;
+  }
+
+  /* Na sidebar compacta usamos somente o símbolo 11 visualmente. */
+  .club-app-light .club-sidebar-head .brand {
+    max-width: 56px !important;
+    overflow: hidden !important;
+  }
+
+  .club-app-light .club-sidebar-head .brand img {
+    height: 32px !important;
+    max-width: none !important;
+  }
+
+  .club-app-light .club-sidebar-head p {
+    display: none !important;
+  }
+}
+/* 11UP — ícones oficiais da navegação */
+
+.club-app-light .club-menu-group nav a .club-nav-icon {
+  display: block !important;
+  width: 19px !important;
+  height: 19px !important;
+  min-width: 19px !important;
+  flex: 0 0 19px !important;
+
+  background-color: #8ea0b4;
+
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+  -webkit-mask-position: center;
+  mask-position: center;
+
+  -webkit-mask-size: contain;
+  mask-size: contain;
+
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.club-app-light .club-menu-group nav a:hover .club-nav-icon {
+  background-color: #bdc9d7;
+}
+
+.club-app-light .club-menu-group nav a.is-active .club-nav-icon {
+  background-color: #9ddb16 !important;
+}
+
+.club-app-light .club-menu-group nav a.is-active:hover .club-nav-icon {
+  background-color: #9ddb16 !important;
+}
+
+.club-app-light .club-nav-icon-fallback {
+  display: inline-flex;
+  width: 19px;
+  height: 19px;
+  min-width: 19px;
+  align-items: center;
+  justify-content: center;
+  color: #8ea0b4;
+  font-size: 20px;
+  line-height: 1;
 }

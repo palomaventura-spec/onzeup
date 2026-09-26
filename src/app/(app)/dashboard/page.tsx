@@ -153,9 +153,15 @@ export default async function Dashboard() {
     <div className="od-dashboard">
       <header className="od-header">
         <div>
-          <span className="od-eyebrow">ONZEUP CLUB · {org.publicName || org.name}</span>
-          <h1>Bem-vindo ao ONZEUP</h1>
-          <p className="od-date">{dateLabel(now, timeZone)}</p>
+         <span className="od-eyebrow">
+  {org.publicName || org.name}
+</span>
+
+<h1>Bem-vindo</h1>
+
+<p className="od-date">
+  {dateLabel(now, timeZone)}
+</p>
         </div>
         <form className="od-search" action="/atletas">
           <span>⌕</span><input name="q" aria-label="Buscar atleta" placeholder="Buscar atleta por nome" />
@@ -243,7 +249,9 @@ export default async function Dashboard() {
         </article>
       </section>
 
-      <footer className="od-footer"><span>ONZEUP CLUB</span><small>Operação esportiva em um só lugar.</small></footer>
-    </div>
+<footer className="od-footer">
+  <span>{org.publicName || org.name}</span>
+  <small>Gestão esportiva em um só lugar.</small>
+</footer>    </div>
   );
 }
