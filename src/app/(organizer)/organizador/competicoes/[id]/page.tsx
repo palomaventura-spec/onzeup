@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -95,7 +96,7 @@ export default async function CompetitionPage({
       <header className="od-header">
         <div>
           <span className="od-eyebrow">
-            ONZEUP ORGANIZAÇÃO · COMPETIÇÃO
+            ORGANIZAÇÃO · COMPETIÇÃO
           </span>
 
           <h1>{competition.name}</h1>
@@ -711,7 +712,12 @@ export default async function CompetitionPage({
       </section>
 
       <footer className="od-footer">
-        <span>ONZEUP ORGANIZAÇÃO</span>
+        <Image
+          src="/brand/11up/logos/11up-logo-transparent-dark.svg"
+          alt="11UP"
+          width={82}
+          height={32}
+        />
 
         <small>
           Central de gestão da competição.

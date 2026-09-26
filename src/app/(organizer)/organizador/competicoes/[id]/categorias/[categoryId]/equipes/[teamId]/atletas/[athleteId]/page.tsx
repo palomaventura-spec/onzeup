@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -56,7 +57,7 @@ function sourceLabel(
   source: "MANUAL" | "CLUB_SHARED"
 ) {
   return source === "CLUB_SHARED"
-    ? "Compartilhado pelo OnzeUp Club"
+    ? "Compartilhado pelo 11UP Club"
     : "Cadastro manual";
 }
 
@@ -144,7 +145,7 @@ export default async function CompetitionAthletePage({
       <header className="od-header">
         <div>
           <span className="od-eyebrow">
-            ONZEUP ORGANIZAÇÃO ·{" "}
+            ORGANIZAÇÃO ·{" "}
             {competition.name} ·{" "}
             {category.name}
           </span>
@@ -513,7 +514,7 @@ export default async function CompetitionAthletePage({
           <div className="od-panel-head">
             <div>
               <span className="od-eyebrow">
-                ONZEUP CLUB
+                11UP CLUB
               </span>
 
               <h2>
@@ -535,7 +536,7 @@ export default async function CompetitionAthletePage({
           >
             Este atleta foi compartilhado
             por um clube que utiliza o
-            ecossistema OnzeUp. Os dados
+            ecossistema 11UP. Os dados
             desta inscrição permanecem
             registrados separadamente para
             preservar o histórico oficial
@@ -545,9 +546,12 @@ export default async function CompetitionAthletePage({
       )}
 
       <footer className="od-footer">
-        <span>
-          ONZEUP ORGANIZAÇÃO
-        </span>
+        <Image
+          src="/brand/11up/logos/11up-logo-transparent-dark.svg"
+          alt="11UP"
+          width={82}
+          height={32}
+        />
 
         <small>
           Perfil de atleta inscrito.

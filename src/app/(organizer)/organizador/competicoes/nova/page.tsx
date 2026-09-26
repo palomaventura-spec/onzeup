@@ -1,3 +1,4 @@
+﻿import Image from "next/image";
 import Link from "next/link";
 
 import { createCompetition } from "../actions";
@@ -12,7 +13,7 @@ export default function NewCompetitionPage() {
       <header className="od-header">
         <div>
           <span className="od-eyebrow">
-            ONZEUP ORGANIZAÇÃO · COMPETIÇÕES
+            ORGANIZAÇÃO · COMPETIÇÕES
           </span>
 
           <h1>Nova competição</h1>
@@ -481,7 +482,12 @@ export default function NewCompetitionPage() {
       </form>
 
       <footer className="od-footer">
-        <span>ONZEUP ORGANIZAÇÃO</span>
+        <Image
+          src="/brand/11up/logos/11up-logo-transparent-dark.svg"
+          alt="11UP"
+          width={82}
+          height={32}
+        />
 
         <small>
           A estrutura da competição poderá ser configurada

@@ -1,3 +1,4 @@
+﻿import Image from "next/image";
 import Link from "next/link";
 
 import { requireOrganizationUser } from "@/lib/auth";
@@ -74,7 +75,7 @@ export default async function CompetitionsPage() {
       <header className="od-header">
         <div>
           <span className="od-eyebrow">
-            ONZEUP ORGANIZAÇÃO
+            ORGANIZAÇÃO
           </span>
 
           <h1>Competições</h1>
@@ -329,7 +330,12 @@ export default async function CompetitionsPage() {
       </section>
 
       <footer className="od-footer">
-        <span>ONZEUP ORGANIZAÇÃO</span>
+        <Image
+          src="/brand/11up/logos/11up-logo-transparent-dark.svg"
+          alt="11UP"
+          width={82}
+          height={32}
+        />
 
         <small>
           Gestão completa de competições esportivas.

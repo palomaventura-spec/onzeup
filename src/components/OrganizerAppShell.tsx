@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import OrganizerSidebarNavigation, {
@@ -204,26 +205,12 @@ const mobileMoreItems: MobileOrganizerNavItem[] = [
   },
 ];
 
-function initials(name?: string | null) {
-  if (!name) return "ON";
-
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
 export default async function OrganizerAppShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const user = await getCurrentUser();
-
-  const userLabel = user?.name || brand.name;
 
   return (
     <div className="shell club-app-light">
@@ -232,9 +219,15 @@ export default async function OrganizerAppShell({
           <Link
             className="brand"
             href="/organizador/dashboard"
-            aria-label="ONZEUP Organização"
+            aria-label="11UP Organização"
           >
-            ONZE<span>UP</span>
+            <Image
+              src={brand.logo}
+              alt="11UP"
+              width={150}
+              height={42}
+              priority
+            />
           </Link>
 
           <p>Organização · Gestão de competições</p>
@@ -258,19 +251,7 @@ export default async function OrganizerAppShell({
 
       <div className="club-workspace">
         <header className="club-system-topbar">
-          <div className="club-system-context">
-            <span
-              className="club-system-mark"
-              aria-hidden="true"
-            >
-              11
-            </span>
-
-            <div>
-              <strong>ONZEUP Organização</strong>
-              <span>Gestão de competições</span>
-            </div>
-          </div>
+          <div />
 
           <div className="club-system-actions">
             {user?.organizationId ? (
@@ -278,23 +259,6 @@ export default async function OrganizerAppShell({
                 organizationId={user.organizationId}
               />
             ) : null}
-
-            <div
-              className="club-user-menu"
-              aria-label={`Usuário: ${userLabel}`}
-            >
-              <div className="club-user-summary">
-                <strong>{userLabel}</strong>
-                <span>Ambiente Organização</span>
-              </div>
-
-              <span
-                className="club-user-avatar"
-                aria-hidden="true"
-              >
-                {initials(userLabel)}
-              </span>
-            </div>
           </div>
         </header>
 

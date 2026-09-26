@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -109,7 +110,7 @@ export default async function OrganizerDashboard() {
       <header className="od-header">
         <div>
           <span className="od-eyebrow">
-            ONZEUP ORGANIZAÇÃO · PROPOSTA CONCEITUAL
+            ORGANIZAÇÃO
           </span>
 
           <h1>Central da Organização</h1>
@@ -623,12 +624,17 @@ export default async function OrganizerDashboard() {
       </section>
 
       <footer className="od-footer">
-        <span>ONZEUP ORGANIZAÇÃO</span>
+  <Image
+    src="/brand/11up/logos/11up-logo-transparent-dark.svg"
+    alt="11UP"
+    width={82}
+    height={32}
+  />
 
-        <small>
-          Planejamento, competição e gestão em um só lugar.
-        </small>
-      </footer>
-    </div>
+  <small>
+    Planejamento, competição e gestão em um só lugar.
+  </small>
+</footer>
+  </div>
   );
 }

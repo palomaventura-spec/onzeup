@@ -234,7 +234,7 @@ export async function createCompetitionAthlete(
    * Cadastro manual do Organizador.
    *
    * No futuro, atletas compartilhados pelo
-   * OnzeUp Club usarão:
+   * 11Up Club usarão:
    *
    * source: "CLUB_SHARED"
    * sourceAthleteId: id do Athlete original

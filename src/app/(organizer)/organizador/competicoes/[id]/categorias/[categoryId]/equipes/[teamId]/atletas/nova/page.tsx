@@ -2,6 +2,7 @@ import ImageUpload from "@/components/ImageUpload";
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -103,7 +104,7 @@ export default async function NewCompetitionAthletePage({
       <header className="od-header">
         <div>
           <span className="od-eyebrow">
-            ONZEUP ORGANIZAÇÃO ·{" "}
+            ORGANIZAÇÃO ·{" "}
             {team.competition.name} ·{" "}
             {team.category.name}
           </span>
@@ -593,7 +594,7 @@ export default async function NewCompetitionAthletePage({
               Este atleta será cadastrado
               diretamente pelo organizador.
               Futuramente, clubes que utilizam
-              o OnzeUp Club poderão selecionar
+              o 11UP Club poderão selecionar
               atletas do próprio elenco e
               compartilhar os dados autorizados
               com esta competição.
@@ -672,9 +673,12 @@ export default async function NewCompetitionAthletePage({
       )}
 
       <footer className="od-footer">
-        <span>
-          ONZEUP ORGANIZAÇÃO
-        </span>
+        <Image
+          src="/brand/11up/logos/11up-logo-transparent-dark.svg"
+          alt="11UP"
+          width={82}
+          height={32}
+        />
 
         <small>
           Cadastro de atleta da competição.

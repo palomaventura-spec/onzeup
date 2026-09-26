@@ -1,98 +1,185 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-import { createCompetitionTeam } from "../actions";
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
 
-export default async function NewCompetitionTeamPage({
+function formatDate(value: Date | null) {
+  if (!value) {
+    return "Não informada";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(value);
+}
+
+function teamStatusLabel(
+  status:
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "WITHDRAWN"
+) {
+  switch (status) {
+    case "APPROVED":
+      return "Aprovada";
+
+    case "PENDING":
+      return "Pendente";
+
+    case "REJECTED":
+      return "Rejeitada";
+
+    case "WITHDRAWN":
+      return "Retirada";
+
+    default:
+      return status;
+  }
+}
+
+function athleteStatusLabel(
+  status:
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "WITHDRAWN"
+) {
+  switch (status) {
+    case "APPROVED":
+      return "Aprovado";
+
+    case "PENDING":
+      return "Pendente";
+
+    case "REJECTED":
+      return "Rejeitado";
+
+    case "WITHDRAWN":
+      return "Retirado";
+
+    default:
+      return status;
+  }
+}
+
+function athleteSourceLabel(
+  source: "MANUAL" | "CLUB_SHARED"
+) {
+  return source === "CLUB_SHARED"
+    ? "11UP Club"
+    : "Manual";
+}
+
+export default async function CompetitionTeamPage({
   params,
 }: {
   params: Promise<{
     id: string;
     categoryId: string;
+    teamId: string;
   }>;
 }) {
-  const user = await requireOrganizationUser();
+  const user =
+    await requireOrganizationUser();
 
   if (!user.organizationId) {
     notFound();
   }
 
-  const { id, categoryId } = await params;
+  const {
+    id,
+    categoryId,
+    teamId,
+  } = await params;
 
-  const category =
-    await prisma.competitionCategory.findFirst({
+  const team =
+    await prisma.competitionTeam.findFirst({
       where: {
-        id: categoryId,
+        id: teamId,
         competitionId: id,
+        categoryId,
 
         competition: {
-          organizationId: user.organizationId,
+          organizationId:
+            user.organizationId,
         },
       },
 
       include: {
-        competition: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        competition: true,
+        category: true,
 
-        _count: {
-          select: {
-            teams: true,
+        athletes: {
+          orderBy: {
+            name: "asc",
           },
         },
       },
     });
 
-  if (!category) {
+  if (!team) {
     notFound();
   }
 
-  const createAction =
-    createCompetitionTeam.bind(
-      null,
-      category.competition.id,
-      category.id
-    );
+  const athleteCount =
+    team.athletes.length;
+
+  const rosterLimit =
+    team.category.rosterLimit;
 
   const availableSpots =
-    category.maxTeams !== null
+    rosterLimit !== null
       ? Math.max(
-          category.maxTeams -
-            category._count.teams,
+          rosterLimit - athleteCount,
           0
         )
       : null;
 
-  const categoryFull =
-    category.maxTeams !== null &&
-    category._count.teams >=
-      category.maxTeams;
+  const categoryHref =
+    `/organizador/competicoes/${team.competition.id}` +
+    `/categorias/${team.category.id}`;
+
+  const teamHref =
+    `${categoryHref}/equipes/${team.id}`;
+
+  const newAthleteHref =
+    `${teamHref}/atletas/nova`;
 
   return (
     <div className="od-dashboard">
       <header className="od-header">
         <div>
           <span className="od-eyebrow">
-            ONZEUP ORGANIZAÇÃO ·{" "}
-            {category.competition.name}
+            ORGANIZAÇÃO ·{" "}
+            {team.competition.name} ·{" "}
+            {team.category.name}
           </span>
 
-          <h1>Nova equipe</h1>
+          <h1>{team.name}</h1>
 
           <p className="od-date">
-            {category.name} · Cadastro de
-            participante
+            Gestão da equipe participante
           </p>
         </div>
 
         <Link
-          href={`/organizador/competicoes/${category.competition.id}/categorias/${category.id}`}
+          href={categoryHref}
           className="card"
           style={{
             padding: "11px 16px",
@@ -100,38 +187,36 @@ export default async function NewCompetitionTeamPage({
             fontWeight: 700,
           }}
         >
-          ← {category.name}
+          ← Voltar à categoria
         </Link>
       </header>
 
       <section
         className="od-kpis"
-        aria-label="Situação da categoria"
+        aria-label="Indicadores da equipe"
       >
-        <Link
-          href={`/organizador/competicoes/${category.competition.id}/categorias/${category.id}`}
-        >
+        <Link href={teamHref}>
           <span className="od-kpi-icon">
             ◎
           </span>
 
-          <small>EQUIPES</small>
+          <small>ATLETAS</small>
 
           <strong>
-            {category._count.teams}
+            {athleteCount}
           </strong>
 
-          <em>Cadastradas</em>
+          <em>
+            Inscritos na equipe
+          </em>
         </Link>
 
-        <Link
-          href={`/organizador/competicoes/${category.competition.id}/categorias/${category.id}`}
-        >
+        <Link href={teamHref}>
           <span className="od-kpi-icon">
             ◉
           </span>
 
-          <small>VAGAS DISPONÍVEIS</small>
+          <small>VAGAS</small>
 
           <strong>
             {availableSpots === null
@@ -140,15 +225,13 @@ export default async function NewCompetitionTeamPage({
           </strong>
 
           <em>
-            {category.maxTeams
-              ? `Limite de ${category.maxTeams}`
+            {rosterLimit !== null
+              ? `Limite de ${rosterLimit}`
               : "Sem limite definido"}
           </em>
         </Link>
 
-        <Link
-          href={`/organizador/competicoes/${category.competition.id}/categorias/${category.id}`}
-        >
+        <Link href={categoryHref}>
           <span className="od-kpi-icon">
             ◇
           </span>
@@ -157,448 +240,480 @@ export default async function NewCompetitionTeamPage({
 
           <strong
             style={{
-              fontSize: 21,
+              fontSize: 20,
             }}
           >
-            {category.name}
+            {team.category.name}
           </strong>
 
           <em>
-            {category.code ||
+            {team.category.code ||
               "Sem código"}
           </em>
         </Link>
 
         <Link
-          href={`/organizador/competicoes/${category.competition.id}`}
+          href={`/organizador/competicoes/${team.competition.id}`}
         >
           <span className="od-kpi-icon">
             ◈
           </span>
 
-          <small>COMPETIÇÃO</small>
+          <small>STATUS</small>
 
           <strong
             style={{
-              fontSize: 17,
+              fontSize: 20,
             }}
           >
-            {category.competition.name}
+            {teamStatusLabel(
+              team.status
+            )}
           </strong>
 
-          <em>Competição atual</em>
+          <em>
+            Inscrição da equipe
+          </em>
         </Link>
       </section>
 
-      {categoryFull ? (
-        <section
-          className="card od-panel"
+      {/* NOVO CADASTRO */}
+      <section
+        className="card od-panel"
+        style={{
+          marginTop: 24,
+        }}
+      >
+        <div
+          className="od-panel-head"
           style={{
-            marginTop: 24,
+            alignItems: "center",
           }}
         >
-          <div className="od-empty">
+          <div>
+            <span className="od-eyebrow">
+              NOVO CADASTRO
+            </span>
+
+            <h2>
+              Adicionar atleta
+            </h2>
+
+            <p
+              className="muted"
+              style={{
+                marginTop: 7,
+                marginBottom: 0,
+              }}
+            >
+              Cadastre um atleta no elenco
+              desta equipe participante.
+            </p>
+          </div>
+
+          {rosterLimit === null ||
+          athleteCount < rosterLimit ? (
+            <Link
+              href={newAthleteHref}
+              className="od-action-primary"
+              style={{
+                padding: "12px 18px",
+                textDecoration: "none",
+                fontWeight: 800,
+              }}
+            >
+              + Adicionar atleta
+            </Link>
+          ) : (
+            <span className="badge">
+              ELENCO COMPLETO
+            </span>
+          )}
+        </div>
+      </section>
+
+      {/* ATLETAS */}
+      <section
+        className="card od-panel"
+        style={{
+          marginTop: 18,
+        }}
+      >
+        <div className="od-panel-head">
+          <div>
+            <span className="od-eyebrow">
+              ELENCO
+            </span>
+
+            <h2>
+              Atletas inscritos
+            </h2>
+          </div>
+
+          <span className="muted">
+            {athleteCount}
+            {rosterLimit !== null
+              ? ` / ${rosterLimit}`
+              : ""}{" "}
+            {athleteCount === 1
+              ? "atleta"
+              : "atletas"}
+          </span>
+        </div>
+
+        {team.athletes.length ? (
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              marginTop: 24,
+            }}
+          >
+            {team.athletes.map(
+              (athlete, index) => {
+                const athleteHref =
+                  `${teamHref}/atletas/${athlete.id}`;
+
+                return (
+                  <Link
+                    key={athlete.id}
+                    href={athleteHref}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "64px minmax(180px, 1.6fr) minmax(120px, .85fr) minmax(70px, .55fr) minmax(100px, .8fr) minmax(100px, .8fr) minmax(90px, .7fr) auto",
+                      alignItems: "center",
+                      gap: 18,
+                      padding: "16px 18px",
+                      border:
+                        "1px solid var(--line)",
+                      borderRadius: 16,
+                      textDecoration: "none",
+                      color: "inherit",
+                      background:
+                        "var(--surface, #fff)",
+                    }}
+                  >
+                    {/* FOTO */}
+                    <div
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 14,
+                        overflow: "hidden",
+                        display: "grid",
+                        placeItems: "center",
+                        background:
+                          "var(--club-lime-soft, #eef7df)",
+                        fontWeight: 900,
+                      }}
+                    >
+                      {athlete.photoUrl ? (
+                        <img
+                          src={
+                            athlete.photoUrl
+                          }
+                          alt={
+                            athlete.name
+                          }
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit:
+                              "cover",
+                          }}
+                        />
+                      ) : (
+                        <span>
+                          {initials(
+                            athlete.name
+                          )}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* NOME */}
+                    <div>
+                      <strong
+                        style={{
+                          display:
+                            "block",
+                          fontSize: 16,
+                        }}
+                      >
+                        {athlete.name}
+                      </strong>
+
+                      <span
+                        className="muted"
+                        style={{
+                          display:
+                            "block",
+                          marginTop: 4,
+                          fontSize: 12,
+                        }}
+                      >
+                        Atleta{" "}
+                        {index + 1}
+                      </span>
+                    </div>
+
+                    {/* NASCIMENTO */}
+                    <div>
+                      <small className="muted">
+                        NASCIMENTO
+                      </small>
+
+                      <strong
+                        style={{
+                          display:
+                            "block",
+                          marginTop: 4,
+                        }}
+                      >
+                        {formatDate(
+                          athlete.birthDate
+                        )}
+                      </strong>
+                    </div>
+
+                    {/* NÚMERO */}
+                    <div>
+                      <small className="muted">
+                        Nº
+                      </small>
+
+                      <strong
+                        style={{
+                          display:
+                            "block",
+                          marginTop: 4,
+                        }}
+                      >
+                        {athlete.jerseyNumber ??
+                          "—"}
+                      </strong>
+                    </div>
+
+                    {/* POSIÇÃO */}
+                    <div>
+                      <small className="muted">
+                        POSIÇÃO
+                      </small>
+
+                      <strong
+                        style={{
+                          display:
+                            "block",
+                          marginTop: 4,
+                        }}
+                      >
+                        {athlete.position ||
+                          "—"}
+                      </strong>
+                    </div>
+
+                    {/* ORIGEM */}
+                    <div>
+                      <small className="muted">
+                        ORIGEM
+                      </small>
+
+                      <strong
+                        style={{
+                          display:
+                            "block",
+                          marginTop: 4,
+                        }}
+                      >
+                        {athleteSourceLabel(
+                          athlete.source
+                        )}
+                      </strong>
+                    </div>
+
+                    {/* STATUS */}
+                    <div>
+                      <small className="muted">
+                        STATUS
+                      </small>
+
+                      <strong
+                        style={{
+                          display:
+                            "block",
+                          marginTop: 4,
+                        }}
+                      >
+                        {athleteStatusLabel(
+                          athlete.status
+                        )}
+                      </strong>
+                    </div>
+
+                    <strong
+                      style={{
+                        whiteSpace:
+                          "nowrap",
+                      }}
+                    >
+                      Abrir →
+                    </strong>
+                  </Link>
+                );
+              }
+            )}
+          </div>
+        ) : (
+          <div
+            className="od-empty"
+            style={{
+              marginTop: 22,
+            }}
+          >
             <strong>
-              Limite de equipes atingido
+              Nenhum atleta cadastrado
             </strong>
 
             <span>
-              A categoria {category.name} já
-              possui o máximo de{" "}
-              {category.maxTeams} equipes.
+              Adicione o primeiro atleta ao
+              elenco desta equipe.
             </span>
 
             <Link
-              href={`/organizador/competicoes/${category.competition.id}/categorias/${category.id}`}
+              href={newAthleteHref}
             >
-              Voltar à categoria
+              + Adicionar atleta
             </Link>
           </div>
-        </section>
-      ) : (
-        <form
-          action={createAction}
+        )}
+      </section>
+
+      {/* DADOS DA EQUIPE */}
+      <section
+        className="card od-panel"
+        style={{
+          marginTop: 18,
+        }}
+      >
+        <div className="od-panel-head">
+          <div>
+            <span className="od-eyebrow">
+              EQUIPE
+            </span>
+
+            <h2>
+              Dados da inscrição
+            </h2>
+          </div>
+        </div>
+
+        <div
           style={{
             display: "grid",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(170px, 1fr))",
             gap: 24,
             marginTop: 24,
           }}
         >
-          <section className="card od-panel">
-            <div className="od-panel-head">
-              <div>
-                <span className="od-eyebrow">
-                  IDENTIFICAÇÃO
-                </span>
+          <div>
+            <small className="muted">
+              NOME
+            </small>
 
-                <h2>Dados da equipe</h2>
-              </div>
-
-              <span className="muted">
-                {category.name}
-              </span>
-            </div>
-
-            <div
+            <strong
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(240px, 1fr))",
-                gap: 18,
-                marginTop: 22,
+                display: "block",
+                marginTop: 5,
               }}
             >
-              <label
-                style={{
-                  display: "grid",
-                  gap: 7,
-                  gridColumn: "1 / -1",
-                }}
-              >
-                <strong>
-                  Nome da equipe *
-                </strong>
+              {team.name}
+            </strong>
+          </div>
 
-                <input
-                  name="name"
-                  required
-                  minLength={2}
-                  autoFocus
-                  placeholder="Ex.: Botafogo"
-                  style={{
-                    width: "100%",
-                    minHeight: 46,
-                    padding: "0 14px",
-                    borderRadius: 10,
-                    border:
-                      "1px solid var(--line)",
-                    background:
-                      "var(--surface, #fff)",
-                    font: "inherit",
-                  }}
-                />
-              </label>
+          <div>
+            <small className="muted">
+              SIGLA
+            </small>
 
-              <label
-                style={{
-                  display: "grid",
-                  gap: 7,
-                }}
-              >
-                <strong>
-                  Sigla / nome curto
-                </strong>
-
-                <input
-                  name="shortName"
-                  placeholder="Ex.: BFR"
-                  maxLength={20}
-                  style={{
-                    width: "100%",
-                    minHeight: 46,
-                    padding: "0 14px",
-                    borderRadius: 10,
-                    border:
-                      "1px solid var(--line)",
-                    background:
-                      "var(--surface, #fff)",
-                    font: "inherit",
-                  }}
-                />
-              </label>
-
-              <label
-                style={{
-                  display: "grid",
-                  gap: 7,
-                }}
-              >
-                <strong>Logo</strong>
-
-                <input
-                  name="logoUrl"
-                  type="url"
-                  placeholder="https://..."
-                  style={{
-                    width: "100%",
-                    minHeight: 46,
-                    padding: "0 14px",
-                    borderRadius: 10,
-                    border:
-                      "1px solid var(--line)",
-                    background:
-                      "var(--surface, #fff)",
-                    font: "inherit",
-                  }}
-                />
-
-                <span className="muted">
-                  Por enquanto use a URL do
-                  escudo. Depois incluiremos
-                  upload direto.
-                </span>
-              </label>
-            </div>
-          </section>
-
-          <section className="card od-panel">
-            <div className="od-panel-head">
-              <div>
-                <span className="od-eyebrow">
-                  LOCALIZAÇÃO
-                </span>
-
-                <h2>Cidade da equipe</h2>
-              </div>
-            </div>
-
-            <div
+            <strong
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "minmax(240px, 1fr) minmax(140px, .35fr)",
-                gap: 18,
-                marginTop: 22,
+                display: "block",
+                marginTop: 5,
               }}
             >
-              <label
-                style={{
-                  display: "grid",
-                  gap: 7,
-                }}
-              >
-                <strong>Cidade</strong>
+              {team.shortName ||
+                "Não informada"}
+            </strong>
+          </div>
 
-                <input
-                  name="city"
-                  placeholder="Ex.: Rio de Janeiro"
-                  style={{
-                    width: "100%",
-                    minHeight: 46,
-                    padding: "0 14px",
-                    borderRadius: 10,
-                    border:
-                      "1px solid var(--line)",
-                    background:
-                      "var(--surface, #fff)",
-                    font: "inherit",
-                  }}
-                />
-              </label>
+          <div>
+            <small className="muted">
+              LOCALIDADE
+            </small>
 
-              <label
-                style={{
-                  display: "grid",
-                  gap: 7,
-                }}
-              >
-                <strong>UF</strong>
-
-                <input
-                  name="state"
-                  placeholder="RJ"
-                  maxLength={2}
-                  style={{
-                    width: "100%",
-                    minHeight: 46,
-                    padding: "0 14px",
-                    textTransform:
-                      "uppercase",
-                    borderRadius: 10,
-                    border:
-                      "1px solid var(--line)",
-                    background:
-                      "var(--surface, #fff)",
-                    font: "inherit",
-                  }}
-                />
-              </label>
-            </div>
-          </section>
-
-          <section className="card od-panel">
-            <div className="od-panel-head">
-              <div>
-                <span className="od-eyebrow">
-                  RESPONSÁVEL
-                </span>
-
-                <h2>Contato da equipe</h2>
-              </div>
-
-              <span className="muted">
-                Organização / comissão
-              </span>
-            </div>
-
-            <div
+            <strong
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(230px, 1fr))",
-                gap: 18,
-                marginTop: 22,
+                display: "block",
+                marginTop: 5,
               }}
             >
-              <label
-                style={{
-                  display: "grid",
-                  gap: 7,
-                  gridColumn: "1 / -1",
-                }}
-              >
-                <strong>
-                  Nome do responsável
-                </strong>
+              {[
+                team.city,
+                team.state,
+              ]
+                .filter(Boolean)
+                .join(" / ") ||
+                "Não informada"}
+            </strong>
+          </div>
 
-                <input
-                  name="responsibleName"
-                  placeholder="Nome completo"
-                  style={{
-                    width: "100%",
-                    minHeight: 46,
-                    padding: "0 14px",
-                    borderRadius: 10,
-                    border:
-                      "1px solid var(--line)",
-                    background:
-                      "var(--surface, #fff)",
-                    font: "inherit",
-                  }}
-                />
-              </label>
+          <div>
+            <small className="muted">
+              RESPONSÁVEL
+            </small>
 
-              <label
-                style={{
-                  display: "grid",
-                  gap: 7,
-                }}
-              >
-                <strong>
-                  WhatsApp / telefone
-                </strong>
-
-                <input
-                  name="responsiblePhone"
-                  type="tel"
-                  placeholder="(21) 99999-9999"
-                  style={{
-                    width: "100%",
-                    minHeight: 46,
-                    padding: "0 14px",
-                    borderRadius: 10,
-                    border:
-                      "1px solid var(--line)",
-                    background:
-                      "var(--surface, #fff)",
-                    font: "inherit",
-                  }}
-                />
-              </label>
-
-              <label
-                style={{
-                  display: "grid",
-                  gap: 7,
-                }}
-              >
-                <strong>E-mail</strong>
-
-                <input
-                  name="responsibleEmail"
-                  type="email"
-                  placeholder="contato@clube.com.br"
-                  style={{
-                    width: "100%",
-                    minHeight: 46,
-                    padding: "0 14px",
-                    borderRadius: 10,
-                    border:
-                      "1px solid var(--line)",
-                    background:
-                      "var(--surface, #fff)",
-                    font: "inherit",
-                  }}
-                />
-              </label>
-            </div>
-          </section>
-
-          <section
-            className="card"
-            style={{
-              padding: 20,
-              display: "flex",
-              justifyContent:
-                "space-between",
-              alignItems: "center",
-              gap: 20,
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <strong
-                style={{
-                  display: "block",
-                }}
-              >
-                Adicionar à {category.name}
-              </strong>
-
-              <span
-                className="muted"
-                style={{
-                  display: "block",
-                  marginTop: 4,
-                }}
-              >
-                A equipe cadastrada manualmente
-                pelo organizador será aprovada
-                automaticamente.
-              </span>
-            </div>
-
-            <div
+            <strong
               style={{
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
+                display: "block",
+                marginTop: 5,
               }}
             >
-              <Link
-                href={`/organizador/competicoes/${category.competition.id}/categorias/${category.id}`}
-                className="card"
-                style={{
-                  padding: "12px 18px",
-                  textDecoration: "none",
-                  fontWeight: 700,
-                }}
-              >
-                Cancelar
-              </Link>
+              {team.responsibleName ||
+                "Não informado"}
+            </strong>
+          </div>
 
-              <button
-                type="submit"
-                className="od-action-primary"
-                style={{
-                  border: 0,
-                  padding: "13px 22px",
-                  cursor: "pointer",
-                  fontWeight: 800,
-                }}
-              >
-                Criar equipe
-              </button>
-            </div>
-          </section>
-        </form>
-      )}
+          <div>
+            <small className="muted">
+              CONTATO
+            </small>
+
+            <strong
+              style={{
+                display: "block",
+                marginTop: 5,
+              }}
+            >
+              {team.responsiblePhone ||
+                team.responsibleEmail ||
+                "Não informado"}
+            </strong>
+          </div>
+        </div>
+      </section>
 
       <footer className="od-footer">
-        <span>ONZEUP ORGANIZAÇÃO</span>
+        <Image
+          src="/brand/11up/logos/11up-logo-transparent-dark.svg"
+          alt="11UP"
+          width={82}
+          height={32}
+        />
 
         <small>
-          Cadastro de equipe participante.
+          Gestão da equipe participante.
         </small>
       </footer>
     </div>
