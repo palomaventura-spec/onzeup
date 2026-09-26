@@ -115,7 +115,7 @@ export default async function NewPerformanceEvaluationPage({
     <>
       <div className="page-head">
         <div>
-          <span className="page-eyebrow">ONZEUP PERFORMANCE • NOVA AVALIAÇÃO</span>
+          <span className="page-eyebrow">11UP PERFORMANCE • NOVA AVALIAÇÃO</span>
           <h1>{athlete.nickname || athlete.name}</h1>
           <p className="muted">
             {athlete.name} • {athlete.category?.name || "Sem categoria"} •{" "}

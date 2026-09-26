@@ -43,13 +43,13 @@ export default async function GuardianPortal({
           ? {
               type: "warning",
               title: "Nenhum cadastro do clube encontrado.",
-              text: "Peça à equipe para cadastrar o atleta usando o mesmo e-mail do responsável utilizado nesta conta ONZEUP.",
+              text: "Peça à equipe para cadastrar o atleta usando o mesmo e-mail do responsável utilizado nesta conta 11UP.",
             }
           : query.linkStatus === "sem-correspondencia"
             ? {
                 type: "warning",
                 title: "Encontramos seu e-mail, mas não o mesmo atleta.",
-                text: "Confirme se o nome do atleta no ONZEUP Player corresponde ao nome usado pelo clube. O sistema não cria vínculos automaticamente apenas pelo e-mail.",
+                text: "Confirme se o nome do atleta no 11UP Player corresponde ao nome usado pelo clube. O sistema não cria vínculos automaticamente apenas pelo e-mail.",
               }
             : query.linkStatus === "erro"
               ? {
@@ -115,7 +115,7 @@ export default async function GuardianPortal({
     <main className="guardian-portal">
       {user.email.startsWith("demo-player-") ? <DemoBanner kind="player" /> : null}
       <header className="guardian-portal-nav">
-        <Link href="/responsavel" className="player-brand">ONZE<span>UP</span> <b>PLAYER</b></Link>
+        <Link href="/responsavel" className="player-brand">11<span>UP</span> <b>PLAYER</b></Link>
         <div>
           <span>{user.name}</span>
           <form action="/api/auth/logout" method="post">
@@ -128,7 +128,7 @@ export default async function GuardianPortal({
         <section className="player-welcome">
           <div>
             <span className="page-eyebrow">ÁREA DA FAMÍLIA</span>
-            <h1>ONZEUP Player</h1>
+            <h1>11UP Player</h1>
             <p>Crie e gerencie o perfil esportivo dos seus filhos. O conteúdo pertence à família.</p>
           </div>
           <Link className="btn" href="/responsavel?new=1">+ Novo perfil</Link>
@@ -171,7 +171,7 @@ export default async function GuardianPortal({
             <div className="player-editor-head">
               <div>
                 <span className="page-eyebrow">{selected ? "EDITAR PERFIL" : "NOVO PERFIL"}</span>
-                <h2>{selected ? (selected.nickname || selected.name) : "Criar ONZEUP Player"}</h2>
+                <h2>{selected ? (selected.nickname || selected.name) : "Criar 11UP Player"}</h2>
                 {selected ? <span className={`player-plan-badge ${selected.plan === "PREMIUM" ? "premium" : "free"}`}>{selected.plan === "PREMIUM" ? "★ PREMIUM" : "FREE"}</span> : null}
               </div>
               <div className="player-editor-actions">
@@ -256,7 +256,7 @@ export default async function GuardianPortal({
                   </div>
                   <input type="hidden" name="plan" value={selected?.plan || "FREE"} />
                   <label>Plano atual
-                    <input value={selected?.plan === "PREMIUM" ? "ONZEUP Player Premium" : "ONZEUP Player Free"} readOnly />
+                    <input value={selected?.plan === "PREMIUM" ? "11UP Player Premium" : "11UP Player Free"} readOnly />
                     <small className="field-help">O upgrade para Premium é ativado após a confirmação do pagamento.</small>
                   </label>
                   <label>Template
@@ -314,7 +314,7 @@ export default async function GuardianPortal({
                   <small>Permite que o perfil seja acessado pelo endereço /player/...</small>
                 </span>
               </label>
-<label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público ONZEUP Players</span></label>
+<label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público 11UP Players</span></label>
 
               <div className="actions">
                 <PendingSubmitButton pendingText="Salvando perfil...">Salvar perfil</PendingSubmitButton>
@@ -440,7 +440,7 @@ export default async function GuardianPortal({
                   </div>
                 ) : (
                   <p className="muted">
-                    Nenhum clube vinculado. Se uma equipe ONZEUP já cadastrou este atleta, use o mesmo e-mail do responsável informado ao clube e clique em “Buscar vínculos com clubes”. A equipe confirmará a solicitação antes de ativá-la.
+                    Nenhum clube vinculado. Se uma equipe 11UP já cadastrou este atleta, use o mesmo e-mail do responsável informado ao clube e clique em “Buscar vínculos com clubes”. A equipe confirmará a solicitação antes de ativá-la.
                   </p>
                 )}
               </section>

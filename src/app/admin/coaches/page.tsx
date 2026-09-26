@@ -72,7 +72,7 @@ export default async function AdminCoachesPage({ searchParams }: PageProps) {
     <>
       <div className="page-head">
         <div>
-          <h1>ONZEUP Coaches</h1>
+          <h1>11UP Coaches</h1>
           <p className="muted">Perfis profissionais, visibilidade e gestão de cadastros de treinadores.</p>
         </div>
         <span className="badge">{filteredCoaches.length} coach(es)</span>

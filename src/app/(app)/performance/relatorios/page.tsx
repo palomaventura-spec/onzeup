@@ -112,7 +112,7 @@ export default async function MonthlyReportsPage({
     return (
       <section className="performance-upgrade">
         <span className="page-eyebrow">
-          ONZEUP PERFORMANCE
+          11UP PERFORMANCE
         </span>
         <h1>Relatórios mensais</h1>
         <p>
@@ -379,7 +379,7 @@ export default async function MonthlyReportsPage({
   return (
     <main className="performance-hub">
       <ModuleHero
-        eyebrow="ONZEUP PERFORMANCE · RELATÓRIOS"
+        eyebrow="11UP PERFORMANCE · RELATÓRIOS"
         title="Relatório Mensal "
         description={
           <p>

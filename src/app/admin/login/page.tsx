@@ -12,9 +12,9 @@ export default async function AdminLoginPage({
   return (
     <main className="admin-login-page">
       <section className="admin-login-brand">
-        <Link href="/" className="marketing-brand">ONZE<span>UP</span></Link>
+        <Link href="/" className="marketing-brand">11<span>UP</span></Link>
         <span className="page-eyebrow">ADMINISTRAÇÃO</span>
-        <h1>Central ONZEUP.</h1>
+        <h1>Central 11UP.</h1>
         <p>
           Acesso exclusivo da administração para gestão da plataforma,
           pagamentos, usuários e operações internas.

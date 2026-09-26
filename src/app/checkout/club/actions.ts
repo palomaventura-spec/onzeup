@@ -62,7 +62,7 @@ export async function createClubAsaasCheckout(formData: FormData) {
       pixTxid: `CLUB${Date.now()}${Math.random()
         .toString(36)
         .slice(2, 8)}`.toUpperCase(),
-      note: `ONZEUP Club ${CLUB_PLANS[plan].label} ${
+      note: `11UP Club ${CLUB_PLANS[plan].label} ${
         cycle === "ANNUAL" ? "Anual" : "Mensal"
       }`,
     },

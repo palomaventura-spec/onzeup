@@ -67,7 +67,7 @@ export default async function MeuSiteCoach() {
             {c.photoUrl ? <img src={c.photoUrl} alt={displayName}/> : <span>{displayName.slice(0,2).toUpperCase()}</span>}
           </div>
           <div>
-            <span className="page-eyebrow">PERFIL PROFISSIONAL • ONZEUP COACH</span>
+            <span className="page-eyebrow">PERFIL PROFISSIONAL • 11UP COACH</span>
             <h1>{displayName}</h1>
             <div className="coach-site-role">{role || "Profissional do futebol"}</div>
             {location ? <div className="coach-site-location">{location}</div> : null}
@@ -100,7 +100,7 @@ export default async function MeuSiteCoach() {
       {c.organizationAccesses.length ? (
         <section className="coach-site-section">
           <span>VÍNCULOS ATUAIS</span>
-          <h2>Equipes conectadas no ONZEUP.</h2>
+          <h2>Equipes conectadas no 11UP.</h2>
           <div className="coach-site-grid">
             {c.organizationAccesses.map((access) => (
               <article className="coach-site-card" key={access.id}>
@@ -142,7 +142,7 @@ export default async function MeuSiteCoach() {
 
       <footer className="coach-site-footer">
         <span>{displayName}</span>
-        <span>Powered by <b>ONZEUP COACH</b></span>
+        <span>Powered by <b>11UP COACH</b></span>
       </footer>
     </main>
   );

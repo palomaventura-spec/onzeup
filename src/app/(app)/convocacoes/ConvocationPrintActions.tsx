@@ -220,7 +220,7 @@ export default function ConvocationPrintActions() {
           try {
             await navigator.share({
               files: [file],
-              title: "Convocação ONZEUP",
+              title: "Convocação 11UP",
               text: "Arte oficial da convocação.",
             });
             return;

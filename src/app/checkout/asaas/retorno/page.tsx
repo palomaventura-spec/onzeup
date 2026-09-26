@@ -15,7 +15,7 @@ export default async function AsaasReturnPage({
       ? {
           eyebrow: "PAGAMENTO RECEBIDO",
           title: "Pagamento concluído.",
-          text: "A confirmação do plano é processada automaticamente pelo ONZEUP. Volte ao Player para acompanhar o status da assinatura.",
+          text: "A confirmação do plano é processada automaticamente pelo 11UP. Volte ao Player para acompanhar o status da assinatura.",
         }
       : status === "expired"
         ? {
@@ -36,7 +36,7 @@ export default async function AsaasReturnPage({
         <h1>{content.title}</h1>
         <p>{content.text}</p>
         <Link className="btn" href="/responsavel">
-          Voltar ao ONZEUP Player
+          Voltar ao 11UP Player
         </Link>
       </section>
     </main>

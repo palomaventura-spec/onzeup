@@ -132,7 +132,7 @@ export default function MobileCoachNavigation() {
   return (
     <nav
       className={styles.navigation}
-      aria-label="Navegação do ONZEUP Coach"
+      aria-label="Navegação do 11UP Coach"
     >
       <div className={styles.navigationInner}>
         {navigationItems.map((item) => {

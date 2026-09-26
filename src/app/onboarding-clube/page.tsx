@@ -10,7 +10,7 @@ export default async function ClubOnboardingPage() {
   return (
     <main className="club-onboarding-page">
       <section className="club-onboarding-copy">
-        <span className="marketing-kicker">ONZEUP CLUB</span>
+        <span className="marketing-kicker">11UP CLUB</span>
         <h1>Vamos preparar<br/>seu clube.</h1>
         <p>
           Aqui entram somente os dados básicos. Categorias, atletas, comissão,

@@ -11,7 +11,7 @@ type TourStep = {
 const TOURS: Record<string, TourStep[]> = {
   dashboard: [
     {
-      title: "Bem-vindo à ONZEUP",
+      title: "Bem-vindo à 11UP",
       text: "Este painel resume sua organização. Comece pelo checklist para preparar categorias, atletas, treinos e jogos.",
     },
     {
@@ -33,14 +33,14 @@ const TOURS: Record<string, TourStep[]> = {
       text: "Cadastre nome e telefone do responsável para facilitar convocações e mensagens pelo WhatsApp.",
     },
     {
-      title: "Não confunda com OnzeUp Player",
+      title: "Não confunda com 11UP Player",
       text: "O perfil Player é administrado pela família. O cadastro do clube continua sob controle exclusivo da organização.",
     },
   ],
   qtr: [
     {
       title: "QTR automático",
-      text: "A ONZEUP busca treinos e jogos cadastrados e monta a programação da semana.",
+      text: "A 11UP busca treinos e jogos cadastrados e monta a programação da semana.",
     },
     {
       title: "QTR manual ou híbrido",
@@ -68,7 +68,7 @@ const TOURS: Record<string, TourStep[]> = {
     },
     {
       title: "WhatsApp básico",
-      text: "O botão abre a conversa do responsável com a mensagem pronta. A ONZEUP não lê o WhatsApp e não exige Business nesta modalidade.",
+      text: "O botão abre a conversa do responsável com a mensagem pronta. A 11UP não lê o WhatsApp e não exige Business nesta modalidade.",
     },
     {
       title: "Confirmação",
@@ -95,7 +95,7 @@ export default function ModuleTour({
   forceOpen?: boolean;
 }) {
   const steps = useMemo(() => TOURS[module] || [], [module]);
-  const storageKey = `onzeup:tour:${module}`;
+  const storageKey = `11UP:tour:${module}`;
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 

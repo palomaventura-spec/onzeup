@@ -3,12 +3,12 @@
 const modules = [
   { key: "dashboard", title: "Primeiros passos", text: "Visão geral da plataforma e checklist inicial." },
   { key: "organizacao", title: "Site e Configurações", text: "Logo, cores, privacidade e site público." },
-  { key: "atletas", title: "Atletas do clube", text: "Cadastro do clube x perfil OnzeUp Player." },
+  { key: "atletas", title: "Atletas do clube", text: "Cadastro do clube x perfil 11UP Player." },
   { key: "qtr", title: "QTR", text: "Automático, manual, híbrido e compartilhamento." },
   { key: "convocacoes", title: "Convocações", text: "WhatsApp básico e controle de confirmações." },
   { key: "financeiro", title: "Financeiro", text: "Mensalidades, Pix manual e baixa de pagamentos." },
   { key: "agenda", title: "Agenda", text: "Treinos e jogos em uma linha do tempo." },
-  { key: "player", title: "ONZEUP Player", text: "Perfil esportivo administrado exclusivamente pela família." },
+  { key: "player", title: "11UP Player", text: "Perfil esportivo administrado exclusivamente pela família." },
 ];
 
 export default function HelpPage() {
@@ -29,7 +29,7 @@ export default function HelpPage() {
       <div className="page-head">
         <div>
           <h1>Ajuda</h1>
-          <p className="muted">Tutoriais rápidos para usar os principais recursos da ONZEUP.</p>
+          <p className="muted">Tutoriais rápidos para usar os principais recursos da 11UP.</p>
         </div>
         <button type="button" onClick={resetAll}>Reativar todos os tutoriais</button>
       </div>
@@ -63,13 +63,13 @@ export default function HelpPage() {
           </article>
 
           <article>
-            <strong>OnzeUp Player</strong>
-            <p>É o perfil individual administrado pela família. Pode existir mesmo que o clube não use a ONZEUP.</p>
+            <strong>11UP Player</strong>
+            <p>É o perfil individual administrado pela família. Pode existir mesmo que o clube não use a 11UP.</p>
           </article>
 
           <article>
             <strong>WhatsApp básico</strong>
-            <p>A ONZEUP abre a conversa com uma mensagem pronta. Não lê mensagens e não exige integração com WhatsApp Business.</p>
+            <p>A 11UP abre a conversa com uma mensagem pronta. Não lê mensagens e não exige integração com WhatsApp Business.</p>
           </article>
 
           <article>

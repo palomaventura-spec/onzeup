@@ -121,7 +121,7 @@ export default async function TrainingPerformancePage({
   if (!elite) {
     return (
       <section className="performance-upgrade">
-        <span className="page-eyebrow">ONZEUP PERFORMANCE</span>
+        <span className="page-eyebrow">11UP PERFORMANCE</span>
         <h1>Frequência e rendimento de treino</h1>
         <p>
           Acompanhe presença, minutagem e aproveitamento real dos atletas.
@@ -485,7 +485,7 @@ export default async function TrainingPerformancePage({
       <header className="performance-hero">
         <div>
           <span className="page-eyebrow">
-            ONZEUP PERFORMANCE · TREINOS
+            11UP PERFORMANCE · TREINOS
           </span>
           <h1>Frequência e rendimento</h1>
           <p>

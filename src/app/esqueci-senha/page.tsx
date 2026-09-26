@@ -17,7 +17,7 @@ export default async function ForgotPasswordPage({
         </Link>
         <span className="marketing-kicker">RECUPERAR ACESSO</span>
         <h1>Redefina sua senha.</h1>
-        <p>Informe o e-mail da sua conta ONZEUP para receber um link de recuperação.</p>
+        <p>Informe o e-mail da sua conta 11UP para receber um link de recuperação.</p>
       </section>
 
       <section className="auth-form-card">

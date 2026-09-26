@@ -4,14 +4,14 @@ const benefits = [
   ["01","Perfil profissional","Apresente função, experiência, formação, certificações, metodologia, conquistas e contatos."],
   ["02","Sua trajetória em um link","Tenha um endereço público para compartilhar em redes sociais, clubes, projetos e oportunidades."],
   ["03","Vínculos com equipes","Conecte seu perfil aos clubes onde atua sem compartilhar senha e sem misturar organizações."],
-  ["04","Catálogo ONZEUP","Seja encontrado por quem procura treinadores, auxiliares, preparadores, scouts e outros profissionais."],
+  ["04","Catálogo 11UP","Seja encontrado por quem procura treinadores, auxiliares, preparadores, scouts e outros profissionais."],
 ];
 
 export default function CoachLanding() {
   return (
     <main className="product-landing coach-product-landing coach-complete-landing">
       <header className="product-landing-nav coach-marketing-nav">
-        <Link href="/" className="player-brand">ONZE<span>UP</span> <b>COACH</b></Link>
+        <Link href="/" className="player-brand">11<span>UP</span> <b>COACH</b></Link>
         <nav>
           <a href="#recursos">Recursos</a>
           <a href="#vinculos">Vínculos</a>
@@ -24,7 +24,7 @@ export default function CoachLanding() {
 
       <section className="product-landing-hero coach-product-hero">
         <div>
-          <span className="page-eyebrow">ONZEUP COACH</span>
+          <span className="page-eyebrow">11UP COACH</span>
           <h1>Seu trabalho no futebol merece presença profissional.</h1>
           <p>Reúna sua trajetória, experiências, certificações, clubes e contatos em um perfil público feito para profissionais do futebol.</p>
           <div className="product-landing-actions">
@@ -102,14 +102,14 @@ export default function CoachLanding() {
         </div>
         <div>
           <span className="page-eyebrow">PROCURA UM PROFISSIONAL?</span>
-          <h2>Explore o catálogo ONZEUP.</h2>
+          <h2>Explore o catálogo 11UP.</h2>
           <p>Pesquise profissionais cadastrados por nome, clube e função.</p>
           <Link className="players-secondary-cta" href="/coaches">Explorar Coaches →</Link>
         </div>
       </section>
 
       <section className="product-directory-cta">
-        <span className="page-eyebrow">ONZEUP COACH</span>
+        <span className="page-eyebrow">11UP COACH</span>
         <h2>Construa sua presença profissional no futebol.</h2>
         <div className="product-landing-actions">
           <Link className="btn" href="/cadastro-coach">Criar meu perfil →</Link>

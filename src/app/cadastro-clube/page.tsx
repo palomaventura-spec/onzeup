@@ -13,10 +13,10 @@ export default async function ClubRegisterPage({
     <main className="auth-marketing-page">
       <section className="auth-product-copy">
         <Link href="/" className="marketing-brand">
-          ONZE<span>UP</span>
+          11<span>UP</span>
         </Link>
 
-        <span className="marketing-kicker">ONZEUP CLUB</span>
+        <span className="marketing-kicker">11UP CLUB</span>
 
         <h1>
           Organize sua base.
@@ -25,7 +25,7 @@ export default async function ClubRegisterPage({
         </h1>
 
         <p>
-          Crie a conta da sua organização. O acesso inicial pode ser liberado pela equipe ONZEUP.
+          Crie a conta da sua organização. O acesso inicial pode ser liberado pela equipe 11UP.
         </p>
 
         <strong>Cadastro sem cartão</strong>
@@ -33,11 +33,11 @@ export default async function ClubRegisterPage({
 
       <section className="auth-form-card">
         <span className="page-eyebrow">CADASTRO DO CLUB</span>
-        <h2>Criar conta ONZEUP Club</h2>
+        <h2>Criar conta 11UP Club</h2>
 
         {query.status === "enviado" || query.status === "reenviado" ? (
           <div className="notice">
-            Enviamos um link de confirmação para <strong>{query.email || "seu e-mail"}</strong>. Confirme o endereço antes de acessar o ONZEUP Club.
+            Enviamos um link de confirmação para <strong>{query.email || "seu e-mail"}</strong>. Confirme o endereço antes de acessar o 11UP Club.
           </div>
         ) : null}
 
@@ -65,7 +65,7 @@ export default async function ClubRegisterPage({
               <input type="hidden" name="email" value={query.email || ""} />
               <PendingSubmitButton className="btn-secondary" pendingText="Reenviando...">Reenviar confirmação</PendingSubmitButton>
             </form>
-            <p className="help">Já confirmou? <Link href="/login">Entrar no ONZEUP Club</Link></p>
+            <p className="help">Já confirmou? <Link href="/login">Entrar no 11UP Club</Link></p>
           </>
         ) : (
         <form action={registerClubTrial} className="stack" autoComplete="off">
@@ -126,12 +126,12 @@ export default async function ClubRegisterPage({
             <input name="legal" type="checkbox" required />
             <span>
               Confirmo que tenho autorização para criar e administrar esta
-              organização na ONZEUP.
+              organização na 11UP.
             </span>
           </label>
 
-          <PendingSubmitButton className="btn" pendingText="Criando seu ONZEUP Club...">
-            Criar meu ONZEUP Club
+          <PendingSubmitButton className="btn" pendingText="Criando seu 11UP Club...">
+            Criar meu 11UP Club
           </PendingSubmitButton>
           <p className="form-submit-help">Ao enviar, vamos preparar sua conta e abrir a configuração inicial.</p>
         </form>

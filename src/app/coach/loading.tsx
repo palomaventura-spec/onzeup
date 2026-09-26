@@ -1,4 +1,4 @@
 import PageLoading from "@/components/PageLoading";
 export default function Loading() {
-  return <PageLoading label="Carregando ONZEUP Coach..." />;
+  return <PageLoading label="Carregando 11UP Coach..." />;
 }

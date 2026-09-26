@@ -185,12 +185,12 @@ export default async function PublicOrganizationPage({ params }: { params: Promi
         </section>}
 
         <section id="clube" className="club-section club-about">
-          <div className="club-about-mark">{org.logoUrl ? <img src={org.logoUrl} alt="" /> : <strong>ONZEUP</strong>}</div>
+          <div className="club-about-mark">{org.logoUrl ? <img src={org.logoUrl} alt="" /> : <strong>11UP</strong>}</div>
           <div><div className="club-heading"><span>NOSSO CLUBE</span><h2>Mais que um time.</h2></div><p>{org.description || `${publicName} é uma organização dedicada ao desenvolvimento esportivo e à formação de atletas.`}</p><div className="club-contact-row">{location && <span>📍 {location}</span>}{org.email && <a href={`mailto:${org.email}`}>{org.email}</a>}{org.whatsapp && <a href={`https://wa.me/${org.whatsapp.replace(/\D/g, "")}`} target="_blank">WhatsApp</a>}</div></div>
         </section>
       </div>
 
-      <footer className="club-footer"><div className="club-container"><div>{org.logoUrl && <img src={org.logoUrl} alt="" />}<strong>{publicName}</strong></div><span>Powered by <b>ONZEUP</b></span></div></footer>
+      <footer className="club-footer"><div className="club-container"><div>{org.logoUrl && <img src={org.logoUrl} alt="" />}<strong>{publicName}</strong></div><span>Powered by <b>11UP</b></span></div></footer>
     </main>
   );
 }

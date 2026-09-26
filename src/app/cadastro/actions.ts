@@ -38,14 +38,14 @@ async function issueVerification(userId: string, email: string) {
 
   const result = await sendTransactionalEmail({
     to: email,
-    subject: "Confirme seu e-mail — ONZEUP Player",
+    subject: "Confirme seu e-mail — 11UP Player",
     html: `
       <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#101719">
         <div style="font-size:28px;font-weight:900;margin-bottom:22px">
-          ONZE<span style="color:#9ddb16">UP</span>
+          11<span style="color:#9ddb16">UP</span>
         </div>
         <h2>Confirme seu e-mail</h2>
-        <p>Seu cadastro no ONZEUP Player foi recebido.</p>
+        <p>Seu cadastro no 11UP Player foi recebido.</p>
         <p>Confirme seu endereço de e-mail para ativar a conta e começar a criar o perfil esportivo do atleta.</p>
         <p style="margin:28px 0">
           <a href="${verifyUrl}" style="display:inline-block;background:#9ddb16;color:#071006;padding:14px 20px;text-decoration:none;border-radius:9px;font-weight:bold">

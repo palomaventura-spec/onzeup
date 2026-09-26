@@ -8,7 +8,7 @@ export default function PerformanceGpsPage() {
   return (
     <main className="performance-hub">
       <ModuleHero
-        eyebrow="ONZEUP PERFORMANCE Â· GPS"
+        eyebrow="11UP PERFORMANCE Â· GPS"
         title="GPS"
         description={
           <p>

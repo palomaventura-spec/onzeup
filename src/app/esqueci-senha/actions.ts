@@ -46,14 +46,14 @@ export async function requestPasswordReset(formData: FormData) {
 
   const result = await sendTransactionalEmail({
     to: email,
-    subject: "Redefinição de senha — ONZEUP",
+    subject: "Redefinição de senha — 11UP",
     html: `
       <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#101719">
         <div style="font-size:28px;font-weight:900;margin-bottom:22px">
-          ONZE<span style="color:#9ddb16">UP</span>
+          11<span style="color:#9ddb16">UP</span>
         </div>
         <h2>Redefinição de senha</h2>
-        <p>Recebemos uma solicitação para redefinir a senha da sua conta ONZEUP.</p>
+        <p>Recebemos uma solicitação para redefinir a senha da sua conta 11UP.</p>
         <p style="margin:28px 0">
           <a href="${resetUrl}" style="display:inline-block;background:#9ddb16;color:#071006;padding:14px 20px;text-decoration:none;border-radius:9px;font-weight:bold">
             Criar nova senha

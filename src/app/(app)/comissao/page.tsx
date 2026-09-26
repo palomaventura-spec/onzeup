@@ -99,7 +99,7 @@ export default async function StaffPage({
   ).length;
 
   const notices: Record<string, string> = {
-    sent: "Convite enviado ao ONZEUP Coach. O acesso será ativado após o aceite.",
+    sent: "Convite enviado ao 11UP Coach. O acesso será ativado após o aceite.",
     saved:
       "Profissional salvo. O vínculo será localizado quando a conta Coach usar o mesmo e-mail.",
     approved: "Solicitação do Coach aprovada.",
@@ -143,7 +143,7 @@ export default async function StaffPage({
           <span>com equipe vinculada</span>
         </article>
         <article>
-          <small>ONZEUP COACH</small>
+          <small>11UP COACH</small>
           <strong>{linkedCount}</strong>
           <span>vínculos ativos</span>
         </article>
@@ -270,7 +270,7 @@ export default async function StaffPage({
               </select>
             </label>
             <label>
-              E-mail do ONZEUP Coach
+              E-mail do 11UP Coach
               <input name="coachEmail" type="email" />
             </label>
             <label>

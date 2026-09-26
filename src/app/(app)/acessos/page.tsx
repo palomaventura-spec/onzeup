@@ -104,7 +104,7 @@ export default async function AccessPage({
 
           <p className="muted">
             Cada pessoa acessa o
-            ONZEUP com seu próprio
+            11UP com seu próprio
             e-mail e senha.
           </p>
         </div>
@@ -157,7 +157,7 @@ export default async function AccessPage({
 
       {query.erro === "email" ? (
         <div className="notice error">
-          Já existe uma conta ONZEUP
+          Já existe uma conta 11UP
           usando este e-mail.
         </div>
       ) : null}

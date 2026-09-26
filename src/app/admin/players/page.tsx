@@ -72,7 +72,7 @@ export default async function AdminPlayers({
     <>
       <div className="page-head">
         <div>
-          <h1>ONZEUP Players</h1>
+          <h1>11UP Players</h1>
           <p className="muted">
             Perfis esportivos, planos, responsáveis e limpeza de cadastros inativos.
           </p>

@@ -121,12 +121,12 @@ async function sendInvite({
       to: email,
 
       subject:
-        `Convite para ${organizationName} — ONZEUP`,
+        `Convite para ${organizationName} — 11UP`,
 
       html: `
         <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#101719">
           <div style="font-size:28px;font-weight:900;margin-bottom:22px">
-            ONZE<span style="color:#9ddb16">UP</span>
+            11<span style="color:#9ddb16">UP</span>
           </div>
 
           <h2>Você recebeu um convite</h2>
@@ -136,7 +136,7 @@ async function sendInvite({
           <p>
             Você foi convidado para acessar
             <strong>${organizationName}</strong>
-            no ONZEUP.
+            no 11UP.
           </p>
 
           <p>
@@ -338,7 +338,7 @@ export async function resendClubInvite(
           ?.publicName ||
         target.organization
           ?.name ||
-        "ONZEUP Club",
+        "11UP Club",
       clubRole,
     });
 

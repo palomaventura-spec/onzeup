@@ -19,7 +19,7 @@ export default function ClubPlanCard(props: Props) {
 
   return (
     <article className={`commercial-plan-card ${props.featured ? "featured" : ""}`}>
-      {props.featured ? <span className="plan-ribbon">MAIS ESCOLHIDO</span> : <span className="plan-kicker">ONZEUP CLUB</span>}
+      {props.featured ? <span className="plan-ribbon">MAIS ESCOLHIDO</span> : <span className="plan-kicker">11UP CLUB</span>}
       <h2>{props.name}</h2>
       <p className="plan-description">{props.description}</p>
       <strong className="plan-limit">{props.limit}</strong>

@@ -239,7 +239,7 @@ export default async function PerformanceEvolutionPdfPage({
       })}
 
       <footer className="pe-footer">
-        <span>ONZEUP Performance • Acompanhamento esportivo</span>
+        <span>11UP Performance • Acompanhamento esportivo</span>
         <span>Relatório de evolução de {athlete.name}</span>
       </footer>
     </main>

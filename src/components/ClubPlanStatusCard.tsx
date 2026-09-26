@@ -44,14 +44,14 @@ export default async function ClubPlanStatusCard({
     >
       <div>
         <span className="page-eyebrow">
-          {isComplimentary ? "ACESSO ONZEUP" : "PLANO E ASSINATURA"}
+          {isComplimentary ? "ACESSO 11UP" : "PLANO E ASSINATURA"}
         </span>
 
         {isComplimentary ? (
           <>
             <h2>Plano {currentPlan} — Cortesia</h2>
             <p className="muted">
-              Acesso cortesia liberado pelo ONZEUP
+              Acesso cortesia liberado pelo 11UP
               {organization?.complimentaryUntil
                 ? ` até ${organization.complimentaryUntil.toLocaleDateString("pt-BR")}`
                 : " sem prazo definido"}
@@ -96,12 +96,12 @@ export default async function ClubPlanStatusCard({
             <h2>Pagamento pendente</h2>
             <p className="muted">
               Regularize sua assinatura para manter todos os recursos do
-              ONZEUP Club disponíveis.
+              11UP Club disponíveis.
             </p>
           </>
         ) : (
           <>
-            <h2>Escolha seu plano ONZEUP Club</h2>
+            <h2>Escolha seu plano 11UP Club</h2>
             <p className="muted">
               Reative sua organização escolhendo um plano mensal ou anual.
             </p>

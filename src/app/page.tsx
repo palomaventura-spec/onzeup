@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <main className="onzeup-portal-home">
       <header className="portal-nav">
-        <Link href="/" className="marketing-brand">ONZE<span>UP</span></Link>
+        <Link href="/" className="marketing-brand">11<span>UP</span></Link>
         <nav>
           <a href="https://players.onzeup.com.br">Players</a>
           <a href="/coaches">Coaches</a>
@@ -15,7 +15,7 @@ export default function Home() {
 
       <section className="portal-hero">
         <div className="portal-hero-copy">
-          <span className="marketing-kicker">ONZEUP • FUTEBOL DE BASE</span>
+          <span className="marketing-kicker">11UP • FUTEBOL DE BASE</span>
           <h1>O FUTEBOL DE BASE<br/><em>CONECTADO.</em></h1>
           <p>
             Uma única marca para quem administra, desenvolve e vive a trajetória
@@ -26,7 +26,7 @@ export default function Home() {
         <div className="portal-path-grid">
           <article className="portal-path player">
             <small>ATLETAS E FAMÍLIAS</small>
-            <h2>ONZEUP<br/>PLAYER</h2>
+            <h2>11UP<br/>PLAYER</h2>
             <p>Crie a identidade esportiva do atleta e compartilhe sua trajetória.</p>
             <div>
               <Link className="btn" href="/cadastro">Criar perfil grátis</Link>
@@ -36,8 +36,8 @@ export default function Home() {
 
           <article className="portal-path coach">
             <small>PROFISSIONAIS DO FUTEBOL</small>
-            <h2>ONZEUP<br/>COACH</h2>
-            <p>Perfil profissional gratuito e parceria para conectar seus atletas à ONZEUP.</p>
+            <h2>11UP<br/>COACH</h2>
+            <p>Perfil profissional gratuito e parceria para conectar seus atletas à 11UP.</p>
             <div>
               <Link className="btn" href="/cadastro-coach">Criar Coach grátis</Link>
               <a className="portal-text-link" href="/coaches">Explorar Coaches →</a>
@@ -46,11 +46,11 @@ export default function Home() {
 
           <article className="portal-path club">
             <small>CLUBES • ESCOLINHAS • CTS</small>
-            <h2>ONZEUP<br/>CLUB</h2>
+            <h2>11UP<br/>CLUB</h2>
             <p>Gestão esportiva, comunicação, financeiro e presença digital.</p>
             <div>
-              <a className="btn" href="https://club.onzeup.com.br">Conhecer ONZEUP Club</a>
-              <Link className="portal-text-link" href="/cadastro-clube">Conhecer ONZEUP Club →</Link>
+              <a className="btn" href="https://club.onzeup.com.br">Conhecer 11UP Club</a>
+              <Link className="portal-text-link" href="/cadastro-clube">Conhecer 11UP Club →</Link>
             </div>
           </article>
         </div>
@@ -58,7 +58,7 @@ export default function Home() {
 
       <section className="portal-login-section">
         <span className="marketing-kicker">JÁ FAZ PARTE?</span>
-        <h2>Uma conta. Seu papel na ONZEUP.</h2>
+        <h2>Uma conta. Seu papel na 11UP.</h2>
         <p>O mesmo acesso identifica automaticamente se você é responsável, Coach ou gestor de organização.</p>
         <div>
           <Link className="portal-role-login" href="/login?perfil=player"><b>PLAYER</b><span>Entrar como responsável →</span></Link>
@@ -68,7 +68,7 @@ export default function Home() {
       </section>
 
       <footer className="portal-footer">
-        <Link href="/" className="marketing-brand">ONZE<span>UP</span></Link>
+        <Link href="/" className="marketing-brand">11<span>UP</span></Link>
         <span>O futuro do futebol começa na base.</span>
       </footer>
     </main>

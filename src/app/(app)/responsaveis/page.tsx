@@ -70,7 +70,7 @@ export default async function GuardiansPage() {
 
       <div className="guardian-grid">
         {list.map((guardian) => {
-          const orgName = user.organization?.publicName || user.organization?.name || "ONZEUP";
+          const orgName = user.organization?.publicName || user.organization?.name || "11UP";
           const athleteNames = guardian.athletes.map((athlete) => athlete.nickname || athlete.name).join(", ");
           const message = `Olá, ${guardian.name}! Aqui é da ${orgName}. Entramos em contato sobre ${athleteNames}.`;
 

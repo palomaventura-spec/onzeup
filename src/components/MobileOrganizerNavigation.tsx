@@ -150,7 +150,7 @@ export default function MobileOrganizerNavigation({
           >
             <div className={styles.head}>
               <div>
-                <span>ONZEUP ORGANIZAÇÃO</span>
+                <span>11UP ORGANIZAÇÃO</span>
                 <h2>Mais opções</h2>
               </div>
 

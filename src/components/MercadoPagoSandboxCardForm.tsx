@@ -273,7 +273,7 @@ export default function MercadoPagoSandboxCardForm({
 
         <p className="field-help">
           Ambiente sandbox. Os campos de cartão são tokenizados pelo
-          MercadoPago.js; o ONZEUP recebe apenas o CardToken.
+          MercadoPago.js; o 11UP recebe apenas o CardToken.
         </p>
       </form>
     </>

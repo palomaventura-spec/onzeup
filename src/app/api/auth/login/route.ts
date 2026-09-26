@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       const admin = await prisma.user.upsert({
         where: { email: adminEmail },
         update: {
-          name: "ONZEUP Super Admin",
+          name: "11UP Super Admin",
           passwordHash,
           role: UserRole.SUPER_ADMIN,
           active: true,
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
           organizationId: null,
         },
         create: {
-          name: "ONZEUP Super Admin",
+          name: "11UP Super Admin",
           email: adminEmail,
           passwordHash,
           role: UserRole.SUPER_ADMIN,

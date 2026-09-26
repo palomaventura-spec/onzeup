@@ -119,7 +119,7 @@ export default async function EditMatchPage({
 
     details:
       [match.competition, match.notes].filter(Boolean).join(" • ") ||
-      "Jogo cadastrado no ONZEUP",
+      "Jogo cadastrado no 11UP",
   });
 
   return (

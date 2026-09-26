@@ -26,7 +26,7 @@ export default async function ConnectionsPage({
           <span className="page-eyebrow">COMUNICAÇÃO DA ORGANIZAÇÃO</span>
           <h1>Conexões</h1>
           <p className="muted">
-            Configure o contato oficial da organização. Nesta fase, o ONZEUP prepara mensagens para envio manual pelo WhatsApp.
+            Configure o contato oficial da organização. Nesta fase, o 11UP prepara mensagens para envio manual pelo WhatsApp.
           </p>
         </div>
       </div>
@@ -41,7 +41,7 @@ export default async function ConnectionsPage({
             <span className="connection-icon">💬</span>
             <div>
               <h2>WhatsApp da organização</h2>
-              <p className="muted">Contato oficial usado pela equipe e nas comunicações do ONZEUP.</p>
+              <p className="muted">Contato oficial usado pela equipe e nas comunicações do 11UP.</p>
             </div>
           </div>
 
@@ -61,7 +61,7 @@ export default async function ConnectionsPage({
             <small>COMO FUNCIONA NESTA FASE</small>
             <strong>{whatsapp ? "WhatsApp configurado" : "Cadastre o número oficial"}</strong>
             <span className="help">
-              O ONZEUP gera mensagens prontas de convocação, contato e cobrança. O sistema abre o WhatsApp do dispositivo e o envio é confirmado manualmente por você. Não é necessário WhatsApp Business nem API.
+              O 11UP gera mensagens prontas de convocação, contato e cobrança. O sistema abre o WhatsApp do dispositivo e o envio é confirmado manualmente por você. Não é necessário WhatsApp Business nem API.
             </span>
           </div>
 

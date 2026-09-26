@@ -80,7 +80,7 @@ export default async function PlayersHome({
     <main className="catalog-first-page">
       <header className="catalog-nav">
         <a href="https://players.onzeup.com.br" className="player-brand">
-          ONZE<span>UP</span> <b>PLAYERS</b>
+          11<span>UP</span> <b>PLAYERS</b>
         </a>
 
         <nav>
@@ -94,7 +94,7 @@ export default async function PlayersHome({
       </header>
 
       <section className="catalog-title">
-        <span className="page-eyebrow">ONZEUP PLAYERS</span>
+        <span className="page-eyebrow">11UP PLAYERS</span>
 
         <h1>Atletas da base.</h1>
 
@@ -108,7 +108,7 @@ export default async function PlayersHome({
         <section className="catalog-featured">
           <div className="catalog-section-title">
             <div>
-              <span className="page-eyebrow">SELEÇÃO ONZEUP</span>
+              <span className="page-eyebrow">SELEÇÃO 11UP</span>
               <h2>Atletas em destaque</h2>
             </div>
           </div>
@@ -131,7 +131,7 @@ export default async function PlayersHome({
                 <div className="featured-player-shade" />
 
                 <div className="featured-player-copy">
-                  <span>★ DESTAQUE ONZEUP</span>
+                  <span>★ DESTAQUE 11UP</span>
 
                   <h3>{p.nickname || p.name}</h3>
 
@@ -247,7 +247,7 @@ export default async function PlayersHome({
                 {p.plan === "PREMIUM" ? <b>PREMIUM</b> : null}
               </div>
 
-              <small>ONZEUP PLAYER</small>
+              <small>11UP PLAYER</small>
 
               <h3>{p.nickname || p.name}</h3>
 
@@ -276,7 +276,7 @@ export default async function PlayersHome({
 
       <section className="catalog-conversion">
         <div>
-          <span className="page-eyebrow">ONZEUP PLAYER</span>
+          <span className="page-eyebrow">11UP PLAYER</span>
 
           <h2>Seu atleta também pode estar aqui.</h2>
 

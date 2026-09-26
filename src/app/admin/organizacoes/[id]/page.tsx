@@ -202,7 +202,7 @@ export default async function OrganizationAdminDetail({
           </label>
           <label className="admin-access-reason">
             Motivo / observação
-            <input name="complimentaryReason" defaultValue={org.complimentaryReason || ""} placeholder="Ex.: piloto parceiro ONZEUP" />
+            <input name="complimentaryReason" defaultValue={org.complimentaryReason || ""} placeholder="Ex.: piloto parceiro 11UP" />
           </label>
           <button className="btn" type="submit">Salvar controle de acesso</button>
         </form>

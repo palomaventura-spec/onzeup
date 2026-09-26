@@ -39,7 +39,7 @@ function Unavailable({ message }: { message: string }) {
   return (
     <main style={{ width: "min(760px, calc(100% - 32px))", margin: "48px auto" }}>
       <section className="card">
-        <span className="page-eyebrow">ONZEUP • ENVIO SEGURO</span>
+        <span className="page-eyebrow">11UP • ENVIO SEGURO</span>
         <h1>Link indisponível</h1>
         <p className="muted">{message}</p>
       </section>
@@ -83,7 +83,7 @@ export default async function FamilyDocumentSubmissionPage({
       <main style={{ width: "min(760px, calc(100% - 32px))", margin: "48px auto" }}>
         <section className="card" style={{ textAlign: "center" }}>
           {invitation.organization.logoUrl ? <img src={invitation.organization.logoUrl} alt={organizationName} style={{ width: 72, height: 72, objectFit: "contain", marginBottom: 14 }} /> : null}
-          <span className="page-eyebrow">ONZEUP • ENVIO SEGURO</span>
+          <span className="page-eyebrow">11UP • ENVIO SEGURO</span>
           <h1>Link encerrado</h1>
           <p className="muted">
             O envio de documentos de {athleteName} foi finalizado e
@@ -108,7 +108,7 @@ export default async function FamilyDocumentSubmissionPage({
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {invitation.organization.logoUrl ? <img src={invitation.organization.logoUrl} alt={organizationName} style={{ width: 68, height: 68, objectFit: "contain" }} /> : null}
           <div>
-            <span className="page-eyebrow">ONZEUP • ENVIO SEGURO</span>
+            <span className="page-eyebrow">11UP • ENVIO SEGURO</span>
             <h1 style={{ marginBottom: 5 }}>Documentos de {athleteName}</h1>
             <p className="muted" style={{ margin: 0 }}>{organizationName} solicitou documentos para atualização da ficha do atleta.</p>
           </div>

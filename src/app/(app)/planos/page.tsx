@@ -48,7 +48,7 @@ export default async function Plans() {
     <>
       <div className="page-head">
         <div>
-          <span className="page-eyebrow">ONZEUP CLUB</span>
+          <span className="page-eyebrow">11UP CLUB</span>
           <h1>Assinatura</h1>
           <p className="muted">Consulte seu plano atual e altere a assinatura quando precisar.</p>
         </div>
@@ -60,7 +60,7 @@ export default async function Plans() {
           <h2>{currentPlan}</h2>
           <p className="muted">
             {isComplimentary
-              ? `Seu acesso foi liberado como cortesia ONZEUP${organization?.complimentaryUntil ? ` até ${organization.complimentaryUntil.toLocaleDateString("pt-BR")}` : " sem prazo definido"}.`
+              ? `Seu acesso foi liberado como cortesia 11UP${organization?.complimentaryUntil ? ` até ${organization.complimentaryUntil.toLocaleDateString("pt-BR")}` : " sem prazo definido"}.`
               : status === "ACTIVE"
                 ? "Sua assinatura está ativa."
                 : status === "PAST_DUE"
@@ -82,7 +82,7 @@ export default async function Plans() {
         </div>
         <div className="subscription-current-price">
           <small>{isComplimentary ? "ACESSO ATUAL" : "VALOR DO PLANO"}</small>
-          <strong>{isComplimentary ? "Cortesia ONZEUP" : planPrice(subscription?.plan, subscription?.billingCycle)}</strong>
+          <strong>{isComplimentary ? "Cortesia 11UP" : planPrice(subscription?.plan, subscription?.billingCycle)}</strong>
           {isComplimentary ? <span className="help">Plano de referência: {currentPlan}</span> : null}
         </div>
       </section>
@@ -90,7 +90,7 @@ export default async function Plans() {
       <div className="page-head" style={{ marginTop: 6 }}>
         <div>
           <span className="page-eyebrow">ALTERAR PLANO</span>
-          <h2>Planos ONZEUP Club</h2>
+          <h2>Planos 11UP Club</h2>
           <p className="muted">Compare os recursos e escolha outra opção quando fizer sentido para sua operação.</p>
         </div>
       </div>

@@ -18,7 +18,7 @@ function money(cents: number) {
 
 export default async function CommunicationPage() {
   const user = await requireOrganizationUser();
-  const orgName = user.organization?.publicName || user.organization?.name || "ONZEUP";
+  const orgName = user.organization?.publicName || user.organization?.name || "11UP";
   const now = new Date();
 
   const [matches, charges, qtr, trainings] = await Promise.all([

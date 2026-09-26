@@ -323,7 +323,7 @@ export default function MobileClubNavigation({
           >
             <div className={styles.head}>
               <div>
-                <span>ONZEUP CLUB</span>
+                <span>11UP CLUB</span>
                 <h2>Mais opções</h2>
               </div>
 

@@ -1349,7 +1349,7 @@ export default async function ConvocationArtworkPage({
 
         <footer className="poster-footer">
           <span>
-            Gerado pelo <strong>ONZEUP</strong>
+            Gerado pelo <strong>11UP</strong>
           </span>
 
           <span>

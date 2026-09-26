@@ -21,8 +21,8 @@ export default async function PixCheckout({ params }:{ params:Promise<{id:string
       <div className="pix-checkout-copy">
         <span className="page-eyebrow">PAGAMENTO VIA PIX</span>
         <h1>Ative o Premium.</h1>
-        <p>Pedido para <strong>{payment.player?.name || "ONZEUP Player"}</strong>.</p>
-        <div className="pix-order-summary"><span>ONZEUP Player Premium</span><strong>{money(payment.amountCents)}</strong><small>30 dias de Premium após confirmação</small></div>
+        <p>Pedido para <strong>{payment.player?.name || "11UP Player"}</strong>.</p>
+        <div className="pix-order-summary"><span>11UP Player Premium</span><strong>{money(payment.amountCents)}</strong><small>30 dias de Premium após confirmação</small></div>
         <div className={`pix-status ${payment.status.toLowerCase()}`}>{payment.status==="PAID"?"✓ Pagamento confirmado":"● Aguardando confirmação"}</div>
         {payment.status==="PAID"?<Link className="btn" href="/responsavel">Voltar ao Player</Link>:null}
       </div>
@@ -32,9 +32,9 @@ export default async function PixCheckout({ params }:{ params:Promise<{id:string
           <p>Escaneie o QR Code pelo aplicativo do seu banco ou use o Pix Copia e Cola.</p>
           <label>PIX Copia e Cola<textarea readOnly value={payment.pixPayload} rows={5}/></label>
           <CopyPixButton payload={payment.pixPayload} />
-        </> : <div className="pix-not-configured"><strong>PIX ainda não configurado.</strong><p>Defina ONZEUP_PIX_KEY na Vercel/.env para habilitar o QR Code e Copia e Cola.</p></div>}
+        </> : <div className="pix-not-configured"><strong>PIX ainda não configurado.</strong><p>Defina 11UP_PIX_KEY na Vercel/.env para habilitar o QR Code e Copia e Cola.</p></div>}
         <small>Identificação: {payment.pixTxid}</small>
-        <p className="pix-help">Depois do pagamento, a ONZEUP confirma o recebimento e ativa o Premium. Nesta fase do MVP, a confirmação é manual.</p>
+        <p className="pix-help">Depois do pagamento, a 11UP confirma o recebimento e ativa o Premium. Nesta fase do MVP, a confirmação é manual.</p>
       </div>
     </section>
   </main>;

@@ -13,15 +13,15 @@ export default async function CoachRegister({
   return (
     <main className="auth-marketing-page">
       <section className="auth-product-copy">
-        <Link href="/coach" className="marketing-brand">ONZE<span>UP</span> <b>COACH</b></Link>
+        <Link href="/coach" className="marketing-brand">11<span>UP</span> <b>COACH</b></Link>
         <span className="marketing-kicker">GRATUITO PARA PROFISSIONAIS DO FUTEBOL</span>
         <h1>Crie sua presença profissional.</h1>
-        <p>Organize sua trajetória e faça parte da rede de Coaches Parceiros ONZEUP.</p>
+        <p>Organize sua trajetória e faça parte da rede de Coaches Parceiros 11UP.</p>
         <strong>R$ 0 • sem cartão</strong>
       </section>
 
       <section className="auth-form-card">
-        <span className="page-eyebrow">ONZEUP COACH</span>
+        <span className="page-eyebrow">11UP COACH</span>
         <h2>Criar perfil profissional</h2>
 
         {q.erro ? (
@@ -30,7 +30,7 @@ export default async function CoachRegister({
 
         {q.status === "enviado" || q.status === "reenviado" ? (
           <div className="notice">
-            Enviamos um link de confirmação para <strong>{q.email || "seu e-mail"}</strong>. Confirme o endereço antes de entrar no ONZEUP Coach.
+            Enviamos um link de confirmação para <strong>{q.email || "seu e-mail"}</strong>. Confirme o endereço antes de entrar no 11UP Coach.
           </div>
         ) : null}
 
@@ -46,7 +46,7 @@ export default async function CoachRegister({
               <input type="hidden" name="email" value={q.email || ""} />
               <PendingSubmitButton className="btn-secondary" pendingText="Reenviando...">Reenviar confirmação</PendingSubmitButton>
             </form>
-            <p className="help">Já confirmou? <Link href="/login?perfil=coach">Entrar no ONZEUP Coach</Link></p>
+            <p className="help">Já confirmou? <Link href="/login?perfil=coach">Entrar no 11UP Coach</Link></p>
           </>
         ) : (
           <form action={registerCoach} className="stack" autoComplete="off">
@@ -67,7 +67,7 @@ export default async function CoachRegister({
                 <option value="PERSONAL_TRAINING">Treinamento personalizado</option>
               </select>
             </fieldset>
-            <PendingSubmitButton className="btn" pendingText="Criando seu ONZEUP Coach...">Criar ONZEUP Coach grátis</PendingSubmitButton>
+            <PendingSubmitButton className="btn" pendingText="Criando seu 11UP Coach...">Criar 11UP Coach grátis</PendingSubmitButton>
           </form>
         )}
 

@@ -45,7 +45,7 @@ export default async function PublicCallUpResponsePage({
   return (
     <main className="public-callup-page">
       <section className="public-callup-card">
-        <span className="eyebrow">ONZEUP • CONVOCAÇÃO</span>
+        <span className="eyebrow">11UP • CONVOCAÇÃO</span>
         <h1>{clubName}</h1>
         <p className="lead">
           {athleteName} foi convocado(a) para a partida abaixo.

@@ -114,7 +114,7 @@ export default async function PerformancePage({
   if (!elite) {
     return (
       <section className="performance-upgrade">
-        <span className="page-eyebrow">ONZEUP PERFORMANCE</span>
+        <span className="page-eyebrow">11UP PERFORMANCE</span>
         <h1>Inteligência para desenvolver o elenco</h1>
         <p>
           Avaliações profissionais, evolução, frequência, rendimento, metas,
@@ -189,7 +189,7 @@ export default async function PerformancePage({
       <main className="performance-hub">
         <div className="page-head">
           <div>
-            <span className="page-eyebrow">ONZEUP PERFORMANCE</span>
+            <span className="page-eyebrow">11UP PERFORMANCE</span>
             <h1>Performance do elenco</h1>
             <p className="muted">
               O Gestor define o acesso de cada profissional por categoria.
@@ -554,7 +554,7 @@ export default async function PerformancePage({
   return (
     <main className="performance-hub">
       <ModuleHero
-        eyebrow="ONZEUP PERFORMANCE • CLUB ELITE"
+        eyebrow="11UP PERFORMANCE • CLUB ELITE"
         title="Performance do elenco"
         description={
           <p>

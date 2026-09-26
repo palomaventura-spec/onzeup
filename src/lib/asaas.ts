@@ -17,9 +17,9 @@ async function checkout(i:{externalReference:string;name:string;description:stri
  const c=await asaasFetch<Checkout>("/checkouts",{method:"POST",body:JSON.stringify(payload)});if(!c.id)throw new Error("Asaas não retornou o ID do checkout.");
  return {...c,link:c.link||`https://asaas.com/checkoutSession/show?id=${encodeURIComponent(c.id)}`};
 }
-export const createAsaasPlayerPremiumCheckout=(i:any)=>checkout({...i,name:"ONZEUP Player Premium",description:`Assinatura mensal - ${i.playerName}`,value:29.9,billingTypes:["CREDIT_CARD"],recurrent:true});
-export const createAsaasPlayerPremiumPixCheckout=(i:any)=>checkout({...i,name:"ONZEUP Player Premium",description:`Mensalidade Premium - ${i.playerName}`,value:29.9,billingTypes:["PIX"],recurrent:false});
-export const createAsaasClubCheckout=(i:any)=>checkout({...i,name:`ONZEUP Club ${i.planLabel}`,description:`${i.cycle==="ANNUAL"?"Plano anual":"Plano mensal"} - ${i.organizationName}`,billingTypes:[i.method==="PIX"?"PIX":"CREDIT_CARD"],recurrent:i.cycle==="MONTHLY"&&i.method==="CARD"});
+export const createAsaasPlayerPremiumCheckout=(i:any)=>checkout({...i,name:"11UP Player Premium",description:`Assinatura mensal - ${i.playerName}`,value:29.9,billingTypes:["CREDIT_CARD"],recurrent:true});
+export const createAsaasPlayerPremiumPixCheckout=(i:any)=>checkout({...i,name:"11UP Player Premium",description:`Mensalidade Premium - ${i.playerName}`,value:29.9,billingTypes:["PIX"],recurrent:false});
+export const createAsaasClubCheckout=(i:any)=>checkout({...i,name:`11UP Club ${i.planLabel}`,description:`${i.cycle==="ANNUAL"?"Plano anual":"Plano mensal"} - ${i.organizationName}`,billingTypes:[i.method==="PIX"?"PIX":"CREDIT_CARD"],recurrent:i.cycle==="MONTHLY"&&i.method==="CARD"});
 export type AsaasStoredData={provider?:"ASAAS";environment?:"SANDBOX"|"PRODUCTION";checkoutId?:string;checkoutUrl?:string;checkoutStatus?:string;subscriptionId?:string;processedEventIds?:string[];processedPaymentIds?:string[];lastEvent?:string;lastPaymentId?:string;lastPaymentStatus?:string;lastDueDate?:string;paymentMethod?:"CARD"|"PIX";billingCycle?:"MONTHLY"|"ANNUAL";commercialPlan?:"ESSENTIAL"|"PRO"|"ELITE";};
 export function readAsaasData(v?:string|null):AsaasStoredData{if(!v)return{};try{const p=JSON.parse(v);return p&&typeof p==="object"?p:{}}catch{return{}}}
 export const writeAsaasData=(v:AsaasStoredData)=>JSON.stringify(v);

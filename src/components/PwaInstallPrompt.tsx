@@ -28,7 +28,7 @@ export default function PwaInstallPrompt() {
     if (standalone) return;
 
     const dismissed =
-      window.sessionStorage.getItem("onzeup-install-dismissed") === "1";
+      window.sessionStorage.getItem("11UP-install-dismissed") === "1";
 
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault();
@@ -69,7 +69,7 @@ export default function PwaInstallPrompt() {
   }
 
   function dismiss() {
-    window.sessionStorage.setItem("onzeup-install-dismissed", "1");
+    window.sessionStorage.setItem("11UP-install-dismissed", "1");
     setVisible(false);
   }
 
@@ -78,7 +78,7 @@ export default function PwaInstallPrompt() {
   return (
     <aside
       className={`${styles.prompt} no-print`}
-      aria-label="Instalar aplicativo ONZEUP"
+      aria-label="Instalar aplicativo 11UP"
     >
       <img
         src="/pwa-icon-192.png"
@@ -87,7 +87,7 @@ export default function PwaInstallPrompt() {
       />
 
       <div className={styles.copy}>
-        <strong>Instale o ONZEUP</strong>
+        <strong>Instale o 11UP</strong>
         <span>
           Acesse Club, Player e Coach direto da tela inicial.
         </span>

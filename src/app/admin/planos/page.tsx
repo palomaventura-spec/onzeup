@@ -24,7 +24,7 @@ export default function PlansPage() {
   return (
     <>
       <h1>Planos</h1>
-      <p className="muted">Estrutura comercial inicial da OnzeUp.</p>
+      <p className="muted">Estrutura comercial inicial da 11UP.</p>
 
       <div className="public-grid cards-3">
         {plans.map(plan => (

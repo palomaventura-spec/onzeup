@@ -58,7 +58,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
           </div>
 
           <div className="athlete-identity">
-            <span className="athlete-kicker">ATLETA • ONZEUP PLAYER</span>
+            <span className="athlete-kicker">ATLETA • 11UP PLAYER</span>
             <h1>{player.name}</h1>
             {player.nickname ? <h2>{player.nickname}</h2> : null}
 
@@ -115,7 +115,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
                   <article className="verified-career" key={link.id}>
                     <span>VERIFICADO</span>
                     <strong>{link.athlete.organization.publicName || link.athlete.organization.name}</strong>
-                    <b>✓ Organização ONZEUP</b>
+                    <b>✓ Organização 11UP</b>
                   </article>
                 ))}
               </div>

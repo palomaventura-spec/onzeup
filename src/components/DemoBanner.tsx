@@ -10,8 +10,8 @@ export default function DemoBanner({
       <span>AMBIENTE DEMONSTRAÇÃO</span>
       <p>
         {kind === "club"
-          ? "Você está no Clube Demo OnzeUp, uma organização fictícia separada de qualquer clube real ou cadastrado nos testes."
-          : "Esta é uma sessão temporária de demonstração. Crie um perfil fictício para testar o ONZEUP Player. Não use dados pessoais reais."}
+          ? "Você está no Clube Demo 11UP, uma organização fictícia separada de qualquer clube real ou cadastrado nos testes."
+          : "Esta é uma sessão temporária de demonstração. Crie um perfil fictício para testar o 11UP Player. Não use dados pessoais reais."}
       </p>
       <Link href="/">Voltar ao site</Link>
     </div>

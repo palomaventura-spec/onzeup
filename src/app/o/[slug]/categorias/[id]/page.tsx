@@ -321,7 +321,7 @@ export default async function PublicCategoryPage({
             {org.logoUrl ? <img src={org.logoUrl} alt="" /> : null}
             <strong>{publicName}</strong>
           </div>
-          <span>Powered by <b>ONZEUP</b></span>
+          <span>Powered by <b>11UP</b></span>
         </div>
       </footer>
     </main>

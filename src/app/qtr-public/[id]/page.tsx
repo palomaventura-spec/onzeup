@@ -166,7 +166,7 @@ export default async function PublicQtrPage({
         </div>
 
         <footer className="qtr-public-footer">
-          <span>Gerado por ONZEUP • Gestão de futebol e futsal de base</span>
+          <span>Gerado por 11UP • Gestão de futebol e futsal de base</span>
           <span>Compartilhamento público do QTR</span>
         </footer>
       </section>

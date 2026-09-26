@@ -94,7 +94,7 @@ export default async function CoachDashboard({
     <main className="coach-partner-dashboard">
       <header>
         <div>
-          <span className="page-eyebrow">ONZEUP COACH</span>
+          <span className="page-eyebrow">11UP COACH</span>
           <h1>Olá, {coach.professionalName || coach.name}.</h1>
           <p>Seu login é individual. Clubes liberam apenas os acessos das equipes e categorias em que você trabalha.</p>
         </div>
@@ -127,7 +127,7 @@ export default async function CoachDashboard({
       <section className="card coach-link-search">
         <div className="matching-copy">
           <span className="page-eyebrow">VÍNCULO COACH ↔ CLUB</span>
-          <h2>Já foi cadastrado por uma equipe ONZEUP?</h2>
+          <h2>Já foi cadastrado por uma equipe 11UP?</h2>
           <p className="muted">
             Se o clube cadastrou você na comissão usando o mesmo e-mail desta conta Coach, buscaremos as correspondências.
             O vínculo não é automático: você solicita e o clube confirma.
@@ -145,7 +145,7 @@ export default async function CoachDashboard({
           <div className="section-title-row">
             <div>
               <span className="page-eyebrow">CONVITES DE VÍNCULO</span>
-              <h2>Clubes querem conectar seu ONZEUP Coach.</h2>
+              <h2>Clubes querem conectar seu 11UP Coach.</h2>
               <p className="muted">Aceite somente vínculos de organizações e equipes onde você realmente atua.</p>
             </div>
             <span className="badge">{clubInvites.length} pendente(s)</span>
@@ -272,9 +272,9 @@ export default async function CoachDashboard({
         </section>
         <section className="card coach-club-lead">
           <span className="page-eyebrow">TAMBÉM GERE UMA ESCOLINHA OU CT?</span>
-          <h2>Leve sua gestão para o ONZEUP Club.</h2>
+          <h2>Leve sua gestão para o 11UP Club.</h2>
           <p>Seu perfil Coach permanece o mesmo; a organização é um contexto separado.</p>
-          <Link className="btn" href="/club">Conhecer ONZEUP Club →</Link>
+          <Link className="btn" href="/club">Conhecer 11UP Club →</Link>
         </section>
       </div>
     </main>

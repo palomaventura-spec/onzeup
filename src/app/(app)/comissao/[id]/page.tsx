@@ -153,7 +153,7 @@ export default async function EditStaffPage({
               </select>
             </label>
             <label>
-              E-mail do ONZEUP Coach
+              E-mail do 11UP Coach
               <input
                 name="coachEmail"
                 type="email"

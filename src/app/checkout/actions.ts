@@ -92,7 +92,7 @@ async function createPlayerPremium(
       pixTxid: `ASAAS${Date.now()}${Math.random()
         .toString(36)
         .slice(2, 8)}`.toUpperCase(),
-      note: `ONZEUP Player Premium - ${player.name}`,
+      note: `11UP Player Premium - ${player.name}`,
     },
   });
 

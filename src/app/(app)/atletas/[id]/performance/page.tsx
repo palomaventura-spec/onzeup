@@ -105,7 +105,7 @@ export default async function AthletePerformancePage({
       <>
         <div className="page-head">
           <div>
-            <span className="page-eyebrow">ONZEUP PERFORMANCE</span>
+            <span className="page-eyebrow">11UP PERFORMANCE</span>
             <h1>{athlete.nickname || athlete.name}</h1>
             <p className="muted">Análise individual de desempenho do atleta.</p>
           </div>
@@ -215,7 +215,7 @@ export default async function AthletePerformancePage({
     <main className="athlete-performance-page">
       <div className="page-head">
         <div>
-          <span className="page-eyebrow">ONZEUP PERFORMANCE • CLUB ELITE</span>
+          <span className="page-eyebrow">11UP PERFORMANCE • CLUB ELITE</span>
           <h1>{athlete.nickname || athlete.name}</h1>
           <p className="muted">
             {athlete.name} • {athlete.category?.name || "Sem categoria"} •{" "}

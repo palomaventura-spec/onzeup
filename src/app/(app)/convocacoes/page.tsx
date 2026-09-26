@@ -170,7 +170,7 @@ export default async function CallUpsPage() {
                     </span>
 
                     <h3>
-                      ONZEUP <i>×</i>{" "}
+                      11UP <i>×</i>{" "}
                       {match.opponent}
                     </h3>
 

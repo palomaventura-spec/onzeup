@@ -19,7 +19,7 @@ export default async function CoachEdit({
     <main className="coach-editor">
       <header>
         <div>
-          <span className="page-eyebrow">ONZEUP COACH</span>
+          <span className="page-eyebrow">11UP COACH</span>
           <h1>Meu site profissional</h1>
           <Link href="/coach/dashboard">← Voltar ao dashboard</Link>
         </div>

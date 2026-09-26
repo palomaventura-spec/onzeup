@@ -37,12 +37,12 @@ export async function notifyAdminNewRegistration({
 
   const result = await sendTransactionalEmail({
     to: destination,
-    subject: `Novo ${label} cadastrado — ONZEUP`,
+    subject: `Novo ${label} cadastrado — 11UP`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#101719">
         <div style="font-size:28px;font-weight:900;margin-bottom:22px">ONZE<span style="color:#9ddb16">UP</span></div>
         <h2>Novo cadastro na plataforma</h2>
-        <p>Um novo cadastro foi realizado no ONZEUP.</p>
+        <p>Um novo cadastro foi realizado no 11UP.</p>
         <table style="width:100%;border-collapse:collapse;margin:22px 0">
           <tr><td style="padding:9px 0;color:#657278">Tipo</td><td style="padding:9px 0;font-weight:bold">${label}</td></tr>
           <tr><td style="padding:9px 0;color:#657278">Nome</td><td style="padding:9px 0;font-weight:bold">${name}</td></tr>
@@ -51,7 +51,7 @@ export async function notifyAdminNewRegistration({
           <tr><td style="padding:9px 0;color:#657278">Status</td><td style="padding:9px 0">${status}</td></tr>
           <tr><td style="padding:9px 0;color:#657278">Data</td><td style="padding:9px 0">${when}</td></tr>
         </table>
-        <p style="color:#657278;font-size:13px">Acompanhe e gerencie os cadastros pela Central ONZEUP.</p>
+        <p style="color:#657278;font-size:13px">Acompanhe e gerencie os cadastros pela Central 11UP.</p>
       </div>
     `,
   });

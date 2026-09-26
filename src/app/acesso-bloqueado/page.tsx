@@ -8,15 +8,15 @@ export default async function AccessBlocked({ searchParams }: { searchParams: Pr
       : status === "cancelled"
         ? "O acesso desta organização foi cancelado."
         : status === "past_due"
-          ? "A mensalidade está há mais de 10 dias em atraso. Regularize o pagamento para liberar o acesso ao ONZEUP Club."
+          ? "A mensalidade está há mais de 10 dias em atraso. Regularize o pagamento para liberar o acesso ao 11UP Club."
           : status === "billing_cancelled"
-            ? "A assinatura do ONZEUP Club foi cancelada."
+            ? "A assinatura do 11UP Club foi cancelada."
             : "O período de cortesia desta organização terminou.";
 
   return (
     <main className="access-blocked-page">
       <section className="card">
-        <span className="page-eyebrow">ONZEUP CLUB</span>
+        <span className="page-eyebrow">11UP CLUB</span>
         <h1>Acesso indisponível</h1>
         <p>{text}</p>
         <p className="muted">Se o pagamento já foi realizado, aguarde a confirmação automática do Asaas e tente novamente.</p>

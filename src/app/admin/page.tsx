@@ -80,7 +80,7 @@ export default async function AdminHome() {
       <div className="page-head">
         <div>
           <span className="page-eyebrow">SUPER ADMIN</span>
-          <h1>Central ONZEUP</h1>
+          <h1>Central 11UP</h1>
           <p className="muted">Visão geral administrativa da plataforma.</p>
           <p className="admin-email-note">Admin central: {adminEmail()}</p>
         </div>
@@ -143,7 +143,7 @@ export default async function AdminHome() {
         <Link href="/admin/players" className="card"><span className="page-eyebrow">PLAYERS</span><h2>Players</h2><p className="muted">Cadastros, status e administração dos atletas.</p><strong>Gerenciar Players →</strong></Link>
         <Link href="/admin/coaches" className="card"><span className="page-eyebrow">COACHES</span><h2>Coaches</h2><p className="muted">Cadastros, vínculos e administração dos profissionais.</p><strong>Gerenciar Coaches →</strong></Link>
         <Link href="/admin/pagamentos" className="card"><span className="page-eyebrow">PAGAMENTOS</span><h2>Pagamentos</h2><p className="muted">{pendingPix} pagamento(s) aguardando confirmação.</p><strong>Abrir pagamentos →</strong></Link>
-        <Link href="/" className="card"><span className="page-eyebrow">PLATAFORMA</span><h2>Portal ONZEUP</h2><p className="muted">Abrir a experiência pública da plataforma.</p><strong>Abrir portal →</strong></Link>
+        <Link href="/" className="card"><span className="page-eyebrow">PLATAFORMA</span><h2>Portal 11UP</h2><p className="muted">Abrir a experiência pública da plataforma.</p><strong>Abrir portal →</strong></Link>
       </section>
     </main>
   );

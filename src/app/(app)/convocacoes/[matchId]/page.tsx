@@ -215,7 +215,7 @@ export default async function MatchCallUpsPage({
     formationName;
 
   const orgName =
-    user.organization?.publicName || user.organization?.name || "ONZEUP";
+    user.organization?.publicName || user.organization?.name || "11UP";
   const location = match.location || "Local a definir";
   const requestHeaders = await headers();
   const requestHost =
@@ -419,7 +419,7 @@ export default async function MatchCallUpsPage({
             <div className="empty">
               <strong>Nenhum atleta disponível nesta categoria.</strong>
               <p className="help" style={{ margin: "8px 0 12px" }}>
-                O ONZEUP procura atletas vinculados diretamente à categoria
+                O 11UP procura atletas vinculados diretamente à categoria
                 ou por vínculo ativo no clube.
               </p>
               <Link className="btn btn-secondary btn-small" href="/atletas">

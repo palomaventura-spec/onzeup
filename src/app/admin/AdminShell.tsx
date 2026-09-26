@@ -70,7 +70,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         <div className="admin-sidebar-bottom-v171">
           <Link href="/" className="admin-portal-link-v171">
             <i aria-hidden="true">↗</i>
-            <span>Abrir ONZEUP</span>
+            <span>Abrir 11UP</span>
           </Link>
 
           <form action="/api/auth/logout" method="post">

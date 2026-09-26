@@ -116,7 +116,7 @@ export default async function PerformanceEvolutionReportPage({
     <>
       <div className="page-head">
         <div>
-          <span className="page-eyebrow">ONZEUP PERFORMANCE • EVOLUÇÃO</span>
+          <span className="page-eyebrow">11UP PERFORMANCE • EVOLUÇÃO</span>
           <h1>Relatório de evolução</h1>
           <p className="muted">
             {athlete.name} • {athlete.category?.name || "Sem categoria"} •{" "}

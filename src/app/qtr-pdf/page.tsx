@@ -532,7 +532,7 @@ export default async function QtrPdfPage({
 
       <footer className="qtr-print-footer">
         <span>
-          Gerado por ONZEUP •
+          Gerado por 11UP •
           Gestão de futebol e
           futsal de base
         </span>

@@ -38,7 +38,7 @@ export default function RegisterServiceWorker() {
         })
         .catch((error) => {
           console.error(
-            "Não foi possível registrar o PWA do ONZEUP:",
+            "Não foi possível registrar o PWA do 11UP:",
             error
           );
         });

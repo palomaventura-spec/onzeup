@@ -84,7 +84,7 @@ export default function PlayerActions({
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "ONZEUP Player",
+          title: "11 Player",
           url: absolute,
         });
 

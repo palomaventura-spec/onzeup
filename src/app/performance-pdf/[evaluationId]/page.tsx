@@ -232,7 +232,7 @@ export default async function PerformanceIndividualPdfPage({
       </section>
 
       <footer className="pr-footer">
-        <span>ONZEUP Performance • Acompanhamento esportivo</span>
+        <span>11UP Performance • Acompanhamento esportivo</span>
         <span>Avaliação de {evaluation.athlete.name}</span>
       </footer>
     </main>

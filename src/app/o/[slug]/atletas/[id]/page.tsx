@@ -24,7 +24,7 @@ export default async function PublicAthletePage({ params }: { params: Promise<{ 
         <div><small>{athlete.category?.name || "ELENCO"} • {org.publicName || org.name}</small><h1>{athlete.nickname || athlete.name}</h1>{athlete.nickname && <p className="athlete-full-name">{athlete.name}</p>}<div className="athlete-public-tags">{athlete.position && <span>{athlete.position}</span>}{athlete.jerseyNumber != null && <span>Camisa #{athlete.jerseyNumber}</span>}{athlete.dominantFoot && <span>Pé {athlete.dominantFoot}</span>}{athlete.birthYear && <span>Nasc. {athlete.birthYear}</span>}</div></div>
       </section>
       <section className="athlete-public-note"><strong>Perfil oficial do clube</strong><p>As informações exibidas nesta página são publicadas e administradas por {org.publicName || org.name}. O perfil pessoal do atleta/responsável é independente.</p></section>
-      <footer>Powered by <b>ONZEUP</b></footer>
+      <footer>Powered by <b>11UP</b></footer>
     </div>
   </main>;
 }

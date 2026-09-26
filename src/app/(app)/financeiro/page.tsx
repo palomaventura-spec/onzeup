@@ -284,7 +284,7 @@ export default async function FinancePage() {
 
             <p className="muted">
               A cobrança é controlada
-              no ONZEUP, mas o pagamento
+              no 11UP, mas o pagamento
               vai diretamente para o
               clube.
             </p>
@@ -315,7 +315,7 @@ export default async function FinancePage() {
           </label>
 
           <p className="help">
-            O ONZEUP não recebe nem
+            O 11UP não recebe nem
             movimenta este dinheiro. A
             chave é usada apenas para
             montar as mensagens de
