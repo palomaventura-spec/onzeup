@@ -1,5 +1,4 @@
 import Link from "next/link";
-import ModuleHero from "@/components/ModuleHero";
 import { prisma } from "@/lib/prisma";
 import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
@@ -157,33 +156,107 @@ export default async function QtrPage({
 
   return (
     <main className="page-shell qts-premium">
-      <ModuleHero
-        eyebrow="PLANEJAMENTO SEMANAL"
-        title="QTS"
-        description={
-          <p>
-            Organize a programação semanal de treinos e jogos por categoria.
-            <br />
-            {formatDate(weekStart)} a {formatDate(weekEnd)}
+      <section
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 24,
+          flexWrap: "wrap",
+          marginBottom: 18,
+          padding: "22px 24px",
+          border: "1px solid #dfe6ec",
+          borderRadius: 18,
+          background:
+            "linear-gradient(135deg, #ffffff 0%, #f8fbf5 100%)",
+          boxShadow: "0 10px 28px rgba(15, 23, 32, 0.06)",
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <p
+            style={{
+              margin: "0 0 7px",
+              color: "#79b800",
+              fontSize: 12,
+              fontWeight: 900,
+              letterSpacing: "0.14em",
+            }}
+          >
+            PLANEJAMENTO SEMANAL
           </p>
-        }
-        aside={
-          <div className="actions">
-            <Link
-              href={qtrHref(isoDate(previous), selectedCategory)}
-              className="btn-secondary"
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <h1
+              style={{
+                margin: 0,
+                color: "#0c1720",
+                fontSize: "clamp(30px, 3vw, 42px)",
+                lineHeight: 1,
+                letterSpacing: "-0.04em",
+              }}
             >
-              ← Semana anterior
-            </Link>
-            <Link
-              href={qtrHref(isoDate(next), selectedCategory)}
-              className="btn-secondary"
+              QTS
+            </h1>
+
+            <span
+              style={{
+                color: "#75828d",
+                fontSize: 14,
+                fontWeight: 700,
+              }}
             >
-              Próxima semana →
-            </Link>
+              {formatDate(weekStart)} a {formatDate(weekEnd)}
+            </span>
           </div>
-        }
-      />
+
+          <p
+            style={{
+              maxWidth: 620,
+              margin: "10px 0 0",
+              color: "#61707c",
+              fontSize: 14,
+              lineHeight: 1.55,
+            }}
+          >
+            Programação semanal de treinos e jogos organizada por categoria.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link
+            href={qtrHref(isoDate(previous), selectedCategory)}
+            style={navButtonStyle}
+          >
+            ← Semana anterior
+          </Link>
+
+          <Link
+            href={qtrHref(isoDate(next), selectedCategory)}
+            style={{
+              ...navButtonStyle,
+              borderColor: "#c9e983",
+              background: "#f5fbe8",
+              color: "#284000",
+            }}
+          >
+            Próxima semana →
+          </Link>
+        </div>
+      </section>
 
       {params.gerado === "1" || params.salvo === "1" ? (
         <div
