@@ -186,7 +186,7 @@ export default async function EditAthletePage({
         registration.authorityType === "CBF",
     );
   return (
-    <main className="athlete-profile-page">
+    <main className="athlete-profile-page athlete-edit-page-v2">
       <section
         className="athlete-profile-hero"
         style={{
@@ -356,7 +356,7 @@ export default async function EditAthletePage({
           style={{ marginBottom: 18 }}
         >
           <span className="page-eyebrow">
-            HISTÃ“RICO DE CATEGORIA
+            HISTÓRICO DE CATEGORIA
           </span>
 
           <h2>Movimentações do atleta</h2>
@@ -378,7 +378,7 @@ export default async function EditAthletePage({
 
                   <p className="muted">
                     {metadata?.fromCategory?.name
-                      ? `${metadata.fromCategory.name} â†’ `
+                      ? `${metadata.fromCategory.name} → `
                       : ""}
                     {metadata?.toCategory?.name ||
                       "Sem categoria"}
@@ -800,7 +800,7 @@ export default async function EditAthletePage({
               <strong>
                 {futsalFederation
                   ? `${futsalFederation.authorityName || "Federação"} · ${futsalFederation.registrationNumber}`
-                  : "â€”"}
+                  : "—"}
               </strong>
             </div>
 
@@ -811,7 +811,7 @@ export default async function EditAthletePage({
               <strong>
                 {footballFederation
                   ? `${footballFederation.authorityName || "Federação"} · ${footballFederation.registrationNumber}`
-                  : "â€”"}
+                  : "—"}
               </strong>
             </div>
 
@@ -820,7 +820,7 @@ export default async function EditAthletePage({
                 Campo · CBF
               </span>
               <strong>
-                {cbfRegistration?.registrationNumber || "â€”"}
+                {cbfRegistration?.registrationNumber || "—"}
               </strong>
             </div>
             <div>

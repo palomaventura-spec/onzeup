@@ -81,7 +81,7 @@ export default function PwaInstallPrompt() {
       aria-label="Instalar aplicativo 11UP"
     >
       <img
-        src="/pwa-icon-192.png"
+        src="/brand/11up/app/11up-icon-192.svg"
         alt=""
         className={styles.icon}
       />

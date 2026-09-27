@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 
 import { requireClubPermission } from "@/lib/club-access";
 import { hasEffectiveClubElite } from "@/lib/billing-entitlements";
+import ModuleTabs from "@/components/ModuleTabs";
+import SafeAvatar from "@/components/SafeAvatar";
+
 import { prisma } from "@/lib/prisma";
 
 const AREA_LABELS: Record<string, string> = {
@@ -212,109 +215,173 @@ export default async function AthletePerformancePage({
   const bmi = decimalNumber(measurement?.bmi);
 
   return (
-    <main className="athlete-performance-page">
-      <div className="page-head">
-        <div>
-          <span className="page-eyebrow">11UP PERFORMANCE • CLUB ELITE</span>
-          <h1>{athlete.nickname || athlete.name}</h1>
-          <p className="muted">
-            {athlete.name} • {athlete.category?.name || "Sem categoria"} •{" "}
-            {athlete.position || "Posição não informada"}
-          </p>
+    <main className="athlete-performance-page athlete-performance-v4">
+      <section className="athlete-performance-hero">
+        <div className="athlete-performance-hero-main">
+          <div className="athlete-performance-hero-avatar">
+            <SafeAvatar
+              src={athlete.photoUrl}
+              name={athlete.nickname || athlete.name}
+              alt={athlete.name}
+            />
+          </div>
+
+          <div className="athlete-performance-hero-copy">
+            <span className="athlete-performance-hero-kicker">
+              11UP PERFORMANCE · CLUB ELITE
+            </span>
+
+            <h1>{athlete.nickname || athlete.name}</h1>
+
+            <p className="athlete-performance-hero-meta">
+              <span>{athlete.name}</span>
+              <span>{athlete.category?.name || "Sem categoria"}</span>
+              <span>{athlete.position || "Posição não informada"}</span>
+            </p>
+
+            <p className="athlete-performance-hero-description">
+              Treino, jogo, GPS, avaliações e evolução em uma visão individual do atleta.
+            </p>
+          </div>
         </div>
-        <div className="actions">
-          <Link className="btn btn-secondary" href={`/atletas/${athlete.id}`}>
-            Voltar ao atleta
-          </Link>
-          {finalizedEvaluations.length > 0 ? (
-            <Link
-              className="btn btn-secondary"
-              href={`/performance-evolution-pdf/${athlete.id}`}
-            >
-              Relatório de evolução
-            </Link>
-          ) : null}
+
+        <div className="athlete-performance-hero-actions">
           <Link
-            className="btn"
+            className="athlete-performance-hero-primary"
             href={`/atletas/${athlete.id}/performance/avaliacoes/nova`}
           >
-            Nova avaliação
+            + Nova avaliação
+          </Link>
+
+          <Link
+            className="athlete-performance-hero-secondary"
+            href={`/atletas/${athlete.id}`}
+          >
+            Voltar ao atleta
           </Link>
         </div>
-      </div>
-
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-          gap: 14,
-          marginBottom: 18,
-        }}
-      >
-        {[
-          ["Avaliações", finalizedEvaluations.length || "—"],
-          ["Presença", attendanceRate === null ? "—" : `${attendanceRate}%`],
-          ["Jogos", matchTotals.matches || "—"],
-          ["Gols", matchTotals.goals],
-          ["Assistências", matchTotals.assists],
-        ].map(([label, value]) => (
-          <article className="card" key={label} style={{ padding: 18 }}>
-            <span className="help">{label}</span>
-            <strong style={{ display: "block", fontSize: 28, marginTop: 5 }}>
-              {value}
-            </strong>
-          </article>
-        ))}
       </section>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))",
-          gap: 18,
-        }}
-      >
-        <article className="card">
-          <span className="page-eyebrow">ÚLTIMA AVALIAÇÃO</span>
-          <h2>Evolução por área</h2>
-          <p className="muted">
-            {latestEvaluation
-              ? `${latestEvaluation.title || "Avaliação"} • ${formatDate(latestEvaluation.evaluatedAt)}`
-              : "Nenhuma avaliação finalizada."}
-          </p>
+      <ModuleTabs
+        className="performance-module-tabs athlete-performance-tabs"
+        ariaLabel="Navegação da performance do atleta"
+        items={[
+          {
+            label: "Visão geral",
+            href: `/atletas/${athlete.id}/performance`,
+            active: true,
+          },
+          {
+            label: "Treino",
+            href: `/atletas/${athlete.id}/performance/treino`,
+          },
+          {
+            label: "Jogo",
+            href: `/atletas/${athlete.id}/performance/jogo`,
+          },
+          {
+            label: "GPS",
+            href: `/atletas/${athlete.id}/performance/gps`,
+          },
+          {
+            label: "Avaliações",
+            href: `/atletas/${athlete.id}/performance/avaliacoes`,
+          },
+          {
+            label: "Relatórios",
+            href: `/atletas/${athlete.id}/performance/relatorios`,
+          },
+        ]}
+      />
 
-          <div className="stack" style={{ marginTop: 20 }}>
+      <section className="athlete-performance-v4-heading">
+        <div>
+          <span className="page-eyebrow">VISÃO GERAL</span>
+          <h2>Panorama individual</h2>
+          <p className="muted">
+            Indicadores essenciais de treino, jogo, avaliação e acompanhamento físico.
+          </p>
+        </div>
+
+        {finalizedEvaluations.length > 0 ? (
+          <Link
+            className="btn btn-secondary"
+            href={`/performance-evolution-pdf/${athlete.id}`}
+          >
+            Relatório de evolução
+          </Link>
+        ) : null}
+      </section>
+
+      <section className="athlete-performance-v4-kpis">
+        <article>
+          <small>PRESENÇA</small>
+          <strong>{attendanceRate === null ? "—" : `${attendanceRate}%`}</strong>
+          <span>últimos registros de treino</span>
+        </article>
+
+        <article>
+          <small>JOGOS</small>
+          <strong>{matchTotals.matches || "—"}</strong>
+          <span>participações registradas</span>
+        </article>
+
+        <article>
+          <small>GOLS</small>
+          <strong>{matchTotals.goals}</strong>
+          <span>em súmulas cadastradas</span>
+        </article>
+
+        <article>
+          <small>ASSISTÊNCIAS</small>
+          <strong>{matchTotals.assists}</strong>
+          <span>em súmulas cadastradas</span>
+        </article>
+
+        <article>
+          <small>AVALIAÇÕES</small>
+          <strong>{finalizedEvaluations.length || "—"}</strong>
+          <span>finalizadas</span>
+        </article>
+      </section>
+
+      <section className="athlete-performance-v4-main-grid">
+        <article className="athlete-performance-v4-feature athlete-performance-v4-evaluation">
+          <div className="athlete-performance-v4-card-head">
+            <div>
+              <span className="page-eyebrow">PERFORMANCE</span>
+              <h2>Última avaliação</h2>
+              <p className="muted">
+                {latestEvaluation
+                  ? `${latestEvaluation.title || "Avaliação"} · ${formatDate(latestEvaluation.evaluatedAt)}`
+                  : "Nenhuma avaliação finalizada."}
+              </p>
+            </div>
+
+            {currentOverallAverage !== null ? (
+              <div className="athlete-performance-v4-score">
+                <strong>{scorePercent(currentOverallAverage)}%</strong>
+                <span>resultado geral</span>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="athlete-performance-v4-bars">
             {areaAverages.map(({ area, average }) => (
-              <div key={area}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
-                  }}
-                >
+              <div className="athlete-performance-v4-bar-row" key={area}>
+                <div>
                   <strong>{AREA_LABELS[area]}</strong>
                   <span>
                     {average !== null
-                      ? `${average.toFixed(1)} / 4 • ${scorePercent(average)}%`
-                      : "— / 4"}
+                      ? `${average.toFixed(1)} / 4`
+                      : "Sem dados"}
                   </span>
                 </div>
-                <div
-                  style={{
-                    height: 9,
-                    marginTop: 7,
-                    overflow: "hidden",
-                    borderRadius: 999,
-                    background: "#e9eef0",
-                  }}
-                >
-                  <div
+
+                <div className="athlete-performance-v4-bar">
+                  <span
                     style={{
                       width: `${((average || 0) / 4) * 100}%`,
-                      height: "100%",
-                      borderRadius: 999,
-                      background: "#9ddb16",
                     }}
                   />
                 </div>
@@ -323,18 +390,122 @@ export default async function AthletePerformancePage({
           </div>
         </article>
 
-        <article className="card">
-          <span className="page-eyebrow">ACOMPANHAMENTO</span>
-          <h2>Metas em andamento</h2>
+        <aside className="athlete-performance-v4-summary">
+          <article>
+            <span className="page-eyebrow">TREINO</span>
+            <h3>Presença e rotina</h3>
+            <strong className="athlete-performance-v4-big-number">
+              {attendanceRate === null ? "—" : `${attendanceRate}%`}
+            </strong>
+            <p>
+              {countedAttendances.length
+                ? `${presentAttendances.length} presença(s) em ${countedAttendances.length} registro(s).`
+                : "Nenhum registro de frequência disponível."}
+            </p>
+            <Link href={`/atletas/${athlete.id}/performance/treino`}>
+              Abrir treino →
+            </Link>
+          </article>
+
+          <article>
+            <span className="page-eyebrow">JOGO</span>
+            <h3>Participação competitiva</h3>
+            <div className="athlete-performance-v4-mini-stats">
+              <span>
+                <strong>{matchTotals.matches}</strong>
+                <small>Jogos</small>
+              </span>
+              <span>
+                <strong>{matchTotals.goals}</strong>
+                <small>Gols</small>
+              </span>
+              <span>
+                <strong>{matchTotals.assists}</strong>
+                <small>Assist.</small>
+              </span>
+            </div>
+            <Link href={`/atletas/${athlete.id}/performance/jogo`}>
+              Abrir jogos →
+            </Link>
+          </article>
+
+          <article className="athlete-performance-v4-gps-card">
+            <span className="page-eyebrow">GPS</span>
+            <h3>Carga física</h3>
+            <p>
+              Área preparada para dados de GPS de treino e jogo vinculados ao atleta.
+            </p>
+            <Link href={`/atletas/${athlete.id}/performance/gps`}>
+              Abrir GPS →
+            </Link>
+          </article>
+        </aside>
+      </section>
+
+      <section className="athlete-performance-v4-secondary-grid">
+        <article className="card athlete-performance-v4-detail-card">
+          <span className="page-eyebrow">DADOS FÍSICOS</span>
+          <h2>Última medição</h2>
+
+          <div className="athlete-performance-v4-detail-grid">
+            <div>
+              <small>ALTURA</small>
+              <strong>{height ? `${height} cm` : "—"}</strong>
+            </div>
+            <div>
+              <small>PESO</small>
+              <strong>{weight ? `${weight} kg` : "—"}</strong>
+            </div>
+            <div>
+              <small>IMC</small>
+              <strong>{bmi?.toFixed(1) || "—"}</strong>
+            </div>
+            <div>
+              <small>MEDIÇÃO</small>
+              <strong>{formatDate(measurement?.measuredAt)}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="card athlete-performance-v4-detail-card">
+          <span className="page-eyebrow">BEM-ESTAR</span>
+          <h2>Registro mais recente</h2>
+
+          <div className="athlete-performance-v4-detail-grid">
+            <div>
+              <small>SONO</small>
+              <strong>{decimalNumber(wellbeing?.sleepHours) ?? "—"} h</strong>
+            </div>
+            <div>
+              <small>QUALIDADE</small>
+              <strong>{wellbeing?.sleepQuality ?? "—"}</strong>
+            </div>
+            <div>
+              <small>ENERGIA</small>
+              <strong>{wellbeing?.energyLevel ?? "—"}</strong>
+            </div>
+            <div>
+              <small>DOR</small>
+              <strong>
+                {wellbeing?.hasPain ? wellbeing.painLocation || "Sim" : "Não"}
+              </strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="card athlete-performance-v4-detail-card">
+          <span className="page-eyebrow">METAS</span>
+          <h2>Em andamento</h2>
+
           {athlete.performanceGoals.length ? (
-            <div className="stack" style={{ marginTop: 18 }}>
-              {athlete.performanceGoals.map((goal) => (
+            <div className="athlete-performance-v4-list">
+              {athlete.performanceGoals.slice(0, 3).map((goal) => (
                 <div key={goal.id}>
                   <strong>{goal.title}</strong>
-                  <div className="help">
-                    {AREA_LABELS[goal.area] || goal.area} • até{" "}
+                  <span>
+                    {AREA_LABELS[goal.area] || goal.area} · até{" "}
                     {formatDate(goal.targetDate)}
-                  </div>
+                  </span>
                 </div>
               ))}
             </div>
@@ -343,82 +514,20 @@ export default async function AthletePerformancePage({
           )}
         </article>
 
-        <article className="card">
-          <span className="page-eyebrow">DADOS FÍSICOS</span>
-          <h2>Última medição</h2>
-          <div className="stack" style={{ marginTop: 18 }}>
-            <div>
-              <span className="help">Altura</span>
-              <strong>{height ? `${height} cm` : "—"}</strong>
-            </div>
-            <div>
-              <span className="help">Peso</span>
-              <strong>{weight ? `${weight} kg` : "—"}</strong>
-            </div>
-            <div>
-              <span className="help">IMC</span>
-              <strong>{bmi?.toFixed(1) || "—"}</strong>
-            </div>
-            <div>
-              <span className="help">Medição</span>
-              <strong>{formatDate(measurement?.measuredAt)}</strong>
-            </div>
-          </div>
-        </article>
-
-        <article className="card">
-          <span className="page-eyebrow">BEM-ESTAR</span>
-          <h2>Registro mais recente</h2>
-          <div className="stack" style={{ marginTop: 18 }}>
-            <div>
-              <span className="help">Sono</span>
-              <strong>{decimalNumber(wellbeing?.sleepHours) ?? "—"} h</strong>
-            </div>
-            <div>
-              <span className="help">Qualidade do sono</span>
-              <strong>{wellbeing?.sleepQuality ?? "—"}</strong>
-            </div>
-            <div>
-              <span className="help">Energia</span>
-              <strong>{wellbeing?.energyLevel ?? "—"}</strong>
-            </div>
-            <div>
-              <span className="help">Dor relatada</span>
-              <strong>
-                {wellbeing?.hasPain ? wellbeing.painLocation || "Sim" : "Não"}
-              </strong>
-            </div>
-          </div>
-        </article>
-
-        <article className="card">
-          <span className="page-eyebrow">SÚMULA</span>
-          <h2>Resumo dos jogos</h2>
-          <div className="stack" style={{ marginTop: 18 }}>
-            <div>
-              <span className="help">Cartões amarelos</span>
-              <strong>{matchTotals.yellowCards}</strong>
-            </div>
-            <div>
-              <span className="help">Cartões vermelhos</span>
-              <strong>{matchTotals.redCards}</strong>
-            </div>
-          </div>
-        </article>
-
-        <article className="card">
+        <article className="card athlete-performance-v4-detail-card">
           <span className="page-eyebrow">ROTINA COMPLEMENTAR</span>
-          <h2>Treinos complementares</h2>
+          <h2>Treinos externos</h2>
+
           {athlete.externalTrainings.length ? (
-            <div className="stack" style={{ marginTop: 18 }}>
-              {athlete.externalTrainings.map((training) => (
+            <div className="athlete-performance-v4-list">
+              {athlete.externalTrainings.slice(0, 3).map((training) => (
                 <div key={training.id}>
                   <strong>{training.activity}</strong>
-                  <div className="help">
+                  <span>
                     {training.providerName ||
                       training.modality ||
                       "Atividade externa"}
-                  </div>
+                  </span>
                 </div>
               ))}
             </div>
@@ -428,64 +537,73 @@ export default async function AthletePerformancePage({
         </article>
       </section>
 
-      <section className="card" style={{ marginTop: 18 }}>
-        <span className="page-eyebrow">COMPARATIVO DE EVOLUÇÃO</span>
-        <h2>Primeira avaliação × avaliação atual</h2>
+      <section className="card athlete-performance-v4-comparison">
+        <div className="section-title-row">
+          <div>
+            <span className="page-eyebrow">EVOLUÇÃO</span>
+            <h2>Primeira avaliação × avaliação atual</h2>
+          </div>
+
+          {overallDelta !== null ? (
+            <span
+              className={`athlete-performance-v4-delta ${
+                overallDelta > 0
+                  ? "positive"
+                  : overallDelta < 0
+                    ? "negative"
+                    : ""
+              }`}
+            >
+              {overallDelta > 0 ? "+" : ""}
+              {Math.round((overallDelta / 4) * 100)} p.p.
+            </span>
+          ) : null}
+        </div>
+
         {latestEvaluation && firstComparableEvaluation ? (
           <>
             <p className="muted">
               {formatDate(firstComparableEvaluation.evaluatedAt)} →{" "}
-              {formatDate(latestEvaluation.evaluatedAt)} •{" "}
+              {formatDate(latestEvaluation.evaluatedAt)} ·{" "}
               {latestEvaluation.athleteRole === "GOALKEEPER"
                 ? "Goleiro"
                 : "Jogador de linha"}
             </p>
-            <div className="table-wrap" style={{ marginTop: 18 }}>
+
+            <div className="table-wrap">
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Total / valência</th>
+                    <th>Valência</th>
                     <th>Inicial</th>
                     <th>Atual</th>
                     <th>Evolução</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ background: "#f5f8f9" }}>
+                  <tr className="athlete-performance-v4-total-row">
                     <td>
-                      <strong>Resultado geral — 5 valências</strong>
+                      <strong>Resultado geral</strong>
+                    </td>
+                    <td>
+                      {initialOverallAverage !== null
+                        ? `${initialOverallAverage.toFixed(2)} (${scorePercent(initialOverallAverage)}%)`
+                        : "—"}
+                    </td>
+                    <td>
+                      {currentOverallAverage !== null
+                        ? `${currentOverallAverage.toFixed(2)} (${scorePercent(currentOverallAverage)}%)`
+                        : "—"}
                     </td>
                     <td>
                       <strong>
-                        {initialOverallAverage !== null
-                          ? `${initialOverallAverage.toFixed(2)} (${scorePercent(initialOverallAverage)}%)`
-                          : "—"}
-                      </strong>
-                    </td>
-                    <td>
-                      <strong>
-                        {currentOverallAverage !== null
-                          ? `${currentOverallAverage.toFixed(2)} (${scorePercent(currentOverallAverage)}%)`
-                          : "—"}
-                      </strong>
-                    </td>
-                    <td>
-                      <strong
-                        style={{
-                          color:
-                            overallDelta === null || overallDelta === 0
-                              ? "inherit"
-                              : overallDelta > 0
-                                ? "#4f8f00"
-                                : "#b45309",
-                        }}
-                      >
                         {overallDelta === null
                           ? "—"
-                          : `${overallDelta > 0 ? "+" : ""}${overallDelta.toFixed(2)} (${overallDelta > 0 ? "+" : ""}${Math.round((overallDelta / 4) * 100)} p.p.)`}
+                          : `${overallDelta > 0 ? "+" : ""}${overallDelta.toFixed(2)}`}
                       </strong>
                     </td>
                   </tr>
+
                   {areaAverages.map(({ area, initial, average, delta }) => (
                     <tr key={area}>
                       <td>
@@ -502,19 +620,10 @@ export default async function AthletePerformancePage({
                           : "—"}
                       </td>
                       <td>
-                        <strong
-                          style={{
-                            color:
-                              delta === null || delta === 0
-                                ? "inherit"
-                                : delta > 0
-                                  ? "#4f8f00"
-                                  : "#b45309",
-                          }}
-                        >
+                        <strong>
                           {delta === null
                             ? "—"
-                            : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} (${delta > 0 ? "+" : ""}${Math.round((delta / 4) * 100)} p.p.)`}
+                            : `${delta > 0 ? "+" : ""}${delta.toFixed(1)}`}
                         </strong>
                       </td>
                     </tr>
@@ -525,25 +634,25 @@ export default async function AthletePerformancePage({
           </>
         ) : (
           <p className="muted">
-            Finalize pelo menos duas avaliações do mesmo tipo para visualizar o
-            comparativo de evolução.
+            Finalize pelo menos duas avaliações do mesmo tipo para visualizar o comparativo.
           </p>
         )}
       </section>
 
-      <section className="card" style={{ marginTop: 18 }}>
+      <section className="card athlete-performance-v4-history">
         <div className="section-title-row">
           <div>
             <span className="page-eyebrow">HISTÓRICO</span>
             <h2>Avaliações do atleta</h2>
           </div>
+
           <span className="badge">
             {athlete.evaluations.length} registro(s)
           </span>
         </div>
 
         {athlete.evaluations.length ? (
-          <div className="table-wrap" style={{ marginTop: 18 }}>
+          <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ModuleHero from "@/components/ModuleHero";
 import WhatsAppAction from "@/components/WhatsAppAction";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
@@ -61,13 +62,15 @@ export default async function CommunicationPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <span className="page-eyebrow">CENTRAL DE COMUNICAÇÃO</span>
-          <h1>Comunicação</h1>
-          <p className="muted">Centralize convocações, lembretes e comunicados da organização.</p>
-        </div>
-      </div>
+      <ModuleHero
+        eyebrow="CENTRAL DE COMUNICAÇÃO"
+        title="Comunicação"
+        description={
+          <p>
+            Centralize convocações, lembretes e comunicados da organização.
+          </p>
+        }
+      />
 
       <div className="communication-grid">
         <section className="card">

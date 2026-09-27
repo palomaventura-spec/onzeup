@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireClubPermission } from "@/lib/club-access";
 
+import ModuleHero from "@/components/ModuleHero";
 import ModuleTour from "@/components/help/ModuleTour";
 import WhatsAppAction from "@/components/WhatsAppAction";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
@@ -210,19 +211,17 @@ export default async function FinancePage() {
 
   return (
     <>
-      <div className="page-head">
-        <ModuleTour module="financeiro" />
-
-        <div>
-          <h1>Financeiro</h1>
-
-          <p className="muted">
-            Controle simples de
-            cobranças dos atletas e
+      <ModuleHero
+        eyebrow="GESTÃO FINANCEIRA"
+        title="Financeiro"
+        description={
+          <p>
+            Controle cobranças, recebimentos e pagamentos dos atletas e
             responsáveis.
           </p>
-        </div>
-      </div>
+        }
+        aside={<ModuleTour module="financeiro" />}
+      />
 
       <div className="grid">
         <div className="card">

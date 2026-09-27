@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import ModuleHero from "@/components/ModuleHero";
+
 import { prisma } from "@/lib/prisma";
 import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
@@ -69,19 +71,27 @@ export default async function MatchesPage() {
 
   return (
     <main className="games-premium">
-      <div className="page-head">
-        <div>
-          <h1>Jogos e resultados</h1>
-
-          <p className="muted">
+      <ModuleHero
+        eyebrow="JOGOS E COMPETIÇÕES"
+        title="Jogos"
+        description={
+          <p>
             {canEdit
-              ? "Cadastre partidas, faça convocações e publique resultados no mesmo fluxo."
-              : "Consulte partidas, resultados e convocações das equipes."}
+              ? "Cadastre partidas, faça convocações, publique resultados e súmulas no mesmo fluxo."
+              : "Consulte partidas, resultados, súmulas e convocações das equipes."}
           </p>
-        </div>
-
-        <span className="badge">{matches.length} jogo(s)</span>
-      </div>
+        }
+        aside={
+          <div className="actions">
+            <span className="badge">{matches.length} jogo(s)</span>
+            {canEdit ? (
+              <Link className="btn" href="#novo-jogo">
+                ＋ Novo jogo
+              </Link>
+            ) : null}
+          </div>
+        }
+      />
 
       <div className={canEdit ? "two-col" : "stack"}>
         {canEdit ? (

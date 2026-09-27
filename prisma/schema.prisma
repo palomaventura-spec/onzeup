@@ -64,6 +64,7 @@ model Organization {
   athleteBodyMeasurements     AthleteBodyMeasurement[]
   athleteWellbeingEntries     AthleteWellbeingEntry[]
   athleteExternalTrainings    AthleteExternalTraining[]
+  athleteGpsRecords            AthleteGpsRecord[]
   performanceTemplates        PerformanceTemplate[]
   performanceReports          PerformanceReport[]
   monthlyAthleteReports       MonthlyAthleteReport[]
@@ -297,6 +298,7 @@ model User {
   recordedBodyMeasurements     AthleteBodyMeasurement[]     @relation("AthleteBodyMeasurementRecorder")
   recordedWellbeingEntries     AthleteWellbeingEntry[]      @relation("AthleteWellbeingEntryRecorder")
   recordedExternalTrainings    AthleteExternalTraining[]    @relation("AthleteExternalTrainingRecorder")
+  recordedGpsRecords           AthleteGpsRecord[]            @relation("AthleteGpsRecordRecorder")
   guardianProfile              GuardianProfile?
   payments                     Payment[]
   sessions                     Session[]
@@ -426,6 +428,7 @@ model Athlete {
   bodyMeasurements         AthleteBodyMeasurement[]
   wellbeingEntries         AthleteWellbeingEntry[]
   externalTrainings        AthleteExternalTraining[]
+  gpsRecords               AthleteGpsRecord[]
   privateData              AthletePrivateData?
   guardians                AthleteGuardian[]
   documents                AthleteDocument[]
@@ -695,6 +698,7 @@ model TrainingSession {
   recordedBy               User?                  @relation("TrainingSessionRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
   responsibleStaffMember   StaffMember?           @relation("TrainingSessionResponsible", fields: [responsibleStaffMemberId], references: [id], onDelete: SetNull)
   attendances              TrainingAttendance[]
+  gpsRecords               AthleteGpsRecord[]
   auditLogs                TrainingAuditLog[]
 
   @@index([organizationId, startsAt])
@@ -972,6 +976,46 @@ model AthleteExternalTraining {
   @@index([recordedByUserId])
 }
 
+model AthleteGpsRecord {
+  id                          String          @id @default(cuid())
+  organizationId              String
+  athleteId                   String
+  trainingSessionId           String?
+  matchId                     String?
+  recordedByUserId            String?
+  context                     GpsContext
+  source                      GpsDataSource   @default(MANUAL)
+  activityAt                  DateTime
+  durationMinutes             Int?
+  distanceMeters              Decimal?        @db.Decimal(10, 2)
+  maxSpeedKmh                 Decimal?        @db.Decimal(6, 2)
+  averageSpeedKmh             Decimal?        @db.Decimal(6, 2)
+  sprintCount                 Int?
+  highIntensityDistanceMeters Decimal?        @db.Decimal(10, 2)
+  accelerations               Int?
+  decelerations               Int?
+  playerLoad                  Decimal?        @db.Decimal(10, 2)
+  notes                       String?
+  sourceFileName              String?
+  rawData                     Json?
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete         Athlete          @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  trainingSession TrainingSession? @relation(fields: [trainingSessionId], references: [id], onDelete: SetNull)
+  match           Match?           @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  recordedBy      User?            @relation("AthleteGpsRecordRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([athleteId, trainingSessionId])
+  @@unique([athleteId, matchId])
+  @@index([organizationId, athleteId, activityAt])
+  @@index([athleteId, context, activityAt])
+  @@index([trainingSessionId])
+  @@index([matchId])
+  @@index([recordedByUserId])
+}
+
 model PerformanceReport {
   id                   String             @id @default(cuid())
   organizationId       String
@@ -979,8 +1023,15 @@ model PerformanceReport {
   evaluationId         String?
   generatedByUserId    String?
   title                String
+  reportType           PerformanceReportType   @default(EVALUATION)
+  status               PerformanceReportStatus @default(GENERATED)
+  periodStart          DateTime?
+  periodEnd            DateTime?
   includeScores        Boolean            @default(true)
   includeInternalNotes Boolean            @default(false)
+  snapshot             Json?
+  pdfUrl               String?
+  fileName             String?
   tokenHash            String             @unique
   expiresAt            DateTime?
   revokedAt            DateTime?
@@ -991,6 +1042,8 @@ model PerformanceReport {
   generatedBy          User?              @relation("PerformanceReportAuthor", fields: [generatedByUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, athleteId, createdAt])
+  @@index([organizationId, athleteId, reportType, createdAt])
+  @@index([organizationId, athleteId, status, createdAt])
   @@index([evaluationId])
   @@index([generatedByUserId])
   @@index([expiresAt])
@@ -1162,6 +1215,7 @@ model Match {
   callUps                CallUp[]
   charges                Charge[]
   athleteStats           MatchAthleteStat[]
+  gpsRecords             AthleteGpsRecord[]
   events                 MatchEvent[]
   staffAssignments       MatchStaffAssignment[]
   category               Category               @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -1811,6 +1865,31 @@ enum ExternalTrainingStatus {
   PAUSED
   COMPLETED
   CANCELLED
+}
+
+enum GpsContext {
+  TRAINING
+  MATCH
+}
+
+enum GpsDataSource {
+  MANUAL
+  CSV
+  XLSX
+  INTEGRATION
+}
+
+enum PerformanceReportType {
+  TRAINING
+  MATCH
+  GPS
+  EVALUATION
+  CONSOLIDATED
+}
+
+enum PerformanceReportStatus {
+  GENERATED
+  ARCHIVED
 }
 
 enum PerformanceGoalStatus {

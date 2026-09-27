@@ -23,6 +23,35 @@ function formDate(value: FormDataEntryValue | null) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+
+function optionalNumber(value: FormDataEntryValue | null) {
+  const raw = clean(value).replace(",", ".");
+  if (!raw) return null;
+
+  const number = Number(raw);
+  return Number.isFinite(number) ? number : null;
+}
+
+function optionalInt(value: FormDataEntryValue | null) {
+  const number = optionalNumber(value);
+  if (number === null) return null;
+
+  return Number.isInteger(number) ? number : null;
+}
+
+function activityDate(value: FormDataEntryValue | null) {
+  const raw = clean(value);
+  if (!raw) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const date = new Date(`${raw}T12:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 async function requireElitePerformance() {
   const user = await requireClubPermission("ATHLETES_EDIT");
 
@@ -158,3 +187,149 @@ export async function createPerformanceEvaluation(formData: FormData) {
     }`
   );
 }
+
+async function requireEliteGps() {
+  const user = await requireClubPermission("GPS_MANAGE");
+
+  const [subscription, organization] = await Promise.all([
+    prisma.subscription.findUnique({
+      where: { organizationId: user.organizationId },
+    }),
+    prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: { accessStatus: true, complimentaryUntil: true },
+    }),
+  ]);
+
+  const elite = hasEffectiveClubElite({
+    plan: subscription?.plan,
+    status: subscription?.status,
+    trialEnds: subscription?.trialEnds,
+    currentPeriodEnd: subscription?.currentPeriodEnd,
+    accessStatus: organization?.accessStatus,
+    complimentaryUntil: organization?.complimentaryUntil,
+  });
+
+  if (!elite) redirect("/performance?erro=elite");
+  return user;
+}
+
+export async function createManualGpsRecord(formData: FormData) {
+  const user = await requireEliteGps();
+
+  const athleteId = clean(formData.get("athleteId"));
+  const context = clean(formData.get("context"));
+  const recordedAt = activityDate(formData.get("activityAt"));
+
+  const trainingSessionId = nullable(formData.get("trainingSessionId"));
+  const matchId = nullable(formData.get("matchId"));
+
+  if (
+    !athleteId ||
+    !recordedAt ||
+    (context !== "TRAINING" && context !== "MATCH")
+  ) {
+    redirect(
+      `/atletas/${athleteId || "invalido"}/performance/gps?erro=dados`,
+    );
+  }
+
+  const athlete = await prisma.athlete.findFirst({
+    where: {
+      id: athleteId,
+      organizationId: user.organizationId,
+    },
+    select: { id: true },
+  });
+
+  if (!athlete) {
+    redirect(`/atletas/${athleteId}/performance/gps?erro=acesso`);
+  }
+
+  if (context === "TRAINING" && trainingSessionId) {
+    const trainingSession = await prisma.trainingSession.findFirst({
+      where: {
+        id: trainingSessionId,
+        organizationId: user.organizationId,
+      },
+      select: { id: true },
+    });
+
+    if (!trainingSession) {
+      redirect(`/atletas/${athleteId}/performance/gps?erro=treino`);
+    }
+  }
+
+  if (context === "MATCH" && matchId) {
+    const match = await prisma.match.findFirst({
+      where: {
+        id: matchId,
+        organizationId: user.organizationId,
+      },
+      select: { id: true },
+    });
+
+    if (!match) {
+      redirect(`/atletas/${athleteId}/performance/gps?erro=jogo`);
+    }
+  }
+
+  const durationMinutes = optionalInt(formData.get("durationMinutes"));
+  const distanceMeters = optionalNumber(formData.get("distanceMeters"));
+  const maxSpeedKmh = optionalNumber(formData.get("maxSpeedKmh"));
+  const averageSpeedKmh = optionalNumber(formData.get("averageSpeedKmh"));
+  const sprintCount = optionalInt(formData.get("sprintCount"));
+  const highIntensityDistanceMeters = optionalNumber(
+    formData.get("highIntensityDistanceMeters"),
+  );
+  const accelerations = optionalInt(formData.get("accelerations"));
+  const decelerations = optionalInt(formData.get("decelerations"));
+  const playerLoad = optionalNumber(formData.get("playerLoad"));
+
+  const numericValues = [
+    durationMinutes,
+    distanceMeters,
+    maxSpeedKmh,
+    averageSpeedKmh,
+    sprintCount,
+    highIntensityDistanceMeters,
+    accelerations,
+    decelerations,
+    playerLoad,
+  ].filter((value): value is number => value !== null);
+
+  if (numericValues.some((value) => value < 0)) {
+    redirect(`/atletas/${athleteId}/performance/gps?erro=valores`);
+  }
+
+  await prisma.athleteGpsRecord.create({
+    data: {
+      organizationId: user.organizationId,
+      athleteId: athlete.id,
+      recordedByUserId: user.id,
+      context,
+      source: "MANUAL",
+      activityAt: recordedAt,
+      trainingSessionId:
+        context === "TRAINING" ? trainingSessionId : null,
+      matchId: context === "MATCH" ? matchId : null,
+      durationMinutes,
+      distanceMeters,
+      maxSpeedKmh,
+      averageSpeedKmh,
+      sprintCount,
+      highIntensityDistanceMeters,
+      accelerations,
+      decelerations,
+      playerLoad,
+      notes: nullable(formData.get("notes")),
+    },
+  });
+
+  revalidatePath("/performance");
+  revalidatePath(`/atletas/${athleteId}/performance`);
+  revalidatePath(`/atletas/${athleteId}/performance/gps`);
+
+  redirect(`/atletas/${athleteId}/performance/gps?status=gps-salvo`);
+}
+

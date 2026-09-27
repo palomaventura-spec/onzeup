@@ -15,6 +15,11 @@ export type ClubSidebarGroup = {
 };
 
 const iconByPath: Array<[string, string]> = [
+  ["/performance/relatorios", "/brand/11up/icons/reports.svg"],
+  ["/organizador/competicoes", "/brand/11up/icons/games.svg"],
+  ["/notificacoes", "/brand/11up/icons/notifications.svg"],
+  ["/configuracoes", "/brand/11up/icons/settings.svg"],
+
   ["/dashboard", "/brand/11up/icons/dashboard.svg"],
   ["/agenda", "/brand/11up/icons/agenda.svg"],
 

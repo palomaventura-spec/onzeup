@@ -10,6 +10,7 @@ import {
   type ClubRole,
 } from "@/lib/club-permissions";
 
+import ModuleHero from "@/components/ModuleHero";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 import {
@@ -92,23 +93,16 @@ export default async function AccessPage({
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <span className="page-eyebrow">
-            ADMINISTRAÇÃO
-          </span>
-
-          <h1>
-            Usuários e Acessos
-          </h1>
-
-          <p className="muted">
-            Cada pessoa acessa o
-            11UP com seu próprio
-            e-mail e senha.
+      <ModuleHero
+        eyebrow="ADMINISTRAÇÃO"
+        title="Usuários e acessos"
+        description={
+          <p>
+            Cada pessoa acessa o 11UP com seu próprio e-mail e senha.
           </p>
-        </div>
-      </div>
+        }
+        aside={<span className="badge">{users.length} usuário(s)</span>}
+      />
 
       {query.status ===
       "convite-enviado" ? (

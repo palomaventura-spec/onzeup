@@ -267,34 +267,40 @@ export default async function AthletesPage({
 
   return (
     <>
-      <div className="page-head athlete-premium-head">
-        <div>
-          <span className="page-eyebrow">
-            GESTÃO DO ELENCO
+      <section className="athletes-v3-hero">
+        <div className="athletes-v3-hero-copy">
+          <span className="athletes-v3-kicker">
+            11UP CLUB · GESTÃO DO ELENCO
           </span>
 
           <h1>Atletas</h1>
 
-          <p className="muted">
-            Visão completa do elenco, atletas em avaliação,
-            documentação, desempenho e vínculo familiar.
+          <p>
+            Gestão do elenco, atletas em avaliação, documentação e
+            acompanhamento esportivo em uma única visão.
           </p>
+
+          <div className="athletes-v3-hero-meta">
+            <span>{activeCount} atleta(s) no elenco ativo</span>
+            <span>{standardCategoryCount} categoria(s) oficial(is)</span>
+            {evaluationCount ? (
+              <span>{evaluationCount} em avaliação</span>
+            ) : null}
+          </div>
         </div>
 
-        <div className="actions">
-          {evaluationCount ? (
-            <span className="badge">
-              {evaluationCount} em avaliação
-            </span>
+        <div className="athletes-v3-hero-actions">
+          {canEdit ? (
+            <a className="athletes-v3-primary" href="#novo-atleta">
+              + Novo atleta
+            </a>
           ) : null}
 
-          <span className="badge">
-            {activeCount} ativo(s)
-          </span>
-
-          <ModuleTour module="atletas" />
+          <div className="athletes-v3-help">
+            <ModuleTour module="atletas" />
+          </div>
         </div>
-      </div>
+      </section>
 
       <section className="athlete-kpis">
         <article>
@@ -326,25 +332,21 @@ export default async function AthletesPage({
 
       {canEdit ? (
         <details
-          className="card athlete-create-drawer"
+          id="novo-atleta"
+          className="card athlete-create-drawer athletes-v3-create-drawer"
           open={!athletes.length}
         >
           <summary>
             <div>
-              <span className="page-eyebrow">
-                NOVO CADASTRO
-              </span>
-
+              <span className="page-eyebrow">NOVO CADASTRO</span>
               <h2>Adicionar atleta</h2>
-
               <p>
-                Cadastre diretamente no elenco ou em uma
-                categoria de avaliação.
+                Cadastre diretamente no elenco ou em uma categoria de avaliação.
               </p>
             </div>
 
-            <span className="btn">
-              ＋ Novo atleta
+            <span className="btn btn-secondary">
+              Abrir cadastro
             </span>
           </summary>
 
@@ -352,7 +354,21 @@ export default async function AthletesPage({
         </details>
       ) : null}
 
-      <section className="card athlete-filter-bar">
+      <section className="athletes-v3-roster-head">
+        <div>
+          <span className="page-eyebrow">GESTÃO DO ELENCO</span>
+          <h2>Elenco e categorias</h2>
+          <p className="muted">
+            Localize atletas por nome, categoria, posição ou status.
+          </p>
+        </div>
+
+        <span className="athletes-v3-result-count">
+          {filteredAthletes.length} resultado(s)
+        </span>
+      </section>
+
+      <section className="card athlete-filter-bar athletes-v3-filter-bar">
         <form method="get">
           <label className="athlete-search">
             Buscar atleta
@@ -432,10 +448,6 @@ export default async function AthletesPage({
             </Link>
           ) : null}
         </form>
-
-        <span>
-          {filteredAthletes.length} resultado(s)
-        </span>
       </section>
 
       {!canEdit ? (

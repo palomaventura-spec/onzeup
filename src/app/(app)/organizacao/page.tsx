@@ -2,6 +2,7 @@ import ImageUpload from "@/components/ImageUpload";
 import Link from "next/link";
 import { requireOrganizationUser } from "@/lib/auth";
 import { updateOrganization } from "./actions";
+import ModuleHero from "@/components/ModuleHero";
 import ModuleTour from "@/components/help/ModuleTour";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
 
@@ -11,14 +12,23 @@ export default async function OrganizationPage() {
 
   return (
     <>
-      <div className="page-head">
-        <ModuleTour module="organizacao" />
-        <div>
-          <h1>Site e Configurações</h1>
-          <p className="muted">Configure os dados do clube e personalize sua página/site público.</p>
-        </div>
-        <Link className="btn" href={`/o/${org.slug}`} target="_blank">Ver site público</Link>
-      </div>
+      <ModuleHero
+        eyebrow="IDENTIDADE E PRESENÇA DIGITAL"
+        title="Site e Configurações"
+        description={
+          <p>
+            Configure os dados do clube e personalize sua página/site público.
+          </p>
+        }
+        aside={
+          <div className="actions">
+            <Link className="btn" href={`/o/${org.slug}`} target="_blank">
+              Ver site público
+            </Link>
+            <ModuleTour module="organizacao" />
+          </div>
+        }
+      />
 
       <section className="card">
         <form className="form" action={updateOrganization}>

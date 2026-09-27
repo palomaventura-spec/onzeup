@@ -1,4 +1,7 @@
 import Link from "next/link";
+
+import ModuleHero from "@/components/ModuleHero";
+import ModuleTabs from "@/components/ModuleTabs";
 import {
   ClubPermissionCode,
   SportType,
@@ -482,36 +485,42 @@ export default async function TrainingPerformancePage({
 
   return (
     <main className="performance-hub training-performance-page">
-      <header className="performance-hero">
-        <div>
-          <span className="page-eyebrow">
-            11UP PERFORMANCE · TREINOS
-          </span>
-          <h1>Frequência e rendimento</h1>
+      <ModuleHero
+        eyebrow="11UP PERFORMANCE · TREINOS"
+        title="Frequência e rendimento"
+        description={
           <p>
             Presença, minutos efetivamente treinados e aproveitamento do
             tempo oferecido pela equipe.
           </p>
-        </div>
+        }
+        aside={
+          <>
+            <small>PERÍODO</small>
+            <strong>{sessions.length}</strong>
+            <span>treinos concluídos em {period.label}</span>
+          </>
+        }
+      />
 
-        <div className="performance-hero-score">
-          <small>PERÍODO</small>
-          <strong>{sessions.length}</strong>
-          <span>treinos concluídos em {period.label}</span>
-        </div>
-      </header>
-
-      <nav className="performance-module-tabs">
-        <Link href="/performance">Visão geral</Link>
-        <Link className="active" href="/performance/frequencia">
-          Frequência e rendimento
-        </Link>
-        <Link href={`/performance/relatorios?month=${period.value}`}>
-          Relatórios
-        </Link>
-        <Link href="/treinos">Treinos</Link>
-        <Link href="/performance/gps">GPS</Link>
-      </nav>
+      <ModuleTabs
+        className="performance-module-tabs"
+        ariaLabel="Navegação do Performance"
+        items={[
+          { label: "Visão geral", href: "/performance" },
+          {
+            label: "Frequência e rendimento",
+            href: "/performance/frequencia",
+            active: true,
+          },
+          {
+            label: "Relatórios",
+            href: `/performance/relatorios?month=${period.value}`,
+          },
+          { label: "Treinos", href: "/treinos" },
+          { label: "GPS", href: "/performance/gps" },
+        ]}
+      />
 
       <section className="performance-kpis">
         <article>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ModuleHero from "@/components/ModuleHero";
 import { prisma } from "@/lib/prisma";
 import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
@@ -156,73 +157,33 @@ export default async function QtrPage({
 
   return (
     <main className="page-shell qts-premium">
-      <section
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          gap: 20,
-          flexWrap: "wrap",
-          marginBottom: 18,
-        }}
-      >
-        <div>
-          <p
-            style={{
-              margin: "0 0 4px",
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#667585",
-            }}
-          >
-            Planejamento semanal
-          </p>
-
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "clamp(28px, 3vw, 36px)",
-              lineHeight: 1.05,
-              letterSpacing: "-0.03em",
-              color: "#0f1720",
-            }}
-          >
-            QTS
-          </h1>
-
-          <p
-            style={{
-              margin: "8px 0 0",
-              color: "#53606d",
-              fontSize: 15,
-            }}
-          >
+      <ModuleHero
+        eyebrow="PLANEJAMENTO SEMANAL"
+        title="QTS"
+        description={
+          <p>
+            Organize a programação semanal de treinos e jogos por categoria.
+            <br />
             {formatDate(weekStart)} a {formatDate(weekEnd)}
           </p>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            flexWrap: "wrap",
-          }}
-        >
-          <Link
-            href={qtrHref(isoDate(previous), selectedCategory)}
-            style={navButtonStyle}
-          >
-            ← Semana anterior
-          </Link>
-
-          <Link
-            href={qtrHref(isoDate(next), selectedCategory)}
-            style={navButtonStyle}
-          >
-            Próxima semana →
-          </Link>
-        </div>
-      </section>
+        }
+        aside={
+          <div className="actions">
+            <Link
+              href={qtrHref(isoDate(previous), selectedCategory)}
+              className="btn-secondary"
+            >
+              ← Semana anterior
+            </Link>
+            <Link
+              href={qtrHref(isoDate(next), selectedCategory)}
+              className="btn-secondary"
+            >
+              Próxima semana →
+            </Link>
+          </div>
+        }
+      />
 
       {params.gerado === "1" || params.salvo === "1" ? (
         <div

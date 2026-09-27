@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireOrganizationUser } from "@/lib/auth";
 import { updateConnectionSettings } from "./actions";
+import ModuleHero from "@/components/ModuleHero";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 function validWhatsapp(value?: string | null) {
@@ -21,15 +22,21 @@ export default async function ConnectionsPage({
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <span className="page-eyebrow">COMUNICAÇÃO DA ORGANIZAÇÃO</span>
-          <h1>Conexões</h1>
-          <p className="muted">
-            Configure o contato oficial da organização. Nesta fase, o 11UP prepara mensagens para envio manual pelo WhatsApp.
+      <ModuleHero
+        eyebrow="COMUNICAÇÃO DA ORGANIZAÇÃO"
+        title="Conexões"
+        description={
+          <p>
+            Configure o contato oficial da organização. Nesta fase, o 11UP
+            prepara mensagens para envio manual pelo WhatsApp.
           </p>
-        </div>
-      </div>
+        }
+        aside={
+          <Link className="btn" href="/comunicacao">
+            Abrir Central de Comunicação
+          </Link>
+        }
+      />
 
       {query.salvo === "1" ? (
         <div className="success-notice" role="status">WhatsApp salvo com sucesso.</div>

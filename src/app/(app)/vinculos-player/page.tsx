@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ModuleHero from "@/components/ModuleHero";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
 import { approvePlayerLink, rejectPlayerLink } from "./actions";
@@ -26,16 +27,17 @@ export default async function PlayerLinksPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <span className="page-eyebrow">11UP PLAYER ↔ CLUBE</span>
-          <h1>Vínculos Player</h1>
-          <p className="muted">
-            A família controla o Player. Você apenas confirma se aquele perfil corresponde ao atleta cadastrado no clube.
+      <ModuleHero
+        eyebrow="11UP PLAYER ↔ CLUB"
+        title="Vínculos Player"
+        description={
+          <p>
+            A família controla o Player. Você apenas confirma se aquele perfil
+            corresponde ao atleta cadastrado no clube.
           </p>
-        </div>
-        <span className="badge">{pending.length} pendente(s)</span>
-      </div>
+        }
+        aside={<span className="badge">{pending.length} pendente(s)</span>}
+      />
 
       <section className="card">
         <div className="section-title-row">

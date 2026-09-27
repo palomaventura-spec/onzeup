@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type React from "react";
 
+import ModuleHero from "@/components/ModuleHero";
+
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -79,18 +81,19 @@ export default async function CategoriesPage() {
 
   return (
     <>
-      <div className="page-head category-premium-head">
-        <div>
-          <span className="page-eyebrow">ESTRUTURA ESPORTIVA</span>
-          <h1>Categorias</h1>
-          <p className="muted">
+      <ModuleHero
+        eyebrow="ESTRUTURA ESPORTIVA"
+        title="Categorias"
+        description={
+          <p>
             Organize elenco, avaliação, comissão, agenda e competições com
             identidade própria por categoria.
           </p>
-        </div>
-
-        <span className="badge">{activeCount} categoria(s) ativa(s)</span>
-      </div>
+        }
+        aside={
+          <span className="badge">{activeCount} categoria(s) ativa(s)</span>
+        }
+      />
 
       <section className="category-kpis">
         <article>

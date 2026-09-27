@@ -2,6 +2,8 @@ import ImageUpload from "@/components/ImageUpload";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 
+import ModuleHero from "@/components/ModuleHero";
+
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -108,17 +110,19 @@ export default async function StaffPage({
 
   return (
     <>
-      <div className="page-head staff-premium-head">
-        <div>
-          <span className="page-eyebrow">EQUIPE MULTIDISCIPLINAR</span>
-          <h1>Comissão técnica</h1>
-          <p className="muted">
+      <ModuleHero
+        eyebrow="EQUIPE MULTIDISCIPLINAR"
+        title="Comissão técnica"
+        description={
+          <p>
             Profissionais, responsabilidades e acessos organizados por
             categoria.
           </p>
-        </div>
-        <span className="badge">{activeCount} profissional(is) ativo(s)</span>
-      </div>
+        }
+        aside={
+          <span className="badge">{activeCount} profissional(is) ativo(s)</span>
+        }
+      />
       {filters.coachInvite && notices[filters.coachInvite] ? (
         <div className="notice">{notices[filters.coachInvite]}</div>
       ) : null}

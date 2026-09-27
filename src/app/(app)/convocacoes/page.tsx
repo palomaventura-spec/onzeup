@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import ModuleHero from "@/components/ModuleHero";
 import ModuleTour from "@/components/help/ModuleTour";
 import { requireClubPermission } from "@/lib/club-access";
 import { prisma } from "@/lib/prisma";
@@ -64,22 +65,17 @@ export default async function CallUpsPage() {
 
   return (
     <main className="callups-premium">
-      <header className="module-premium-head">
-        <div>
-          <span className="page-eyebrow">
-            FUTEBOL • GESTÃO DE ELENCO
-          </span>
-
-          <h1>Convocações</h1>
-
+      <ModuleHero
+        eyebrow="GESTÃO DE ELENCO"
+        title="Convocações"
+        description={
           <p>
             Organize o grupo, acompanhe confirmações e gere a arte oficial de
             cada partida.
           </p>
-        </div>
-
-        <ModuleTour module="convocacoes" />
-      </header>
+        }
+        aside={<ModuleTour module="convocacoes" />}
+      />
 
       <section className="module-kpis">
         <article>

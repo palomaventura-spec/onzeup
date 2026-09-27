@@ -42,6 +42,11 @@ const groups: MenuGroup[] = [
         label: "Agenda",
         permission: "AGENDA_VIEW",
       },
+      {
+        href: "/notificacoes",
+        label: "Notificações",
+        permission: "DASHBOARD_VIEW",
+      },
     ],
   },
   {
@@ -117,29 +122,30 @@ const groups: MenuGroup[] = [
         label: "Financeiro",
         permission: "FINANCE_VIEW",
       },
+    ],
+  },
+  {
+    title: "CONFIGURAÇÕES",
+    items: [
+      {
+        href: "/organizacao",
+        label: "Clube",
+        permission: "ORGANIZATION_MANAGE",
+      },
       {
         href: "/acessos",
-        label: "Usuários e acessos",
+        label: "Permissões",
         permission: "USERS_MANAGE",
       },
       {
         href: "/integracoes",
-        label: "Conexões",
+        label: "Integrações",
         permission: "INTEGRATIONS_MANAGE",
       },
       {
-        href: "/organizacao",
-        label: "Configurações",
-        permission: "ORGANIZATION_MANAGE",
-      },
-      {
-        href: "/planos",
+        href: "/configuracoes",
         label: "Dados da conta",
         permission: "PLAN_MANAGE",
-      },
-      {
-        href: "/ajuda",
-        label: "Ajuda",
       },
     ],
   },
@@ -288,53 +294,124 @@ export default async function AppShell({
     .filter(canSee)
     .map(({ permission: _, ...item }) => item);
 
+  const organizationName =
+    user?.organization?.publicName ||
+    user?.organization?.name ||
+    "Meu Clube";
+
+  const currentSeason = new Date().getFullYear();
+  const canManagePlan =
+    user ? hasClubPermission(user, "PLAN_MANAGE") : false;
+
   return (
     <div className="shell club-app-light">
-      <aside className="sidebar club-sidebar-final">
-        <div className="club-sidebar-head">
+      <aside className="sidebar club-sidebar-final club-sidebar-reference">
+        <div className="club-sidebar-head club-sidebar-reference-head">
           <Link
-            className="brand"
+            className="brand club-sidebar-reference-brand"
             href="/dashboard"
             aria-label={`${brand.name} ${brand.product}`}
           >
             <Image
               src={brand.logo}
               alt={brand.name}
-              width={132}
-              height={42}
+              width={154}
+              height={48}
               priority
             />
+            <small>CLUB</small>
           </Link>
 
-          <p>{brand.product} · Gestão esportiva</p>
+          <div className="club-sidebar-club-card" aria-label={`${organizationName} · Temporada ${currentSeason}`}>
+            <span className="club-sidebar-club-mark">
+              {user?.organization?.logoUrl ? (
+                <img
+                  src={user.organization.logoUrl}
+                  alt=""
+                />
+              ) : (
+                <Image
+                  src="/brand/11up/logos/11up-symbol-transparent-light.svg"
+                  alt=""
+                  width={26}
+                  height={26}
+                />
+              )}
+            </span>
+
+            <span className="club-sidebar-club-copy">
+              <strong>{organizationName}</strong>
+              <small>Temporada {currentSeason}</small>
+            </span>
+          </div>
         </div>
 
         <ClubSidebarNavigation groups={visibleGroups} />
 
-        <div className="club-sidebar-signature">
-          <small>TECNOLOGIA PARA O ESPORTE</small>
-          <span>{brand.tagline}</span>
-        </div>
+        <div className="club-sidebar-reference-footer">
+          {canManagePlan ? (
+            <Link className="club-sidebar-elite-card" href="/planos">
+              <span className="club-sidebar-elite-icon" aria-hidden="true">
+                ♛
+              </span>
 
-        <form
-          className="club-sidebar-logout"
-          action="/api/auth/logout"
-          method="post"
-        >
-          <button type="submit">
-            Sair
-          </button>
-        </form>
+              <span>
+                <strong>Club Elite</strong>
+                <small>Plano do clube</small>
+              </span>
+
+              <b aria-hidden="true">›</b>
+            </Link>
+          ) : null}
+
+          <form
+            className="club-sidebar-logout club-sidebar-reference-logout"
+            action="/api/auth/logout"
+            method="post"
+          >
+            <button type="submit">
+              Sair
+            </button>
+          </form>
+        </div>
       </aside>
 
       <div className="club-workspace">
         <header className="club-system-topbar">
+          <div className="club-mobile-topbar-left">
+            <Link
+              className="club-mobile-topbar-brand"
+              href="/dashboard"
+              aria-label={`${brand.name} ${brand.product}`}
+            >
+              <Image
+                src={brand.logo}
+                alt={brand.name}
+                width={104}
+                height={34}
+                priority
+              />
+              <small>CLUB</small>
+            </Link>
+          </div>
+
           <div className="club-system-actions">
             {user?.organizationId ? (
               <NotificationBell
                 organizationId={user.organizationId}
               />
             ) : null}
+
+            <details className="club-mobile-create-menu">
+              <summary>＋ Criar</summary>
+              <div>
+                <Link href="/treinos">Novo treino</Link>
+                <Link href="/jogos">Novo jogo</Link>
+                <Link href="/convocacoes">Nova convocação</Link>
+                <Link href="/comunicacao">Novo comunicado</Link>
+                <Link href="/atletas">Novo atleta</Link>
+              </div>
+            </details>
           </div>
         </header>
 
