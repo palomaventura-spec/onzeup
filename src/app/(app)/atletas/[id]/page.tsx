@@ -186,7 +186,7 @@ export default async function EditAthletePage({
         registration.authorityType === "CBF",
     );
   return (
-    <main className="athlete-profile-page athlete-edit-page-v2">
+    <main className="athlete-profile-page athlete-edit-page-v3">
       <section
         className="athlete-profile-hero"
         style={{
@@ -251,7 +251,35 @@ export default async function EditAthletePage({
         </span>
       </section>
 
-      <div className="page-head">
+      <nav className="athlete-v3-tabs" aria-label="Navegação do atleta">
+        <Link
+          className="active"
+          href={`/atletas/${athlete.id}`}
+        >
+          Ficha
+        </Link>
+
+        <Link
+          href={`/atletas/${athlete.id}/dados#documentos`}
+        >
+          Documentos
+        </Link>
+
+        <Link
+          href={`/atletas/${athlete.id}/performance`}
+        >
+          Performance
+        </Link>
+
+        <Link
+          className="athlete-v3-back"
+          href="/atletas"
+        >
+          ← Voltar aos atletas
+        </Link>
+      </nav>
+
+      <div className="page-head athlete-v3-page-head">
         <div>
           <h1>
             {canEdit
@@ -271,21 +299,7 @@ export default async function EditAthletePage({
           </p>
         </div>
 
-        <div className="actions">
-          <Link
-            className="btn"
-            href={`/atletas/${athlete.id}/performance`}
-          >
-            Performance
-          </Link>
 
-          <Link
-            className="btn btn-secondary"
-            href="/atletas"
-          >
-            Voltar
-          </Link>
-        </div>
       </div>
 
       {isEvaluation && canEdit ? (
@@ -853,6 +867,329 @@ export default async function EditAthletePage({
           </p>
         </section>
       )}
+
+      <style>{`
+        .athlete-edit-page-v3 {
+          --athlete-v3-ink: #07131d;
+          --athlete-v3-muted: #70808b;
+          --athlete-v3-line: #dfe6ea;
+          --athlete-v3-lime: #99e600;
+          --athlete-v3-lime-soft: #eff9d8;
+          display: grid;
+          gap: 18px;
+          padding: 28px 34px 44px;
+          background:
+            radial-gradient(circle at 92% 2%, rgba(153, 230, 0, .075), transparent 25rem),
+            #f4f7f8;
+        }
+
+        .athlete-edit-page-v3 * {
+          box-sizing: border-box;
+        }
+
+        .athlete-edit-page-v3 .athlete-profile-hero {
+          min-height: 194px;
+          display: flex;
+          align-items: center;
+          gap: 22px;
+          position: relative;
+          overflow: hidden;
+          margin: 0;
+          padding: 28px 34px;
+          border: 1px solid rgba(255,255,255,.08) !important;
+          border-top: 0 !important;
+          border-radius: 26px;
+          color: #fff;
+          background:
+            linear-gradient(
+              104deg,
+              rgba(5, 20, 31, .99) 0%,
+              rgba(6, 29, 37, .98) 58%,
+              rgba(20, 76, 30, .97) 100%
+            );
+          box-shadow: 0 20px 45px rgba(7, 19, 29, .12);
+        }
+
+        .athlete-edit-page-v3 .athlete-profile-hero::after {
+          content: "";
+          width: 360px;
+          height: 360px;
+          position: absolute;
+          right: -105px;
+          top: -175px;
+          border: 1px solid rgba(153,230,0,.18);
+          border-radius: 999px;
+          box-shadow:
+            0 0 0 42px rgba(153,230,0,.025),
+            0 0 0 84px rgba(153,230,0,.018);
+          pointer-events: none;
+        }
+
+        .athlete-edit-page-v3 .athlete-profile-avatar,
+        .athlete-edit-page-v3 .athlete-profile-hero > div,
+        .athlete-edit-page-v3 .athlete-status {
+          position: relative;
+          z-index: 1;
+        }
+
+        .athlete-edit-page-v3 .athlete-profile-avatar {
+          width: 94px;
+          height: 94px;
+          flex: 0 0 94px;
+          overflow: hidden;
+          border: 3px solid var(--athlete-v3-lime);
+          border-radius: 22px;
+          background: #fff;
+          box-shadow: 0 12px 26px rgba(0,0,0,.18);
+        }
+
+        .athlete-edit-page-v3 .athlete-profile-avatar img {
+          width: 100%;
+          height: 100%;
+          display: block;
+          object-fit: cover;
+        }
+
+        .athlete-edit-page-v3 .athlete-profile-hero .page-eyebrow {
+          display: block;
+          margin-bottom: 6px;
+          color: var(--athlete-v3-lime) !important;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: .16em;
+        }
+
+        .athlete-edit-page-v3 .athlete-profile-hero h1 {
+          margin: 0;
+          color: #fff !important;
+          font-size: clamp(34px, 4vw, 54px);
+          line-height: 1;
+          letter-spacing: -.045em;
+        }
+
+        .athlete-edit-page-v3 .athlete-profile-hero p {
+          margin: 8px 0 0;
+          color: rgba(255,255,255,.78);
+          font-size: 14px;
+          font-weight: 700;
+        }
+
+        .athlete-edit-page-v3 .athlete-status {
+          margin-left: auto;
+          min-height: 36px;
+          display: inline-flex;
+          align-items: center;
+          padding: 0 14px;
+          border-radius: 999px;
+          color: #66747d;
+          background: #edf1f3;
+          font-size: 10px;
+          font-weight: 900;
+        }
+
+        .athlete-edit-page-v3 .athlete-status.active {
+          color: #10200a;
+          background: var(--athlete-v3-lime);
+        }
+
+        .athlete-v3-tabs {
+          min-height: 64px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 8px;
+          border: 1px solid var(--athlete-v3-line);
+          border-radius: 18px;
+          background: #fff;
+          box-shadow: 0 8px 28px rgba(8,26,38,.035);
+        }
+
+        .athlete-v3-tabs > a {
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 18px;
+          border-radius: 11px;
+          color: #5e6f7a;
+          font-size: 12px;
+          font-weight: 900;
+          text-decoration: none;
+          transition: background .16s ease, color .16s ease;
+        }
+
+        .athlete-v3-tabs > a:hover {
+          color: var(--athlete-v3-ink);
+          background: #f4f7f8;
+        }
+
+        .athlete-v3-tabs > a.active {
+          color: #0b1806;
+          background: var(--athlete-v3-lime);
+          box-shadow: 0 7px 18px rgba(153,230,0,.16);
+        }
+
+        .athlete-v3-tabs > .athlete-v3-back {
+          margin-left: auto;
+          border: 1px solid #dfe6ea;
+          background: #fafbfb;
+          color: #5f6f7a;
+        }
+
+        .athlete-v3-page-head {
+          margin: 0;
+          padding: 4px 2px 0;
+        }
+
+        .athlete-v3-page-head h1 {
+          margin: 0;
+          color: var(--athlete-v3-ink);
+          font-size: 25px;
+          letter-spacing: -.03em;
+        }
+
+        .athlete-v3-page-head .muted {
+          max-width: 850px;
+          margin-top: 5px;
+          color: var(--athlete-v3-muted);
+          font-size: 12px;
+        }
+
+        .athlete-edit-page-v3 > .card {
+          margin: 0 !important;
+          border: 1px solid var(--athlete-v3-line);
+          border-radius: 20px;
+          background: #fff;
+          box-shadow: 0 10px 30px rgba(8,26,38,.04);
+        }
+
+        .athlete-edit-page-v3 .form {
+          gap: 16px;
+        }
+
+        .athlete-edit-page-v3 .form label {
+          color: #394a56;
+          font-size: 11px;
+          font-weight: 900;
+        }
+
+        .athlete-edit-page-v3 .form input,
+        .athlete-edit-page-v3 .form select,
+        .athlete-edit-page-v3 .form textarea {
+          min-height: 46px;
+          border: 1px solid #d9e2e7;
+          border-radius: 12px;
+          color: #101820;
+          background: #fff;
+          font-size: 13px;
+        }
+
+        .athlete-edit-page-v3 .form textarea {
+          min-height: 104px;
+          padding-top: 12px;
+        }
+
+        .athlete-edit-page-v3 .form input:focus,
+        .athlete-edit-page-v3 .form select:focus,
+        .athlete-edit-page-v3 .form textarea:focus {
+          border-color: #94d700;
+          box-shadow: 0 0 0 3px rgba(153,230,0,.12);
+          outline: none;
+        }
+
+        .athlete-edit-page-v3 .form-divider {
+          margin-top: 6px;
+          padding-top: 18px;
+          border-top: 1px solid #e8edef;
+        }
+
+        .athlete-edit-page-v3 .form-divider span,
+        .athlete-edit-page-v3 .page-eyebrow {
+          color: #719f00;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: .14em;
+        }
+
+        .athlete-edit-page-v3 .stack > div {
+          padding: 12px 0;
+          border-bottom: 1px solid #edf1f3;
+        }
+
+        .athlete-edit-page-v3 .stack > div:last-child {
+          border-bottom: 0;
+        }
+
+        @media (max-width: 980px) {
+          .athlete-edit-page-v3 {
+            padding: 24px;
+          }
+
+          .athlete-edit-page-v3 .athlete-profile-hero {
+            min-height: auto;
+            align-items: flex-start;
+            flex-wrap: wrap;
+          }
+
+          .athlete-edit-page-v3 .athlete-status {
+            margin-left: 0;
+          }
+        }
+
+        @media (max-width: 760px) {
+          .athlete-edit-page-v3 {
+            gap: 14px;
+            padding: 16px 12px 32px;
+          }
+
+          .athlete-edit-page-v3 .athlete-profile-hero {
+            padding: 22px 18px;
+            border-radius: 20px;
+          }
+
+          .athlete-edit-page-v3 .athlete-profile-avatar {
+            width: 72px;
+            height: 72px;
+            flex-basis: 72px;
+            border-radius: 18px;
+          }
+
+          .athlete-edit-page-v3 .athlete-profile-hero h1 {
+            font-size: 32px;
+          }
+
+          .athlete-v3-tabs {
+            overflow-x: auto;
+            justify-content: flex-start;
+            white-space: nowrap;
+          }
+
+          .athlete-v3-tabs > a {
+            flex: 0 0 auto;
+            padding: 0 14px;
+          }
+
+          .athlete-v3-tabs > .athlete-v3-back {
+            margin-left: 0;
+          }
+
+          .athlete-v3-page-head h1 {
+            font-size: 22px;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .athlete-edit-page-v3 .athlete-profile-hero {
+            display: grid;
+            grid-template-columns: 72px 1fr;
+          }
+
+          .athlete-edit-page-v3 .athlete-status {
+            grid-column: 1 / -1;
+            width: max-content;
+          }
+        }
+      `}</style>
     </main>
   );
 }

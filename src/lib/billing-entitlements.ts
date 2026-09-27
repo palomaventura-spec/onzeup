@@ -38,15 +38,19 @@ export function hasEffectivePlayerPremium(
   now = new Date()
 ) {
   if (hasValidComplimentaryAccess(input, now)) return true;
+
   if (String(input.planStatus || "").toUpperCase() === "CANCELLED") {
     return false;
   }
+
   if (String(input.plan || "").toUpperCase() !== "PREMIUM") {
     return false;
   }
+
   if (!input.premiumUntil) {
     return String(input.planStatus || "ACTIVE").toUpperCase() === "ACTIVE";
   }
+
   return !isPastGrace(input.premiumUntil, now);
 }
 
@@ -66,7 +70,10 @@ export function hasEffectiveClubElite(
   const accessStatus = String(input.accessStatus || "ACTIVE").toUpperCase();
 
   if (plan !== "BUSINESS") return false;
-  if (["SUSPENDED", "CANCELLED"].includes(accessStatus)) return false;
+
+  if (["SUSPENDED", "CANCELLED"].includes(accessStatus)) {
+    return false;
+  }
 
   if (accessStatus === "COMPLIMENTARY") {
     return !input.complimentaryUntil || input.complimentaryUntil >= now;
