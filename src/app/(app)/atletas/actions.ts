@@ -454,10 +454,13 @@ export async function deleteAthlete(formData: FormData) {
   const id = clean(formData.get("id"));
   if (!id) return;
 
-  await prisma.athlete.deleteMany({
+  await prisma.athlete.updateMany({
     where: {
       id,
       organizationId: user.organizationId,
+    },
+    data: {
+      active: false,
     },
   });
 

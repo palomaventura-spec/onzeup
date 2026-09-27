@@ -7,7 +7,7 @@ import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
 
-import { deleteAthlete, toggleAthleteStatus } from "./actions";
+import { toggleAthleteStatus } from "./actions";
 import AthleteCreateForm from "./AthleteCreateForm";
 
 type AthleteFilters = {
@@ -1015,22 +1015,6 @@ export default async function AthletesPage({
                                   {athlete.active
                                     ? "Inativar"
                                     : "Ativar"}
-                                </button>
-                              </form>
-
-                              <form
-                                action={deleteAthlete}
-                              >
-                                <input
-                                  type="hidden"
-                                  name="id"
-                                  value={athlete.id}
-                                />
-                                <button
-                                  className="danger"
-                                  type="submit"
-                                >
-                                  Excluir
                                 </button>
                               </form>
                             </>
