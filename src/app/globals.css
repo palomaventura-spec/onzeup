@@ -9373,3 +9373,156 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
   }
 }
 
+/* ============================================================
+   11UP Dashboard â€” posiciona frase/data na lateral direita
+   Somente desktop; mobile permanece intacto.
+   Adicionar AO FINAL do globals.css
+   ============================================================ */
+
+@media (min-width: 901px) {
+  .dashboard-v3-reference-body{
+    grid-template-columns:minmax(330px,.86fr) minmax(420px,1.24fr) 310px !important;
+    padding-right:28px !important;
+  }
+
+  .dashboard-v3-reference-artwork-space{
+    min-width:0;
+  }
+
+  .dashboard-v3-reference-aside{
+    position:relative;
+    z-index:4;
+    align-self:center !important;
+    width:100%;
+    max-width:310px !important;
+    margin-left:auto !important;
+    padding:16px 0 16px 22px !important;
+    border-left:1px solid rgba(255,255,255,.18) !important;
+    border-radius:0 16px 16px 0;
+    background:
+      linear-gradient(
+        90deg,
+        rgba(4,12,17,.64) 0%,
+        rgba(4,12,17,.48) 72%,
+        rgba(4,12,17,.18) 100%
+      );
+    backdrop-filter:blur(2px);
+    -webkit-backdrop-filter:blur(2px);
+  }
+
+  .dashboard-v3-reference-aside blockquote{
+    max-width:270px;
+    font-size:12px !important;
+    line-height:1.5 !important;
+  }
+
+  .dashboard-v3-reference-today{
+    max-width:270px;
+  }
+
+  .dashboard-v3-reference-today strong{
+    font-size:13px !important;
+  }
+
+  .dashboard-v3-reference-today span{
+    font-size:10px !important;
+  }
+}
+
+@media (min-width: 1450px) {
+  .dashboard-v3-reference-body{
+    grid-template-columns:minmax(390px,.82fr) minmax(520px,1.38fr) 330px !important;
+    padding-left:30px !important;
+    padding-right:34px !important;
+  }
+
+  .dashboard-v3-reference-aside{
+    max-width:330px !important;
+    padding-left:24px !important;
+  }
+}
+/* ============================================================
+   11UP Dashboard — frase/data na extrema direita do hero
+   Override do patch anterior. Desktop apenas.
+   Adicionar AO FINAL do globals.css
+   ============================================================ */
+
+@media (min-width: 901px) {
+  .dashboard-v3-reference-body{
+    position:relative !important;
+    display:grid !important;
+    grid-template-columns:minmax(360px, .82fr) minmax(520px, 1.5fr) 320px !important;
+    align-items:center !important;
+    padding:20px 28px 14px !important;
+  }
+
+  .dashboard-v3-reference-copy{
+    position:relative !important;
+    z-index:4 !important;
+    grid-column:1 !important;
+  }
+
+  .dashboard-v3-reference-artwork-space{
+    grid-column:2 !important;
+    min-width:0 !important;
+  }
+
+  .dashboard-v3-reference-aside{
+    position:absolute !important;
+    z-index:5 !important;
+    top:50% !important;
+    right:28px !important;
+    left:auto !important;
+    width:286px !important;
+    max-width:286px !important;
+    margin:0 !important;
+    padding:12px 0 12px 20px !important;
+    transform:translateY(-50%) !important;
+    align-self:auto !important;
+    justify-content:center !important;
+    border-left:1px solid rgba(255,255,255,.16) !important;
+    border-radius:0 !important;
+    background:linear-gradient(
+      90deg,
+      rgba(4,12,17,.60) 0%,
+      rgba(4,12,17,.40) 58%,
+      rgba(4,12,17,.12) 100%
+    ) !important;
+    backdrop-filter:blur(2px) !important;
+    -webkit-backdrop-filter:blur(2px) !important;
+  }
+
+  .dashboard-v3-reference-aside blockquote{
+    max-width:250px !important;
+    margin:0 !important;
+    font-size:11px !important;
+    line-height:1.5 !important;
+    letter-spacing:.14em !important;
+  }
+
+  .dashboard-v3-reference-today{
+    max-width:250px !important;
+  }
+
+  .dashboard-v3-reference-today strong{
+    font-size:12px !important;
+  }
+
+  .dashboard-v3-reference-today span{
+    font-size:9px !important;
+  }
+}
+
+@media (min-width: 1450px) {
+  .dashboard-v3-reference-aside{
+    right:34px !important;
+    width:300px !important;
+    max-width:300px !important;
+  }
+
+  .dashboard-v3-reference-aside blockquote,
+  .dashboard-v3-reference-today{
+    max-width:265px !important;
+  }
+}
+

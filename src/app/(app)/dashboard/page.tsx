@@ -273,10 +273,11 @@ export default async function Dashboard() {
           aria-label="Acessos da visão geral"
         >
           <Link className="active" href="/dashboard">Visão geral</Link>
-          <Link href="/performance">Desempenho</Link>
+          <Link href="/performance">Performance</Link>
           <Link href="/categorias">Categorias</Link>
-          <Link href="/organizador/competicoes">Competições</Link>
-          <Link href="/financeiro">Finanças</Link>
+          <Link href="/jogos">Jogos</Link>
+          <Link href="/treinos">Treinos</Link>
+          <Link href="/agenda">Agenda</Link>
         </nav>
       </section>
 
@@ -367,7 +368,7 @@ export default async function Dashboard() {
         <article className="dashboard-v3-card dashboard-v3-games">
           <div className="dashboard-v3-card-head">
             <div>
-              <span>COMPETIÇÕES</span>
+              <span>JOGOS</span>
               <h2>Próximos jogos</h2>
             </div>
             <Link href="/jogos">Ver todos →</Link>
