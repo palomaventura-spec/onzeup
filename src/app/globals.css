@@ -2461,11 +2461,7 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
   text-transform: uppercase;
 }
 
-@media print {
-  body > *:not(.convocation-art-page) {
-    display: none !important;
-  }
-}
+
 /* Jogos e súmulas */
 .match-sheet-head {
   align-items: flex-start;
