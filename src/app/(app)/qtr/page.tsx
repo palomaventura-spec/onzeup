@@ -1,7 +1,9 @@
 import Link from "next/link";
+
 import { prisma } from "@/lib/prisma";
 import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
+
 import { generateQtr, saveQtr } from "./actions";
 import QtrEditor from "@/components/qtr/QtrEditor";
 import QtrGenerateButton from "@/components/qtr/QtrGenerateButton";
@@ -13,6 +15,98 @@ type SearchParams = {
   salvo?: string;
   erro?: string;
 };
+
+type QtsIcon =
+  | "calendar"
+  | "category"
+  | "training"
+  | "match"
+  | "sync"
+  | "left"
+  | "right";
+
+function Icon({
+  name,
+  size = 18,
+}: {
+  name: QtsIcon;
+  size?: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  if (name === "calendar") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="5" width="16" height="15" rx="2" />
+        <path d="M8 3v4M16 3v4M4 10h16" />
+      </svg>
+    );
+  }
+
+  if (name === "category") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="4" width="6" height="6" rx="1" />
+        <rect x="14" y="4" width="6" height="6" rx="1" />
+        <rect x="4" y="14" width="6" height="6" rx="1" />
+        <rect x="14" y="14" width="6" height="6" rx="1" />
+      </svg>
+    );
+  }
+
+  if (name === "training") {
+    return (
+      <svg {...common}>
+        <path d="M5 18.5 11.5 12 8 8.5l2-2 7.5 7.5-2 2-3.5-3.5L5 18.5Z" />
+        <path d="M13.5 4.5 19.5 10.5" />
+      </svg>
+    );
+  }
+
+  if (name === "match") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="6" width="16" height="10" rx="2" />
+        <circle cx="12" cy="11" r="2" />
+        <path d="M7 18h10M9 16v2M15 16v2" />
+      </svg>
+    );
+  }
+
+  if (name === "sync") {
+    return (
+      <svg {...common}>
+        <path d="M20 7v5h-5" />
+        <path d="M4 17v-5h5" />
+        <path d="M7.5 7.5A7 7 0 0 1 19 10M5 14a7 7 0 0 0 11.5 2.5" />
+      </svg>
+    );
+  }
+
+  if (name === "left") {
+    return (
+      <svg {...common}>
+        <path d="m15 18-6-6 6-6" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
 
 function mondayOf(date: Date) {
   const d = new Date(date);
@@ -38,26 +132,37 @@ function formatDate(date: Date) {
 }
 
 function qtrHref(week: string, category: string) {
-  return `/qtr?week=${encodeURIComponent(week)}&category=${encodeURIComponent(
-    category,
-  )}`;
+  return `/qtr?week=${encodeURIComponent(
+    week,
+  )}&category=${encodeURIComponent(category)}`;
 }
 
-const navButtonStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 38,
-  padding: "0 14px",
-  border: "1px solid #dbe2ea",
-  borderRadius: 10,
-  background: "#ffffff",
-  color: "#14202b",
-  fontSize: 14,
-  fontWeight: 700,
-  textDecoration: "none",
-  whiteSpace: "nowrap" as const,
-};
+function countEvents(rows: any[], type?: string) {
+  const dayKeys = [
+    "mon",
+    "tue",
+    "wed",
+    "thu",
+    "fri",
+    "sat",
+    "sun",
+  ];
+
+  return rows.reduce((total, row) => {
+    const events = dayKeys.flatMap((day) =>
+      Array.isArray(row?.[day]) ? row[day] : [],
+    );
+
+    if (!type) return total + events.length;
+
+    return (
+      total +
+      events.filter(
+        (event) => event?.type === type,
+      ).length
+    );
+  }, 0);
+}
 
 export default async function QtrPage({
   searchParams,
@@ -65,9 +170,7 @@ export default async function QtrPage({
   searchParams: Promise<SearchParams>;
 }) {
   const user = await requireClubPermission("QTR_VIEW");
-
   const canEdit = hasClubPermission(user, "QTR_EDIT");
-
   const params = await searchParams;
 
   const requested = params.week
@@ -99,13 +202,11 @@ export default async function QtrPage({
       where: {
         organizationId: user.organizationId,
       },
-
       select: {
         id: true,
         name: true,
         birthYear: true,
       },
-
       orderBy: [
         {
           birthYear: "desc",
@@ -120,24 +221,30 @@ export default async function QtrPage({
   const validCategory =
     params.category &&
     (params.category === "__all__" ||
-      categories.some((category) => category.name === params.category))
+      categories.some(
+        (category) =>
+          category.name === params.category,
+      ))
       ? params.category
       : null;
 
-  const selectedCategory = validCategory || categories[0]?.name || "__all__";
+  const selectedCategory =
+    validCategory ||
+    categories[0]?.name ||
+    "__all__";
 
-  /*
-   * Se ainda não existe QTS para a semana,
-   * somente Gestor/Coordenador podem gerar.
-   *
-   * Coach continua apenas visualizando.
-   */
   if (!qtr && categories.length > 0 && canEdit) {
     const formData = new FormData();
 
-    formData.set("weekStart", isoDate(weekStart));
+    formData.set(
+      "weekStart",
+      isoDate(weekStart),
+    );
 
-    formData.set("category", selectedCategory);
+    formData.set(
+      "category",
+      selectedCategory,
+    );
 
     await generateQtr(formData);
   }
@@ -147,244 +254,236 @@ export default async function QtrPage({
   if (qtr?.dataJson) {
     try {
       const parsed = JSON.parse(qtr.dataJson);
-
-      initialRows = Array.isArray(parsed) ? parsed : [];
+      initialRows = Array.isArray(parsed)
+        ? parsed
+        : [];
     } catch {
       initialRows = [];
     }
   }
 
+  const activityCount = countEvents(initialRows);
+  const trainingCount = countEvents(
+    initialRows,
+    "TRAINING",
+  );
+  const matchCount =
+    countEvents(initialRows, "MATCH") +
+    countEvents(initialRows, "FRIENDLY");
+
   return (
-    <main className="page-shell qts-premium">
-      <section
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 24,
-          flexWrap: "wrap",
-          marginBottom: 18,
-          padding: "22px 24px",
-          border: "1px solid #dfe6ec",
-          borderRadius: 18,
-          background:
-            "linear-gradient(135deg, #ffffff 0%, #f8fbf5 100%)",
-          boxShadow: "0 10px 28px rgba(15, 23, 32, 0.06)",
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <p
-            style={{
-              margin: "0 0 7px",
-              color: "#79b800",
-              fontSize: 12,
-              fontWeight: 900,
-              letterSpacing: "0.14em",
-            }}
-          >
-            PLANEJAMENTO SEMANAL
-          </p>
+    <main className="qts-v11">
+      <section className="qts-v11-hero">
+        <div>
+          <span className="qts-v11-eyebrow">
+            11UP CLUB · PLANEJAMENTO SEMANAL
+          </span>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: 12,
-              flexWrap: "wrap",
-            }}
-          >
-            <h1
-              style={{
-                margin: 0,
-                color: "#0c1720",
-                fontSize: "clamp(30px, 3vw, 42px)",
-                lineHeight: 1,
-                letterSpacing: "-0.04em",
-              }}
-            >
-              QTS
-            </h1>
+          <h1>QTS</h1>
 
-            <span
-              style={{
-                color: "#75828d",
-                fontSize: 14,
-                fontWeight: 700,
-              }}
-            >
-              {formatDate(weekStart)} a {formatDate(weekEnd)}
-            </span>
-          </div>
-
-          <p
-            style={{
-              maxWidth: 620,
-              margin: "10px 0 0",
-              color: "#61707c",
-              fontSize: 14,
-              lineHeight: 1.55,
-            }}
-          >
-            Programação semanal de treinos e jogos organizada por categoria.
+          <p>
+            Organização semanal de treinos, jogos e atividades por categoria.
           </p>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="qts-v11-hero-aside">
+          <small>SEMANA</small>
+          <strong>
+            {formatDate(weekStart)}
+          </strong>
+          <span>
+            até {formatDate(weekEnd)}
+          </span>
+        </div>
+      </section>
+
+      <section className="qts-v11-week-nav">
+        <div>
+          <span className="qts-v11-eyebrow">
+            NAVEGAÇÃO
+          </span>
+          <strong>
+            {formatDate(weekStart)} a{" "}
+            {formatDate(weekEnd)}
+          </strong>
+        </div>
+
+        <div>
           <Link
-            href={qtrHref(isoDate(previous), selectedCategory)}
-            style={navButtonStyle}
+            href={qtrHref(
+              isoDate(previous),
+              selectedCategory,
+            )}
           >
-            ← Semana anterior
+            <Icon name="left" size={16} />
+            Semana anterior
           </Link>
 
           <Link
-            href={qtrHref(isoDate(next), selectedCategory)}
-            style={{
-              ...navButtonStyle,
-              borderColor: "#c9e983",
-              background: "#f5fbe8",
-              color: "#284000",
-            }}
+            className="primary"
+            href={qtrHref(
+              isoDate(next),
+              selectedCategory,
+            )}
           >
-            Próxima semana →
+            Próxima semana
+            <Icon name="right" size={16} />
           </Link>
         </div>
       </section>
 
-      {params.gerado === "1" || params.salvo === "1" ? (
-        <div
-          role="status"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 14,
-            padding: "9px 12px",
-            border: "1px solid #d7eadf",
-            borderRadius: 10,
-            background: "#f3fbf6",
-            color: "#21643b",
-            fontSize: 14,
-            fontWeight: 700,
-          }}
-        >
-          <span aria-hidden="true">✓</span>
+      <section className="qts-v11-kpis">
+        <article>
+          <span className="qts-v11-kpi-icon">
+            <Icon name="category" />
+          </span>
 
-          {params.gerado === "1"
-            ? "QTS atualizado com a agenda"
-            : "Alterações salvas com sucesso"}
+          <div>
+            <small>CATEGORIAS</small>
+            <strong>
+              {categories.length}
+            </strong>
+            <span>no quadro semanal</span>
+          </div>
+        </article>
+
+        <article>
+          <span className="qts-v11-kpi-icon">
+            <Icon name="calendar" />
+          </span>
+
+          <div>
+            <small>ATIVIDADES</small>
+            <strong>
+              {activityCount}
+            </strong>
+            <span>na semana</span>
+          </div>
+        </article>
+
+        <article>
+          <span className="qts-v11-kpi-icon">
+            <Icon name="training" />
+          </span>
+
+          <div>
+            <small>TREINOS</small>
+            <strong>
+              {trainingCount}
+            </strong>
+            <span>programados</span>
+          </div>
+        </article>
+
+        <article>
+          <span className="qts-v11-kpi-icon">
+            <Icon name="match" />
+          </span>
+
+          <div>
+            <small>JOGOS</small>
+            <strong>
+              {matchCount}
+            </strong>
+            <span>oficiais + amistosos</span>
+          </div>
+        </article>
+      </section>
+
+      {params.gerado === "1" ||
+      params.salvo === "1" ? (
+        <div
+          className="qts-v11-notice success"
+          role="status"
+        >
+          <strong>✓</strong>
+          <span>
+            {params.gerado === "1"
+              ? "QTS atualizado com a agenda."
+              : "Alterações salvas com sucesso."}
+          </span>
+        </div>
+      ) : null}
+
+      {params.erro ? (
+        <div
+          className="qts-v11-notice"
+          role="alert"
+        >
+          Não foi possível concluir a operação do QTS.
         </div>
       ) : null}
 
       {canEdit ? (
-        <section
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 18,
-            flexWrap: "wrap",
-            marginBottom: 18,
-            padding: "16px 18px",
-            border: "1px solid #e2e8ef",
-            borderRadius: 14,
-            background: "#ffffff",
-            boxShadow: "0 4px 14px rgba(15, 23, 32, 0.04)",
-          }}
-        >
-          <div>
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 17,
-                color: "#111923",
-              }}
-            >
-              Atualizar com a agenda
-            </h2>
+        <section className="qts-v11-sync">
+          <div className="qts-v11-sync-icon">
+            <Icon name="sync" size={21} />
+          </div>
 
-            <p
-              style={{
-                margin: "5px 0 0",
-                color: "#6b7785",
-                fontSize: 14,
-              }}
-            >
-              Use somente quando quiser sincronizar novamente os treinos e jogos
-              desta semana.
+          <div>
+            <span className="qts-v11-eyebrow">
+              SINCRONIZAÇÃO
+            </span>
+
+            <h2>Atualizar com a agenda</h2>
+
+            <p>
+              Recria esta semana com os treinos e jogos cadastrados.
+              Ajustes manuais feitos somente no QTS podem ser substituídos.
             </p>
           </div>
 
           <form action={generateQtr}>
-            <input type="hidden" name="weekStart" value={isoDate(weekStart)} />
+            <input
+              type="hidden"
+              name="weekStart"
+              value={isoDate(weekStart)}
+            />
 
-            <input type="hidden" name="category" value={selectedCategory} />
+            <input
+              type="hidden"
+              name="category"
+              value={selectedCategory}
+            />
 
             <QtrGenerateButton />
           </form>
         </section>
       ) : (
-        <div
-          style={{
-            marginBottom: 18,
-            padding: "12px 14px",
-            border: "1px solid #e2e8ef",
-            borderRadius: 12,
-            background: "#ffffff",
-            color: "#667585",
-            fontSize: 14,
-          }}
-        >
-          <strong
-            style={{
-              color: "#14202b",
-            }}
-          >
-            Somente visualização
-          </strong>
-          {" — "}O QTS é atualizado pelo Gestor ou Coordenador.
+        <div className="qts-v11-notice neutral">
+          <strong>Somente visualização.</strong>
+          <span>
+            O QTS é atualizado pelo Gestor ou Coordenador.
+          </span>
         </div>
       )}
 
       {!qtr && !canEdit ? (
-        <div
-          className="card"
-          style={{
-            marginBottom: 18,
-          }}
-        >
-          <strong>QTS ainda não disponível</strong>
+        <div className="qts-v11-empty">
+          <strong>
+            QTS ainda não disponível
+          </strong>
 
-          <p
-            className="muted"
-            style={{
-              marginBottom: 0,
-            }}
-          >
+          <p>
             O Gestor ou Coordenador ainda não gerou o QTS desta semana.
           </p>
         </div>
       ) : null}
 
-      <QtrEditor
-        key={`${isoDate(weekStart)}-${
-          qtr?.updatedAt?.getTime() ?? 0
-        }-${selectedCategory}`}
-        weekStart={isoDate(weekStart)}
-        qtrId={qtr?.id ?? null}
-        initialRows={initialRows}
-        categories={categories}
-        initialCategory={selectedCategory}
-        saveAction={saveQtr}
-        canEdit={canEdit}
-      />
+      <section className="qts-v11-editor">
+        <QtrEditor
+          key={`${isoDate(weekStart)}-${
+            qtr?.updatedAt?.getTime() ?? 0
+          }-${selectedCategory}`}
+          weekStart={isoDate(weekStart)}
+          qtrId={qtr?.id ?? null}
+          initialRows={initialRows}
+          categories={categories}
+          initialCategory={selectedCategory}
+          saveAction={saveQtr}
+          canEdit={canEdit}
+        />
+      </section>
     </main>
   );
 }

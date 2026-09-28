@@ -1,12 +1,8 @@
 import Link from "next/link";
 
-import ModuleFilterBar from "@/components/ModuleFilterBar";
-import ModuleHero from "@/components/ModuleHero";
-import ModuleKpiGrid from "@/components/ModuleKpiGrid";
-import ModulePanel from "@/components/ModulePanel";
-import ModuleTabs from "@/components/ModuleTabs";
 import {
   ClubPermissionCode,
+  SportType,
   TrainingSessionStatus,
 } from "@prisma/client";
 
@@ -27,6 +23,136 @@ const AREAS = [
   ["EMOTIONAL", "Emocional"],
 ] as const;
 
+const PAGE_SIZE = 20;
+
+type PerformanceFilters = {
+  q?: string;
+  category?: string;
+  position?: string;
+  sport?: string;
+  page?: string;
+};
+
+type PerformanceIcon =
+  | "users"
+  | "score"
+  | "frequency"
+  | "minutes"
+  | "search"
+  | "arrow"
+  | "chevron-left"
+  | "chevron-right"
+  | "field"
+  | "futsal";
+
+function Icon({
+  name,
+  size = 20,
+}: {
+  name: PerformanceIcon;
+  size?: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  if (name === "users") {
+    return (
+      <svg {...common}>
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3.5 20c.7-4 2.7-6 5.5-6s4.8 2 5.5 6" />
+        <path d="M16 7a2.5 2.5 0 0 1 0 5" />
+        <path d="M17 15c2 .5 3.2 2.1 3.7 5" />
+      </svg>
+    );
+  }
+
+  if (name === "score") {
+    return (
+      <svg {...common}>
+        <path d="M4 18V9M10 18V5M16 18v-7M22 18H2" />
+      </svg>
+    );
+  }
+
+  if (name === "frequency") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="m8.5 12 2.2 2.2 4.8-5" />
+      </svg>
+    );
+  }
+
+  if (name === "minutes") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="13" r="7" />
+        <path d="M12 13V9M9 3h6M12 6V3" />
+      </svg>
+    );
+  }
+
+  if (name === "search") {
+    return (
+      <svg {...common}>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </svg>
+    );
+  }
+
+  if (name === "field") {
+    return (
+      <svg {...common}>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M12 5v14M3 12h18" />
+        <circle cx="12" cy="12" r="2.2" />
+      </svg>
+    );
+  }
+
+  if (name === "futsal") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="m9.2 9.2 2.8-2 2.8 2-1.1 3.2h-3.4L9.2 9.2Z" />
+      </svg>
+    );
+  }
+
+  if (name === "arrow") {
+    return (
+      <svg {...common}>
+        <path d="M5 12h14" />
+        <path d="m14 7 5 5-5 5" />
+      </svg>
+    );
+  }
+
+  if (name === "chevron-left") {
+    return (
+      <svg {...common}>
+        <path d="m15 18-6-6 6-6" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
 function dateLabel(date?: Date | null) {
   return date ? date.toLocaleDateString("pt-BR") : "Sem avaliação";
 }
@@ -46,7 +172,6 @@ function currentMonthRange() {
 
 function minutesBetween(start: Date | null, end: Date | null) {
   if (!start || !end || end <= start) return null;
-
   return Math.round((end.getTime() - start.getTime()) / 60_000);
 }
 
@@ -74,27 +199,58 @@ function percentageLabel(value: number | null) {
   })}%`;
 }
 
+function sportLabel(sport: SportType) {
+  return sport === SportType.FUTSAL ? "Futsal" : "Campo";
+}
+
+function performanceUrl({
+  q,
+  category,
+  position,
+  sport,
+  page,
+}: {
+  q?: string;
+  category?: string;
+  position?: string;
+  sport: SportType;
+  page?: number;
+}) {
+  const query = new URLSearchParams();
+
+  query.set("sport", sport);
+
+  if (q) query.set("q", q);
+  if (category) query.set("category", category);
+  if (position && position !== "ALL") query.set("position", position);
+  if (page && page > 1) query.set("page", String(page));
+
+  return `/performance?${query.toString()}`;
+}
+
 export default async function PerformancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string }>;
+  searchParams: Promise<PerformanceFilters>;
 }) {
   const user = await requireOrganizationUser();
   const query = await searchParams;
+  const period = currentMonthRange();
+
   const search = String(query.q || "").trim();
   const requestedCategoryId = String(query.category || "").trim();
-  const period = currentMonthRange();
+  const requestedPosition = String(query.position || "ALL").trim();
+  const requestedPage = Math.max(
+    1,
+    Number.parseInt(query.page || "1", 10) || 1,
+  );
 
   const [subscription, organization] = await Promise.all([
     prisma.subscription.findUnique({
-      where: {
-        organizationId: user.organizationId,
-      },
+      where: { organizationId: user.organizationId },
     }),
     prisma.organization.findUnique({
-      where: {
-        id: user.organizationId,
-      },
+      where: { id: user.organizationId },
       select: {
         accessStatus: true,
         complimentaryUntil: true,
@@ -120,7 +276,6 @@ export default async function PerformancePage({
           Avaliações profissionais, evolução, frequência, rendimento, metas,
           medições e relatórios em um único ambiente.
         </p>
-
         <Link className="btn" href="/planos">
           Conhecer o Club Elite
         </Link>
@@ -140,9 +295,7 @@ export default async function PerformancePage({
         organizationId: user.organizationId,
         active: true,
         OR: [
-          {
-            userId: user.id,
-          },
+          { userId: user.id },
           {
             coachEmail: {
               equals: user.email,
@@ -198,8 +351,8 @@ export default async function PerformancePage({
         </div>
 
         <div className="notice" role="status">
-          <strong>Acesso restrito.</strong> Você ainda não possui uma
-          categoria autorizada para visualizar o Performance.
+          <strong>Acesso restrito.</strong> Você ainda não possui uma categoria
+          autorizada para visualizar o Performance.
         </div>
       </main>
     );
@@ -208,6 +361,11 @@ export default async function PerformancePage({
   const categories = await prisma.category.findMany({
     where: {
       organizationId: user.organizationId,
+      active: true,
+      type: "STANDARD",
+      sport: {
+        in: [SportType.FOOTBALL, SportType.FUTSAL],
+      },
       ...(allowedCategoryIds
         ? {
             id: {
@@ -216,17 +374,40 @@ export default async function PerformancePage({
           }
         : {}),
     },
-    orderBy: {
-      name: "asc",
-    },
+    orderBy: [
+      { sport: "asc" },
+      { birthYear: "desc" },
+      { name: "asc" },
+    ],
     select: {
       id: true,
       name: true,
+      sport: true,
     },
   });
 
+  const hasFootball = categories.some(
+    (category) => category.sport === SportType.FOOTBALL,
+  );
+  const hasFutsal = categories.some(
+    (category) => category.sport === SportType.FUTSAL,
+  );
+
+  const selectedSport: SportType =
+    query.sport === SportType.FUTSAL && hasFutsal
+      ? SportType.FUTSAL
+      : query.sport === SportType.FOOTBALL && hasFootball
+        ? SportType.FOOTBALL
+        : hasFootball
+          ? SportType.FOOTBALL
+          : SportType.FUTSAL;
+
+  const sportCategories = categories.filter(
+    (category) => category.sport === selectedSport,
+  );
+
   const validCategoryIds = new Set(
-    categories.map((category) => category.id),
+    sportCategories.map((category) => category.id),
   );
 
   const categoryId = validCategoryIds.has(requestedCategoryId)
@@ -235,7 +416,34 @@ export default async function PerformancePage({
 
   const categoryIds = categoryId
     ? [categoryId]
-    : categories.map((category) => category.id);
+    : sportCategories.map((category) => category.id);
+
+  const athleteScope =
+    categoryIds.length > 0
+      ? {
+          OR: [
+            {
+              categoryId: {
+                in: categoryIds,
+              },
+            },
+            {
+              memberships: {
+                some: {
+                  organizationId: user.organizationId,
+                  categoryId: {
+                    in: categoryIds,
+                  },
+                  sport: selectedSport,
+                  status: "ACTIVE",
+                },
+              },
+            },
+          ],
+        }
+      : {
+          id: "__none__",
+        };
 
   const [athletes, sessions] = await Promise.all([
     prisma.athlete.findMany({
@@ -243,26 +451,7 @@ export default async function PerformancePage({
         organizationId: user.organizationId,
         active: true,
         AND: [
-          {
-            OR: [
-              {
-                categoryId: {
-                  in: categoryIds,
-                },
-              },
-              {
-                memberships: {
-                  some: {
-                    organizationId: user.organizationId,
-                    categoryId: {
-                      in: categoryIds,
-                    },
-                    status: "ACTIVE",
-                  },
-                },
-              },
-            ],
-          },
+          athleteScope,
           ...(search
             ? [
                 {
@@ -285,15 +474,14 @@ export default async function PerformancePage({
                         mode: "insensitive" as const,
                       },
                     },
-                    {
-                      category: {
-                        name: {
-                          contains: search,
-                          mode: "insensitive" as const,
-                        },
-                      },
-                    },
                   ],
+                },
+              ]
+            : []),
+          ...(requestedPosition !== "ALL"
+            ? [
+                {
+                  position: requestedPosition,
                 },
               ]
             : []),
@@ -307,15 +495,18 @@ export default async function PerformancePage({
             categoryId: {
               in: categoryIds,
             },
+            sport: selectedSport,
             status: "ACTIVE",
           },
           select: {
             categoryId: true,
+            sport: true,
           },
         },
         evaluations: {
           where: {
             status: "FINALIZED",
+            sport: selectedSport,
           },
           orderBy: {
             evaluatedAt: "desc",
@@ -327,21 +518,13 @@ export default async function PerformancePage({
         },
         performanceGoals: {
           where: {
+            sport: selectedSport,
             status: {
               in: ["NOT_STARTED", "IN_PROGRESS", "REVIEW"],
             },
           },
           select: {
             id: true,
-          },
-        },
-        bodyMeasurements: {
-          orderBy: {
-            measuredAt: "desc",
-          },
-          take: 1,
-          select: {
-            measuredAt: true,
           },
         },
       },
@@ -360,6 +543,7 @@ export default async function PerformancePage({
     prisma.trainingSession.findMany({
       where: {
         organizationId: user.organizationId,
+        sport: selectedSport,
         categoryId: {
           in: categoryIds,
         },
@@ -408,8 +592,10 @@ export default async function PerformancePage({
     const previous = athlete.evaluations[1];
 
     const average = current?.scores.length
-      ? current.scores.reduce((sum, score) => sum + score.score, 0) /
-        current.scores.length
+      ? current.scores.reduce(
+          (sum, score) => sum + score.score,
+          0,
+        ) / current.scores.length
       : null;
 
     const previousAverage = previous?.scores.length
@@ -468,6 +654,16 @@ export default async function PerformancePage({
           : null,
     };
   });
+
+  const positions = [
+    ...new Set(
+      rows
+        .map((row) => row.athlete.position)
+        .filter(Boolean),
+    ),
+  ].sort((a, b) =>
+    a!.localeCompare(b!, "pt-BR"),
+  ) as string[];
 
   const evaluated = rows.filter((row) => row.average !== null);
 
@@ -545,104 +741,189 @@ export default async function PerformancePage({
       key,
       label,
       value: values.length
-        ? values.reduce((sum, value) => sum + value, 0) /
-          values.length
+        ? values.reduce(
+            (sum, value) => sum + value,
+            0,
+          ) / values.length
         : null,
     };
   });
 
-  return (
-    <main className="performance-hub">
-      <ModuleHero
-        eyebrow="11UP PERFORMANCE • CLUB ELITE"
-        title="Performance do elenco"
-        description={
-          <p>
-            Desenvolvimento esportivo, frequência e rendimento real do
-            treinamento em uma visão integrada.
-          </p>
-        }
-        aside={
-          <>
-            <small>ÍNDICE DO ELENCO</small>
+  const totalPages = Math.max(
+    1,
+    Math.ceil(rows.length / PAGE_SIZE),
+  );
 
+  const currentPage = Math.min(requestedPage, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = rows.slice(
+    pageStart,
+    pageStart + PAGE_SIZE,
+  );
+
+  const pageNumbers = Array.from(
+    { length: totalPages },
+    (_, index) => index + 1,
+  ).filter(
+    (page) =>
+      page === 1 ||
+      page === totalPages ||
+      Math.abs(page - currentPage) <= 1,
+  );
+
+  const hasFilters = Boolean(
+    search ||
+      categoryId ||
+      requestedPosition !== "ALL",
+  );
+
+  const paginationBase = {
+    q: search,
+    category: categoryId,
+    position: requestedPosition,
+    sport: selectedSport,
+  };
+
+  return (
+    <main className="performance-v5">
+      <section className="performance-v5-hero">
+        <div>
+          <span className="performance-v5-eyebrow">
+            11UP PERFORMANCE · CLUB ELITE
+          </span>
+
+          <h1>Performance do elenco</h1>
+
+          <p>
+            Desenvolvimento, frequência, rendimento e avaliações separados por
+            modalidade.
+          </p>
+        </div>
+
+        <div className="performance-v5-hero-score">
+          <small>ÍNDICE DO ELENCO</small>
+          <strong>
+            {squadAverage === null
+              ? "—"
+              : `${Math.round((squadAverage / 4) * 100)}%`}
+          </strong>
+          <span>
+            {evaluated.length} avaliado(s) · {sportLabel(selectedSport)}
+          </span>
+        </div>
+      </section>
+
+      <nav
+        className="performance-v5-module-tabs"
+        aria-label="Navegação do Performance"
+      >
+        <Link className="is-active" href={performanceUrl({ sport: selectedSport })}>
+          Visão geral
+        </Link>
+        <Link href={`/performance/frequencia?sport=${selectedSport}`}>
+          Frequência e rendimento
+        </Link>
+        <Link href={`/performance/relatorios?sport=${selectedSport}`}>
+          Relatórios
+        </Link>
+        <Link href={`/performance/gps?sport=${selectedSport}`}>
+          GPS
+        </Link>
+      </nav>
+
+      <section
+        className="performance-v5-sport-switch"
+        aria-label="Modalidade do Performance"
+      >
+        <div>
+          <span className="performance-v5-eyebrow">MODALIDADE</span>
+          <strong>Dados esportivos separados</strong>
+        </div>
+
+        <div>
+          <Link
+            className={selectedSport === SportType.FOOTBALL ? "is-active" : ""}
+            href={performanceUrl({ sport: SportType.FOOTBALL })}
+          >
+            <Icon name="field" size={17} />
+            Campo
+          </Link>
+
+          <Link
+            className={selectedSport === SportType.FUTSAL ? "is-active" : ""}
+            href={performanceUrl({ sport: SportType.FUTSAL })}
+          >
+            <Icon name="futsal" size={17} />
+            Futsal
+          </Link>
+        </div>
+      </section>
+
+      <section className="performance-v5-kpis">
+        <article>
+          <span className="performance-v5-kpi-icon">
+            <Icon name="users" />
+          </span>
+          <div>
+            <small>ATLETAS ATIVOS</small>
+            <strong>{athletes.length}</strong>
+            <span>{sportCategories.length} categoria(s)</span>
+          </div>
+        </article>
+
+        <article>
+          <span className="performance-v5-kpi-icon">
+            <Icon name="score" />
+          </span>
+          <div>
+            <small>NOTA MÉDIA</small>
             <strong>
               {squadAverage === null
                 ? "—"
-                : `${Math.round((squadAverage / 4) * 100)}%`}
+                : `${squadAverage.toFixed(2)}/4`}
             </strong>
+            <span>últimas avaliações</span>
+          </div>
+        </article>
 
-            <span>{evaluated.length} avaliados</span>
-          </>
-        }
-      />
+        <article>
+          <span className="performance-v5-kpi-icon">
+            <Icon name="frequency" />
+          </span>
+          <div>
+            <small>FREQUÊNCIA MÉDIA</small>
+            <strong>{percentageLabel(frequencyAverage)}</strong>
+            <span>{period.label}</span>
+          </div>
+        </article>
 
-      <ModuleTabs
-        className="performance-module-tabs"
-        ariaLabel="Navegação do Performance"
-        items={[
-          {
-            label: "Visão geral",
-            href: "/performance",
-            active: true,
-          },
-          {
-            label: "Frequência e rendimento",
-            href: "/performance/frequencia",
-          },
-          {
-            label: "Relatórios",
-            href: "/performance/relatorios",
-          },
-          {
-            label: "Treinos",
-            href: "/treinos",
-          },
-          {
-            label: "GPS",
-            href: "/performance/gps",
-          },
-        ]}
-      />
+        <article>
+          <span className="performance-v5-kpi-icon">
+            <Icon name="minutes" />
+          </span>
+          <div>
+            <small>APROVEITAMENTO MÉDIO</small>
+            <strong>{percentageLabel(trainingTimeAverage)}</strong>
+            <span>minutos treinados ÷ oferecidos</span>
+          </div>
+        </article>
+      </section>
 
-      <ModuleKpiGrid
-        className="performance-kpis"
-        ariaLabel="Indicadores gerais do Performance"
-        items={[
-          {
-            label: "ATLETAS ATIVOS",
-            value: athletes.length,
-            description: `${categories.length} categorias autorizadas`,
-          },
-          {
-            label: "NOTA MÉDIA",
-            value:
-              squadAverage === null
-                ? "—"
-                : `${squadAverage.toFixed(2)}/4`,
-            description: "últimas avaliações",
-          },
-          {
-            label: "FREQUÊNCIA MÉDIA",
-            value: percentageLabel(frequencyAverage),
-            description: period.label,
-          },
-          {
-            label: "APROVEITAMENTO MÉDIO",
-            value: percentageLabel(trainingTimeAverage),
-            description: "minutos treinados ÷ oferecidos",
-          },
-        ]}
-      />
+      <section className="performance-v5-overview">
+        <article className="performance-v5-panel">
+          <header>
+            <div>
+              <span className="performance-v5-eyebrow">
+                MAPA COLETIVO
+              </span>
+              <h2>Valências do elenco</h2>
+            </div>
+            <span className="performance-v5-badge">
+              Escala 1–4
+            </span>
+          </header>
 
-      <section className="performance-overview-grid">
-        <ModulePanel
-          className="performance-panel performance-areas"
-          eyebrow="MAPA COLETIVO"
-          title="Valências do elenco"
-          action={<span className="badge">Escala 1–4</span>}
-        >
-          <div className="performance-area-list">
+          <div className="performance-v5-area-list">
             {areaValues.map((area) => (
               <div key={area.key}>
                 <div>
@@ -654,7 +935,7 @@ export default async function PerformancePage({
                   </span>
                 </div>
 
-                <div className="performance-track">
+                <div className="performance-v5-track">
                   <i
                     style={{
                       width: `${((area.value || 0) / 4) * 100}%`,
@@ -664,201 +945,341 @@ export default async function PerformancePage({
               </div>
             ))}
           </div>
-        </ModulePanel>
+        </article>
 
-        <ModulePanel
-          className="performance-panel performance-attention"
-          eyebrow="PRIORIDADES"
-          title="Atenção necessária"
-        >
-          <Link href="/performance">
-            <span>!</span>
+        <article className="performance-v5-panel">
+          <header>
             <div>
-              <strong>{pendingEvaluation} avaliações pendentes</strong>
-              <small>Sem avaliação ou há mais de 90 dias</small>
+              <span className="performance-v5-eyebrow">
+                PRIORIDADES
+              </span>
+              <h2>Atenção necessária</h2>
             </div>
-            <b>→</b>
-          </Link>
+          </header>
 
-          <Link href="/performance/frequencia">
-            <span>↓</span>
-            <div>
-              <strong>
-                {lowTrainingTime} atleta(s) fora da faixa verde
-              </strong>
-              <small>
-                Aproveitamento de tempo no mês atual
-              </small>
-            </div>
-            <b>→</b>
-          </Link>
+          <div className="performance-v5-priorities">
+            <Link href={performanceUrl({ sport: selectedSport })}>
+              <span>!</span>
+              <div>
+                <strong>{pendingEvaluation} avaliações pendentes</strong>
+                <small>Sem avaliação ou há mais de 90 dias</small>
+              </div>
+              <b>→</b>
+            </Link>
 
-          <Link href="/performance">
-            <span>✓</span>
-            <div>
-              <strong>{activeGoals} metas ativas</strong>
-              <small>Planos individuais em andamento</small>
-            </div>
-            <b>→</b>
-          </Link>
-        </ModulePanel>
+            <Link href={`/performance/frequencia?sport=${selectedSport}`}>
+              <span>↓</span>
+              <div>
+                <strong>
+                  {lowTrainingTime} atleta(s) fora da faixa verde
+                </strong>
+                <small>Aproveitamento de tempo no mês atual</small>
+              </div>
+              <b>→</b>
+            </Link>
+
+            <Link href={performanceUrl({ sport: selectedSport })}>
+              <span>✓</span>
+              <div>
+                <strong>{activeGoals} metas ativas</strong>
+                <small>Planos individuais em andamento</small>
+              </div>
+              <b>→</b>
+            </Link>
+          </div>
+        </article>
       </section>
 
-      <ModuleFilterBar
-        className="performance-filter-panel"
-        ariaLabel="Filtros do Performance"
-      >
-        <label>
-          <span>Buscar atleta</span>
-          <input
-            name="q"
-            defaultValue={search}
-            placeholder="Nome, apelido ou posição"
-          />
-        </label>
-
-        <label>
-          <span>Categoria</span>
-          <select name="category" defaultValue={categoryId}>
-            <option value="">Todas as categorias autorizadas</option>
-
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <button type="submit">Aplicar filtros</button>
-
-        {search || categoryId ? (
-          <Link
-            className="btn btn-secondary"
-            href="/performance"
-          >
-            Limpar
-          </Link>
-        ) : null}
-      </ModuleFilterBar>
-
-      <section className="performance-roster">
-        <div className="performance-title">
+      <section className="performance-v5-search-card">
+        <header>
           <div>
-            <span className="page-eyebrow">ELENCO</span>
-            <h2>Performance individual</h2>
+            <span className="performance-v5-eyebrow">
+              CENTRAL DE PERFORMANCE
+            </span>
+            <h2>Localizar atleta</h2>
+            <p>
+              Refine a análise de {sportLabel(selectedSport)} por categoria,
+              posição ou nome.
+            </p>
           </div>
 
-          <span className="badge">{rows.length} atleta(s)</span>
-        </div>
+          <span>{rows.length} resultado(s)</span>
+        </header>
 
-        {rows.length ? (
-          <div className="performance-athlete-grid">
-            {rows.map(
-              ({
-                athlete,
-                current,
-                average,
-                trainingSummary,
-                delta,
-              }) => (
-                <article
-                  className="performance-athlete-card"
-                  key={athlete.id}
-                >
-                  <div className="performance-athlete-cover">
-                    <span>
-                      {athlete.category?.name ||
-                        "Categoria vinculada"}
+        <form method="get" className="performance-v5-filter-form">
+          <input type="hidden" name="sport" value={selectedSport} />
+
+          <label className="performance-v5-search-field">
+            <span>Buscar atleta</span>
+            <div>
+              <Icon name="search" size={18} />
+              <input
+                name="q"
+                defaultValue={search}
+                placeholder="Nome, apelido ou posição"
+              />
+            </div>
+          </label>
+
+          <label>
+            <span>Categoria</span>
+            <select name="category" defaultValue={categoryId}>
+              <option value="">
+                Todas de {sportLabel(selectedSport)}
+              </option>
+              {sportCategories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>Posição</span>
+            <select
+              name="position"
+              defaultValue={requestedPosition}
+            >
+              <option value="ALL">Todas</option>
+              {positions.map((position) => (
+                <option key={position} value={position}>
+                  {position}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button type="submit">Aplicar filtros</button>
+
+          {hasFilters ? (
+            <Link
+              href={performanceUrl({
+                sport: selectedSport,
+              })}
+            >
+              Limpar
+            </Link>
+          ) : null}
+        </form>
+      </section>
+
+      <section className="performance-v5-roster">
+        <header className="performance-v5-roster-head">
+          <div>
+            <span className="performance-v5-eyebrow">
+              PERFORMANCE INDIVIDUAL
+            </span>
+            <h2>Atletas encontrados</h2>
+          </div>
+
+          <span>
+            Exibindo {rows.length ? pageStart + 1 : 0} –{" "}
+            {Math.min(pageStart + PAGE_SIZE, rows.length)} de{" "}
+            {rows.length}
+          </span>
+        </header>
+
+        {pageRows.length ? (
+          <>
+            <div className="performance-v5-table-head">
+              <span>Atleta</span>
+              <span>Categoria</span>
+              <span>Posição</span>
+              <span>Nota</span>
+              <span>Frequência</span>
+              <span>Aproveitamento</span>
+              <span>Última avaliação</span>
+              <span>Metas</span>
+              <span aria-hidden="true" />
+            </div>
+
+            <div className="performance-v5-list">
+              {pageRows.map(
+                ({
+                  athlete,
+                  current,
+                  average,
+                  trainingSummary,
+                  delta,
+                }) => (
+                  <article
+                    className="performance-v5-row"
+                    key={athlete.id}
+                  >
+                    <Link
+                      className="performance-v5-person"
+                      href={`/atletas/${athlete.id}/performance?sport=${selectedSport}`}
+                    >
+                      <span className="performance-v5-avatar">
+                        {athlete.photoUrl ? (
+                          <img
+                            src={athlete.photoUrl}
+                            alt={athlete.name}
+                          />
+                        ) : (
+                          <b>
+                            {(athlete.nickname || athlete.name)
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </b>
+                        )}
+                      </span>
+
+                      <div>
+                        <strong>
+                          {athlete.nickname || athlete.name}
+                        </strong>
+                        <small>
+                          {athlete.nickname
+                            ? athlete.name
+                            : sportLabel(selectedSport)}
+                        </small>
+                      </div>
+                    </Link>
+
+                    <span className="performance-v5-cell">
+                      <b>
+                        {athlete.category?.sport === selectedSport
+                          ? athlete.category.name
+                          : sportCategories.find((category) =>
+                              athlete.memberships.some(
+                                (membership) =>
+                                  membership.categoryId === category.id,
+                              ),
+                            )?.name || "—"}
+                      </b>
                     </span>
 
-                    {athlete.photoUrl ? (
-                      <img
-                        src={athlete.photoUrl}
-                        alt={athlete.name}
-                      />
-                    ) : (
+                    <span className="performance-v5-cell">
+                      <b>{athlete.position || "—"}</b>
+                    </span>
+
+                    <span className="performance-v5-cell">
                       <b>
-                        {(athlete.nickname || athlete.name)
-                          .slice(0, 2)
-                          .toUpperCase()}
+                        {average === null
+                          ? "—"
+                          : `${average.toFixed(1)}/4`}
                       </b>
-                    )}
+                      {delta !== null ? (
+                        <small className={delta >= 0 ? "up" : "down"}>
+                          {delta >= 0 ? "+" : ""}
+                          {delta.toFixed(1)}
+                        </small>
+                      ) : null}
+                    </span>
 
-                    <i>{athlete.position || "Atleta"}</i>
-                  </div>
+                    <span className="performance-v5-cell">
+                      <b>
+                        {trainingSummary.completedSessions
+                          ? percentageLabel(
+                              trainingSummary.frequencyPercentage,
+                            )
+                          : "—"}
+                      </b>
+                    </span>
 
-                  <div className="performance-athlete-content">
-                    <h3>{athlete.nickname || athlete.name}</h3>
+                    <span className="performance-v5-cell">
+                      <b>
+                        {trainingSummary.completedSessions
+                          ? percentageLabel(
+                              trainingSummary.trainingTimePercentage,
+                            )
+                          : "—"}
+                      </b>
+                    </span>
 
-                    <p>
-                      {athlete.nickname
-                        ? athlete.name
-                        : "Acompanhamento individual"}
-                    </p>
+                    <span className="performance-v5-cell">
+                      <b>{dateLabel(current?.evaluatedAt)}</b>
+                    </span>
 
-                    <div className="performance-athlete-stats">
-                      <div>
-                        <span>NOTA</span>
-                        <strong>
-                          {average === null
-                            ? "—"
-                            : average.toFixed(1)}
-                        </strong>
-
-                        {delta !== null ? (
-                          <small
-                            className={
-                              delta >= 0 ? "up" : "down"
-                            }
-                          >
-                            {delta >= 0 ? "+" : ""}
-                            {delta.toFixed(1)}
-                          </small>
-                        ) : null}
-                      </div>
-
-                      <div>
-                        <span>FREQUÊNCIA</span>
-                        <strong>
-                          {trainingSummary.completedSessions
-                            ? percentageLabel(
-                                trainingSummary.frequencyPercentage,
-                              )
-                            : "—"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>APROVEIT.</span>
-                        <strong>
-                          {trainingSummary.completedSessions
-                            ? percentageLabel(
-                                trainingSummary.trainingTimePercentage,
-                              )
-                            : "—"}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <small className="performance-last">
-                      Última avaliação:{" "}
-                      {dateLabel(current?.evaluatedAt)} · Metas ativas:{" "}
-                      {athlete.performanceGoals.length}
-                    </small>
+                    <span className="performance-v5-cell">
+                      <span className="performance-v5-goal-pill">
+                        {athlete.performanceGoals.length}
+                      </span>
+                    </span>
 
                     <Link
-                      href={`/atletas/${athlete.id}/performance`}
+                      className="performance-v5-open"
+                      href={`/atletas/${athlete.id}/performance?sport=${selectedSport}`}
+                      aria-label={`Abrir Performance de ${athlete.name}`}
                     >
-                      Abrir painel do atleta <b>→</b>
+                      <Icon name="arrow" size={17} />
                     </Link>
-                  </div>
-                </article>
-              ),
-            )}
-          </div>
+                  </article>
+                ),
+              )}
+            </div>
+
+            {totalPages > 1 ? (
+              <nav
+                className="performance-v5-pagination"
+                aria-label="Paginação da Performance"
+              >
+                <Link
+                  className={currentPage === 1 ? "disabled" : ""}
+                  href={performanceUrl({
+                    ...paginationBase,
+                    page: Math.max(1, currentPage - 1),
+                  })}
+                  aria-disabled={currentPage === 1}
+                >
+                  <Icon name="chevron-left" size={16} />
+                  Anterior
+                </Link>
+
+                <div>
+                  {pageNumbers.map((page, index) => {
+                    const previous = pageNumbers[index - 1];
+                    const showDots =
+                      previous && page - previous > 1;
+
+                    return (
+                      <span key={page}>
+                        {showDots ? <i>…</i> : null}
+                        <Link
+                          className={
+                            page === currentPage
+                              ? "is-active"
+                              : ""
+                          }
+                          href={performanceUrl({
+                            ...paginationBase,
+                            page,
+                          })}
+                        >
+                          {page}
+                        </Link>
+                      </span>
+                    );
+                  })}
+                </div>
+
+                <Link
+                  className={
+                    currentPage === totalPages
+                      ? "disabled"
+                      : ""
+                  }
+                  href={performanceUrl({
+                    ...paginationBase,
+                    page: Math.min(
+                      totalPages,
+                      currentPage + 1,
+                    ),
+                  })}
+                  aria-disabled={currentPage === totalPages}
+                >
+                  Próxima
+                  <Icon name="chevron-right" size={16} />
+                </Link>
+              </nav>
+            ) : null}
+          </>
         ) : (
-          <div className="empty">Nenhum atleta encontrado.</div>
+          <div className="performance-v5-empty">
+            Nenhum atleta encontrado em {sportLabel(selectedSport)}.
+          </div>
         )}
       </section>
     </main>

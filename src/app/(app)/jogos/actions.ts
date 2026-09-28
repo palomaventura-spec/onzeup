@@ -40,14 +40,18 @@ async function validateCategory(categoryId: string, organizationId: string) {
     where: {
       id: categoryId,
       organizationId,
+      active: true,
+      type: "STANDARD",
+      sport: { in: [SportType.FOOTBALL, SportType.FUTSAL] },
     },
 
     select: {
       id: true,
+      sport: true,
     },
   });
 
-  return category?.id ?? null;
+  return category;
 }
 
 function parseDateTime(date: string, time: string) {
@@ -124,10 +128,14 @@ async function validStaffIds(
 export async function createMatch(formData: FormData) {
   const user = await requireClubPermission("MATCHES_EDIT");
 
-  const categoryId = await validateCategory(
+  const category = await validateCategory(
     clean(formData.get("categoryId")),
     user.organizationId,
   );
+
+  if (!category) return;
+
+  const categoryId = category.id;
 
   const opponent = clean(formData.get("opponent"));
 
@@ -145,7 +153,7 @@ export async function createMatch(formData: FormData) {
 
   const notes = nullable(formData.get("notes"));
 
-  const sport = parseSport(clean(formData.get("sport")));
+  const sport = category.sport;
   const callUpLimit = parseCallUpLimit(formData.get("callUpLimit"), sport);
   const callUpMode = parseCallUpMode(clean(formData.get("callUpMode")));
   const presentationTime = nullable(formData.get("presentationTime"));
@@ -208,10 +216,14 @@ export async function updateMatch(formData: FormData) {
 
   const id = clean(formData.get("id"));
 
-  const categoryId = await validateCategory(
+  const category = await validateCategory(
     clean(formData.get("categoryId")),
     user.organizationId,
   );
+
+  if (!category) return;
+
+  const categoryId = category.id;
 
   const opponent = clean(formData.get("opponent"));
 
@@ -229,7 +241,7 @@ export async function updateMatch(formData: FormData) {
 
   const notes = nullable(formData.get("notes"));
 
-  const sport = parseSport(clean(formData.get("sport")));
+  const sport = category.sport;
   const callUpLimit = parseCallUpLimit(formData.get("callUpLimit"), sport);
   const callUpMode = parseCallUpMode(clean(formData.get("callUpMode")));
   const presentationTime = nullable(formData.get("presentationTime"));

@@ -1,4 +1,5 @@
 import {
+  SportType,
   TrainingSessionStatus,
   type Prisma,
 } from "@prisma/client";
@@ -115,10 +116,12 @@ export async function buildMonthlyPresenceSnapshot({
   organizationId,
   athleteId,
   month,
+  sport,
 }: {
   organizationId: string;
   athleteId: string;
   month?: string;
+  sport: SportType;
 }): Promise<MonthlyPresenceSnapshot> {
   const period = parseMonth(month);
 
@@ -152,6 +155,17 @@ export async function buildMonthlyPresenceSnapshot({
           gte: period.start,
           lt: period.end,
         },
+        category: {
+          sport,
+        },
+        OR: [
+          {
+            sport,
+          },
+          {
+            sport: SportType.BOTH,
+          },
+        ],
         attendances: {
           some: {
             athleteId,

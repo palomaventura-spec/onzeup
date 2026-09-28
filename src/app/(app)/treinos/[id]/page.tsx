@@ -44,12 +44,12 @@ function formatTrainingDate(date: Date | null) {
   if (!date) return "Treino legado";
 
   return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
     day: "2-digit",
-    month: "2-digit",
+    month: "long",
     year: "numeric",
   }).format(date);
 }
-
 
 function sessionDurationMinutes(
   actualStartedAt: Date | null,
@@ -65,14 +65,43 @@ function sessionDurationMinutes(
   return Math.round((end.getTime() - start.getTime()) / 60_000);
 }
 
-function scheduledDateTime(date: Date | null, time: string) {
+function scheduledDateTime(
+  date: Date | null,
+  time: string,
+) {
   if (!date || !/^\d{2}:\d{2}$/.test(time)) return null;
 
   const [hours, minutes] = time.split(":").map(Number);
   const result = new Date(date);
+
   result.setHours(hours, minutes, 0, 0);
 
-  return Number.isNaN(result.getTime()) ? null : result;
+  return Number.isNaN(result.getTime())
+    ? null
+    : result;
+}
+
+function sportLabel(sport: string) {
+  return sport === "FUTSAL"
+    ? "Futsal"
+    : "Campo";
+}
+
+function sessionStatusLabel(
+  status: string | null | undefined,
+) {
+  switch (status) {
+    case "IN_PROGRESS":
+      return "Em andamento";
+    case "COMPLETED":
+      return "Finalizado";
+    case "CANCELLED":
+      return "Cancelado";
+    case "ARCHIVED":
+      return "Arquivado";
+    default:
+      return "Agendado";
+  }
 }
 
 export default async function EditTrainingPage({
@@ -83,47 +112,59 @@ export default async function EditTrainingPage({
   const user = await requireOrganizationUser();
   const { id } = await params;
 
-  const training = await prisma.trainingSchedule.findFirst({
-    where: {
-      id,
-      organizationId: user.organizationId,
-    },
-    include: {
-      category: true,
-    },
-  });
+  const training =
+    await prisma.trainingSchedule.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId,
+      },
+      include: {
+        category: true,
+      },
+    });
 
   if (!training) notFound();
 
-  const access = await getClubTrainingCategoryAccess(
-    user,
-    training.categoryId,
-    training.sport,
-  );
+  const access =
+    await getClubTrainingCategoryAccess(
+      user,
+      training.categoryId,
+      training.sport,
+    );
 
   if (!access.canViewTraining) notFound();
 
-  const canViewAttendance = access.canViewAttendance;
-  const canManageAttendance = access.canManageAttendance;
+  const canViewAttendance =
+    access.canViewAttendance;
+
+  const canManageAttendance =
+    access.canManageAttendance;
 
   const [athletes, session] = await Promise.all([
     canViewAttendance
       ? prisma.athlete.findMany({
           where: {
-            organizationId: user.organizationId,
+            organizationId:
+              user.organizationId,
             active: true,
             OR: [
               {
-                categoryId: training.categoryId,
+                categoryId:
+                  training.categoryId,
               },
               {
                 memberships: {
                   some: {
-                    organizationId: user.organizationId,
-                    categoryId: training.categoryId,
+                    organizationId:
+                      user.organizationId,
+                    categoryId:
+                      training.categoryId,
                     status: "ACTIVE",
                     sport: {
-                      in: ["BOTH", training.sport],
+                      in: [
+                        "BOTH",
+                        training.sport,
+                      ],
                     },
                   },
                 },
@@ -146,7 +187,8 @@ export default async function EditTrainingPage({
     canViewAttendance
       ? prisma.trainingSession.findFirst({
           where: {
-            organizationId: user.organizationId,
+            organizationId:
+              user.organizationId,
             scheduleId: training.id,
           },
           include: {
@@ -160,21 +202,39 @@ export default async function EditTrainingPage({
   ]);
 
   const attendanceByAthlete = new Map(
-    session?.attendances.map((item) => [item.athleteId, item]) ?? [],
+    session?.attendances.map((item) => [
+      item.athleteId,
+      item,
+    ]) ?? [],
   );
 
-  const attendanceRows = athletes.map((athlete) => {
-    const attendance = attendanceByAthlete.get(athlete.id);
+  const attendanceRows =
+    athletes.map((athlete) => {
+      const attendance =
+        attendanceByAthlete.get(
+          athlete.id,
+        );
 
-    return {
-      ...athlete,
-      status: attendanceStatus(attendance?.status),
-      arrivalTime: timeInputValue(attendance?.arrivedAt ?? null),
-      exitTime: timeInputValue(attendance?.leftAt ?? null),
-      justification: attendance?.justification ?? "",
-      minutesPresent: attendance?.minutesPresent ?? null,
-    };
-  });
+      return {
+        ...athlete,
+        status: attendanceStatus(
+          attendance?.status,
+        ),
+        arrivalTime:
+          timeInputValue(
+            attendance?.arrivedAt ?? null,
+          ),
+        exitTime:
+          timeInputValue(
+            attendance?.leftAt ?? null,
+          ),
+        justification:
+          attendance?.justification ?? "",
+        minutesPresent:
+          attendance?.minutesPresent ??
+          null,
+      };
+    });
 
   const attendanceEditable =
     canManageAttendance &&
@@ -182,94 +242,219 @@ export default async function EditTrainingPage({
     session?.status !== "CANCELLED" &&
     session?.status !== "ARCHIVED";
 
-  const plannedStartAt = scheduledDateTime(
-    training.date,
-    training.startTime,
-  );
+  const plannedStartAt =
+    scheduledDateTime(
+      training.date,
+      training.startTime,
+    );
 
-  const plannedEndAt = scheduledDateTime(
-    training.date,
-    training.endTime,
-  );
+  const plannedEndAt =
+    scheduledDateTime(
+      training.date,
+      training.endTime,
+    );
 
-  const consideredDurationMinutes = sessionDurationMinutes(
-    session?.actualStartedAt ?? null,
-    session?.actualEndedAt ?? null,
-    plannedStartAt,
-    plannedEndAt,
-  );
+  const consideredDurationMinutes =
+    sessionDurationMinutes(
+      session?.actualStartedAt ??
+        null,
+      session?.actualEndedAt ??
+        null,
+      plannedStartAt,
+      plannedEndAt,
+    );
+
+  const recordedCount =
+    session?.attendances.filter(
+      (attendance) =>
+        attendance.status !==
+        "PENDING",
+    ).length ?? 0;
 
   return (
-    <main className="training-attendance-page">
-      <div className="page-head">
+    <main className="training-attendance-v9">
+      <section className="training-attendance-v9-hero">
         <div>
-          <span className="page-eyebrow">
-            TREINO · {training.category.name}
+          <span className="training-attendance-v9-eyebrow">
+            11UP TREINOS ·{" "}
+            {sportLabel(
+              training.sport,
+            ).toUpperCase()}
           </span>
 
           <h1>Lista de presença</h1>
 
-          <p className="muted">
-            {formatTrainingDate(training.date)} · {training.startTime} –{" "}
+          <p>
+            {training.category.name} ·{" "}
+            {formatTrainingDate(
+              training.date,
+            )}
+            {" · "}
+            {training.startTime} –{" "}
             {training.endTime}
-            {training.location ? ` · ${training.location}` : ""}
+            {training.location
+              ? ` · ${training.location}`
+              : ""}
           </p>
         </div>
 
-        <Link className="btn btn-secondary" href="/treinos">
-          Voltar
+        <div className="training-attendance-v9-hero-aside">
+          <small>STATUS</small>
+
+          <strong>
+            {sessionStatusLabel(
+              session?.status,
+            )}
+          </strong>
+
+          <span>
+            {recordedCount}/
+            {athletes.length} atleta(s)
+            registrados
+          </span>
+        </div>
+      </section>
+
+      <section className="training-attendance-v9-summary">
+        <article>
+          <span>MODALIDADE</span>
+          <strong>
+            {sportLabel(
+              training.sport,
+            )}
+          </strong>
+        </article>
+
+        <article>
+          <span>CATEGORIA</span>
+          <strong>
+            {training.category.name}
+          </strong>
+        </article>
+
+        <article>
+          <span>PLANEJADO</span>
+          <strong>
+            {training.startTime} –{" "}
+            {training.endTime}
+          </strong>
+        </article>
+
+        <article>
+          <span>
+            DURAÇÃO CONSIDERADA
+          </span>
+
+          <strong>
+            {consideredDurationMinutes !==
+            null
+              ? `${consideredDurationMinutes} min`
+              : "—"}
+          </strong>
+        </article>
+
+        <Link
+          className="training-attendance-v9-back"
+          href="/treinos"
+        >
+          ← Voltar aos treinos
         </Link>
-      </div>
+      </section>
 
       {!canViewAttendance ? (
-        <div className="notice" role="status">
-          <strong>Acesso restrito.</strong> O Gestor define quais profissionais
-          podem visualizar ou realizar a lista de presença desta categoria.
+        <div className="training-attendance-v9-notice">
+          <strong>
+            Acesso restrito.
+          </strong>{" "}
+          O Gestor define quais
+          profissionais podem visualizar
+          ou realizar a lista de presença
+          desta categoria.
         </div>
       ) : !training.date ? (
-        <div className="empty">
-          Defina uma data para o treino antes de realizar a chamada.
+        <div className="training-attendance-v9-empty">
+          Defina uma data para o treino
+          antes de realizar a chamada.
         </div>
       ) : (
-        <section className="card training-attendance-card training-attendance-focus">
-          <div className="section-title-row">
+        <section className="training-attendance-v9-card">
+          <header>
             <div>
-              <span className="page-eyebrow">CHAMADA DO TREINO</span>
-              <h2>{training.category.name}</h2>
-              <p className="muted">
-                {athletes.length} atleta(s) ativo(s) nesta categoria
+              <span className="training-attendance-v9-eyebrow">
+                CHAMADA DO TREINO
+              </span>
+
+              <h2>
+                {training.category.name}
+              </h2>
+
+              <p>
+                {athletes.length} atleta(s)
+                ativo(s) nesta categoria
               </p>
             </div>
-          </div>
 
-          {session?.status === "CANCELLED" ? (
-            <div
-              className="notice"
-              role="status"
-              style={{ marginBottom: 16 }}
-            >
-              <strong>Treino cancelado.</strong> Esta sessão não gera falta e
-              não entra no denominador de participação.
+            <div className="training-attendance-v9-rule">
+              <span>
+                REGRA DE CÁLCULO
+              </span>
+
+              <strong>
+                Minutos reais ÷ duração
+                real do treino
+              </strong>
+
+              <small>
+                Falta e falta justificada
+                = 0 minuto
+              </small>
+            </div>
+          </header>
+
+          {session?.status ===
+          "CANCELLED" ? (
+            <div className="training-attendance-v9-notice">
+              <strong>
+                Treino cancelado.
+              </strong>{" "}
+              Esta sessão não gera falta
+              e não entra no denominador
+              de participação.
             </div>
           ) : null}
 
           {athletes.length ? (
             <TrainingAttendanceForm
-              scheduleId={training.id}
-              athletes={attendanceRows}
-              canEdit={attendanceEditable}
-              sessionStatus={session?.status ?? "SCHEDULED"}
+              scheduleId={
+                training.id
+              }
+              athletes={
+                attendanceRows
+              }
+              canEdit={
+                attendanceEditable
+              }
+              sessionStatus={
+                session?.status ??
+                "SCHEDULED"
+              }
               actualStartTime={timeInputValue(
-                session?.actualStartedAt ?? null,
+                session?.actualStartedAt ??
+                  null,
               )}
               actualEndTime={timeInputValue(
-                session?.actualEndedAt ?? null,
+                session?.actualEndedAt ??
+                  null,
               )}
-              sessionDurationMinutes={consideredDurationMinutes}
+              sessionDurationMinutes={
+                consideredDurationMinutes
+              }
             />
           ) : (
-            <div className="empty">
-              Nenhum atleta ativo vinculado a {training.category.name}.
+            <div className="training-attendance-v9-empty">
+              Nenhum atleta ativo
+              vinculado a{" "}
+              {training.category.name}.
             </div>
           )}
         </section>

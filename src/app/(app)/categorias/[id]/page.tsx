@@ -374,6 +374,19 @@ export default async function CategoryHubPage({
           </label>
 
           <label>
+            Modalidade
+            <select
+              name="sport"
+              defaultValue={category.sport}
+              required
+            >
+              <option value="BOTH" disabled>Definir modalidade</option>
+              <option value="FOOTBALL">Futebol de Campo</option>
+              <option value="FUTSAL">Futsal</option>
+            </select>
+          </label>
+
+          <label>
             Ano de referência
             <input
               name="birthYear"

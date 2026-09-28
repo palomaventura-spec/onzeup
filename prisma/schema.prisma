@@ -338,6 +338,7 @@ model Category {
   description              String?
   accentColor              String                    @default("#9DDB16")
   type                     CategoryType              @default(STANDARD)
+  sport                    SportType                 @default(BOTH)
   active                   Boolean                   @default(true)
   organizationId           String
   createdAt                DateTime                  @default(now())
@@ -356,9 +357,9 @@ model Category {
   trainingSessions         TrainingSession[]
   competitionCallUpRules   CompetitionCallUpRule[]
 
-  @@unique([organizationId, name])
+  @@unique([organizationId, name, sport])
   @@index([organizationId])
-  @@index([organizationId, type, active])
+  @@index([organizationId, sport, type, active])
 }
 
 model StaffMember {
@@ -687,6 +688,7 @@ model TrainingSession {
   actualEndedAt            DateTime?
   durationSource           TrainingDurationSource @default(SCHEDULED_DURATION_USED)
   trainingType             String?
+  sport                    SportType              @default(BOTH)
   location                 String?
   notes                    String?
   status                   TrainingSessionStatus  @default(SCHEDULED)
@@ -880,6 +882,7 @@ model AthletePerformanceGoal {
   categoryId      String?
   createdByUserId String?
   area            PerformanceArea
+  sport           SportType              @default(BOTH)
   title           String
   description     String?
   status          PerformanceGoalStatus @default(NOT_STARTED)
@@ -984,6 +987,7 @@ model AthleteGpsRecord {
   matchId                     String?
   recordedByUserId            String?
   context                     GpsContext
+  sport                       SportType       @default(BOTH)
   source                      GpsDataSource   @default(MANUAL)
   activityAt                  DateTime
   durationMinutes             Int?
@@ -1024,6 +1028,7 @@ model PerformanceReport {
   generatedByUserId    String?
   title                String
   reportType           PerformanceReportType   @default(EVALUATION)
+  sport                SportType               @default(BOTH)
   status               PerformanceReportStatus @default(GENERATED)
   periodStart          DateTime?
   periodEnd            DateTime?
@@ -1061,6 +1066,7 @@ model MonthlyAthleteReport {
   periodStart         DateTime
   periodEnd           DateTime
   status              MonthlyAthleteReportStatus @default(DRAFT)
+  sport               SportType                  @default(BOTH)
   title               String?
   professionalComment String?
   managerComment      String?
@@ -1087,7 +1093,7 @@ model MonthlyAthleteReport {
   approvedBy User? @relation("MonthlyAthleteReportApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
   sentBy     User? @relation("MonthlyAthleteReportSender", fields: [sentByUserId], references: [id], onDelete: SetNull)
 
-  @@unique([organizationId, athleteId, periodStart])
+  @@unique([organizationId, athleteId, sport, periodStart])
   @@index([organizationId, periodStart, status])
   @@index([athleteId, periodStart])
   @@index([categoryId, periodStart])
