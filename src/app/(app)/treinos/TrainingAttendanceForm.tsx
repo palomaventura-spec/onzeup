@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useFormStatus } from "react-dom";
 
 import {
@@ -35,6 +40,116 @@ type AthleteRow = {
   justification?: string;
   minutesPresent?: number | null;
 };
+
+type AttendanceIcon =
+  | "clock"
+  | "play"
+  | "stop"
+  | "check"
+  | "late"
+  | "partial"
+  | "absent"
+  | "justified"
+  | "save";
+
+function Icon({
+  name,
+  size = 18,
+}: {
+  name: AttendanceIcon;
+  size?: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  if (name === "clock") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 8v5l3 2" />
+      </svg>
+    );
+  }
+
+  if (name === "play") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="m10 8 6 4-6 4Z" />
+      </svg>
+    );
+  }
+
+  if (name === "stop") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M9 9h6v6H9z" />
+      </svg>
+    );
+  }
+
+  if (name === "check") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="m8.5 12 2.2 2.2 4.8-5" />
+      </svg>
+    );
+  }
+
+  if (name === "late") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 7v5h4" />
+      </svg>
+    );
+  }
+
+  if (name === "partial") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 4v16" />
+      </svg>
+    );
+  }
+
+  if (name === "absent") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="m9 9 6 6M15 9l-6 6" />
+      </svg>
+    );
+  }
+
+  if (name === "justified") {
+    return (
+      <svg {...common}>
+        <path d="M6 3h9l3 3v15H6z" />
+        <path d="M14 3v4h4M9 12h6M9 16h4" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M5 4h12l2 2v14H5z" />
+      <path d="M8 4v6h8V4M8 16h8" />
+    </svg>
+  );
+}
 
 function makeEditableRows(athletes: AthleteRow[]) {
   return athletes.map((athlete) => ({
@@ -77,13 +192,28 @@ function statusLabel(status: AttendanceStatus | null) {
     case "ABSENT":
       return "Falta";
     case "JUSTIFIED_ABSENCE":
-      return "Falta justificada";
+      return "Justificada";
     case "LATE":
       return "Atraso";
     case "PARTIAL":
-      return "Participação parcial";
+      return "Parcial";
     default:
-      return "Não registrado";
+      return "Pendente";
+  }
+}
+
+function statusIcon(status: AttendanceStatus) {
+  switch (status) {
+    case "PRESENT":
+      return "check";
+    case "LATE":
+      return "late";
+    case "PARTIAL":
+      return "partial";
+    case "ABSENT":
+      return "absent";
+    case "JUSTIFIED_ABSENCE":
+      return "justified";
   }
 }
 
@@ -167,6 +297,36 @@ function percentageTone(percentage: number | null) {
   return "green";
 }
 
+function sessionStateCopy(status?: SessionStatus | null) {
+  switch (status) {
+    case "IN_PROGRESS":
+      return {
+        label: "Treino em andamento",
+        tone: "active",
+      };
+    case "COMPLETED":
+      return {
+        label: "Treino finalizado",
+        tone: "completed",
+      };
+    case "CANCELLED":
+      return {
+        label: "Treino cancelado",
+        tone: "cancelled",
+      };
+    case "ARCHIVED":
+      return {
+        label: "Treino arquivado",
+        tone: "archived",
+      };
+    default:
+      return {
+        label: "Aguardando início",
+        tone: "scheduled",
+      };
+  }
+}
+
 export default function TrainingAttendanceForm({
   scheduleId,
   athletes,
@@ -203,7 +363,8 @@ export default function TrainingAttendanceForm({
         (row) => row.status === "ABSENT",
       ).length,
       justified: rows.filter(
-        (row) => row.status === "JUSTIFIED_ABSENCE",
+        (row) =>
+          row.status === "JUSTIFIED_ABSENCE",
       ).length,
       late: rows.filter(
         (row) => row.status === "LATE",
@@ -211,16 +372,18 @@ export default function TrainingAttendanceForm({
       partial: rows.filter(
         (row) => row.status === "PARTIAL",
       ).length,
-      unrecorded: rows.filter((row) => row.status === null)
-        .length,
+      unrecorded: rows.filter(
+        (row) => row.status === null,
+      ).length,
     }),
     [rows],
   );
 
   const persistedRecordedCount = useMemo(
     () =>
-      athletes.filter((athlete) => athlete.status !== null)
-        .length,
+      athletes.filter(
+        (athlete) => athlete.status !== null,
+      ).length,
     [athletes],
   );
 
@@ -231,6 +394,23 @@ export default function TrainingAttendanceForm({
   const currentSelectionComplete =
     rows.length > 0 &&
     rows.every((row) => row.status !== null);
+
+  const canOperateSession =
+    canEdit &&
+    sessionStatus !== "COMPLETED" &&
+    sessionStatus !== "CANCELLED" &&
+    sessionStatus !== "ARCHIVED";
+
+  const isHistoricalReadOnly =
+    !canEdit &&
+    (sessionStatus === "COMPLETED" ||
+      sessionStatus === "CANCELLED" ||
+      sessionStatus === "ARCHIVED");
+
+  const canFinalizePersistedAttendance =
+    persistedAttendanceComplete && !isDirty;
+
+  const stateCopy = sessionStateCopy(sessionStatus);
 
   function updateStatus(
     id: string,
@@ -277,217 +457,273 @@ export default function TrainingAttendanceForm({
     );
   }
 
-  const canOperateSession =
-    canEdit &&
-    sessionStatus !== "COMPLETED" &&
-    sessionStatus !== "CANCELLED" &&
-    sessionStatus !== "ARCHIVED";
+  function updateArrival(id: string, value: string) {
+    setIsDirty(true);
+    setRows((current) =>
+      current.map((row) =>
+        row.id === id
+          ? { ...row, arrivalTime: value }
+          : row,
+      ),
+    );
+  }
 
-  const isHistoricalReadOnly =
-    !canEdit &&
-    (sessionStatus === "COMPLETED" ||
-      sessionStatus === "CANCELLED" ||
-      sessionStatus === "ARCHIVED");
+  function updateExit(id: string, value: string) {
+    setIsDirty(true);
+    setRows((current) =>
+      current.map((row) =>
+        row.id === id
+          ? { ...row, exitTime: value }
+          : row,
+      ),
+    );
+  }
 
-  const canFinalizePersistedAttendance =
-    persistedAttendanceComplete && !isDirty;
+  function updateJustification(
+    id: string,
+    value: string,
+  ) {
+    setIsDirty(true);
+    setRows((current) =>
+      current.map((row) =>
+        row.id === id
+          ? { ...row, justification: value }
+          : row,
+      ),
+    );
+  }
 
   return (
-    <div className="attendance-workspace">
+    <div className="attendance-v8">
       {sessionStatus !== undefined ? (
-        <section className="attendance-session-control">
-          <div>
-            <span className="page-eyebrow">
+        <section className="attendance-v8-session">
+          <div className="attendance-v8-session-copy">
+            <span className="attendance-v8-eyebrow">
               TEMPO REAL DO TREINO
             </span>
 
-            <h3>
-              {sessionStatus === "COMPLETED"
-                ? "Treino finalizado"
-                : sessionStatus === "IN_PROGRESS"
-                  ? "Treino em andamento"
-                  : sessionStatus === "CANCELLED"
-                    ? "Treino cancelado"
-                    : sessionStatus === "ARCHIVED"
-                      ? "Treino arquivado"
-                      : "Treino ainda não iniciado"}
-            </h3>
+            <div className="attendance-v8-session-title">
+              <h3>{stateCopy.label}</h3>
+              <span
+                className={`attendance-v8-session-status ${stateCopy.tone}`}
+              >
+                {sessionStatus === "IN_PROGRESS"
+                  ? "AO VIVO"
+                  : sessionStatus === "COMPLETED"
+                    ? "ENCERRADO"
+                    : sessionStatus === "CANCELLED"
+                      ? "CANCELADO"
+                      : sessionStatus === "ARCHIVED"
+                        ? "ARQUIVADO"
+                        : "AGUARDANDO"}
+              </span>
+            </div>
 
-            {sessionDurationMinutes !== null &&
-            sessionDurationMinutes !== undefined ? (
-              <p className="muted">
-                Duração considerada: {sessionDurationMinutes} min
-              </p>
-            ) : null}
+            <p>
+              O aproveitamento individual usa a duração real do
+              treino quando início e fim forem registrados.
+            </p>
+          </div>
+
+          <div className="attendance-v8-time-summary">
+            <div>
+              <span>INÍCIO REAL</span>
+              <strong>{actualStartTime || "—"}</strong>
+            </div>
+
+            <div>
+              <span>FIM REAL</span>
+              <strong>{actualEndTime || "—"}</strong>
+            </div>
+
+            <div>
+              <span>DURAÇÃO</span>
+              <strong>
+                {sessionDurationMinutes !== null &&
+                sessionDurationMinutes !== undefined
+                  ? `${sessionDurationMinutes} min`
+                  : "—"}
+              </strong>
+            </div>
           </div>
 
           {canOperateSession &&
           sessionStatus !== "IN_PROGRESS" ? (
-            <div>
-              <form action={startTrainingSession}>
+            <form
+              className="attendance-v8-session-action"
+              action={startTrainingSession}
+            >
+              <input
+                type="hidden"
+                name="scheduleId"
+                value={scheduleId}
+              />
+
+              <label>
+                <span>Hora que começou</span>
                 <input
-                  type="hidden"
-                  name="scheduleId"
-                  value={scheduleId}
+                  type="time"
+                  name="actualStartTime"
+                  defaultValue={actualStartTime}
+                  required
                 />
+              </label>
 
-                <label>
-                  <span>Início real</span>
-                  <input
-                    type="time"
-                    name="actualStartTime"
-                    defaultValue={actualStartTime}
-                    required
-                  />
-                </label>
-
-                <PendingButton
-                  className="btn"
-                  pendingText="Iniciando treino..."
-                  disabled={isDirty}
-                >
-                  Iniciar treino
-                </PendingButton>
-              </form>
-
-              {isDirty ? (
-                <small className="muted">
-                  Salve a lista de presença antes de iniciar o
-                  treino para não perder alterações.
-                </small>
-              ) : null}
-            </div>
+              <PendingButton
+                className="attendance-v8-start"
+                pendingText="Iniciando..."
+                disabled={isDirty}
+              >
+                <Icon name="play" size={17} />
+                Iniciar treino
+              </PendingButton>
+            </form>
           ) : null}
 
           {canOperateSession &&
           sessionStatus === "IN_PROGRESS" ? (
-            <div>
-              <form action={completeTrainingSession}>
+            <form
+              className="attendance-v8-session-action"
+              action={completeTrainingSession}
+            >
+              <input
+                type="hidden"
+                name="scheduleId"
+                value={scheduleId}
+              />
+
+              {actualStartTime ? (
                 <input
                   type="hidden"
-                  name="scheduleId"
-                  value={scheduleId}
+                  name="actualStartTime"
+                  value={actualStartTime}
                 />
-
-                {actualStartTime ? (
-                  <input
-                    type="hidden"
-                    name="actualStartTime"
-                    value={actualStartTime}
-                  />
-                ) : null}
-
-                <label>
-                  <span>Fim real</span>
-                  <input
-                    type="time"
-                    name="actualEndTime"
-                    defaultValue={actualEndTime}
-                    required
-                  />
-                </label>
-
-                <PendingButton
-                  className="btn"
-                  pendingText="Finalizando treino..."
-                  disabled={!canFinalizePersistedAttendance}
-                >
-                  Finalizar treino
-                </PendingButton>
-              </form>
-
-              {!persistedAttendanceComplete ? (
-                <small className="muted">
-                  Finalização bloqueada: salve a chamada de todos
-                  os atletas primeiro.
-                </small>
-              ) : isDirty ? (
-                <small className="muted">
-                  Existem alterações não salvas. Salve a lista
-                  antes de finalizar o treino.
-                </small>
               ) : null}
+
+              <label>
+                <span>Hora que terminou</span>
+                <input
+                  type="time"
+                  name="actualEndTime"
+                  defaultValue={actualEndTime}
+                  required
+                />
+              </label>
+
+              <PendingButton
+                className="attendance-v8-finish"
+                pendingText="Finalizando..."
+                disabled={
+                  !canFinalizePersistedAttendance
+                }
+              >
+                <Icon name="stop" size={17} />
+                Finalizar treino
+              </PendingButton>
+            </form>
+          ) : null}
+
+          {canOperateSession && isDirty ? (
+            <div className="attendance-v8-session-warning">
+              Salve a chamada antes de iniciar ou finalizar o
+              treino.
+            </div>
+          ) : null}
+
+          {canOperateSession &&
+          sessionStatus === "IN_PROGRESS" &&
+          !persistedAttendanceComplete ? (
+            <div className="attendance-v8-session-warning">
+              Finalização bloqueada até todos os atletas terem
+              a chamada salva.
             </div>
           ) : null}
         </section>
       ) : null}
 
       {!isHistoricalReadOnly ? (
+        <section className="attendance-v8-toolbar">
+          <div className="attendance-v8-counters">
+            <span className="present">
+              <b>{counts.present}</b> presentes
+            </span>
+            <span className="late">
+              <b>{counts.late}</b> atrasos
+            </span>
+            <span className="partial">
+              <b>{counts.partial}</b> parciais
+            </span>
+            <span className="absent">
+              <b>{counts.absent}</b> faltas
+            </span>
+            <span className="justified">
+              <b>{counts.justified}</b> justificadas
+            </span>
+            <span className="pending">
+              <b>{counts.unrecorded}</b> pendentes
+            </span>
+          </div>
+
+          {canEdit ? (
+            <button
+              type="button"
+              className="attendance-v8-mark-all"
+              onClick={markAllPresent}
+            >
+              <Icon name="check" size={16} />
+              Marcar todos presentes
+            </button>
+          ) : null}
+        </section>
+      ) : null}
+
+      {!isHistoricalReadOnly ? (
         <div
-          className="notice"
-          role="status"
-          style={{ marginBottom: 16 }}
+          className={`attendance-v8-save-state ${
+            isDirty
+              ? "dirty"
+              : persistedAttendanceComplete
+                ? "saved"
+                : "pending"
+          }`}
         >
           {isDirty ? (
             <>
-              <strong>Alterações ainda não salvas.</strong>{" "}
-              Clique em “Salvar lista de presença” antes de iniciar
-              ou finalizar o treino.
+              <strong>Alterações não salvas.</strong>
+              <span>
+                Salve a chamada para atualizar os cálculos do
+                treino.
+              </span>
             </>
           ) : persistedAttendanceComplete ? (
             <>
-              <strong>✓ Lista de presença salva.</strong>{" "}
-              {persistedRecordedCount} de {athletes.length} atletas
-              têm chamada registrada no banco.
-            </>
-          ) : persistedRecordedCount > 0 ? (
-            <>
-              <strong>Chamada incompleta.</strong>{" "}
-              {persistedRecordedCount} de {athletes.length} atletas
-              têm registro salvo.
+              <strong>Chamada salva.</strong>
+              <span>
+                {persistedRecordedCount} de {athletes.length} atletas
+                registrados.
+              </span>
             </>
           ) : (
             <>
-              <strong>Chamada ainda não salva.</strong>{" "}
-              Nenhum atleta será considerado presente
-              automaticamente.
+              <strong>Chamada pendente.</strong>
+              <span>
+                Nenhum atleta é considerado presente
+                automaticamente.
+              </span>
             </>
           )}
         </div>
       ) : null}
 
-      <div className="attendance-toolbar">
-        <div className="attendance-counters">
-          <span className="is-present">
-            <b>{counts.present}</b> presentes
-          </span>
-
-          <span className="is-late">
-            <b>{counts.late}</b> atrasos
-          </span>
-
-          <span className="is-partial">
-            <b>{counts.partial}</b> parciais
-          </span>
-
-          <span className="is-absent">
-            <b>{counts.absent}</b> faltas
-          </span>
-
-          <span className="is-justified">
-            <b>{counts.justified}</b> justificadas
-          </span>
-
-          {counts.unrecorded > 0 ? (
-            <span>
-              <b>{counts.unrecorded}</b> não registrados
-            </span>
-          ) : null}
-        </div>
-
-        {canEdit ? (
-          <button
-            type="button"
-            className="btn btn-secondary btn-small"
-            onClick={markAllPresent}
-          >
-            Marcar todos presentes
-          </button>
-        ) : null}
-      </div>
-
       {isHistoricalReadOnly ? (
-        <div className="attendance-history-list">
+        <section className="attendance-v8-history">
+          <div className="attendance-v8-history-head">
+            <span>ATLETA</span>
+            <span>STATUS</span>
+            <span>MINUTOS</span>
+            <span>APROVEITAMENTO</span>
+          </div>
+
           {rows.map((athlete) => {
             const effectiveMinutes =
               effectiveMinutesForDisplay(
@@ -503,12 +739,15 @@ export default function TrainingAttendanceForm({
 
             return (
               <article
-                className="attendance-history-athlete"
+                className="attendance-v8-history-row"
                 key={athlete.id}
               >
-                <div className="attendance-athlete-id">
+                <div className="attendance-v8-athlete">
                   {athlete.photoUrl ? (
-                    <img src={athlete.photoUrl} alt="" />
+                    <img
+                      src={athlete.photoUrl}
+                      alt=""
+                    />
                   ) : (
                     <span>
                       {(athlete.nickname || athlete.name)
@@ -521,7 +760,6 @@ export default function TrainingAttendanceForm({
                     <strong>
                       {athlete.nickname || athlete.name}
                     </strong>
-
                     <small>
                       {athlete.jerseyNumber
                         ? `Camisa ${athlete.jerseyNumber}`
@@ -530,9 +768,9 @@ export default function TrainingAttendanceForm({
                   </div>
                 </div>
 
-                <div className="attendance-history-status">
+                <div className="attendance-v8-history-status">
                   <span
-                    className={`attendance-status-pill ${statusTone(
+                    className={`attendance-v8-status-pill ${statusTone(
                       athlete.status,
                     )}`}
                   >
@@ -541,7 +779,9 @@ export default function TrainingAttendanceForm({
 
                   {athlete.status === "LATE" &&
                   athlete.arrivalTime ? (
-                    <small>Entrada {athlete.arrivalTime}</small>
+                    <small>
+                      Chegou {athlete.arrivalTime}
+                    </small>
                   ) : null}
 
                   {athlete.status === "PARTIAL" ? (
@@ -556,43 +796,47 @@ export default function TrainingAttendanceForm({
                     </small>
                   ) : null}
 
-                  {athlete.status === "JUSTIFIED_ABSENCE" &&
+                  {athlete.status ===
+                    "JUSTIFIED_ABSENCE" &&
                   athlete.justification ? (
-                    <small>{athlete.justification}</small>
+                    <small>
+                      {athlete.justification}
+                    </small>
                   ) : null}
                 </div>
 
-                <div className="attendance-history-minutes">
-                  <span>MINUTOS</span>
+                <div className="attendance-v8-history-metric">
                   <strong>
                     {effectiveMinutes !== null
                       ? `${effectiveMinutes} min`
-                      : "Não registrado"}
+                      : "—"}
                   </strong>
                 </div>
 
-                <div className="attendance-history-percentage">
-                  <span>APROVEITAMENTO</span>
+                <div className="attendance-v8-history-metric">
                   <strong
-                    className={`attendance-percentage ${percentageTone(
+                    className={`attendance-v8-percentage ${percentageTone(
                       percentage,
                     )}`}
                   >
                     {percentage !== null
-                      ? `${percentage.toLocaleString("pt-BR", {
-                          maximumFractionDigits: 1,
-                        })}%`
+                      ? `${percentage.toLocaleString(
+                          "pt-BR",
+                          {
+                            maximumFractionDigits: 1,
+                          },
+                        )}%`
                       : "—"}
                   </strong>
                 </div>
               </article>
             );
           })}
-        </div>
+        </section>
       ) : (
         <form
           action={saveTrainingAttendance}
-          className="attendance-form"
+          className="attendance-v8-form"
         >
           <input
             type="hidden"
@@ -600,210 +844,234 @@ export default function TrainingAttendanceForm({
             value={scheduleId}
           />
 
-          <div className="attendance-list">
-            {rows.map((athlete) => (
-              <article
-                className="attendance-athlete"
-                key={athlete.id}
-              >
-                <div className="attendance-athlete-id">
-                  {athlete.photoUrl ? (
-                    <img src={athlete.photoUrl} alt="" />
-                  ) : (
-                    <span>
-                      {(athlete.nickname || athlete.name)
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </span>
-                  )}
+          <div className="attendance-v8-list">
+            {rows.map((athlete) => {
+              const effectiveMinutes =
+                effectiveMinutesForDisplay(
+                  athlete.status,
+                  athlete.minutesPresent,
+                  sessionDurationMinutes,
+                );
 
-                  <div>
-                    <strong>
-                      {athlete.nickname || athlete.name}
-                    </strong>
+              const percentage = percentageFor(
+                effectiveMinutes,
+                sessionDurationMinutes,
+              );
 
-                    <small>
-                      {athlete.jerseyNumber
-                        ? `Camisa ${athlete.jerseyNumber}`
-                        : athlete.name}
-                    </small>
-
-                    {athlete.minutesPresent !== null &&
-                    athlete.minutesPresent !== undefined ? (
-                      <small>
-                        {athlete.minutesPresent} min registrados
-                      </small>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div
-                  className="attendance-options"
-                  role="group"
-                  aria-label={`Presença de ${athlete.name}`}
+              return (
+                <article
+                  className="attendance-v8-row"
+                  key={athlete.id}
                 >
-                  {(
-                    [
-                      "PRESENT",
-                      "LATE",
-                      "PARTIAL",
-                      "ABSENT",
-                      "JUSTIFIED_ABSENCE",
-                    ] as AttendanceStatus[]
-                  ).map((status) => (
-                    <label
-                      className={
-                        athlete.status === status
-                          ? `selected ${status.toLowerCase()}`
-                          : ""
-                      }
-                      key={status}
-                    >
-                      <input
-                        type="radio"
-                        name={`status_${athlete.id}`}
-                        value={status}
-                        checked={athlete.status === status}
-                        required
-                        disabled={!canEdit}
-                        onChange={() =>
-                          updateStatus(athlete.id, status)
+                  <div className="attendance-v8-athlete">
+                    {athlete.photoUrl ? (
+                      <img
+                        src={athlete.photoUrl}
+                        alt=""
+                      />
+                    ) : (
+                      <span>
+                        {(athlete.nickname || athlete.name)
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </span>
+                    )}
+
+                    <div>
+                      <strong>
+                        {athlete.nickname || athlete.name}
+                      </strong>
+                      <small>
+                        {athlete.jerseyNumber
+                          ? `Camisa ${athlete.jerseyNumber}`
+                          : athlete.name}
+                      </small>
+                    </div>
+                  </div>
+
+                  <div
+                    className="attendance-v8-options"
+                    role="group"
+                    aria-label={`Presença de ${athlete.name}`}
+                  >
+                    {(
+                      [
+                        "PRESENT",
+                        "LATE",
+                        "PARTIAL",
+                        "ABSENT",
+                        "JUSTIFIED_ABSENCE",
+                      ] as AttendanceStatus[]
+                    ).map((status) => (
+                      <label
+                        className={
+                          athlete.status === status
+                            ? `selected ${statusTone(status)}`
+                            : statusTone(status)
                         }
-                      />
+                        key={status}
+                        title={statusLabel(status)}
+                      >
+                        <input
+                          type="radio"
+                          name={`status_${athlete.id}`}
+                          value={status}
+                          checked={
+                            athlete.status === status
+                          }
+                          required
+                          disabled={!canEdit}
+                          onChange={() =>
+                            updateStatus(
+                              athlete.id,
+                              status,
+                            )
+                          }
+                        />
 
-                      {statusLabel(status)}
-                    </label>
-                  ))}
-                </div>
+                        <Icon
+                          name={statusIcon(status)}
+                          size={15}
+                        />
+                        <span>
+                          {statusLabel(status)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
 
-                <div className="attendance-exception-fields">
+                  <div className="attendance-v8-result">
+                    <span>MIN / %</span>
+                    <strong>
+                      {effectiveMinutes !== null
+                        ? `${effectiveMinutes} min`
+                        : "—"}
+                    </strong>
+                    <small
+                      className={`attendance-v8-percentage ${percentageTone(
+                        percentage,
+                      )}`}
+                    >
+                      {percentage !== null
+                        ? `${percentage.toLocaleString(
+                            "pt-BR",
+                            {
+                              maximumFractionDigits: 1,
+                            },
+                          )}%`
+                        : "—"}
+                    </small>
+                  </div>
+
                   {athlete.status === "LATE" ? (
-                    <label className="attendance-arrival visible">
-                      <span>Hora que chegou</span>
-                      <input
-                        type="time"
-                        name={`arrival_${athlete.id}`}
-                        value={athlete.arrivalTime}
-                        required
-                        disabled={!canEdit}
-                        onChange={(event) => {
-                          setIsDirty(true);
-                          setRows((current) =>
-                            current.map((row) =>
-                              row.id === athlete.id
-                                ? {
-                                    ...row,
-                                    arrivalTime: event.target.value,
-                                  }
-                                : row,
-                            ),
-                          );
-                        }}
-                      />
-                    </label>
+                    <div className="attendance-v8-exception">
+                      <label>
+                        <span>Hora de chegada</span>
+                        <input
+                          type="time"
+                          name={`arrival_${athlete.id}`}
+                          value={athlete.arrivalTime}
+                          required
+                          disabled={!canEdit}
+                          onChange={(event) =>
+                            updateArrival(
+                              athlete.id,
+                              event.target.value,
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
                   ) : null}
 
                   {athlete.status === "PARTIAL" ? (
-                    <>
-                      <label className="attendance-arrival visible">
-                        <span>Entrada, se diferente</span>
+                    <div className="attendance-v8-exception two">
+                      <label>
+                        <span>Entrada</span>
                         <input
                           type="time"
                           name={`arrival_${athlete.id}`}
                           value={athlete.arrivalTime}
                           disabled={!canEdit}
-                          onChange={(event) => {
-                            setIsDirty(true);
-                            setRows((current) =>
-                              current.map((row) =>
-                                row.id === athlete.id
-                                  ? {
-                                      ...row,
-                                      arrivalTime: event.target.value,
-                                    }
-                                  : row,
-                              ),
-                            );
-                          }}
+                          onChange={(event) =>
+                            updateArrival(
+                              athlete.id,
+                              event.target.value,
+                            )
+                          }
                         />
                       </label>
 
-                      <label className="attendance-arrival visible">
-                        <span>Saída, se antecipada</span>
+                      <label>
+                        <span>Saída</span>
                         <input
                           type="time"
                           name={`exit_${athlete.id}`}
                           value={athlete.exitTime}
                           disabled={!canEdit}
-                          onChange={(event) => {
-                            setIsDirty(true);
-                            setRows((current) =>
-                              current.map((row) =>
-                                row.id === athlete.id
-                                  ? {
-                                      ...row,
-                                      exitTime: event.target.value,
-                                    }
-                                  : row,
-                              ),
-                            );
-                          }}
+                          onChange={(event) =>
+                            updateExit(
+                              athlete.id,
+                              event.target.value,
+                            )
+                          }
                         />
                       </label>
 
-                      <small className="muted">
-                        Informe ao menos entrada ou saída para
-                        participação parcial.
+                      <small>
+                        Informe ao menos entrada ou saída.
                       </small>
-                    </>
+                    </div>
                   ) : null}
 
-                  {athlete.status === "JUSTIFIED_ABSENCE" ? (
-                    <label className="attendance-justification">
-                      <span>Justificativa</span>
-                      <input
-                        type="text"
-                        name={`justification_${athlete.id}`}
-                        value={athlete.justification}
-                        placeholder="Motivo informado"
-                        disabled={!canEdit}
-                        onChange={(event) => {
-                          setIsDirty(true);
-                          setRows((current) =>
-                            current.map((row) =>
-                              row.id === athlete.id
-                                ? {
-                                    ...row,
-                                    justification: event.target.value,
-                                  }
-                                : row,
-                            ),
-                          );
-                        }}
-                      />
-                    </label>
+                  {athlete.status ===
+                  "JUSTIFIED_ABSENCE" ? (
+                    <div className="attendance-v8-exception">
+                      <label>
+                        <span>Justificativa</span>
+                        <input
+                          type="text"
+                          name={`justification_${athlete.id}`}
+                          value={athlete.justification}
+                          placeholder="Motivo informado"
+                          disabled={!canEdit}
+                          onChange={(event) =>
+                            updateJustification(
+                              athlete.id,
+                              event.target.value,
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
                   ) : null}
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
 
           {canEdit ? (
-            <div>
+            <div className="attendance-v8-savebar">
+              <div>
+                <strong>
+                  {currentSelectionComplete
+                    ? "Chamada pronta para salvar"
+                    : `${counts.unrecorded} atleta(s) pendente(s)`}
+                </strong>
+                <span>
+                  Faltas, inclusive justificadas, contam 0 minuto
+                  no aproveitamento.
+                </span>
+              </div>
+
               <PendingButton
-                className="attendance-submit"
+                className="attendance-v8-save"
                 pendingText="Salvando chamada..."
                 disabled={!currentSelectionComplete}
               >
-                Salvar lista de presença
+                <Icon name="save" size={17} />
+                Salvar chamada
               </PendingButton>
-
-              {!currentSelectionComplete ? (
-                <p className="muted">
-                  Registre a situação de todos os atletas para
-                  habilitar o salvamento.
-                </p>
-              ) : null}
             </div>
           ) : null}
         </form>

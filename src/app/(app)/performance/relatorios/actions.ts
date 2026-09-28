@@ -1,6 +1,6 @@
 "use server";
 
-import { MonthlyAthleteReportStatus } from "@prisma/client";
+import { MonthlyAthleteReportStatus, SportType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -40,6 +40,18 @@ export async function generateMonthlyAthleteReport(
   const month = clean(
     formData.get("month"),
   );
+
+  const sportValue = clean(formData.get("sport"));
+  const sport =
+    sportValue === SportType.FOOTBALL
+      ? SportType.FOOTBALL
+      : sportValue === SportType.FUTSAL
+        ? SportType.FUTSAL
+        : null;
+
+  if (!sport) {
+    redirect(reportsUrl(month, "erro=modalidade"));
+  }
 
   if (!athleteId) {
     redirect(
@@ -103,11 +115,12 @@ export async function generateMonthlyAthleteReport(
   const existing =
     await prisma.monthlyAthleteReport.findUnique({
       where: {
-        organizationId_athleteId_periodStart:
+        organizationId_athleteId_sport_periodStart:
           {
             organizationId:
               user.organizationId,
             athleteId,
+            sport,
             periodStart: period.start,
           },
       },
@@ -140,15 +153,17 @@ export async function generateMonthlyAthleteReport(
         user.organizationId,
       athleteId,
       month: period.value,
+      sport,
     });
 
   await prisma.monthlyAthleteReport.upsert({
     where: {
-      organizationId_athleteId_periodStart:
+      organizationId_athleteId_sport_periodStart:
         {
           organizationId:
             user.organizationId,
           athleteId,
+          sport,
           periodStart: period.start,
         },
     },
@@ -161,6 +176,7 @@ export async function generateMonthlyAthleteReport(
       createdByUserId: user.id,
       periodStart: period.start,
       periodEnd: period.end,
+      sport,
       status:
         MonthlyAthleteReportStatus.DRAFT,
       title: `Relatório mensal · ${period.label}`,
@@ -206,6 +222,18 @@ export async function sendMonthlyReportToReview(
   const month = clean(
     formData.get("month"),
   );
+
+  const sportValue = clean(formData.get("sport"));
+  const sport =
+    sportValue === SportType.FOOTBALL
+      ? SportType.FOOTBALL
+      : sportValue === SportType.FUTSAL
+        ? SportType.FUTSAL
+        : null;
+
+  if (!sport) {
+    redirect(reportsUrl(month, "erro=modalidade"));
+  }
 
   const report =
     await prisma.monthlyAthleteReport.findFirst({
@@ -294,6 +322,18 @@ export async function approveMonthlyReport(
   const month = clean(
     formData.get("month"),
   );
+
+  const sportValue = clean(formData.get("sport"));
+  const sport =
+    sportValue === SportType.FOOTBALL
+      ? SportType.FOOTBALL
+      : sportValue === SportType.FUTSAL
+        ? SportType.FUTSAL
+        : null;
+
+  if (!sport) {
+    redirect(reportsUrl(month, "erro=modalidade"));
+  }
 
   const report =
     await prisma.monthlyAthleteReport.findFirst({
@@ -386,6 +426,18 @@ export async function markMonthlyReportSent(
   const month = clean(
     formData.get("month"),
   );
+
+  const sportValue = clean(formData.get("sport"));
+  const sport =
+    sportValue === SportType.FOOTBALL
+      ? SportType.FOOTBALL
+      : sportValue === SportType.FUTSAL
+        ? SportType.FUTSAL
+        : null;
+
+  if (!sport) {
+    redirect(reportsUrl(month, "erro=modalidade"));
+  }
 
   const report =
     await prisma.monthlyAthleteReport.findFirst({

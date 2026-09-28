@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { SportType } from "@prisma/client";
 import { redirect } from "next/navigation";
 
 import { requireClubPermission } from "@/lib/club-access";
@@ -19,6 +20,13 @@ function accent(value: FormDataEntryValue | null) {
   return /^#[0-9a-f]{6}$/i.test(color) ? color : "#9DDB16";
 }
 
+function categorySport(value: FormDataEntryValue | null): SportType | null {
+  const sport = clean(value);
+  if (sport === "FOOTBALL") return SportType.FOOTBALL;
+  if (sport === "FUTSAL") return SportType.FUTSAL;
+  return null;
+}
+
 function categoryType(value: FormDataEntryValue | null) {
   return clean(value) === "EVALUATION" ? "EVALUATION" : "STANDARD";
 }
@@ -32,8 +40,9 @@ export async function createCategory(formData: FormData) {
   const description = nullable(formData.get("description"));
   const accentColor = accent(formData.get("accentColor"));
   const type = categoryType(formData.get("type"));
+  const sport = categorySport(formData.get("sport"));
 
-  if (!name) return;
+  if (!name || !sport) return;
 
   await prisma.category.create({
     data: {
@@ -42,6 +51,7 @@ export async function createCategory(formData: FormData) {
       description,
       accentColor,
       type,
+      sport,
       active: true,
       organizationId: user.organizationId,
     },
@@ -62,8 +72,9 @@ export async function updateCategory(formData: FormData) {
   const accentColor = accent(formData.get("accentColor"));
   const type = categoryType(formData.get("type"));
   const active = clean(formData.get("active")) !== "false";
+  const sport = categorySport(formData.get("sport"));
 
-  if (!id || !name) return;
+  if (!id || !name || !sport) return;
 
   await prisma.category.updateMany({
     where: {
@@ -76,6 +87,7 @@ export async function updateCategory(formData: FormData) {
       description,
       accentColor,
       type,
+      sport,
       active,
     },
   });

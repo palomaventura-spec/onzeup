@@ -257,11 +257,18 @@ export async function createTraining(formData: FormData) {
     user.organizationId,
   );
 
+  const sport = categoryId
+    ? (await prisma.category.findFirst({
+        where: { id: categoryId, organizationId: user.organizationId },
+        select: { sport: true },
+      }))?.sport ?? null
+    : null;
+
   const date = parseTrainingDate(clean(formData.get("date")));
   const startTime = clean(formData.get("startTime"));
   const endTime = clean(formData.get("endTime"));
 
-  if (!categoryId || !date || !startTime || !endTime) return;
+  if (!categoryId || !sport || !date || !startTime || !endTime) return;
 
   const training = await prisma.$transaction(async (tx) => {
     const created = await tx.trainingSchedule.create({
@@ -273,6 +280,7 @@ export async function createTraining(formData: FormData) {
         location: nullable(formData.get("location")),
         notes: nullable(formData.get("notes")),
         categoryId,
+        sport,
         organizationId: user.organizationId,
       },
       select: {
@@ -304,11 +312,18 @@ export async function updateTraining(formData: FormData) {
     user.organizationId,
   );
 
+  const sport = categoryId
+    ? (await prisma.category.findFirst({
+        where: { id: categoryId, organizationId: user.organizationId },
+        select: { sport: true },
+      }))?.sport ?? null
+    : null;
+
   const date = parseTrainingDate(clean(formData.get("date")));
   const startTime = clean(formData.get("startTime"));
   const endTime = clean(formData.get("endTime"));
 
-  if (!id || !categoryId || !date || !startTime || !endTime) return;
+  if (!id || !categoryId || !sport || !date || !startTime || !endTime) return;
 
   await prisma.$transaction(async (tx) => {
     const result = await tx.trainingSchedule.updateMany({
@@ -324,6 +339,7 @@ export async function updateTraining(formData: FormData) {
         location: nullable(formData.get("location")),
         notes: nullable(formData.get("notes")),
         categoryId,
+        sport,
       },
     });
 
@@ -448,6 +464,7 @@ export async function startTrainingSession(formData: FormData) {
           organizationId: user.organizationId,
           categoryId: training.categoryId,
           scheduleId: training.id,
+          sport: training.sport,
           recordedByUserId: user.id,
           startsAt,
           endsAt,
@@ -630,6 +647,7 @@ export async function saveTrainingAttendance(
           organizationId: user.organizationId,
           categoryId: training.categoryId,
           scheduleId: training.id,
+          sport: training.sport,
           recordedByUserId: user.id,
           startsAt,
           endsAt,

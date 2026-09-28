@@ -1,9 +1,8 @@
 import Link from "next/link";
-
-import ModuleHero from "@/components/ModuleHero";
-import ModuleKpiGrid from "@/components/ModuleKpiGrid";
-import ModulePanel from "@/components/ModulePanel";
-import ModuleTabs from "@/components/ModuleTabs";
+import {
+  SportType,
+  TrainingSessionStatus,
+} from "@prisma/client";
 
 import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
@@ -13,7 +12,138 @@ import { createTraining, deleteTraining } from "./actions";
 
 type TrainingView = "upcoming" | "active" | "history";
 
+type TrainingFilters = {
+  sport?: string;
+  view?: string;
+  category?: string;
+};
+
+type TrainingIcon =
+  | "field"
+  | "futsal"
+  | "calendar"
+  | "active"
+  | "history"
+  | "category"
+  | "clock"
+  | "users"
+  | "location"
+  | "arrow";
+
 const ATTENDED = new Set(["PRESENT", "LATE", "PARTIAL"]);
+
+function Icon({
+  name,
+  size = 18,
+}: {
+  name: TrainingIcon;
+  size?: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  if (name === "field") {
+    return (
+      <svg {...common}>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M12 5v14M3 12h18" />
+        <circle cx="12" cy="12" r="2.2" />
+      </svg>
+    );
+  }
+
+  if (name === "futsal") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="m9.2 9.2 2.8-2 2.8 2-1.1 3.2h-3.4L9.2 9.2Z" />
+      </svg>
+    );
+  }
+
+  if (name === "calendar") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="5" width="16" height="15" rx="2" />
+        <path d="M8 3v4M16 3v4M4 10h16" />
+      </svg>
+    );
+  }
+
+  if (name === "active") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 8v4l3 2" />
+      </svg>
+    );
+  }
+
+  if (name === "history") {
+    return (
+      <svg {...common}>
+        <path d="M4 7v5h5" />
+        <path d="M5.2 16.5A8 8 0 1 0 4 9" />
+        <path d="M12 8v4l3 2" />
+      </svg>
+    );
+  }
+
+  if (name === "category") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="4" width="6" height="6" rx="1" />
+        <rect x="14" y="4" width="6" height="6" rx="1" />
+        <rect x="4" y="14" width="6" height="6" rx="1" />
+        <rect x="14" y="14" width="6" height="6" rx="1" />
+      </svg>
+    );
+  }
+
+  if (name === "clock") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 8v5l3 2" />
+      </svg>
+    );
+  }
+
+  if (name === "users") {
+    return (
+      <svg {...common}>
+        <circle cx="9" cy="8" r="3" />
+        <path d="M4 18c0-3 2.2-5 5-5s5 2 5 5" />
+        <path d="M16 7a2.5 2.5 0 0 1 0 5M16 14c2.4.2 4 1.8 4 4" />
+      </svg>
+    );
+  }
+
+  if (name === "location") {
+    return (
+      <svg {...common}>
+        <path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z" />
+        <circle cx="12" cy="10" r="2" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M5 12h14" />
+      <path d="m14 7 5 5-5 5" />
+    </svg>
+  );
+}
 
 function dateInputValue(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -31,7 +161,7 @@ function formatDate(date: Date | null, weekday: number) {
       "Sábado",
     ];
 
-    return `Legado • ${weekdays[weekday]}`;
+    return `Legado · ${weekdays[weekday]}`;
   }
 
   return new Intl.DateTimeFormat("pt-BR", {
@@ -62,76 +192,147 @@ function normalizeView(value?: string): TrainingView {
   return "upcoming";
 }
 
+function sportLabel(sport: SportType) {
+  return sport === SportType.FUTSAL ? "Futsal" : "Campo";
+}
+
+function trainingUrl({
+  sport,
+  view,
+  category,
+}: {
+  sport: SportType;
+  view?: TrainingView;
+  category?: string;
+}) {
+  const params = new URLSearchParams();
+  params.set("sport", sport);
+
+  if (view && view !== "upcoming") params.set("view", view);
+  if (category) params.set("category", category);
+
+  return `/treinos?${params.toString()}`;
+}
+
 export default async function TrainingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<TrainingFilters>;
 }) {
   const user = await requireClubPermission("TRAININGS_VIEW");
   const canEdit = hasClubPermission(user, "TRAININGS_EDIT");
   const query = await searchParams;
   const view = normalizeView(query.view);
 
-  const [trainings, categories] = await Promise.all([
-    prisma.trainingSchedule.findMany({
-      where: {
-        organizationId: user.organizationId,
+  const allCategories = await prisma.category.findMany({
+    where: {
+      organizationId: user.organizationId,
+      active: true,
+      type: "STANDARD",
+    },
+    orderBy: [
+      { sport: "asc" },
+      { birthYear: "desc" },
+      { name: "asc" },
+    ],
+    select: {
+      id: true,
+      name: true,
+      sport: true,
+    },
+  });
+
+  const hasFootball = allCategories.some(
+    (category) => category.sport === SportType.FOOTBALL,
+  );
+  const hasFutsal = allCategories.some(
+    (category) => category.sport === SportType.FUTSAL,
+  );
+
+  const selectedSport: SportType =
+    query.sport === SportType.FUTSAL && hasFutsal
+      ? SportType.FUTSAL
+      : query.sport === SportType.FOOTBALL && hasFootball
+        ? SportType.FOOTBALL
+        : hasFootball
+          ? SportType.FOOTBALL
+          : SportType.FUTSAL;
+
+  const categories = allCategories.filter(
+    (category) => category.sport === selectedSport,
+  );
+
+  const legacyCategoryCount = allCategories.filter(
+    (category) => category.sport === SportType.BOTH,
+  ).length;
+
+  const requestedCategoryId = String(query.category || "").trim();
+  const categoryId = categories.some(
+    (category) => category.id === requestedCategoryId,
+  )
+    ? requestedCategoryId
+    : "";
+
+  const trainings = await prisma.trainingSchedule.findMany({
+    where: {
+      organizationId: user.organizationId,
+      category: {
+        sport: selectedSport,
+        ...(categoryId ? { id: categoryId } : {}),
       },
-      include: {
-        category: true,
-        sessions: {
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 1,
-          include: {
-            attendances: {
-              select: {
-                status: true,
-              },
+      OR: [
+        { sport: selectedSport },
+        { sport: SportType.BOTH },
+      ],
+    },
+    include: {
+      category: true,
+      sessions: {
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 1,
+        include: {
+          attendances: {
+            select: {
+              status: true,
             },
           },
         },
       },
-      orderBy: [
-        {
-          date: "asc",
-        },
-        {
-          startTime: "asc",
-        },
-      ],
-    }),
-
-    prisma.category.findMany({
-      where: {
-        organizationId: user.organizationId,
+    },
+    orderBy: [
+      {
+        date: "asc",
       },
-      orderBy: {
-        name: "asc",
+      {
+        startTime: "asc",
       },
-    }),
-  ]);
+    ],
+  });
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const rows = trainings.map((training) => {
     const session = training.sessions[0] ?? null;
-    const status = session?.status ?? "SCHEDULED";
+    const status =
+      session?.status ?? TrainingSessionStatus.SCHEDULED;
+
     const isHistory =
-      status === "COMPLETED" ||
-      status === "CANCELLED" ||
-      status === "ARCHIVED";
+      status === TrainingSessionStatus.COMPLETED ||
+      status === TrainingSessionStatus.CANCELLED ||
+      status === TrainingSessionStatus.ARCHIVED;
 
     const isPastScheduled =
       !isHistory &&
-      status !== "IN_PROGRESS" &&
+      status !== TrainingSessionStatus.IN_PROGRESS &&
       Boolean(training.date && training.date < today);
 
     const bucket: TrainingView = isHistory
       ? "history"
-      : status === "IN_PROGRESS" || isPastScheduled
+      : status === TrainingSessionStatus.IN_PROGRESS ||
+          isPastScheduled
         ? "active"
         : "upcoming";
 
@@ -175,40 +376,26 @@ export default async function TrainingPage({
       const aDate = a.training.date?.getTime() ?? 0;
       const bDate = b.training.date?.getTime() ?? 0;
 
-      return view === "history"
-        ? bDate - aDate
-        : aDate - bDate;
+      return view === "history" ? bDate - aDate : aDate - bDate;
     });
 
   const todayInput = dateInputValue(new Date());
 
   function statusCopy(item: (typeof rows)[number]) {
-    if (item.status === "COMPLETED") {
-      return {
-        label: "Finalizado",
-        tone: "done",
-      };
+    if (item.status === TrainingSessionStatus.COMPLETED) {
+      return { label: "Finalizado", tone: "done" };
     }
 
-    if (item.status === "CANCELLED") {
-      return {
-        label: "Cancelado",
-        tone: "cancelled",
-      };
+    if (item.status === TrainingSessionStatus.CANCELLED) {
+      return { label: "Cancelado", tone: "cancelled" };
     }
 
-    if (item.status === "ARCHIVED") {
-      return {
-        label: "Arquivado",
-        tone: "archived",
-      };
+    if (item.status === TrainingSessionStatus.ARCHIVED) {
+      return { label: "Arquivado", tone: "archived" };
     }
 
-    if (item.status === "IN_PROGRESS") {
-      return {
-        label: "Em andamento",
-        tone: "active",
-      };
+    if (item.status === TrainingSessionStatus.IN_PROGRESS) {
+      return { label: "Em andamento", tone: "active" };
     }
 
     if (item.isPastScheduled) {
@@ -218,97 +405,163 @@ export default async function TrainingPage({
       };
     }
 
-    return {
-      label: "Agendado",
-      tone: "scheduled",
-    };
+    return { label: "Agendado", tone: "scheduled" };
   }
 
   function actionLabel(item: (typeof rows)[number]) {
     if (item.bucket === "history") return "Ver chamada";
-    if (item.status === "IN_PROGRESS") return "Continuar chamada";
+    if (item.status === TrainingSessionStatus.IN_PROGRESS) {
+      return "Continuar chamada";
+    }
     if (item.isPastScheduled) return "Revisar treino";
     return "Lista de presença";
   }
 
+  const selectedCategory = categories.find(
+    (category) => category.id === categoryId,
+  );
+
   return (
-    <main className="training-hub">
-      <ModuleHero
-        eyebrow="ROTINA ESPORTIVA"
-        title="Treinos"
-        description={
+    <main className="training-v10">
+      <section className="training-v10-hero">
+        <div>
+          <span className="training-v10-eyebrow">
+            11UP CLUB · ROTINA ESPORTIVA
+          </span>
+
+          <h1>Treinos</h1>
+
           <p>
-            Planejamento, chamada, minutagem e histórico dos treinamentos.
+            Planejamento, chamada, minutagem e histórico separados
+            por modalidade.
           </p>
-        }
-        aside={
-          <>
-            <small>TREINOS CADASTRADOS</small>
-            <strong>{trainings.length}</strong>
-            <span>programação do clube</span>
-          </>
-        }
-      />
+        </div>
+
+        <div className="training-v10-hero-aside">
+          <small>TREINOS · {sportLabel(selectedSport).toUpperCase()}</small>
+          <strong>{trainings.length}</strong>
+          <span>registro(s) na modalidade selecionada</span>
+        </div>
+      </section>
+
+      <section className="training-v10-sport-switch">
+        <div>
+          <span className="training-v10-eyebrow">MODALIDADE</span>
+          <strong>Planejamento separado por esporte</strong>
+        </div>
+
+        <div>
+          <Link
+            className={
+              selectedSport === SportType.FOOTBALL ? "is-active" : ""
+            }
+            href={trainingUrl({
+              sport: SportType.FOOTBALL,
+              view,
+            })}
+          >
+            <Icon name="field" size={17} />
+            Campo
+          </Link>
+
+          <Link
+            className={
+              selectedSport === SportType.FUTSAL ? "is-active" : ""
+            }
+            href={trainingUrl({
+              sport: SportType.FUTSAL,
+              view,
+            })}
+          >
+            <Icon name="futsal" size={17} />
+            Futsal
+          </Link>
+        </div>
+      </section>
+
+      {legacyCategoryCount > 0 ? (
+        <div className="training-v10-notice">
+          <strong>{legacyCategoryCount} categoria(s)</strong> ainda estão sem
+          modalidade definida e não aparecem para criação de novos treinos.
+        </div>
+      ) : null}
 
       {!canEdit ? (
-        <div
-          className="notice"
-          role="status"
-          style={{ marginBottom: 16 }}
-        >
+        <div className="training-v10-notice">
           <strong>Somente visualização.</strong> A programação dos treinos é
           alterada por usuários autorizados.
         </div>
       ) : null}
 
-      <ModuleKpiGrid
-        className="training-kpis"
-        ariaLabel="Indicadores dos Treinos"
-        items={[
-          {
-            label: "PRÓXIMOS",
-            value: upcomingCount,
-            description: "agendados",
-          },
-          {
-            label: "EM ABERTO",
-            value: activeCount,
-            description: "em andamento ou pendentes",
-          },
-          {
-            label: "HISTÓRICO",
-            value: historyCount,
-            description: "finalizados ou cancelados",
-          },
-          {
-            label: "CATEGORIAS",
-            value: categories.length,
-            description: "com acesso no clube",
-          },
-        ]}
-      />
+      <section className="training-v10-kpis">
+        <article>
+          <span className="training-v10-kpi-icon">
+            <Icon name="calendar" />
+          </span>
+          <div>
+            <small>PRÓXIMOS</small>
+            <strong>{upcomingCount}</strong>
+            <span>agendados</span>
+          </div>
+        </article>
+
+        <article>
+          <span className="training-v10-kpi-icon">
+            <Icon name="active" />
+          </span>
+          <div>
+            <small>EM ABERTO</small>
+            <strong>{activeCount}</strong>
+            <span>em andamento ou pendentes</span>
+          </div>
+        </article>
+
+        <article>
+          <span className="training-v10-kpi-icon">
+            <Icon name="history" />
+          </span>
+          <div>
+            <small>HISTÓRICO</small>
+            <strong>{historyCount}</strong>
+            <span>finalizados ou cancelados</span>
+          </div>
+        </article>
+
+        <article>
+          <span className="training-v10-kpi-icon">
+            <Icon name="category" />
+          </span>
+          <div>
+            <small>CATEGORIAS</small>
+            <strong>{categories.length}</strong>
+            <span>{sportLabel(selectedSport)}</span>
+          </div>
+        </article>
+      </section>
 
       {canEdit ? (
-        <details className="training-create-drawer">
+        <details className="training-v10-create">
           <summary>
             <div>
-              <span className="page-eyebrow">PLANEJAMENTO</span>
+              <span className="training-v10-eyebrow">PLANEJAMENTO</span>
               <h2>Novo treino</h2>
-              <p>Cadastre a programação antes de realizar a chamada.</p>
+              <p>
+                Cadastre a programação antes de realizar a chamada.
+              </p>
             </div>
 
-            <span className="btn">+ Novo treino</span>
+            <span>+ Novo treino</span>
           </summary>
 
-          <div className="training-create-body">
+          <div className="training-v10-create-body">
             {categories.length === 0 ? (
-              <div className="empty">
-                Cadastre pelo menos uma categoria antes de criar treinos.
+              <div className="training-v10-empty">
+                Não há categoria de {sportLabel(selectedSport)} disponível.
               </div>
             ) : (
-              <form className="form" action={createTraining}>
+              <form action={createTraining}>
                 <label>
-                  Categoria
+                  <span>Categoria</span>
                   <select name="categoryId" required defaultValue="">
                     <option value="" disabled>
                       Selecione
@@ -323,7 +576,7 @@ export default async function TrainingPage({
                 </label>
 
                 <label>
-                  Data
+                  <span>Data</span>
                   <input
                     name="date"
                     type="date"
@@ -332,28 +585,26 @@ export default async function TrainingPage({
                   />
                 </label>
 
-                <div className="two-field-row">
-                  <label>
-                    Início
-                    <input name="startTime" type="time" required />
-                  </label>
-
-                  <label>
-                    Fim
-                    <input name="endTime" type="time" required />
-                  </label>
-                </div>
+                <label>
+                  <span>Início</span>
+                  <input name="startTime" type="time" required />
+                </label>
 
                 <label>
-                  Local
+                  <span>Fim</span>
+                  <input name="endTime" type="time" required />
+                </label>
+
+                <label>
+                  <span>Local</span>
                   <input
                     name="location"
                     placeholder="Ex.: Campo / Ginásio"
                   />
                 </label>
 
-                <label>
-                  Observações
+                <label className="training-v10-create-notes">
+                  <span>Observações</span>
                   <textarea
                     name="notes"
                     rows={3}
@@ -368,51 +619,95 @@ export default async function TrainingPage({
         </details>
       ) : null}
 
-      <ModuleTabs
-        className="training-tabs"
-        ariaLabel="Visualização dos treinos"
-        items={[
-          {
-            label: "Próximos",
-            href: "/treinos?view=upcoming",
-            active: view === "upcoming",
-            badge: upcomingCount,
-          },
-          {
-            label: "Em aberto",
-            href: "/treinos?view=active",
-            active: view === "active",
-            badge: activeCount,
-          },
-          {
-            label: "Histórico",
-            href: "/treinos?view=history",
-            active: view === "history",
-            badge: historyCount,
-          },
-        ]}
-      />
+      <section className="training-v10-controls">
+        <nav aria-label="Visualização dos treinos">
+          <Link
+            className={view === "upcoming" ? "is-active" : ""}
+            href={trainingUrl({
+              sport: selectedSport,
+              view: "upcoming",
+              category: categoryId,
+            })}
+          >
+            Próximos <span>{upcomingCount}</span>
+          </Link>
 
-      <ModulePanel
-        className="training-history-panel"
-        eyebrow={
-          view === "upcoming"
-            ? "AGENDA"
-            : view === "active"
-              ? "ACOMPANHAMENTO"
-              : "REGISTROS"
-        }
-        title={
-          view === "upcoming"
-            ? "Próximos treinos"
-            : view === "active"
-              ? "Treinos em aberto"
-              : "Histórico de treinos"
-        }
-      >
+          <Link
+            className={view === "active" ? "is-active" : ""}
+            href={trainingUrl({
+              sport: selectedSport,
+              view: "active",
+              category: categoryId,
+            })}
+          >
+            Em aberto <span>{activeCount}</span>
+          </Link>
+
+          <Link
+            className={view === "history" ? "is-active" : ""}
+            href={trainingUrl({
+              sport: selectedSport,
+              view: "history",
+              category: categoryId,
+            })}
+          >
+            Histórico <span>{historyCount}</span>
+          </Link>
+        </nav>
+
+        <form method="get">
+          <input type="hidden" name="sport" value={selectedSport} />
+          <input type="hidden" name="view" value={view} />
+
+          <label>
+            <span>Categoria</span>
+            <select name="category" defaultValue={categoryId}>
+              <option value="">
+                Todas de {sportLabel(selectedSport)}
+              </option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button type="submit">Filtrar</button>
+        </form>
+      </section>
+
+      <section className="training-v10-list-panel">
+        <header>
+          <div>
+            <span className="training-v10-eyebrow">
+              {view === "upcoming"
+                ? "AGENDA"
+                : view === "active"
+                  ? "ACOMPANHAMENTO"
+                  : "REGISTROS"}
+            </span>
+
+            <h2>
+              {view === "upcoming"
+                ? "Próximos treinos"
+                : view === "active"
+                  ? "Treinos em aberto"
+                  : "Histórico de treinos"}
+            </h2>
+
+            <p>
+              {selectedCategory
+                ? `${selectedCategory.name} · ${sportLabel(selectedSport)}`
+                : `Todas as categorias · ${sportLabel(selectedSport)}`}
+            </p>
+          </div>
+
+          <span>{visibleRows.length} treino(s)</span>
+        </header>
 
         {visibleRows.length === 0 ? (
-          <div className="empty">
+          <div className="training-v10-empty">
             {view === "upcoming"
               ? "Nenhum treino futuro agendado."
               : view === "active"
@@ -420,136 +715,111 @@ export default async function TrainingPage({
                 : "Ainda não há treinos finalizados ou cancelados."}
           </div>
         ) : (
-          <div className="training-history-list">
-            {visibleRows.map((item) => {
-              const status = statusCopy(item);
-              const { training, session } = item;
+          <>
+            <div className="training-v10-table-head">
+              <span>Data</span>
+              <span>Categoria</span>
+              <span>Planejado</span>
+              <span>Realizado</span>
+              <span>Duração</span>
+              <span>Presença</span>
+              <span>Status</span>
+              <span>Ação</span>
+            </div>
 
-              return (
-                <article
-                  className="training-history-card"
-                  key={training.id}
-                >
-                  <div className="training-history-date">
-                    <strong>
-                      {training.date
-                        ? String(training.date.getDate()).padStart(2, "0")
-                        : "—"}
-                    </strong>
+            <div className="training-v10-list">
+              {visibleRows.map((item) => {
+                const status = statusCopy(item);
+                const { training, session } = item;
 
-                    <span>
-                      {training.date
-                        ? new Intl.DateTimeFormat("pt-BR", {
-                            month: "short",
-                          })
-                            .format(training.date)
-                            .replace(".", "")
-                            .toUpperCase()
-                        : "LEGADO"}
-                    </span>
-                  </div>
+                return (
+                  <article
+                    className="training-v10-row"
+                    key={training.id}
+                  >
+                    <div className="training-v10-date">
+                      <strong>{formatDate(training.date, training.weekday)}</strong>
+                      <small>
+                        {training.location ?? "Local a definir"}
+                      </small>
+                    </div>
 
-                  <div className="training-history-main">
-                    <div className="training-history-title">
-                      <div>
-                        <span className="page-eyebrow">
-                          {training.category.name}
-                        </span>
+                    <div className="training-v10-cell">
+                      <b>{training.category.name}</b>
+                      <small>{sportLabel(selectedSport)}</small>
+                    </div>
 
-                        <h3>{formatDate(training.date, training.weekday)}</h3>
-                      </div>
+                    <div className="training-v10-cell">
+                      <b>
+                        {training.startTime} – {training.endTime}
+                      </b>
+                    </div>
 
-                      <span
-                        className={`training-status-badge ${status.tone}`}
-                      >
+                    <div className="training-v10-cell">
+                      <b>
+                        {session?.actualStartedAt || session?.actualEndedAt
+                          ? `${timeLabel(
+                              session?.actualStartedAt ?? null,
+                            )} – ${timeLabel(
+                              session?.actualEndedAt ?? null,
+                            )}`
+                          : "—"}
+                      </b>
+                    </div>
+
+                    <div className="training-v10-cell">
+                      <b>
+                        {item.actualDuration !== null
+                          ? `${item.actualDuration} min`
+                          : "—"}
+                      </b>
+                    </div>
+
+                    <div className="training-v10-cell">
+                      <b>
+                        {item.attendanceTotal
+                          ? `${item.attended}/${item.attendanceTotal}`
+                          : "—"}
+                      </b>
+                    </div>
+
+                    <div className="training-v10-status">
+                      <span className={status.tone}>
                         {status.label}
                       </span>
                     </div>
 
-                    <div className="training-history-metrics">
-                      <div>
-                        <span>PLANEJADO</span>
-                        <strong>
-                          {training.startTime} – {training.endTime}
-                        </strong>
-                      </div>
+                    <div className="training-v10-actions">
+                      <Link
+                        href={`/treinos/${training.id}`}
+                        title={actionLabel(item)}
+                      >
+                        {actionLabel(item)}
+                        <Icon name="arrow" size={15} />
+                      </Link>
 
-                      <div>
-                        <span>REALIZADO</span>
-                        <strong>
-                          {session?.actualStartedAt ||
-                          session?.actualEndedAt
-                            ? `${timeLabel(
-                                session?.actualStartedAt ?? null,
-                              )} – ${timeLabel(
-                                session?.actualEndedAt ?? null,
-                              )}`
-                            : "—"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>DURAÇÃO REAL</span>
-                        <strong>
-                          {item.actualDuration !== null
-                            ? `${item.actualDuration} min`
-                            : "—"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>PRESENÇA</span>
-                        <strong>
-                          {item.attendanceTotal
-                            ? `${item.attended}/${item.attendanceTotal}`
-                            : "Não registrada"}
-                        </strong>
-                      </div>
+                      {canEdit &&
+                      view === "upcoming" &&
+                      !session ? (
+                        <form action={deleteTraining}>
+                          <input
+                            type="hidden"
+                            name="id"
+                            value={training.id}
+                          />
+                          <button type="submit">
+                            Excluir
+                          </button>
+                        </form>
+                      ) : null}
                     </div>
-
-                    <div className="training-history-footer">
-                      <span>
-                        {training.location ?? "Local a definir"}
-                      </span>
-
-                      <div className="actions">
-                        <Link
-                          className="btn btn-secondary btn-small"
-                          href={`/treinos/${training.id}`}
-                        >
-                          {actionLabel(item)}
-                        </Link>
-
-                        {canEdit &&
-                        view === "upcoming" &&
-                        !session ? (
-                          <form
-                            className="inline-form"
-                            action={deleteTraining}
-                          >
-                            <input
-                              type="hidden"
-                              name="id"
-                              value={training.id}
-                            />
-
-                            <button
-                              className="btn-danger btn-small"
-                              type="submit"
-                            >
-                              Excluir
-                            </button>
-                          </form>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                  </article>
+                );
+              })}
+            </div>
+          </>
         )}
-      </ModulePanel>
+      </section>
     </main>
   );
 }
