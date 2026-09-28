@@ -18599,3 +18599,921 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
     max-width: none;
   }
 }
+
+/* =========================================================
+   11UP ECOSYSTEM LANDING v1
+   ========================================================= */
+
+.ecosystem-home{
+  min-height:100vh;
+  overflow:hidden;
+  background:#080c0e;
+  color:#fff;
+}
+
+.ecosystem-home *{
+  box-sizing:border-box;
+}
+
+.ecosystem-nav{
+  min-height:76px;
+  padding:0 6vw;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:30px;
+  position:relative;
+  z-index:20;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background:rgba(8,12,14,.92);
+  backdrop-filter:blur(18px);
+}
+
+.ecosystem-nav nav{
+  display:flex;
+  align-items:center;
+  gap:25px;
+}
+
+.ecosystem-nav nav a{
+  color:#8f9ba0;
+  text-decoration:none;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.05em;
+  transition:.2s ease;
+}
+
+.ecosystem-nav nav a:hover{
+  color:#fff;
+}
+
+.ecosystem-login{
+  padding:10px 16px;
+  border:1px solid #354348;
+  border-radius:9px;
+  color:#fff;
+  text-decoration:none;
+  font-size:10px;
+  font-weight:900;
+}
+
+.ecosystem-kicker{
+  display:inline-flex;
+  color:#9ddb16;
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:.16em;
+}
+
+.ecosystem-hero{
+  position:relative;
+  min-height:760px;
+  padding:95px 6vw 80px;
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(430px,.95fr);
+  gap:65px;
+  align-items:center;
+  isolation:isolate;
+}
+
+.ecosystem-hero-glow{
+  position:absolute;
+  width:720px;
+  height:720px;
+  right:-180px;
+  top:-180px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(157,219,22,.15),rgba(157,219,22,.035) 38%,transparent 70%);
+  filter:blur(4px);
+  z-index:-1;
+}
+
+.ecosystem-hero-copy{
+  max-width:1000px;
+}
+
+.ecosystem-hero-copy h1{
+  margin:19px 0 25px;
+  font-size:clamp(60px,7.2vw,112px);
+  line-height:.84;
+  letter-spacing:-.072em;
+}
+
+.ecosystem-hero-copy h1 em,
+.ecosystem-section-heading h2 em,
+.ecosystem-connected h2 em,
+.ecosystem-login-section h2 em,
+.ecosystem-final-cta h2 em{
+  color:#9ddb16;
+  font-style:normal;
+}
+
+.ecosystem-hero-copy>p{
+  max-width:720px;
+  margin:0;
+  color:#9ba8ad;
+  font-size:16px;
+  line-height:1.78;
+}
+
+.ecosystem-hero-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:30px;
+}
+
+.ecosystem-secondary-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  padding:0 18px;
+  border:1px solid #334146;
+  border-radius:9px;
+  color:#fff;
+  text-decoration:none;
+  font-size:10px;
+  font-weight:900;
+}
+
+.ecosystem-orbit{
+  position:relative;
+  min-height:540px;
+  border:1px solid rgba(157,219,22,.16);
+  border-radius:50%;
+  background:
+    radial-gradient(circle at center,rgba(157,219,22,.12),rgba(12,18,20,.45) 33%,rgba(8,12,14,.25) 64%);
+}
+
+.ecosystem-orbit:before,
+.ecosystem-orbit:after{
+  content:"";
+  position:absolute;
+  inset:14%;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:50%;
+}
+
+.ecosystem-orbit:after{
+  inset:31%;
+  border-color:rgba(157,219,22,.14);
+}
+
+.ecosystem-orbit-center{
+  position:absolute;
+  inset:50% auto auto 50%;
+  transform:translate(-50%,-50%);
+  width:170px;
+  height:170px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #536d0b;
+  border-radius:50%;
+  background:#0d1416;
+  box-shadow:0 0 80px rgba(157,219,22,.11);
+  z-index:3;
+}
+
+.ecosystem-orbit-center strong{
+  font-size:40px;
+  letter-spacing:-.06em;
+}
+
+.ecosystem-orbit-center strong span{
+  color:#9ddb16;
+}
+
+.ecosystem-orbit-center small{
+  color:#78868b;
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.2em;
+}
+
+.ecosystem-orbit-node{
+  position:absolute;
+  z-index:4;
+  min-width:132px;
+  padding:16px 18px;
+  border:1px solid #2b383d;
+  border-radius:13px;
+  background:#101719;
+  color:#fff;
+  text-decoration:none;
+  box-shadow:0 18px 50px rgba(0,0,0,.25);
+}
+
+.ecosystem-orbit-node small,
+.ecosystem-orbit-node strong{
+  display:block;
+}
+
+.ecosystem-orbit-node small{
+  margin-bottom:5px;
+  color:#9ddb16;
+  font-size:7px;
+  font-weight:1000;
+}
+
+.ecosystem-orbit-node strong{
+  font-size:12px;
+}
+
+.node-player{
+  top:8%;
+  left:33%;
+}
+
+.node-coach{
+  top:42%;
+  right:-3%;
+}
+
+.node-club{
+  bottom:5%;
+  left:38%;
+}
+
+.node-organization{
+  top:42%;
+  left:-5%;
+}
+
+.ecosystem-statement{
+  padding:30px 6vw;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:35px;
+  background:#9ddb16;
+  color:#071006;
+}
+
+.ecosystem-statement>span{
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:.12em;
+  white-space:nowrap;
+}
+
+.ecosystem-statement p{
+  margin:0;
+  max-width:830px;
+  font-size:21px;
+  line-height:1.35;
+  letter-spacing:-.025em;
+}
+
+.ecosystem-products,
+.ecosystem-intelligence{
+  padding:100px 6vw;
+}
+
+.ecosystem-section-heading{
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);
+  gap:60px;
+  align-items:end;
+  margin-bottom:45px;
+}
+
+.ecosystem-section-heading h2,
+.ecosystem-connected h2,
+.ecosystem-login-section h2{
+  margin:12px 0 0;
+  font-size:clamp(48px,5.6vw,82px);
+  line-height:.9;
+  letter-spacing:-.06em;
+}
+
+.ecosystem-section-heading>p{
+  margin:0;
+  color:#8d9a9f;
+  line-height:1.75;
+}
+
+.ecosystem-product-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:13px;
+}
+
+.ecosystem-product{
+  min-height:570px;
+  padding:30px;
+  display:flex;
+  flex-direction:column;
+  border:1px solid #273237;
+  border-radius:20px;
+  background:#101719;
+  scroll-margin-top:95px;
+}
+
+.ecosystem-product.player{
+  background:linear-gradient(145deg,#192400,#101719 55%);
+  border-color:#4b6509;
+}
+
+.ecosystem-product.organization{
+  background:linear-gradient(145deg,#172000,#0f1618 58%);
+  border-color:#40550a;
+}
+
+.ecosystem-product-top{
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+  color:#758388;
+}
+
+.ecosystem-product-top>span{
+  color:#9ddb16;
+  font-size:9px;
+  font-weight:1000;
+}
+
+.ecosystem-product-top small{
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.09em;
+}
+
+.ecosystem-product-name{
+  margin:45px 0 24px;
+}
+
+.ecosystem-product-name small{
+  color:#9ddb16;
+  font-size:9px;
+  font-weight:1000;
+}
+
+.ecosystem-product-name h3{
+  margin:3px 0;
+  font-size:clamp(45px,5vw,70px);
+  line-height:.9;
+  letter-spacing:-.06em;
+}
+
+.ecosystem-product h4{
+  margin:0 0 12px;
+  font-size:22px;
+  letter-spacing:-.03em;
+}
+
+.ecosystem-product>p{
+  max-width:600px;
+  margin:0;
+  color:#97a4a9;
+  line-height:1.7;
+}
+
+.ecosystem-product ul{
+  padding:20px 0 0;
+  margin:auto 0 26px;
+  list-style:none;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+
+.ecosystem-product li{
+  padding:7px 0;
+  color:#b1bbbe;
+  font-size:11px;
+}
+
+.ecosystem-product li:before{
+  content:"↗";
+  margin-right:9px;
+  color:#9ddb16;
+  font-weight:900;
+}
+
+.ecosystem-product-actions{
+  display:flex;
+  align-items:center;
+  gap:15px;
+  flex-wrap:wrap;
+}
+
+.ecosystem-text-link{
+  color:#9ddb16;
+  text-decoration:none;
+  font-size:10px;
+  font-weight:900;
+}
+
+.ecosystem-connected{
+  padding:110px 6vw;
+  border-top:1px solid #1e292d;
+  border-bottom:1px solid #1e292d;
+  background:
+    radial-gradient(circle at 10% 25%,rgba(157,219,22,.10),transparent 25%),
+    #0a1012;
+}
+
+.ecosystem-connected-copy{
+  max-width:900px;
+}
+
+.ecosystem-connected-copy>p{
+  max-width:720px;
+  color:#96a3a8;
+  font-size:15px;
+  line-height:1.75;
+}
+
+.ecosystem-flow{
+  display:grid;
+  grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;
+  gap:12px;
+  align-items:center;
+  margin-top:55px;
+}
+
+.ecosystem-flow article{
+  min-height:220px;
+  padding:23px;
+  display:flex;
+  flex-direction:column;
+  border:1px solid #283338;
+  border-radius:15px;
+  background:#101719;
+}
+
+.ecosystem-flow article>span{
+  color:#9ddb16;
+  font-size:8px;
+  font-weight:1000;
+}
+
+.ecosystem-flow article>small{
+  margin-top:auto;
+  color:#79878c;
+  font-size:8px;
+  font-weight:900;
+}
+
+.ecosystem-flow article>strong{
+  display:block;
+  margin-top:6px;
+  font-size:25px;
+}
+
+.ecosystem-flow article>p{
+  margin:7px 0 0;
+  color:#8e9ba0;
+  font-size:10px;
+  line-height:1.6;
+}
+
+.ecosystem-flow-line{
+  color:#536267;
+  font-size:22px;
+}
+
+.ecosystem-intelligence{
+  background:#edf0ec;
+  color:#0a1012;
+}
+
+.ecosystem-intelligence .ecosystem-kicker{
+  color:#728c08;
+}
+
+.ecosystem-intelligence .ecosystem-section-heading>p{
+  color:#687578;
+}
+
+.ecosystem-capabilities{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:11px;
+}
+
+.ecosystem-capabilities article{
+  min-height:260px;
+  padding:25px;
+  display:flex;
+  flex-direction:column;
+  border:1px solid #cbd3ce;
+  border-radius:15px;
+  background:#fff;
+}
+
+.ecosystem-capabilities span{
+  color:#799608;
+  font-size:9px;
+  font-weight:1000;
+}
+
+.ecosystem-capabilities h3{
+  margin:auto 0 8px;
+  font-size:28px;
+  letter-spacing:-.04em;
+}
+
+.ecosystem-capabilities p{
+  margin:0;
+  color:#687578;
+  font-size:11px;
+  line-height:1.65;
+}
+
+.ecosystem-audiences{
+  padding:95px 6vw;
+  background:#080c0e;
+}
+
+.ecosystem-audience-grid{
+  margin-top:30px;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+
+.ecosystem-audience-grid a{
+  min-height:185px;
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  border:1px solid #293439;
+  border-radius:14px;
+  background:#101719;
+  color:#fff;
+  text-decoration:none;
+  transition:.2s ease;
+}
+
+.ecosystem-audience-grid a:hover{
+  transform:translateY(-3px);
+  border-color:#536d0b;
+}
+
+.ecosystem-audience-grid span{
+  color:#76858a;
+  font-size:7px;
+  font-weight:900;
+}
+
+.ecosystem-audience-grid strong{
+  margin:auto 0 10px;
+  font-size:20px;
+}
+
+.ecosystem-audience-grid small{
+  color:#9ddb16;
+  font-size:9px;
+  font-weight:800;
+}
+
+.ecosystem-login-section{
+  padding:100px 6vw;
+  display:grid;
+  grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);
+  gap:60px;
+  align-items:center;
+  background:#111719;
+}
+
+.ecosystem-login-section>div:first-child>p{
+  max-width:540px;
+  color:#8e9ba0;
+  line-height:1.7;
+}
+
+.ecosystem-role-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.ecosystem-role-grid a{
+  min-height:160px;
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  border:1px solid #2c383d;
+  border-radius:14px;
+  color:#fff;
+  text-decoration:none;
+  background:#0c1214;
+}
+
+.ecosystem-role-grid a:hover{
+  border-color:#506909;
+}
+
+.ecosystem-role-grid small{
+  color:#76858a;
+  font-size:7px;
+  font-weight:900;
+}
+
+.ecosystem-role-grid strong{
+  margin:auto 0 6px;
+  font-size:23px;
+}
+
+.ecosystem-role-grid span{
+  color:#9ddb16;
+  font-size:9px;
+  font-weight:900;
+}
+
+.ecosystem-final-cta{
+  padding:110px 6vw;
+  text-align:center;
+  background:#9ddb16;
+  color:#071006;
+}
+
+.ecosystem-final-cta>span{
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:.16em;
+}
+
+.ecosystem-final-cta h2{
+  margin:16px auto 30px;
+  max-width:1050px;
+  font-size:clamp(48px,6vw,82px);
+  line-height:.88;
+  letter-spacing:-.065em;
+}
+
+.ecosystem-final-cta h2 em{
+  color:#071006;
+  font-style:normal;
+}
+
+.ecosystem-final-cta>div{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.ecosystem-dark-button,
+.ecosystem-outline-dark{
+  display:inline-flex;
+  min-height:44px;
+  padding:0 19px;
+  align-items:center;
+  justify-content:center;
+  border-radius:9px;
+  text-decoration:none;
+  font-size:10px;
+  font-weight:1000;
+}
+
+.ecosystem-dark-button{
+  background:#071006;
+  color:#9ddb16;
+  border:1px solid #071006;
+}
+
+.ecosystem-outline-dark{
+  color:#071006;
+  border:1px solid rgba(7,16,6,.5);
+}
+
+.ecosystem-footer{
+  padding:42px 6vw;
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  gap:45px;
+  align-items:center;
+  border-top:1px solid #202a2e;
+  background:#080c0e;
+}
+
+.ecosystem-footer p{
+  margin:8px 0 0;
+  color:#6f7d82;
+  font-size:9px;
+}
+
+.ecosystem-footer nav{
+  display:flex;
+  gap:18px;
+}
+
+.ecosystem-footer nav a{
+  color:#8d9a9f;
+  text-decoration:none;
+  font-size:9px;
+}
+
+.ecosystem-footer>small{
+  color:#667479;
+  font-size:8px;
+  white-space:nowrap;
+}
+
+/* TABLET */
+
+@media(max-width:1000px){
+  .ecosystem-nav nav{
+    display:none;
+  }
+
+  .ecosystem-hero{
+    grid-template-columns:1fr;
+    min-height:auto;
+  }
+
+  .ecosystem-orbit{
+    width:min(620px,90vw);
+    min-height:auto;
+    aspect-ratio:1;
+    margin:0 auto;
+  }
+
+  .ecosystem-section-heading{
+    grid-template-columns:1fr;
+    gap:20px;
+  }
+
+  .ecosystem-flow{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .ecosystem-flow-line{
+    display:none;
+  }
+
+  .ecosystem-capabilities,
+  .ecosystem-audience-grid{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .ecosystem-login-section{
+    grid-template-columns:1fr;
+  }
+}
+
+/* MOBILE */
+
+@media(max-width:650px){
+  .ecosystem-nav{
+    min-height:68px;
+    padding:0 20px;
+  }
+
+  .ecosystem-hero{
+    padding:70px 20px 60px;
+    gap:55px;
+  }
+
+  .ecosystem-hero-copy h1{
+    font-size:clamp(50px,14vw,68px);
+  }
+
+  .ecosystem-hero-actions>*{
+    width:100%;
+  }
+
+  .ecosystem-orbit{
+    width:100%;
+  }
+
+  .ecosystem-orbit-center{
+    width:125px;
+    height:125px;
+  }
+
+  .ecosystem-orbit-center strong{
+    font-size:30px;
+  }
+
+  .ecosystem-orbit-node{
+    min-width:104px;
+    padding:12px;
+  }
+
+  .ecosystem-orbit-node strong{
+    font-size:9px;
+  }
+
+  .node-player{
+    top:4%;
+    left:27%;
+  }
+
+  .node-coach{
+    top:42%;
+    right:-2%;
+  }
+
+  .node-club{
+    bottom:4%;
+    left:30%;
+  }
+
+  .node-organization{
+    top:42%;
+    left:-2%;
+  }
+
+  .ecosystem-statement{
+    padding:25px 20px;
+    display:grid;
+  }
+
+  .ecosystem-statement p{
+    font-size:18px;
+  }
+
+  .ecosystem-products,
+  .ecosystem-intelligence,
+  .ecosystem-connected,
+  .ecosystem-audiences,
+  .ecosystem-login-section,
+  .ecosystem-final-cta{
+    padding-left:20px;
+    padding-right:20px;
+  }
+
+  .ecosystem-product-grid,
+  .ecosystem-capabilities,
+  .ecosystem-audience-grid,
+  .ecosystem-role-grid,
+  .ecosystem-flow{
+    grid-template-columns:1fr;
+  }
+
+  .ecosystem-product{
+    min-height:520px;
+    padding:23px;
+  }
+
+  .ecosystem-product-name h3{
+    font-size:47px;
+  }
+
+  .ecosystem-product-actions>*{
+    width:100%;
+    text-align:center;
+  }
+
+  .ecosystem-footer{
+    padding:35px 20px;
+    grid-template-columns:1fr;
+    gap:22px;
+  }
+
+  .ecosystem-footer nav{
+    flex-wrap:wrap;
+  }
+}
+/* =========================================================
+   11UP ECOSYSTEM — OFFICIAL BRAND
+   ========================================================= */
+
+.ecosystem-brand{
+  display:inline-flex;
+  align-items:center;
+  text-decoration:none;
+  flex-shrink:0;
+}
+
+.ecosystem-brand img{
+  display:block;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+}
+
+.ecosystem-brand-header img{
+  width:170px;
+}
+
+.ecosystem-brand-footer img{
+  width:150px;
+}
+
+.ecosystem-orbit-center img{
+  display:block;
+  width:120px;
+  height:auto;
+  object-fit:contain;
+  margin-bottom:8px;
+}
+
+@media(max-width:650px){
+  .ecosystem-brand-header img{
+    width:135px;
+  }
+
+  .ecosystem-brand-footer img{
+    width:130px;
+  }
+
+  .ecosystem-orbit-center img{
+    width:90px;
+  }
+}

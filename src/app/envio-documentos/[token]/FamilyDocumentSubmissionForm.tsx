@@ -68,7 +68,11 @@ export default function FamilyDocumentSubmissionForm({
       const response = await fetch(`/api/athlete-registration-requests/${token}/upload`, { method: "PATCH" });
       const result = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(result.error || "Não foi possível finalizar.");
-      window.location.replace(window.location.href);
+      setMessage("Documentos enviados com sucesso.");
+
+      setTimeout(() => {
+        window.location.replace(window.location.href);
+      }, 900);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível finalizar.");
     } finally {

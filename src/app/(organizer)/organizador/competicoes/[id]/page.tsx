@@ -82,6 +82,7 @@ export default async function CompetitionPage({
           categories: true,
           teams: true,
           venues: true,
+          documentRequirements: true,
         },
       },
     },
@@ -464,6 +465,45 @@ export default async function CompetitionPage({
 
             <b>
               {competition._count.venues}
+            </b>
+          </Link>
+          <Link
+            href={`/organizador/competicoes/${competition.id}/documentos`}
+          >
+            <i
+              className={
+                competition._count.documentRequirements
+                  ? "green"
+                  : "amber"
+              }
+            >
+              {competition._count.documentRequirements
+                ? "✓"
+                : "!"}
+            </i>
+
+            <div>
+              <strong>
+                Documentos
+              </strong>
+
+              <span>
+                {competition._count.documentRequirements
+                  ? `${competition._count.documentRequirements} requisito${
+                      competition._count.documentRequirements === 1
+                        ? ""
+                        : "s"
+                    } configurado${
+                      competition._count.documentRequirements === 1
+                        ? ""
+                        : "s"
+                    }.`
+                  : "Defina os documentos exigidos na inscrição."}
+              </span>
+            </div>
+
+            <b>
+              {competition._count.documentRequirements}
             </b>
           </Link>
         </article>

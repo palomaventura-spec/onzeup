@@ -264,6 +264,18 @@ export default async function EditTrainingPage({
       plannedEndAt,
     );
 
+  const isRetroactive =
+    Boolean(training.date) &&
+    new Date(
+      training.date!.getFullYear(),
+      training.date!.getMonth(),
+      training.date!.getDate(),
+    ).getTime() <
+      new Date(
+        training.createdAt.getFullYear(),
+        training.createdAt.getMonth(),
+        training.createdAt.getDate(),
+      ).getTime();
   const recordedCount =
     session?.attendances.filter(
       (attendance) =>
@@ -298,6 +310,9 @@ export default async function EditTrainingPage({
           </p>
         </div>
 
+        {isRetroactive ? (
+          <span className="badge">Registro retroativo</span>
+        ) : null}
         <div className="training-attendance-v9-hero-aside">
           <small>STATUS</small>
 

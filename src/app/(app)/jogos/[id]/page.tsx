@@ -245,6 +245,8 @@ export default async function EditMatchPage({
       "Jogo cadastrado no 11UP",
   });
 
+  const isRetroactive =
+    match.startsAt.getTime() < match.createdAt.getTime();
   const scoreReady =
     match.status === "FINISHED" &&
     match.goalsFor != null &&
@@ -269,6 +271,9 @@ export default async function EditMatchPage({
           </p>
         </div>
 
+        {isRetroactive ? (
+          <span className="badge">Registro retroativo</span>
+        ) : null}
         <div className="game-v13-hero-aside">
           <small>STATUS DO JOGO</small>
 

@@ -57,6 +57,7 @@ model Organization {
   athleteAuditLogs            AthleteDataAuditLog[]
   athleteDocuments            AthleteDocument[]
   athleteRegistrationRequests AthleteRegistrationRequest[]
+  athletePreRegistrations      AthletePreRegistrationRequest[]
   athleteSportRegistrations   AthleteSportRegistration[]
   athleteMemberships          AthleteMembership[]
   athleteEvaluations          AthleteEvaluation[]
@@ -121,6 +122,8 @@ model Competition {
   venues       CompetitionVenue[]
   callUpRules  CompetitionCallUpRule[]
 
+
+  documentRequirements CompetitionDocumentRequirement[]
   @@unique([organizationId, slug])
   @@index([organizationId, status])
   @@index([sport, status])
@@ -146,7 +149,6 @@ model CompetitionCategory {
   competition Competition             @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   teams       CompetitionTeam[]
   callUpRules CompetitionCallUpRule[]
-
   @@unique([competitionId, name])
   @@index([competitionId, active])
   @@index([competitionId, sortOrder])
@@ -201,6 +203,9 @@ model CompetitionAthlete {
   team          CompetitionTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
   sourceAthlete Athlete?        @relation("CompetitionAthleteSource", fields: [sourceAthleteId], references: [id], onDelete: SetNull)
 
+  documents     CompetitionAthleteDocument[]
+  credential    CompetitionAthleteCredential?
+
   @@index([teamId, status])
   @@index([teamId, name])
   @@index([birthDate])
@@ -217,6 +222,91 @@ enum CompetitionAthleteStatus {
   APPROVED
   REJECTED
   WITHDRAWN
+}
+enum CompetitionDocumentStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum CompetitionDocumentSource {
+  MANUAL_UPLOAD
+  CLUB_SHARED
+}
+
+enum CompetitionCredentialStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  REVOKED
+}
+
+model CompetitionDocumentRequirement {
+  id            String   @id @default(cuid())
+  competitionId String
+  name          String
+  description   String?
+  required      Boolean  @default(true)
+  active        Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  competition Competition                 @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  documents   CompetitionAthleteDocument[]
+
+  @@unique([competitionId, name])
+  @@index([competitionId, active, sortOrder])
+}
+
+model CompetitionAthleteDocument {
+  id                String                    @id @default(cuid())
+  athleteId         String
+  requirementId     String
+  source            CompetitionDocumentSource @default(MANUAL_UPLOAD)
+  status            CompetitionDocumentStatus @default(PENDING)
+
+  fileUrl           String?
+  fileName          String?
+  mimeType          String?
+  sourceReferenceId String?
+
+  reviewNotes       String?
+  submittedAt       DateTime                  @default(now())
+  reviewedAt        DateTime?
+  reviewedByUserId  String?
+
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  athlete     CompetitionAthlete             @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  requirement CompetitionDocumentRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@index([athleteId, status])
+  @@index([requirementId, status])
+  @@index([athleteId, requirementId, createdAt])
+}
+
+model CompetitionAthleteCredential {
+  id          String                      @id @default(cuid())
+  athleteId   String                      @unique
+  code        String?                     @unique
+  status      CompetitionCredentialStatus @default(DRAFT)
+
+  issuedAt    DateTime?
+  validUntil  DateTime?
+  suspendedAt DateTime?
+  revokedAt   DateTime?
+  notes       String?
+
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+
+  athlete CompetitionAthlete @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  @@index([status, validUntil])
 }
 
 model CompetitionVenue {
@@ -344,6 +434,7 @@ model Category {
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
   athletes                 Athlete[]
+  athletePreRegistrations  AthletePreRegistrationRequest[]
   athleteMemberships       AthleteMembership[]
   athleteEvaluations       AthleteEvaluation[]
   athletePerformanceGoals  AthletePerformanceGoal[]
@@ -646,6 +737,45 @@ model AthleteDataAuditLog {
   @@index([organizationId, createdAt])
   @@index([athleteId, createdAt])
   @@index([actorUserId, createdAt])
+}
+
+enum AthletePreRegistrationStatus {
+  PENDING
+  SUBMITTED
+  APPROVED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+model AthletePreRegistrationRequest {
+  id                 String                       @id @default(cuid())
+  organizationId     String
+  categoryId         String?
+  createdByUserId    String?
+  reviewedByUserId   String?
+  createdAthleteId   String?
+  tokenHash          String                       @unique
+  status             AthletePreRegistrationStatus @default(PENDING)
+  recipientName      String?
+  recipientEmail     String?
+  recipientPhone     String?
+  payloadEncrypted   String?
+  expiresAt          DateTime
+  submittedAt        DateTime?
+  reviewedAt         DateTime?
+  rejectionReason    String?
+  revokedAt          DateTime?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category     Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, createdAt])
+  @@index([categoryId, status])
+  @@index([expiresAt])
+  @@index([createdAthleteId])
 }
 
 model TrainingSchedule {

@@ -317,18 +317,20 @@ export default async function MatchesPage({
         SportType.FUTSAL,
     );
 
+  const requestedSport: SportType | null =
+    query.sport === SportType.FOOTBALL
+      ? SportType.FOOTBALL
+      : query.sport === SportType.FUTSAL
+        ? SportType.FUTSAL
+        : null;
+
   const selectedSport: SportType =
-    query.sport ===
-      SportType.FUTSAL &&
-    hasFutsal
-      ? SportType.FUTSAL
-      : query.sport ===
-            SportType.FOOTBALL &&
-          hasFootball
-        ? SportType.FOOTBALL
-        : hasFootball
-          ? SportType.FOOTBALL
-          : SportType.FUTSAL;
+    requestedSport ??
+    (hasFootball
+      ? SportType.FOOTBALL
+      : hasFutsal
+        ? SportType.FUTSAL
+        : SportType.FOOTBALL);
 
   const categories =
     allCategories.filter(
