@@ -14,6 +14,8 @@ import {
   startTrainingSession,
 } from "./actions";
 
+import AthleteTrainingHistoryButton from "./AthleteTrainingHistoryButton";
+
 type AttendanceStatus =
   | "PRESENT"
   | "ABSENT"
@@ -335,6 +337,7 @@ export default function TrainingAttendanceForm({
   actualStartTime = "",
   actualEndTime = "",
   sessionDurationMinutes = null,
+  canCreateHistory = false,
 }: {
   scheduleId: string;
   athletes: AthleteRow[];
@@ -343,6 +346,7 @@ export default function TrainingAttendanceForm({
   actualStartTime?: string;
   actualEndTime?: string;
   sessionDurationMinutes?: number | null;
+  canCreateHistory?: boolean;
 }) {
   const [rows, setRows] = useState(() =>
     makeEditableRows(athletes),
@@ -765,6 +769,14 @@ export default function TrainingAttendanceForm({
                         ? `Camisa ${athlete.jerseyNumber}`
                         : athlete.name}
                     </small>
+                    <AthleteTrainingHistoryButton
+                      scheduleId={scheduleId}
+                      athleteId={athlete.id}
+                      athleteName={
+                        athlete.nickname || athlete.name
+                      }
+                      canCreate={canCreateHistory}
+                    />
                   </div>
                 </div>
 
@@ -886,6 +898,14 @@ export default function TrainingAttendanceForm({
                           ? `Camisa ${athlete.jerseyNumber}`
                           : athlete.name}
                       </small>
+                    <AthleteTrainingHistoryButton
+                      scheduleId={scheduleId}
+                      athleteId={athlete.id}
+                      athleteName={
+                        athlete.nickname || athlete.name
+                      }
+                      canCreate={canCreateHistory}
+                    />
                     </div>
                   </div>
 

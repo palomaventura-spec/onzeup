@@ -449,7 +449,9 @@ export default async function EditTrainingPage({
               canEdit={
                 attendanceEditable
               }
-              sessionStatus={
+                            canCreateHistory={
+                canManageAttendance
+              }sessionStatus={
                 session?.status ??
                 "SCHEDULED"
               }

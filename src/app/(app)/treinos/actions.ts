@@ -1,6 +1,9 @@
 "use server";
 
 import {
+  AthleteHistorySource,
+  AthleteHistoryTopic,
+  AthleteHistoryVisibility,
   Prisma,
   TrainingAttendanceStatus,
   TrainingAuditAction,
@@ -997,4 +1000,251 @@ export async function completeTrainingSession(
   });
 
   revalidateTrainingPaths(scheduleId);
+}
+
+
+function normalizeAthleteHistoryTopic(
+  value: string,
+): AthleteHistoryTopic | null {
+  switch (value) {
+    case "TECHNICAL":
+      return AthleteHistoryTopic.TECHNICAL;
+    case "TACTICAL":
+      return AthleteHistoryTopic.TACTICAL;
+    case "PHYSICAL":
+      return AthleteHistoryTopic.PHYSICAL;
+    case "COGNITIVE":
+      return AthleteHistoryTopic.COGNITIVE;
+    case "EMOTIONAL":
+      return AthleteHistoryTopic.EMOTIONAL;
+    case "BEHAVIORAL":
+      return AthleteHistoryTopic.BEHAVIORAL;
+    case "OCCURRENCE":
+      return AthleteHistoryTopic.OCCURRENCE;
+    case "GENERAL":
+      return AthleteHistoryTopic.GENERAL;
+    default:
+      return null;
+  }
+}
+
+function normalizeAthleteHistoryVisibility(
+  value: string,
+): AthleteHistoryVisibility | null {
+  switch (value) {
+    case "TECHNICAL_STAFF":
+      return AthleteHistoryVisibility.TECHNICAL_STAFF;
+    case "MANAGEMENT":
+      return AthleteHistoryVisibility.MANAGEMENT;
+    case "SHAREABLE":
+      return AthleteHistoryVisibility.SHAREABLE;
+    default:
+      return null;
+  }
+}
+
+export async function saveAthleteTrainingHistoryEntry(
+  formData: FormData,
+) {
+  const user = await requireOrganizationUser();
+
+  const scheduleId = clean(
+    formData.get("scheduleId"),
+  );
+
+  const athleteId = clean(
+    formData.get("athleteId"),
+  );
+
+  const content = clean(
+    formData.get("content"),
+  );
+
+  const topic = normalizeAthleteHistoryTopic(
+    clean(formData.get("topic")),
+  );
+
+  const visibility =
+    normalizeAthleteHistoryVisibility(
+      clean(formData.get("visibility")),
+    );
+
+  const followUpValue = clean(
+    formData.get("followUpRequired"),
+  );
+
+  const followUpRequired =
+    followUpValue === "true" ||
+    followUpValue === "1" ||
+    followUpValue === "on";
+
+  if (
+    !scheduleId ||
+    !athleteId ||
+    !content ||
+    !topic ||
+    !visibility
+  ) {
+    throw new Error(
+      "Preencha corretamente os dados do registro do atleta.",
+    );
+  }
+
+  if (content.length < 3) {
+    throw new Error(
+      "A observação precisa ter pelo menos 3 caracteres.",
+    );
+  }
+
+  if (content.length > 3000) {
+    throw new Error(
+      "A observação deve ter no máximo 3000 caracteres.",
+    );
+  }
+
+  const training =
+    await findTrainingForAttendance(
+      scheduleId,
+      user.organizationId,
+    );
+
+  if (!training?.date) {
+    throw new Error(
+      "Treino não encontrado ou sem data definida.",
+    );
+  }
+
+  const access =
+    await getClubTrainingCategoryAccess(
+      user,
+      training.categoryId,
+      training.sport,
+    );
+
+  if (!access.canManageAttendance) {
+    redirect(
+      "/dashboard?erro=sem-permissao",
+    );
+  }
+
+  const eligibleAthletes =
+    await findEligibleTrainingAthletes(
+      user.organizationId,
+      training.categoryId,
+      training.sport,
+    );
+
+  if (
+    !eligibleAthletes.some(
+      (athlete) =>
+        athlete.id === athleteId,
+    )
+  ) {
+    throw new Error(
+      "Este atleta não pertence à categoria deste treino.",
+    );
+  }
+
+  const [athlete, category] =
+    await Promise.all([
+      prisma.athlete.findFirst({
+        where: {
+          id: athleteId,
+          organizationId:
+            user.organizationId,
+        },
+        select: {
+          id: true,
+          name: true,
+          position: true,
+        },
+      }),
+
+      prisma.category.findFirst({
+        where: {
+          id: training.categoryId,
+          organizationId:
+            user.organizationId,
+        },
+        select: {
+          id: true,
+          name: true,
+          birthYear: true,
+        },
+      }),
+    ]);
+
+  if (!athlete || !category) {
+    throw new Error(
+      "Atleta ou categoria não encontrados.",
+    );
+  }
+
+  await prisma.athleteHistoryEntry.create({
+    data: {
+      organizationId:
+        user.organizationId,
+
+      athleteId:
+        athlete.id,
+
+      authorUserId:
+        user.id,
+
+      source:
+        AthleteHistorySource.TRAINING,
+
+      sourceId:
+        training.id,
+
+      sourceLabelSnapshot:
+        `Treino · ${category.name}`,
+
+      topic,
+      visibility,
+
+      occurredAt:
+        training.date,
+
+      title:
+        training.trainingType
+          ? `${training.trainingType} · ${category.name}`
+          : `Treino · ${category.name}`,
+
+      content,
+
+      followUpRequired,
+
+      categoryIdSnapshot:
+        category.id,
+
+      categoryNameSnapshot:
+        category.name,
+
+      categoryBirthYearSnapshot:
+        category.birthYear,
+
+      sportSnapshot:
+        training.sport,
+
+      seasonSnapshot:
+        String(
+          training.date.getFullYear(),
+        ),
+
+      positionSnapshot:
+        athlete.position,
+
+      authorNameSnapshot:
+        user.name,
+    },
+  });
+
+  revalidateTrainingPaths(
+    scheduleId,
+  );
+
+  revalidatePath(
+    `/atletas/${athleteId}`,
+  );
 }
