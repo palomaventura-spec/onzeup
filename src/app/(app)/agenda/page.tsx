@@ -445,6 +445,13 @@ export default async function AgendaPage({
                 <Icon name="plus" />
                 Novo jogo
               </Link>
+              <Link
+                className="agenda-v4-secondary-button"
+                href="/agenda/repetir"
+              >
+                <span aria-hidden="true">↻</span>
+                Repetir programação
+              </Link>
             </>
           ) : (
             <span className="agenda-v4-readonly">Somente visualização</span>

@@ -173,7 +173,7 @@ export async function saveQtr(
 
     update: {
       dataJson: JSON.stringify(rows),
-      title: "QTR semanal",
+      title: "QTS semanal",
     },
 
     create: {
@@ -184,7 +184,7 @@ export async function saveQtr(
         `${weekStart}T12:00:00`
       ),
 
-      title: "QTR semanal",
+      title: "QTS semanal",
 
       dataJson: JSON.stringify(rows),
     },
@@ -427,7 +427,7 @@ export async function generateQtr(
         JSON.stringify(rows),
 
       title:
-        "QTR semanal",
+        "QTS semanal",
     },
 
     create: {
@@ -439,7 +439,7 @@ export async function generateQtr(
       ),
 
       title:
-        "QTR semanal",
+        "QTS semanal",
 
       dataJson:
         JSON.stringify(rows),

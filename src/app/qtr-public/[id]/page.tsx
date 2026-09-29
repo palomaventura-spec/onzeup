@@ -119,7 +119,7 @@ export default async function PublicQtrPage({
               {org.logoUrl ? <img className="qtr-public-logo" src={org.logoUrl} alt="" /> : null}
               <div className="qtr-public-club-name">{org.publicName || org.name}</div>
             </div>
-            <h1>QTR semanal</h1>
+            <h1>QTS semanal</h1>
             <div className="qtr-public-category-title">{category}</div>
           </div>
           <div className="qtr-public-meta">Semana: {formatDate(weekStart)} a {formatDate(weekEnd)}</div>
@@ -167,7 +167,7 @@ export default async function PublicQtrPage({
 
         <footer className="qtr-public-footer">
           <span>Gerado por 11UP • Gestão de futebol e futsal de base</span>
-          <span>Compartilhamento público do QTR</span>
+          <span>Compartilhamento público do QTS</span>
         </footer>
       </section>
     </main>

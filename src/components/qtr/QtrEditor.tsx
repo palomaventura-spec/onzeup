@@ -117,6 +117,7 @@ export default function QtrEditor({
     id: string;
     name: string;
     birthYear: number | null;
+    accentColor: string;
   }[];
   initialCategory: string;
   saveAction: (formData: FormData) => Promise<void>;
@@ -275,19 +276,18 @@ export default function QtrEditor({
     selectedCategory !== "__all__";
 
   function openCategoryPdf() {
-    if (!hasSpecificCategory) return;
+    const query = new URLSearchParams({
+      week: weekStart,
+    });
 
-    const url =
-      `/qtr-pdf?week=${encodeURIComponent(
-        weekStart
-      )}&category=${encodeURIComponent(
-        selectedCategory
-      )}`;
+    if (hasSpecificCategory) {
+      query.set("category", selectedCategory);
+    }
 
     window.open(
-      url,
+      `/qtr-pdf?${query.toString()}`,
       "_blank",
-      "noopener,noreferrer"
+      "noopener,noreferrer",
     );
   }
 
@@ -311,7 +311,7 @@ export default function QtrEditor({
 
     if (!url) {
       window.alert(
-        "Atualize ou salve o QTR antes de gerar o link público."
+        "Atualize ou salve o QTS antes de gerar o link público."
       );
 
       return;
@@ -331,18 +331,18 @@ export default function QtrEditor({
 
     if (!publicUrl) {
       window.alert(
-        "Atualize ou salve o QTR antes de enviar pelo WhatsApp."
+        "Atualize ou salve o QTS antes de enviar pelo WhatsApp."
       );
 
       return;
     }
 
     const message =
-      `⚽ QTR SEMANAL — ${selectedCategory}\n\n` +
+      `⚽ QTS SEMANAL — ${selectedCategory}\n\n` +
       `Período: ${periodLabel(
         weekStart
       )}\n\n` +
-      `Confira o QTR da categoria ${selectedCategory}:\n${publicUrl}`;
+      `Confira o QTS da categoria ${selectedCategory}:\n${publicUrl}`;
 
     window.open(
       `https://wa.me/?text=${encodeURIComponent(
@@ -426,11 +426,11 @@ export default function QtrEditor({
         >
           {hasSpecificCategory
             ? canEdit
-              ? `Você está editando apenas o QTR de ${selectedCategory}.`
-              : `Visualizando o QTR de ${selectedCategory}.`
+              ? `Você está editando apenas o QTS de ${selectedCategory}.`
+              : `Visualizando o QTS de ${selectedCategory}.`
             : canEdit
               ? "Visão geral da coordenação. Selecione uma categoria para compartilhar."
-              : "Visão geral do QTR. Selecione uma categoria para visualizar ou compartilhar."}
+              : "Visão geral do QTS. Selecione uma categoria para visualizar ou compartilhar."}
         </div>
       </div>
 
@@ -488,7 +488,19 @@ export default function QtrEditor({
                 className="qtr-grid qtr-row"
                 key={`${row.category}-${rowIndex}`}
               >
-                <div className="qtr-category-cell">
+                <div
+                  className="qtr-category-cell"
+                  style={{
+                    borderColor:
+                      categories.find(
+                        (category) =>
+                          category.name === row.category,
+                      )?.accentColor ?? "#9DDB16",
+                    borderWidth: 2,
+                    borderStyle: "solid",
+                    borderRadius: 16,
+                  }}
+                >
                   <strong
                     style={{
                       fontSize: 15,
@@ -754,35 +766,32 @@ export default function QtrEditor({
             </button>
           ) : null}
 
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={openCategoryPdf}
+          >
+            {hasSpecificCategory
+              ? `Gerar PDF — ${selectedCategory}`
+              : "Gerar PDF — todas as categorias"}
+          </button>
+
           {hasSpecificCategory ? (
             <>
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={openCategoryPdf}
-              >
-                Gerar PDF —{" "}
-                {selectedCategory}
-              </button>
-
-              <button
-                type="button"
-                className="btn-secondary"
                 onClick={openPublicQtr}
               >
-                Abrir link público —{" "}
-                {selectedCategory}
+                Abrir link público — {selectedCategory}
               </button>
 
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={
-                  sendCategoryWhatsApp
-                }
+                onClick={sendCategoryWhatsApp}
               >
-                Enviar {selectedCategory}{" "}
-                pelo WhatsApp
+                Enviar {selectedCategory} pelo WhatsApp
               </button>
             </>
           ) : null}

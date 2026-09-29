@@ -206,6 +206,7 @@ export default async function QtrPage({
         id: true,
         name: true,
         birthYear: true,
+        accentColor: true,
       },
       orderBy: [
         {

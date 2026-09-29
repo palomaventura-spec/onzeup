@@ -166,6 +166,24 @@ export default async function QtrPdfPage({
           row.category === category
       )
     : allRows;
+  const categoryColors =
+    await prisma.category.findMany({
+      where: {
+        organizationId: user.organizationId,
+      },
+      select: {
+        name: true,
+        accentColor: true,
+      },
+    });
+
+  const categoryColorByName = new Map(
+    categoryColors.map((item) => [
+      item.name,
+      item.accentColor,
+    ]),
+  );
+
 
   const org =
     user.organization!;
@@ -369,7 +387,7 @@ export default async function QtrPdfPage({
             </div>
           </div>
 
-          <h1>QTR semanal</h1>
+          <h1>QTS semanal</h1>
 
           {category ? (
             <div className="qtr-print-category-title">
@@ -432,7 +450,17 @@ export default async function QtrPdfPage({
                 <tr
                   key={`${row.category}-${rowIndex}`}
                 >
-                  <td className="qtr-print-category">
+                  <td
+                className="qtr-print-category"
+                style={{
+                  borderColor:
+                    categoryColorByName.get(
+                      row.category || "",
+                    ) ?? "#9DDB16",
+                  borderWidth: 2,
+                  borderStyle: "solid",
+                }}
+              >
                     {row.category ||
                       "Categoria"}
 
@@ -522,8 +550,8 @@ export default async function QtrPdfPage({
             <tr>
               <td colSpan={8}>
                 {category
-                  ? `Nenhum QTR encontrado para a categoria ${category} nesta semana.`
-                  : "Nenhum QTR salvo para esta semana."}
+                  ? `Nenhum QTS encontrado para a categoria ${category} nesta semana.`
+                  : "Nenhum QTS salvo para esta semana."}
               </td>
             </tr>
           )}
@@ -538,7 +566,7 @@ export default async function QtrPdfPage({
         </span>
 
         <span>
-          QTR gerado em{" "}
+          QTS gerado em{" "}
           {new Intl.DateTimeFormat(
             "pt-BR"
           ).format(new Date())}

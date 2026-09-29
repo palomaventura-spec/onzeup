@@ -72,7 +72,8 @@ export async function updateCategory(formData: FormData) {
   const accentColor = accent(formData.get("accentColor"));
   const type = categoryType(formData.get("type"));
   const active = clean(formData.get("active")) !== "false";
-  const sport = categorySport(formData.get("sport"));
+  const sport =
+    categorySport(formData.get("sport")) ??     (clean(formData.get("sport")) === "BOTH"       ? SportType.BOTH       : null);
 
   if (!id || !name || !sport) return;
 

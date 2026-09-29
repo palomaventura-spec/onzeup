@@ -19517,3 +19517,344 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
     width:90px;
   }
 }
+
+/* =========================================================
+   11UP ECOSYSTEM — MOBILE FINAL
+   ========================================================= */
+
+@media (max-width:650px){
+
+  /* Segurança geral contra estouro lateral */
+  .ecosystem-home{
+    width:100%;
+    max-width:100vw;
+    overflow-x:hidden;
+  }
+
+  .ecosystem-home *,
+  .ecosystem-home *::before,
+  .ecosystem-home *::after{
+    box-sizing:border-box;
+    min-width:0;
+  }
+
+  /* HEADER */
+  .ecosystem-nav{
+    min-height:64px;
+    width:100%;
+    padding:0 18px;
+    gap:14px;
+  }
+
+  .ecosystem-brand-header img{
+    width:122px;
+    max-width:38vw;
+  }
+
+  .ecosystem-login{
+    flex-shrink:0;
+    font-size:10px;
+  }
+
+  /* HERO */
+  .ecosystem-hero{
+    padding:52px 20px 56px;
+    gap:42px;
+  }
+
+  .ecosystem-hero-copy{
+    width:100%;
+  }
+
+  .ecosystem-kicker{
+    font-size:8px;
+    line-height:1.45;
+    letter-spacing:.12em;
+  }
+
+  .ecosystem-hero-copy h1{
+    margin-top:14px;
+    font-size:clamp(42px,12.2vw,54px);
+    line-height:.88;
+    letter-spacing:-.055em;
+    overflow-wrap:normal;
+    word-break:normal;
+  }
+
+  .ecosystem-hero-copy p{
+    font-size:15px;
+    line-height:1.65;
+  }
+
+  .ecosystem-hero-actions{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    width:100%;
+  }
+
+  .ecosystem-hero-actions>*{
+    width:100%;
+    justify-content:center;
+    text-align:center;
+  }
+
+  /* ORBITA */
+  .ecosystem-orbit{
+    width:min(100%,390px);
+    margin:0 auto;
+  }
+
+  .ecosystem-orbit-center{
+    width:112px;
+    height:112px;
+  }
+
+  .ecosystem-orbit-center img{
+    width:78px;
+  }
+
+  .ecosystem-orbit-node{
+    min-width:92px;
+    padding:10px;
+  }
+
+  /* FRASE DE TRANSIÇÃO */
+  .ecosystem-statement{
+    padding:30px 20px;
+    gap:13px;
+  }
+
+  .ecosystem-statement>span{
+    white-space:normal;
+    font-size:8px;
+    line-height:1.45;
+  }
+
+  .ecosystem-statement p{
+    font-size:17px;
+    line-height:1.45;
+  }
+
+  /* SEÇÕES */
+  .ecosystem-products,
+  .ecosystem-intelligence,
+  .ecosystem-connected,
+  .ecosystem-audiences,
+  .ecosystem-login-section,
+  .ecosystem-final-cta{
+    padding:64px 20px;
+    width:100%;
+  }
+
+  .ecosystem-section-heading{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:16px;
+    margin-bottom:30px;
+  }
+
+  /*
+   * Corrige principalmente:
+   * MAIS QUE SOFTWARE.
+   * INFRAESTRUTURA PARA O FUTEBOL.
+   */
+  .ecosystem-section-heading h2,
+  .ecosystem-connected h2,
+  .ecosystem-login-section h2,
+  .ecosystem-final-cta h2{
+    width:100%;
+    max-width:100%;
+    margin-top:10px;
+    font-size:clamp(37px,10.8vw,46px);
+    line-height:.91;
+    letter-spacing:-.05em;
+    overflow-wrap:normal;
+    word-break:normal;
+  }
+
+  .ecosystem-section-heading h2 em,
+  .ecosystem-connected h2 em,
+  .ecosystem-login-section h2 em,
+  .ecosystem-final-cta h2 em{
+    display:inline;
+  }
+
+  .ecosystem-section-heading>p{
+    width:100%;
+    max-width:none;
+    font-size:15px;
+    line-height:1.65;
+  }
+
+  /* CARDS DOS 4 PRODUTOS */
+  .ecosystem-product-grid{
+    grid-template-columns:1fr;
+    gap:14px;
+  }
+
+  .ecosystem-product{
+    width:100%;
+    min-height:0;
+    padding:22px 20px;
+    border-radius:18px;
+  }
+
+  .ecosystem-product-top{
+    gap:12px;
+    align-items:flex-start;
+  }
+
+  .ecosystem-product-top small{
+    max-width:65%;
+    text-align:right;
+    line-height:1.4;
+  }
+
+  .ecosystem-product-name{
+    margin:32px 0 20px;
+  }
+
+  .ecosystem-product-name h3{
+    font-size:clamp(39px,11.8vw,47px);
+    line-height:.9;
+    letter-spacing:-.055em;
+  }
+
+  .ecosystem-product h4{
+    font-size:20px;
+    line-height:1.15;
+  }
+
+  .ecosystem-product>p{
+    font-size:14px;
+    line-height:1.65;
+  }
+
+  .ecosystem-product ul{
+    margin:24px 0;
+    padding-top:18px;
+  }
+
+  .ecosystem-product li{
+    padding:7px 0;
+    font-size:13px;
+    line-height:1.45;
+  }
+
+  .ecosystem-product-actions{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:9px;
+  }
+
+  .ecosystem-product-actions>*{
+    width:100%;
+    min-height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+
+  /* CARDS DE CAPACIDADES / CONEXÃO */
+  .ecosystem-capabilities,
+  .ecosystem-audience-grid,
+  .ecosystem-role-grid,
+  .ecosystem-flow{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+
+  .ecosystem-capabilities article,
+  .ecosystem-audience-grid article,
+  .ecosystem-role-grid article{
+    min-height:0;
+  }
+
+  /* FINAL */
+  .ecosystem-final-cta{
+    text-align:left;
+  }
+
+  .ecosystem-footer{
+    padding:32px 20px;
+  }
+}
+
+/* iPhones menores */
+@media (max-width:390px){
+
+  .ecosystem-hero-copy h1{
+    font-size:42px;
+  }
+
+  .ecosystem-section-heading h2,
+  .ecosystem-connected h2,
+  .ecosystem-login-section h2,
+  .ecosystem-final-cta h2{
+    font-size:36px;
+  }
+
+  .ecosystem-product-name h3{
+    font-size:39px;
+  }
+
+  .ecosystem-product{
+    padding:20px 18px;
+  }
+}
+
+/* 11UP AGENDA V4 - HERO ACTIONS HARMONY */
+.agenda-v4-hero-actions{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(150px,1fr)) !important;
+  gap:10px !important;
+  width:min(590px,100%) !important;
+  min-width:0 !important;
+  align-items:stretch !important;
+}
+
+.agenda-v4-hero-actions > .agenda-v4-primary-button,
+.agenda-v4-hero-actions > .agenda-v4-secondary-button{
+  width:100% !important;
+  min-width:0 !important;
+  height:52px !important;
+  min-height:52px !important;
+  padding:0 16px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  box-sizing:border-box !important;
+  border-radius:12px !important;
+  font-family:inherit !important;
+  font-size:14px !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+  text-align:center !important;
+  text-decoration:none !important;
+}
+
+.agenda-v4-hero-actions > button{
+  appearance:none;
+  cursor:pointer;
+}
+
+@media(max-width:1180px){
+  .agenda-v4-hero-actions{
+    width:100% !important;
+  }
+}
+
+@media(max-width:700px){
+  .agenda-v4-hero-actions{
+    grid-template-columns:1fr !important;
+  }
+
+  .agenda-v4-hero-actions > .agenda-v4-primary-button,
+  .agenda-v4-hero-actions > .agenda-v4-secondary-button{
+    width:100% !important;
+  }
+}
