@@ -20,9 +20,9 @@ function fmt(date: Date) {
 }
 
 function sportLabel(sport: string) {
-  if (sport === "FOOTBALL") return "Campo";
+  if (sport === "FOOTBALL") return "Futebol";
   if (sport === "FUTSAL") return "Futsal";
-  return "Campo + Futsal";
+  return "Futebol + Futsal";
 }
 
 export default async function CoachDashboard({

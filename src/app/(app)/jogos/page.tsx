@@ -181,7 +181,7 @@ function normalizeView(
 function sportLabel(sport: SportType) {
   return sport === SportType.FUTSAL
     ? "Futsal"
-    : "Campo";
+    : "Futebol";
 }
 
 function formatDate(date: Date) {

@@ -202,7 +202,7 @@ function percentageLabel(value: number) {
 }
 
 function sportLabel(sport: SportType) {
-  return sport === SportType.FUTSAL ? "Futsal" : "Campo";
+  return sport === SportType.FUTSAL ? "Futsal" : "Futebol";
 }
 
 function frequencyUrl({

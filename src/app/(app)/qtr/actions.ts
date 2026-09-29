@@ -454,3 +454,70 @@ export async function generateQtr(
     "gerado"
   );
 }
+
+export async function saveQtrSettings(formData: FormData) {
+  const user = await requireClubPermission("QTR_EDIT");
+
+  function color(name: string, fallback: string) {
+    const value = clean(formData.get(name));
+
+    return /^#[0-9A-Fa-f]{6}$/.test(value)
+      ? value.toUpperCase()
+      : fallback;
+  }
+
+  const trainingColor = color(
+    "trainingColor",
+    "#2B9D47",
+  );
+
+  const matchColor = color(
+    "matchColor",
+    "#D4AA18",
+  );
+
+  const friendlyColor = color(
+    "friendlyColor",
+    "#3377A5",
+  );
+
+  const eventColor = color(
+    "eventColor",
+    "#76539A",
+  );
+
+  const otherColor = color(
+    "otherColor",
+    "#29333D",
+  );
+
+  const trainingUsesCategoryColor =
+    formData.get("trainingUsesCategoryColor") === "on";
+
+  await prisma.qtrSettings.upsert({
+    where: {
+      organizationId: user.organizationId,
+    },
+
+    update: {
+      trainingColor,
+      matchColor,
+      friendlyColor,
+      eventColor,
+      otherColor,
+      trainingUsesCategoryColor,
+    },
+
+    create: {
+      organizationId: user.organizationId,
+      trainingColor,
+      matchColor,
+      friendlyColor,
+      eventColor,
+      otherColor,
+      trainingUsesCategoryColor,
+    },
+  });
+
+  revalidatePath("/qtr");
+}

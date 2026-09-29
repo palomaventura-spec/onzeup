@@ -11,6 +11,8 @@ type CategoryOption = {
   id: string;
   name: string;
   type: "STANDARD" | "EVALUATION";
+  sport: "FOOTBALL" | "FUTSAL" | "BOTH";
+  active: boolean;
   accentColor: string;
 };
 
@@ -33,19 +35,30 @@ export default function AthleteCreateForm({
   const availableCategories = useMemo(
     () =>
       categories.filter(
-        (category) => category.type === entryType,
+        (category) =>
+          category.type === entryType &&
+          category.active,
       ),
     [categories, entryType],
   );
 
-  function changeEntryType(value: "STANDARD" | "EVALUATION") {
+
+  function changeEntryType(
+    value: "STANDARD" | "EVALUATION",
+  ) {
     setEntryType(value);
 
     const firstCompatible = categories.find(
-      (category) => category.type === value,
+      (category) =>
+        category.type === value &&
+        category.active,
     );
 
     setCategoryId(firstCompatible?.id ?? "");
+  }
+
+  function changeCategory(categoryId: string) {
+    setCategoryId(categoryId);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -160,48 +173,53 @@ export default function AthleteCreateForm({
             </option>
           </select>
         </label>
-
         <label>
           {evaluationMode
-            ? "Categoria de avaliação"
+            ? "Categoria em avaliação"
             : "Categoria"}
+
           <select
             name="categoryId"
             value={categoryId}
             onChange={(event) =>
-              setCategoryId(event.target.value)
+              changeCategory(event.target.value)
             }
             required={evaluationMode}
           >
             {!evaluationMode ? (
-              <option value="">Sem categoria</option>
-            ) : null}
+              <option value="">
+                Sem categoria
+              </option>
+            ) : (
+              <option value="" disabled>
+                Selecione a categoria em avaliação
+              </option>
+            )}
 
             {availableCategories.map((category) => (
               <option
                 key={category.id}
                 value={category.id}
               >
-                {category.name}
+                {category.name} ·{" "}
+                {category.sport === "FOOTBALL"
+                  ? "Futebol"
+                  : category.sport === "FUTSAL"
+                    ? "Futsal"
+                    : "Futebol + Futsal"}
               </option>
             ))}
           </select>
         </label>
-
         {evaluationMode && !availableCategories.length ? (
           <p className="form-error" role="alert">
-            Nenhuma categoria do tipo Avaliação foi criada.
-            Crie uma categoria de avaliação antes de cadastrar
-            este atleta.
+            Nenhuma categoria de avaliação ativa foi cadastrada.
+            Crie primeiro uma categoria do tipo Avaliação.
           </p>
         ) : null}
-
         {evaluationMode ? (
           <p className="muted">
-            O atleta permanecerá nesta categoria durante o
-            processo de avaliação. Se for aprovado, poderá ser
-            transferido depois para uma categoria oficial sem
-            perder o histórico.
+            O atleta ficará nesta categoria durante o período de avaliação.
           </p>
         ) : null}
       </fieldset>
@@ -283,7 +301,7 @@ export default function AthleteCreateForm({
         >
           Preencha apenas os registros que o atleta possui.
           O mesmo atleta pode ter inscrição no futsal e no
-          futebol de campo.
+          futebol.
         </p>
 
         <label>
@@ -303,7 +321,7 @@ export default function AthleteCreateForm({
         </label>
 
         <label>
-          Campo · Federação
+          Futebol · Federação
           <input
             name="footballFederationName"
             placeholder="Ex.: Federação estadual"
@@ -311,7 +329,7 @@ export default function AthleteCreateForm({
         </label>
 
         <label>
-          Campo · Nº de inscrição na Federação
+          Futebol · Nº de inscrição na Federação
           <input
             name="footballFederationNumber"
             placeholder="Número de inscrição"
@@ -319,7 +337,7 @@ export default function AthleteCreateForm({
         </label>
 
         <label style={{ gridColumn: "1 / -1" }}>
-          Campo · Nº de registro CBF
+          Futebol · Nº de registro CBF
           <input
             name="cbfRegistrationNumber"
             placeholder="Número de registro CBF"

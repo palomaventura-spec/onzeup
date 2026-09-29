@@ -47,9 +47,9 @@ export default async function EditStaffPage({
           <p>
             {member.category?.name || "Atuação geral"} •{" "}
             {member.sport === "BOTH"
-              ? "Campo + Futsal"
+              ? "Futebol + Futsal"
               : member.sport === "FOOTBALL"
-                ? "Campo"
+                ? "Futebol"
                 : "Futsal"}
           </p>
         </div>
@@ -147,7 +147,7 @@ export default async function EditStaffPage({
             <label>
               Modalidade
               <select name="sport" defaultValue={member.sport}>
-                <option value="BOTH">Campo + Futsal</option>
+                <option value="BOTH">Futebol + Futsal</option>
                 <option value="FOOTBALL">Futebol de campo</option>
                 <option value="FUTSAL">Futsal</option>
               </select>

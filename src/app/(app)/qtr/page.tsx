@@ -4,9 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
 
-import { generateQtr, saveQtr } from "./actions";
+import { generateQtr, saveQtr, saveQtrSettings } from "./actions";
 import QtrEditor from "@/components/qtr/QtrEditor";
 import QtrGenerateButton from "@/components/qtr/QtrGenerateButton";
+import QtrColorSettings from "@/components/qtr/QtrColorSettings";
 
 type SearchParams = {
   week?: string;
@@ -218,6 +219,13 @@ export default async function QtrPage({
       ],
     }),
   ]);
+  const qtrSettings =
+    await prisma.qtrSettings.findUnique({
+      where: {
+        organizationId: user.organizationId,
+      },
+    });
+
 
   const validCategory =
     params.category &&
@@ -472,7 +480,32 @@ export default async function QtrPage({
       ) : null}
 
       <section className="qts-v11-editor">
-        <QtrEditor
+        {canEdit ? (
+        <QtrColorSettings
+          settings={{
+            trainingColor:
+              qtrSettings?.trainingColor ??
+              "#2B9D47",
+            matchColor:
+              qtrSettings?.matchColor ??
+              "#D4AA18",
+            friendlyColor:
+              qtrSettings?.friendlyColor ??
+              "#3377A5",
+            eventColor:
+              qtrSettings?.eventColor ??
+              "#76539A",
+            otherColor:
+              qtrSettings?.otherColor ??
+              "#29333D",
+            trainingUsesCategoryColor:
+              qtrSettings?.trainingUsesCategoryColor ??
+              false,
+          }}
+          saveAction={saveQtrSettings}
+        />
+      ) : null}
+      <QtrEditor
           key={`${isoDate(weekStart)}-${
             qtr?.updatedAt?.getTime() ?? 0
           }-${selectedCategory}`}
@@ -481,7 +514,17 @@ export default async function QtrPage({
           initialRows={initialRows}
           categories={categories}
           initialCategory={selectedCategory}
-          saveAction={saveQtr}
+        eventColors={{
+          TRAINING: qtrSettings?.trainingColor ?? "#2B9D47",
+          MATCH: qtrSettings?.matchColor ?? "#D4AA18",
+          FRIENDLY: qtrSettings?.friendlyColor ?? "#3377A5",
+          EVENT: qtrSettings?.eventColor ?? "#76539A",
+          OTHER: qtrSettings?.otherColor ?? "#29333D",
+        }}
+          trainingUsesCategoryColor={
+          qtrSettings?.trainingUsesCategoryColor ?? false
+        }
+        saveAction={saveQtr}
           canEdit={canEdit}
         />
       </section>

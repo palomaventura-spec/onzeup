@@ -52,7 +52,7 @@ export default async function ClubOnboardingPage() {
               <select name="sport" defaultValue={user.organization?.sport || "BOTH"}>
                 <option value="FOOTBALL">Futebol de campo</option>
                 <option value="FUTSAL">Futsal</option>
-                <option value="BOTH">Campo + Futsal</option>
+                <option value="BOTH">Futebol + Futsal</option>
               </select>
             </label>
 

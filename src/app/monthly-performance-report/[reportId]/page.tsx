@@ -38,7 +38,7 @@ function percentage(value: unknown) {
 }
 
 function sportLabel(sport: SportType) {
-  return sport === SportType.FUTSAL ? "Futsal" : "Futebol de Campo";
+  return sport === SportType.FUTSAL ? "Futsal" : "Futebol";
 }
 
 function statusLabel(status: string) {

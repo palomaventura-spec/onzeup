@@ -5,11 +5,12 @@ import ModuleHero from "@/components/ModuleHero";
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createCategory, deleteCategory } from "./actions";
+import CategoryEvaluationFields from "./CategoryEvaluationFields";
 
 type CategoryFilter = "ALL" | "FOOTBALL" | "FUTSAL" | "EVALUATION";
 
 function sportLabel(sport: string) {
-  if (sport === "FOOTBALL") return "Campo";
+  if (sport === "FOOTBALL") return "Futebol";
   if (sport === "FUTSAL") return "Futsal";
   return "Modalidade pendente";
 }
@@ -142,7 +143,7 @@ export default async function CategoriesPage({
 
   const filters: Array<{ value: CategoryFilter; label: string }> = [
     { value: "ALL", label: "Todas" },
-    { value: "FOOTBALL", label: "Campo" },
+    { value: "FOOTBALL", label: "Futebol" },
     { value: "FUTSAL", label: "Futsal" },
     { value: "EVALUATION", label: "Avaliação" },
   ];
@@ -190,7 +191,7 @@ export default async function CategoriesPage({
         <article>
           <span className="category-v2-kpi-icon"><KpiIcon kind="field" /></span>
           <div>
-            <small>CAMPO</small>
+            <small>FUTEBOL</small>
             <strong>{footballCount}</strong>
             <span>categoria(s)</span>
           </div>
@@ -224,7 +225,7 @@ export default async function CategoriesPage({
           <span className="page-eyebrow">ESTRUTURA DO CLUBE</span>
           <h2>Categorias do clube</h2>
           <p>
-            Campo e Futsal permanecem separados em treinos, jogos, avaliações, GPS e performance.
+            Futebol e Futsal permanecem separados em treinos, jogos, avaliações, GPS e performance.
           </p>
         </div>
 
@@ -247,34 +248,28 @@ export default async function CategoriesPage({
             <span className="category-v2-create-icon">＋</span>
             <span>
               <strong>Nova categoria</strong>
-              <small>Cadastre uma categoria de Campo ou Futsal</small>
+              <small>Cadastre uma categoria de Futebol ou Futsal</small>
             </span>
           </div>
           <b>Adicionar</b>
         </summary>
 
         <form className="category-v2-create-form" action={createCategory}>
-          <label>
-            Modalidade
-            <select name="sport" defaultValue="" required>
-              <option value="" disabled>Selecione</option>
-              <option value="FOOTBALL">Futebol de Campo</option>
-              <option value="FUTSAL">Futsal</option>
-            </select>
-          </label>
 
           <label>
             Nome
             <input name="name" placeholder="Ex.: Sub-9" required />
           </label>
-
-          <label>
-            Tipo
-            <select name="type" defaultValue="STANDARD">
-              <option value="STANDARD">Categoria do elenco</option>
-              <option value="EVALUATION">Avaliação</option>
-            </select>
-          </label>
+          <CategoryEvaluationFields
+            categories={categories.map((category) => ({
+              id: category.id,
+              name: category.name,
+              type: category.type,
+              sport: category.sport,
+              active: category.active,
+              accentColor: category.accentColor,
+            }))}
+          />
 
           <label>
             Ano de referência
@@ -365,7 +360,7 @@ export default async function CategoriesPage({
 
               {isPendingSport ? (
                 <div className="category-v2-card-warning">
-                  Defina Campo ou Futsal antes de usar esta categoria nos novos registros de performance.
+                  Defina Futebol ou Futsal antes de usar esta categoria nos novos registros de performance.
                 </div>
               ) : null}
 

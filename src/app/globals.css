@@ -168,8 +168,8 @@ linear-gradient(180deg,#0d141b,#05080c);background-size:cover;background-positio
 .qtr-empty-slot:hover small{opacity:1}
 .qtr-event{width:100%;min-height:104px;border-radius:12px;border:1px solid var(--line);padding:12px;text-align:left;display:grid;align-content:start;gap:7px;color:white;cursor:pointer}
 .qtr-event:hover{transform:translateY(-1px);filter:brightness(1.08)}
-.qtr-event strong{font-size:13px;line-height:1.25}
-.qtr-event span,.qtr-event small{font-size:11px;line-height:1.35}
+.qtr-event strong{font-size:14px;line-height:1.25;font-weight:800;color:#101820}
+.qtr-event span,.qtr-event small{font-size:12px;line-height:1.4;color:#101820}
 .qtr-event-location{font-weight:800;text-transform:uppercase}
 .qtr-event-training{background:linear-gradient(145deg,#133b22,#17351f);border-color:#256b37}
 .qtr-event-match{background:linear-gradient(145deg,#40350f,#3a3114);border-color:#8a6f09}

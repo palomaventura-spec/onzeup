@@ -12,7 +12,7 @@ function hashToken(value: string) {
 }
 
 function sportLabel(value: string | null | undefined) {
-  if (value === "FOOTBALL") return "Campo";
+  if (value === "FOOTBALL") return "Futebol";
   if (value === "FUTSAL") return "Futsal";
   return null;
 }

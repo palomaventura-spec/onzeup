@@ -58,6 +58,24 @@ function typeLabel(type?: string) {
   return "Atividade";
 }
 
+function readableQtrTextColor(hex: string) {
+  const value = hex.replace("#", "");
+
+  if (!/^[0-9A-Fa-f]{6}$/.test(value)) {
+    return "#101820";
+  }
+
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+
+  const luminance =
+    (r * 299 + g * 587 + b * 114) / 1000;
+
+  return luminance > 160
+    ? "#101820"
+    : "#ffffff";
+}
 export default async function PublicQtrPage({
   params,
   searchParams,
@@ -84,6 +102,26 @@ export default async function PublicQtrPage({
 
   const rows = readRows(qtr.dataJson).filter((row) => row.category === category);
   if (!rows.length) notFound();
+  const qtrSettings =
+    await prisma.qtrSettings.findUnique({
+      where: {
+        organizationId: qtr.organizationId,
+      },
+    });
+
+  const eventColors: Record<string, string> = {
+    TRAINING:
+      qtrSettings?.trainingColor ?? "#2B9D47",
+    MATCH:
+      qtrSettings?.matchColor ?? "#D4AA18",
+    FRIENDLY:
+      qtrSettings?.friendlyColor ?? "#3377A5",
+    EVENT:
+      qtrSettings?.eventColor ?? "#76539A",
+    OTHER:
+      qtrSettings?.otherColor ?? "#29333D",
+  };
+
 
   const weekStart = new Date(qtr.weekStart);
   const weekEnd = new Date(weekStart);
@@ -104,7 +142,7 @@ export default async function PublicQtrPage({
         .qtr-public-table th{font-size:11px;letter-spacing:.06em;text-align:center;padding:6px 3px;color:#34434c}.qtr-public-table th:first-child{text-align:left;width:150px}
         .qtr-public-table td{vertical-align:top;border:1px solid #dce4e8;border-radius:8px;padding:8px;height:80px;font-size:11px;background:#fbfcfd}
         .qtr-public-category{font-weight:900!important;background:#f4f7f8!important;font-size:13px!important}.qtr-public-category small{display:block;margin-top:5px;color:#687780;font-weight:700}
-        .qtr-public-event{border-left:4px solid #8fd400;padding-left:7px;margin-bottom:6px}.qtr-public-event strong{display:block;font-size:11px}.qtr-public-event span,.qtr-public-event small{display:block;color:#5f6d75;margin-top:2px;font-size:9px}
+        .qtr-public-event{border-left:4px solid #8fd400;padding-left:7px;margin-bottom:6px}.qtr-public-event strong{display:block;font-size:13px}.qtr-public-event span,.qtr-public-event small{display:block;color:#101820;margin-top:2px;font-size:11px}
         .qtr-public-empty{display:grid;place-items:center;color:#a3afb6;height:100%;font-size:20px}.qtr-public-footer{margin-top:14px;border-top:1px solid #dce4e8;padding-top:10px;color:#71808a;font-size:10px;display:flex;justify-content:space-between;gap:12px}
         @media(max-width:700px){.qtr-public-page{padding:12px}.qtr-public-card{padding:14px;border-radius:14px}.qtr-public-header{display:block}.qtr-public-meta{text-align:left;margin-top:12px}.qtr-public-club-name{font-size:20px}.qtr-public-header h1{font-size:24px}}
         @page{size:landscape;margin:10mm}@media print{html,body{background:#fff!important}.no-print{display:none!important}.qtr-public-page{padding:0;max-width:none}.qtr-public-card{border:0;box-shadow:none;padding:0}.qtr-public-table-wrap{overflow:visible}.qtr-public-table{min-width:0}}
@@ -149,7 +187,23 @@ export default async function PublicQtrPage({
                     return (
                       <td key={key}>
                         {events.length ? events.map((event, eventIndex) => (
-                          <div className="qtr-public-event" key={eventIndex}>
+                          <div
+                            className="qtr-public-event"
+                            key={eventIndex}
+                            style={{
+                              backgroundColor:
+                                eventColors[
+                                  event.type ?? "OTHER"
+                                ] ?? eventColors.OTHER,
+                              borderLeftColor:
+                                eventColors[
+                                  event.type ?? "OTHER"
+                                ] ?? eventColors.OTHER,
+                              color: "#101820",
+                              borderRadius: 8,
+                              padding: "8px 10px",
+                            }}
+                          >
                             <strong>{event.title || typeLabel(event.type)}</strong>
                             {(event.startTime || event.endTime) ? <span>{event.startTime || ""}{event.endTime ? ` – ${event.endTime}` : ""}</span> : null}
                             {event.location ? <span>{event.location}</span> : null}

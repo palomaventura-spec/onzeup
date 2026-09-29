@@ -145,7 +145,7 @@ function formatDateTime(date: Date) {
 }
 
 function sportLabel(value: SportType | string) {
-  return value === "FUTSAL" ? "Futsal" : "Campo";
+  return value === "FUTSAL" ? "Futsal" : "Futebol";
 }
 
 function homeAwayLabel(value: string | null) {

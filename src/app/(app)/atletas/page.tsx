@@ -567,6 +567,14 @@ export default async function AthletesPage({
             },
 
          ],
+         include: {
+            evaluationTargets: {
+               include: {
+                  targetCategory: true,
+               },
+            },
+         },
+
 
       }),
 

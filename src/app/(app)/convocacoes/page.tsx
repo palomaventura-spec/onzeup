@@ -137,7 +137,7 @@ function Icon({
 function sportLabel(sport: SportType) {
   return sport === SportType.FUTSAL
     ? "Futsal"
-    : "Campo";
+    : "Futebol";
 }
 
 function formatDate(date: Date) {
@@ -511,7 +511,7 @@ export default async function CallUpsPage({
           ainda estão sem modalidade definida.
           Esses registros legados não aparecem
           nesta central até serem classificados
-          como Campo ou Futsal.
+          como Futebol ou Futsal.
         </div>
       ) : null}
 

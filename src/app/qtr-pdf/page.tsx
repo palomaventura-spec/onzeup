@@ -105,6 +105,24 @@ function typeLabel(type?: string) {
   return "Atividade";
 }
 
+function readableQtrTextColor(hex: string) {
+  const value = hex.replace("#", "");
+
+  if (!/^[0-9A-Fa-f]{6}$/.test(value)) {
+    return "#101820";
+  }
+
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+
+  const luminance =
+    (r * 299 + g * 587 + b * 114) / 1000;
+
+  return luminance > 160
+    ? "#101820"
+    : "#ffffff";
+}
 export default async function QtrPdfPage({
   searchParams,
 }: {
@@ -183,6 +201,26 @@ export default async function QtrPdfPage({
       item.accentColor,
     ]),
   );
+  const qtrSettings =
+    await prisma.qtrSettings.findUnique({
+      where: {
+        organizationId: user.organizationId,
+      },
+    });
+
+  const eventColors: Record<string, string> = {
+    TRAINING:
+      qtrSettings?.trainingColor ?? "#2B9D47",
+    MATCH:
+      qtrSettings?.matchColor ?? "#D4AA18",
+    FRIENDLY:
+      qtrSettings?.friendlyColor ?? "#3377A5",
+    EVENT:
+      qtrSettings?.eventColor ?? "#76539A",
+    OTHER:
+      qtrSettings?.otherColor ?? "#29333D",
+  };
+
 
 
   const org =
@@ -279,7 +317,7 @@ export default async function QtrPdfPage({
           vertical-align:top;
           border:1px solid #dce4e8;
           border-radius:8px;
-          padding:8px;
+          padding:4px;
           min-height:80px;
           height:80px;
           font-size:11px;
@@ -300,22 +338,37 @@ export default async function QtrPdfPage({
         }
 
         .qtr-print-event{
-          border-left:4px solid #8fd400;
-          padding-left:7px;
-          margin-bottom:6px
+          width:100%;
+          min-height:72px;
+          margin:0;
+          padding:10px 12px;
+          border:0;
+          border-radius:7px;
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
+          gap:4px;
+          color:#101820!important;
+          -webkit-print-color-adjust:exact!important;
+          print-color-adjust:exact!important
         }
 
         .qtr-print-event strong{
           display:block;
-          font-size:11px
+          font-size:16px;
+          line-height:1.2;
+          font-weight:900;
+          color:#101820!important
         }
 
         .qtr-print-event span,
         .qtr-print-event small{
           display:block;
-          color:#5f6d75;
-          margin-top:2px;
-          font-size:9px
+          margin-top:1px;
+          font-size:14px;
+          line-height:1.25;
+          font-weight:700;
+          color:#101820!important
         }
 
         .qtr-print-empty{
@@ -493,9 +546,18 @@ export default async function QtrPdfPage({
                               ) => (
                                 <div
                                   className="qtr-print-event"
-                                  key={
-                                    eventIndex
-                                  }
+                                  key={eventIndex}
+                                  style={{
+                                    backgroundColor:
+                                      eventColors[
+                                        event.type ?? "OTHER"
+                                      ] ?? eventColors.OTHER,
+                                    borderLeftColor:
+                                      eventColors[
+                                        event.type ?? "OTHER"
+                                      ] ?? eventColors.OTHER,
+                                    color: "#101820",
+                                  }}
                                 >
                                   <strong>
                                     {event.title ||

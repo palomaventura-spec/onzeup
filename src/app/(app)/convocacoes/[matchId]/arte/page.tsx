@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 
@@ -1175,9 +1175,17 @@ export default async function ConvocationArtworkPage({
 
             <div className="poster-onzeup-signature-v2">
               <small>Gestão esportiva</small>
-              <strong>
-                ONZE<span>UP</span>
-              </strong>
+
+              <img
+                src="/brand/11up/logos/11up-logo-transparent-light.svg"
+                alt="11UP"
+                style={{
+                  width: 118,
+                  height: "auto",
+                  display: "block",
+                  marginLeft: "auto",
+                }}
+              />
             </div>
           </div>
 

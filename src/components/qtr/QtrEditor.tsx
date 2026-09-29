@@ -101,12 +101,16 @@ function periodLabel(weekStart: string) {
   return `${format(start)} a ${format(end)}`;
 }
 
+const ENABLE_QTS_SHARING = false;
+
 export default function QtrEditor({
   initialRows,
   weekStart,
   qtrId,
   categories,
   initialCategory,
+  eventColors,
+  trainingUsesCategoryColor,
   saveAction,
   canEdit,
 }: {
@@ -120,6 +124,8 @@ export default function QtrEditor({
     accentColor: string;
   }[];
   initialCategory: string;
+  eventColors: Record<EventType, string>;
+  trainingUsesCategoryColor: boolean;
   saveAction: (formData: FormData) => Promise<void>;
   canEdit: boolean;
 }) {
@@ -281,14 +287,14 @@ export default function QtrEditor({
     });
 
     if (hasSpecificCategory) {
-      query.set("category", selectedCategory);
+      query.set(
+        "category",
+        selectedCategory,
+      );
     }
 
-    window.open(
-      `/qtr-pdf?${query.toString()}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
+    window.location.href =
+      `/api/qts/pdf?${query.toString()}`;
   }
 
   function publicQtrUrl() {
@@ -565,11 +571,36 @@ export default function QtrEditor({
                               event,
                               eventIndex
                             ) => {
-                              const colors =
-                                EVENT_COLORS[
-                                  event.type
-                                ] ||
-                                EVENT_COLORS.OTHER;
+                              const categoryAccent =
+                                categories.find(
+                                  (category) =>
+                                    category.name === row.category,
+                                )?.accentColor;
+
+                              const eventBackground =
+                                event.type === "TRAINING" &&
+                                trainingUsesCategoryColor &&
+                                categoryAccent
+                                  ? categoryAccent
+                                  : eventColors[event.type] ??
+                                    eventColors.OTHER ??
+                                    EVENT_COLORS.OTHER.background;
+
+                              const eventBorder =
+                                eventBackground;
+
+                              const hex =
+                                eventBackground.replace("#", "");
+
+                              const r = parseInt(hex.slice(0, 2), 16);
+                              const g = parseInt(hex.slice(2, 4), 16);
+                              const b = parseInt(hex.slice(4, 6), 16);
+
+                              const luminance =
+                                (r * 299 + g * 587 + b * 114) /
+                                1000;
+
+                              const eventTextColor = "#101820";
 
                               return (
                                 <button
@@ -580,11 +611,11 @@ export default function QtrEditor({
                                   className={`qtr-event qtr-event-${event.type.toLowerCase()}`}
                                   style={{
                                     background:
-                                      colors.background,
+                                      eventBackground,
                                     borderColor:
-                                      colors.border,
+                                      eventBorder,
                                     color:
-                                      colors.color,
+                                      eventTextColor,
                                     cursor:
                                       canEdit
                                         ? "pointer"
@@ -675,60 +706,24 @@ export default function QtrEditor({
         </div>
 
         <div className="qtr-legend">
-          <span>
-            <i
-              style={{
-                background:
-                  EVENT_COLORS.TRAINING
-                    .background,
-              }}
-            />{" "}
-            Treino
-          </span>
-
-          <span>
-            <i
-              style={{
-                background:
-                  EVENT_COLORS.MATCH
-                    .background,
-              }}
-            />{" "}
-            Jogo
-          </span>
-
-          <span>
-            <i
-              style={{
-                background:
-                  EVENT_COLORS.FRIENDLY
-                    .background,
-              }}
-            />{" "}
-            Amistoso
-          </span>
-
-          <span>
-            <i
-              style={{
-                background:
-                  EVENT_COLORS.EVENT
-                    .background,
-              }}
-            />{" "}
-            Evento
-          </span>
-
-          <span>
-            <i
-              style={{
-                background:
-                  EVENT_COLORS.OTHER
-                    .background,
-              }}
-            />{" "}
-            Sem atividade
-          </span>
+          {(
+            [
+              "TRAINING",
+              "MATCH",
+              "FRIENDLY",
+              "EVENT",
+              "OTHER",
+            ] as EventType[]
+          ).map((type) => (
+            <span key={type}>
+              <i
+                style={{
+                  background: eventColors[type],
+                }}
+              />{" "}
+              {EVENT_LABELS[type]}
+            </span>
+          ))}
         </div>
 
         {canEdit ? (
@@ -776,7 +771,7 @@ export default function QtrEditor({
               : "Gerar PDF — todas as categorias"}
           </button>
 
-          {hasSpecificCategory ? (
+          {ENABLE_QTS_SHARING && hasSpecificCategory ? (
             <>
               <button
                 type="button"

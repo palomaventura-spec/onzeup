@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState, useTransition } from "react";
 import type { FormEvent } from "react";
@@ -184,7 +184,7 @@ export default function CallUpLineupEditor({
           <span className="page-eyebrow">
             {sport === "FUTSAL"
               ? "FUTSAL"
-              : "CAMPO"}{" "}
+              : "FUTEBOL"}{" "}
             • FORMAÇÃO {formationName}
           </span>
 
@@ -245,6 +245,8 @@ export default function CallUpLineupEditor({
                     transform:
                       "translate(-50%, -50%)",
                     zIndex: 3,
+                    width: 116,
+                    textAlign: "center",
                   }}
                 >
                   <SafeConvocationImage
@@ -264,7 +266,19 @@ export default function CallUpLineupEditor({
                     }
                   />
 
-                  <small>
+                  <small
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      marginTop: 6,
+                      fontSize: 12,
+                      lineHeight: 1.15,
+                      fontWeight: 800,
+                      textAlign: "center",
+                      whiteSpace: "normal",
+                      overflowWrap: "break-word",
+                    }}
+                  >
                     {displayName}
                   </small>
                 </div>

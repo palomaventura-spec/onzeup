@@ -45,10 +45,10 @@ function initials(name: string) {
 
 function sportLabel(sport: string) {
   return sport === "FOOTBALL"
-    ? "Campo"
+    ? "Futebol"
     : sport === "FUTSAL"
       ? "Futsal"
-      : "Campo + Futsal";
+      : "Futebol + Futsal";
 }
 
 function Icon({
@@ -566,7 +566,7 @@ export default async function StaffPage({
               <label>
                 Modalidade
                 <select name="sport" defaultValue="BOTH">
-                  <option value="BOTH">Campo + Futsal</option>
+                  <option value="BOTH">Futebol + Futsal</option>
                   <option value="FOOTBALL">Futebol de campo</option>
                   <option value="FUTSAL">Futsal</option>
                 </select>
@@ -644,9 +644,9 @@ export default async function StaffPage({
             <span>Modalidade</span>
             <select name="sport" defaultValue={sportFilter}>
               <option value="ALL">Todas</option>
-              <option value="FOOTBALL">Campo</option>
+              <option value="FOOTBALL">Futebol</option>
               <option value="FUTSAL">Futsal</option>
-              <option value="BOTH">Campo + Futsal</option>
+              <option value="BOTH">Futebol + Futsal</option>
             </select>
           </label>
 

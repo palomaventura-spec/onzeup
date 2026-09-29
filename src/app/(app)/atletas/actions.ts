@@ -183,7 +183,7 @@ export async function createAthlete(formData: FormData) {
 
   if (entryType === "EVALUATION" && !requestedCategoryId) {
     return {
-      error: "Selecione uma categoria de avaliação para este atleta.",
+      error: "Nenhum grupo de avaliação válido foi encontrado.",
     };
   }
 
@@ -491,6 +491,111 @@ export async function toggleAthleteStatus(formData: FormData) {
   revalidatePath("/categorias");
 }
 
+
+export async function approveEvaluationAthlete(formData: FormData) {
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
+  const athleteId = clean(formData.get("athleteId"));
+
+  if (!athleteId) return;
+
+  await prisma.$transaction(async (tx) => {
+    const athlete = await tx.athlete.findFirst({
+      where: {
+        id: athleteId,
+        organizationId: user.organizationId,
+      },
+      select: {
+        id: true,
+        categoryId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            sport: true,
+            evaluationTargets: {
+              where: {
+                targetCategory: {
+                  organizationId: user.organizationId,
+                  type: "STANDARD",
+                  active: true,
+                },
+              },
+              select: {
+                targetCategory: {
+                  select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    sport: true,
+                  },
+                },
+              },
+              take: 2,
+            },
+          },
+        },
+      },
+    });
+
+    if (
+      !athlete ||
+      !athlete.category ||
+      athlete.category.type !== "EVALUATION"
+    ) {
+      return;
+    }
+
+    const targets = athlete.category.evaluationTargets;
+
+    if (targets.length !== 1) {
+      return;
+    }
+
+    const targetCategory = targets[0].targetCategory;
+
+    await tx.athlete.update({
+      where: {
+        id: athlete.id,
+      },
+      data: {
+        categoryId: targetCategory.id,
+        evaluationTargetCategoryId: null,
+      },
+    });
+
+    await tx.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        actorUserId: user.id,
+        action: AthleteDataAuditAction.APPROVED,
+        entityType: "ATHLETE_CATEGORY",
+        entityId: athlete.id,
+        metadataJson: JSON.stringify({
+          event: "EVALUATION_APPROVED",
+          fromCategory: {
+            id: athlete.category.id,
+            name: athlete.category.name,
+            type: athlete.category.type,
+          },
+          toCategory: {
+            id: targetCategory.id,
+            name: targetCategory.name,
+            type: targetCategory.type,
+          },
+        }),
+      },
+    });
+  });
+
+  revalidatePath("/atletas");
+  revalidatePath(`/atletas/${athleteId}`);
+  revalidatePath("/categorias");
+
+  redirect(`/atletas/${athleteId}`);
+}
 
 export async function rejectEvaluationAthlete(formData: FormData) {
   const user = await requireClubPermission("ATHLETES_EDIT");

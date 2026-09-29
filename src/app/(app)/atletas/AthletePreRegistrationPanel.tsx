@@ -27,7 +27,7 @@ type Props = {
 };
 
 function sportLabel(sport: string | null) {
-  if (sport === "FOOTBALL") return "Campo";
+  if (sport === "FOOTBALL") return "Futebol";
   if (sport === "FUTSAL") return "Futsal";
   return "Não definida";
 }
@@ -157,7 +157,7 @@ export default function AthletePreRegistrationPanel({
             }}
           >
             <option value="ALL">Todas</option>
-            <option value="FOOTBALL">Campo</option>
+            <option value="FOOTBALL">Futebol</option>
             <option value="FUTSAL">Futsal</option>
           </select>
         </label>

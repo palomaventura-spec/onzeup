@@ -6,6 +6,7 @@ import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 import { updateCategory } from "../actions";
+import CategoryEvaluationFields from "../CategoryEvaluationFields";
 
 const WEEKDAYS = [
   "Dom",
@@ -79,6 +80,37 @@ export default async function CategoryHubPage({
   if (!category) {
     notFound();
   }
+
+  const [categoryOptions, evaluationTargetRows] =
+    await Promise.all([
+      prisma.category.findMany({
+        where: {
+          organizationId: user.organizationId,
+        },
+        orderBy: [
+          { sport: "asc" },
+          { birthYear: "desc" },
+          { name: "asc" },
+        ],
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          sport: true,
+          active: true,
+          accentColor: true,
+        },
+      }),
+
+      prisma.categoryEvaluationTarget.findMany({
+        where: {
+          evaluationCategoryId: category.id,
+        },
+        select: {
+          targetCategoryId: true,
+        },
+      }),
+    ]);
 
   const isEvaluation = category.type === "EVALUATION";
 
@@ -357,34 +389,14 @@ export default async function CategoryHubPage({
               required
             />
           </label>
-
-          <label>
-            Tipo da categoria
-            <select
-              name="type"
-              defaultValue={category.type}
-            >
-              <option value="STANDARD">
-                Categoria do elenco
-              </option>
-              <option value="EVALUATION">
-                Avaliação
-              </option>
-            </select>
-          </label>
-
-          <label>
-            Modalidade
-            <select
-              name="sport"
-              defaultValue={category.sport}
-              required
-            >
-              <option value="BOTH" disabled>Definir modalidade</option>
-              <option value="FOOTBALL">Futebol de Campo</option>
-              <option value="FUTSAL">Futsal</option>
-            </select>
-          </label>
+          <CategoryEvaluationFields
+            categories={categoryOptions}
+            defaultType={category.type}
+            defaultSport={category.sport}
+            defaultTargetIds={evaluationTargetRows.map(
+              (item) => item.targetCategoryId,
+            )}
+          />
 
           <label>
             Ano de referência

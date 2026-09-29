@@ -218,7 +218,7 @@ function formatDateTime(date: Date) {
 }
 
 function sportLabel(sport: SportType) {
-  return sport === SportType.FUTSAL ? "Futsal" : "Campo";
+  return sport === SportType.FUTSAL ? "Futsal" : "Futebol";
 }
 
 function contextLabel(context: GpsContext) {

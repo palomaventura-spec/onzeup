@@ -84,7 +84,7 @@ function scheduledDateTime(
 function sportLabel(sport: string) {
   return sport === "FUTSAL"
     ? "Futsal"
-    : "Campo";
+    : "Futebol";
 }
 
 function sessionStatusLabel(

@@ -9,7 +9,11 @@ import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
 
-import { rejectEvaluationAthlete, updateAthlete } from "../actions";
+import {
+  approveEvaluationAthlete,
+  rejectEvaluationAthlete,
+  updateAthlete,
+} from "../actions";
 
 type CategoryAuditMetadata = {
   event?: string;
@@ -159,6 +163,15 @@ export default async function EditAthletePage({
       category.type === "EVALUATION",
   );
 
+  const latestCategoryEvent =
+    parseCategoryAuditMetadata(
+      categoryHistory[0]?.metadataJson ?? null,
+    )?.event;
+
+  const isRejectedEvaluation =
+    latestCategoryEvent === "EVALUATION_REJECTED" &&
+    !athlete.categoryId;
+
   const isEvaluation =
     athlete.category?.type === "EVALUATION";
 
@@ -211,7 +224,9 @@ export default async function EditAthletePage({
           >
             {isEvaluation
               ? "ATLETA EM AVALIAÇÃO"
-              : "PERFIL DO ATLETA"}
+              : isRejectedEvaluation
+                ? "AVALIAÇÃO ENCERRADA"
+                : "PERFIL DO ATLETA"}
           </span>
 
           <h1>
@@ -230,9 +245,11 @@ export default async function EditAthletePage({
 
         <span
           className={
-            athlete.active
-              ? "athlete-status active"
-              : "athlete-status"
+            isRejectedEvaluation
+              ? "athlete-status"
+              : athlete.active
+                ? "athlete-status active"
+                : "athlete-status"
           }
           style={
             isEvaluation
@@ -240,14 +257,21 @@ export default async function EditAthletePage({
                   background: accentColor,
                   color: "#10200a",
                 }
-              : undefined
+              : isRejectedEvaluation
+                ? {
+                    background: "#fee2e2",
+                    color: "#b91c1c",
+                  }
+                : undefined
           }
         >
           {isEvaluation
             ? "Em avaliação"
-            : athlete.active
-              ? "Ativo"
-              : "Inativo"}
+            : isRejectedEvaluation
+              ? "Não aprovado"
+              : athlete.active
+                ? "Ativo"
+                : "Inativo"}
         </span>
       </section>
 
@@ -322,11 +346,26 @@ export default async function EditAthletePage({
           <h2>Atleta ainda não integrado ao elenco</h2>
 
           <p className="muted">
-            Se for aprovado, basta trocar a categoria
-            atual por uma categoria do elenco no formulário
-            abaixo. Não é necessário criar outro cadastro.
+            Ao aprovar, o atleta será transferido automaticamente para a categoria oficial vinculada a esta avaliação, mantendo todo o histórico.
           </p>
 
+          <form
+            action={approveEvaluationAthlete}
+            style={{ marginTop: 16 }}
+          >
+            <input
+              type="hidden"
+              name="athleteId"
+              value={athlete.id}
+            />
+
+            <button
+              type="submit"
+              className="btn"
+            >
+              Aprovar atleta
+            </button>
+          </form>
           <details style={{ marginTop: 16 }}>
             <summary style={{ cursor: "pointer", fontWeight: 800 }}>
               Registrar como não aprovado
@@ -355,7 +394,7 @@ export default async function EditAthletePage({
 
               <button
                 type="submit"
-                className="btn-danger"
+                className="btn-secondary" style={{ borderColor: "#dc2626", color: "#b91c1c", background: "#fff" }}
               >
                 Confirmar não aprovação
               </button>
@@ -581,7 +620,7 @@ export default async function EditAthletePage({
               }}
             >
               O mesmo atleta pode ter inscrição no futsal,
-              no futebol de campo e registro CBF.
+              no futebol e registro CBF.
             </p>
 
             <label>
@@ -606,7 +645,7 @@ export default async function EditAthletePage({
             </label>
 
             <label>
-              Campo · Federação
+              Futebol · Federação
               <input
                 name="footballFederationName"
                 defaultValue={
@@ -617,7 +656,7 @@ export default async function EditAthletePage({
             </label>
 
             <label>
-              Campo · Nº de inscrição
+              Futebol · Nº de inscrição
               <input
                 name="footballFederationNumber"
                 defaultValue={
@@ -627,7 +666,7 @@ export default async function EditAthletePage({
             </label>
 
             <label style={{ gridColumn: "1 / -1" }}>
-              Campo · Nº de registro CBF
+              Futebol · Nº de registro CBF
               <input
                 name="cbfRegistrationNumber"
                 defaultValue={
@@ -765,7 +804,9 @@ export default async function EditAthletePage({
               <strong>
                 {isEvaluation
                   ? "Em avaliação"
-                  : "Elenco"}
+                  : isRejectedEvaluation
+                    ? "Não aprovado"
+                    : "Elenco"}
               </strong>
             </div>
 
@@ -820,7 +861,7 @@ export default async function EditAthletePage({
 
             <div>
               <span className="help">
-                Campo · Federação
+                Futebol · Federação
               </span>
               <strong>
                 {footballFederation
@@ -831,7 +872,7 @@ export default async function EditAthletePage({
 
             <div>
               <span className="help">
-                Campo · CBF
+                Futebol · CBF
               </span>
               <strong>
                 {cbfRegistration?.registrationNumber || "—"}

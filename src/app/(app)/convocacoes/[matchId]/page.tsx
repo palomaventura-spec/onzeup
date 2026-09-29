@@ -476,6 +476,95 @@ export default async function MatchCallUpsPage({
         },
       ];
 
+  const activeFormationName =
+    match.formationTemplate?.name ||
+    match.formation ||
+    (isFutsal ? "1-2-1" : "3-3-2");
+
+  const normalizedFormationName =
+    activeFormationName
+      .replace(/[–—×xX]/g, "-")
+      .replace(/\s+/g, "");
+
+  function resolvedFormationLabel(
+    slot: {
+      code: string;
+      label: string;
+      slotType: string;
+    },
+  ) {
+    if (slot.slotType === "GOALKEEPER") {
+      return "Goleiro";
+    }
+
+    // Mantém nomes personalizados já existentes.
+    if (!slot.label.startsWith("Linha ")) {
+      return slot.label;
+    }
+
+    const parts =
+      /^OUT_(\d+)_(\d+)$/.exec(slot.code);
+
+    if (!parts) {
+      return slot.label;
+    }
+
+    const line = Number(parts[1]);
+    const position = Number(parts[2]);
+
+    // FUTSAL 1-2-1
+    if (
+      isFutsal &&
+      normalizedFormationName === "1-2-1"
+    ) {
+      if (line === 1) {
+        return "Fixo";
+      }
+
+      if (line === 2) {
+        return position === 1
+          ? "Ala esquerdo"
+          : position === 2
+            ? "Ala direito"
+            : slot.label;
+      }
+
+      if (line === 3) {
+        return "Pivô";
+      }
+    }
+
+    // CAMPO 3-3-2
+    if (
+      !isFutsal &&
+      normalizedFormationName === "3-3-2"
+    ) {
+      if (line === 1) {
+        return [
+          "Defensor esquerdo",
+          "Defensor central",
+          "Defensor direito",
+        ][position - 1] ?? slot.label;
+      }
+
+      if (line === 2) {
+        return [
+          "Meia esquerdo",
+          "Meia central",
+          "Meia direito",
+        ][position - 1] ?? slot.label;
+      }
+
+      if (line === 3) {
+        return [
+          "Atacante esquerdo",
+          "Atacante direito",
+        ][position - 1] ?? slot.label;
+      }
+    }
+
+    return slot.label;
+  }
   const formationSlots =
     match.formationTemplate
       ?.slots.length
@@ -483,8 +572,7 @@ export default async function MatchCallUpsPage({
           .slots.map(
             (slot) => ({
               code: slot.code,
-              label:
-                slot.label,
+              label: resolvedFormationLabel(slot),
               slotType:
                 slot.slotType,
               x: slot.x,
@@ -529,12 +617,7 @@ export default async function MatchCallUpsPage({
         configuredReserves
       : match.callUpLimit;
 
-  const formationName =
-    match.formationTemplate?.name ||
-    match.formation ||
-    (isFutsal
-      ? "1-2-1"
-      : "3-3-2");
+  const formationName = activeFormationName;
 
   const requiredSlots =
     formationSlots.map(
@@ -719,7 +802,7 @@ export default async function MatchCallUpsPage({
             11UP CLUB · CONVOCAÇÃO ·{" "}
             {isFutsal
               ? "FUTSAL"
-              : "CAMPO"}
+              : "FUTEBOL"}
           </span>
 
           <h1>

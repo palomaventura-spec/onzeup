@@ -421,7 +421,7 @@ export default async function GuardianPortal({
                             <div className="player-membership-chips">
                               {link.athlete.memberships.map(membership => (
                                 <span key={membership.id}>
-                                  {membership.sport === "FOOTBALL" ? "Campo" : membership.sport === "FUTSAL" ? "Futsal" : "Campo + Futsal"}
+                                  {membership.sport === "FOOTBALL" ? "Futebol" : membership.sport === "FUTSAL" ? "Futsal" : "Futebol + Futsal"}
                                   {" • "}
                                   {membership.category?.name || membership.teamLabel || "Equipe"}
                                   {membership.season ? ` • ${membership.season}` : ""}
