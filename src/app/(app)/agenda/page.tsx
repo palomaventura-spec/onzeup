@@ -446,7 +446,7 @@ export default async function AgendaPage({
                 Novo jogo
               </Link>
               <Link
-                className="agenda-v4-secondary-button"
+                className="agenda-v4-secondary-button agenda-v4-repeat-button"
                 href="/agenda/repetir"
               >
                 <span aria-hidden="true">↻</span>
@@ -809,12 +809,12 @@ export default async function AgendaPage({
         }
 
         .agenda-v4-hero {
-          min-height: 194px;
+          min-height: 150px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 32px;
-          padding: 30px 34px;
+          gap: 20px;
+          padding: 22px 28px;
           border: 1px solid rgba(255,255,255,.08);
           border-radius: 26px;
           color: white;
@@ -844,6 +844,11 @@ export default async function AgendaPage({
         .agenda-v4-hero-actions {
           position: relative;
           z-index: 1;
+          min-width: 0;
+        }
+
+        .agenda-v4-hero-copy {
+          flex: 1 1 auto;
         }
 
         .agenda-v4-eyebrow {
@@ -863,15 +868,15 @@ export default async function AgendaPage({
         .agenda-v4-title-line {
           display: flex;
           align-items: center;
-          gap: 18px;
+          gap: 12px;
         }
 
         .agenda-v4-title-icon {
-          width: 54px;
-          height: 54px;
+          width: 46px;
+          height: 46px;
           display: grid;
           place-items: center;
-          flex: 0 0 54px;
+          flex: 0 0 46px;
           border: 1px solid rgba(153,230,0,.28);
           border-radius: 16px;
           color: var(--agenda-lime);
@@ -881,39 +886,44 @@ export default async function AgendaPage({
         .agenda-v4-title-line h1 {
           color: #ffffff !important;
           margin: 0;
-          font-size: clamp(34px, 4vw, 58px);
-          line-height: .98;
+          font-size: clamp(30px, 3.1vw, 44px);
+          line-height: 1.05;
           letter-spacing: -.045em;
         }
 
         .agenda-v4-title-line p {
-          margin: 12px 0 0;
+          margin: 7px 0 0;
           color: rgba(255,255,255,.78);
-          font-size: 16px;
+          font-size: 13px;
+          line-height: 1.4;
         }
 
         .agenda-v4-hero-actions {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 12px;
-          border: 1px solid rgba(255,255,255,.08);
-          border-radius: 18px;
-          background: rgba(4, 24, 35, .66);
-          backdrop-filter: blur(8px);
+          justify-content: flex-end;
+          flex-wrap: nowrap;
+          gap: 8px;
+          width: auto;
+          flex: 0 1 auto;
+          min-width: 0;
         }
 
         .agenda-v4-primary-button,
         .agenda-v4-secondary-button {
-          min-height: 46px;
+          min-height: 38px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          padding: 0 18px;
-          border-radius: 12px;
-          font-size: 14px;
-          font-weight: 900;
+          gap: 6px;
+          min-width: 0;
+          padding: 7px 10px;
+          border-radius: 10px;
+          font-size: 12px;
+          font-weight: 850;
+          line-height: 1.25;
+          white-space: nowrap;
+          text-align: center;
           text-decoration: none;
           transition: transform .18s ease, box-shadow .18s ease;
         }
@@ -932,6 +942,17 @@ export default async function AgendaPage({
         .agenda-v4-secondary-button {
           color: var(--agenda-ink);
           background: white;
+        }
+
+        .agenda-v4-hero .agenda-v4-repeat-button {
+          min-height: 38px;
+          border: 1px solid rgba(255,255,255,.28);
+          color: #ffffff;
+          background: rgba(255,255,255,.08);
+        }
+
+        .agenda-v4-hero .agenda-v4-repeat-button:hover {
+          background: rgba(255,255,255,.16);
         }
 
         .agenda-v4-primary-button svg,
@@ -1533,7 +1554,10 @@ export default async function AgendaPage({
           }
 
           .agenda-v4-hero-actions {
+            justify-content: flex-start;
+            flex-wrap: wrap;
             width: 100%;
+            flex: 0 1 auto;
           }
 
           .agenda-v4-kpis,
@@ -1559,7 +1583,7 @@ export default async function AgendaPage({
 
           .agenda-v4-hero {
             min-height: auto;
-            padding: 24px 20px;
+            padding: 20px 18px;
             border-radius: 20px;
           }
 
@@ -1574,8 +1598,8 @@ export default async function AgendaPage({
           }
 
           .agenda-v4-title-line h1 {
-          color: #ffffff !important;
-            font-size: 34px;
+            color: #ffffff !important;
+            font-size: 30px;
           }
 
           .agenda-v4-title-line p {
@@ -1583,14 +1607,15 @@ export default async function AgendaPage({
           }
 
           .agenda-v4-hero-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            padding: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 0;
           }
 
           .agenda-v4-primary-button,
           .agenda-v4-secondary-button {
-            padding: 0 10px;
+            padding: 7px 10px;
             font-size: 12px;
           }
 
@@ -1679,8 +1704,12 @@ export default async function AgendaPage({
             display: none;
           }
 
-          .agenda-v4-hero-actions {
-            grid-template-columns: 1fr;
+          .agenda-v4-hero-actions > a:not(.agenda-v4-repeat-button) {
+            flex: 1 1 calc(50% - 4px);
+          }
+
+          .agenda-v4-hero .agenda-v4-repeat-button {
+            flex: 1 1 100%;
           }
 
           .agenda-v4-upcoming-heading {
