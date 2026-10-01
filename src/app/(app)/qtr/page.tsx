@@ -26,6 +26,34 @@ type QtsIcon =
   | "left"
   | "right";
 
+type CategoryRow = {
+  id: string;
+  name: string;
+  birthYear: number | null;
+  accentColor: string;
+};
+
+type QtrEvent = {
+  type: "TRAINING" | "MATCH" | "FRIENDLY" | "EVENT" | "OTHER";
+  title: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  notes?: string;
+};
+
+type QtrRow = {
+  category: string;
+  birthYear?: number | null;
+  mon: QtrEvent[];
+  tue: QtrEvent[];
+  wed: QtrEvent[];
+  thu: QtrEvent[];
+  fri: QtrEvent[];
+  sat: QtrEvent[];
+  sun: QtrEvent[];
+};
+
 function Icon({
   name,
   size = 18,
@@ -120,6 +148,18 @@ function mondayOf(date: Date) {
   return d;
 }
 
+function safeRequestedDate(value?: string) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date();
+  }
+
+  const parsed = new Date(`${value}T12:00:00`);
+
+  return Number.isNaN(parsed.getTime())
+    ? new Date()
+    : parsed;
+}
+
 function isoDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -133,21 +173,11 @@ function formatDate(date: Date) {
 }
 
 function qtrHref(week: string, category: string) {
-  return `/qtr?week=${encodeURIComponent(
-    week,
-  )}&category=${encodeURIComponent(category)}`;
+  return `/qtr?week=${encodeURIComponent(week)}&category=${encodeURIComponent(category)}`;
 }
 
-function countEvents(rows: any[], type?: string) {
-  const dayKeys = [
-    "mon",
-    "tue",
-    "wed",
-    "thu",
-    "fri",
-    "sat",
-    "sun",
-  ];
+function countEvents(rows: QtrRow[], type?: string) {
+  const dayKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
   return rows.reduce((total, row) => {
     const events = dayKeys.flatMap((day) =>
@@ -156,13 +186,82 @@ function countEvents(rows: any[], type?: string) {
 
     if (!type) return total + events.length;
 
-    return (
-      total +
-      events.filter(
-        (event) => event?.type === type,
-      ).length
-    );
+    return total + events.filter((event) => event?.type === type).length;
   }, 0);
+}
+
+function emptyRows(categories: CategoryRow[]): QtrRow[] {
+  return categories.map((category) => ({
+    category: category.name,
+    birthYear: category.birthYear,
+    mon: [],
+    tue: [],
+    wed: [],
+    thu: [],
+    fri: [],
+    sat: [],
+    sun: [],
+  }));
+}
+
+function parseRows(
+  dataJson: string | null | undefined,
+  categories: CategoryRow[],
+): QtrRow[] {
+  if (!dataJson) return emptyRows(categories);
+
+  try {
+    const parsed = JSON.parse(dataJson);
+    return Array.isArray(parsed) ? parsed : emptyRows(categories);
+  } catch {
+    return emptyRows(categories);
+  }
+}
+
+function isTransientDatabaseError(error: unknown) {
+  const message =
+    error instanceof Error
+      ? `${error.name} ${error.message}`
+      : String(error ?? "");
+
+  return /P1001|P1002|P2024|timeout|timed out|connection terminated|can't reach database|server has closed the connection/i.test(message);
+}
+
+async function wait(milliseconds: number) {
+  await new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function loadQtrData(organizationId: string, weekStart: Date) {
+  const load = () =>
+    Promise.all([
+      prisma.qtr.findUnique({
+        where: {
+          organizationId_weekStart: { organizationId, weekStart },
+        },
+      }),
+      prisma.category.findMany({
+        where: { organizationId },
+        select: {
+          id: true,
+          name: true,
+          birthYear: true,
+          accentColor: true,
+        },
+        orderBy: [{ birthYear: "desc" }, { name: "asc" }],
+      }),
+      prisma.qtrSettings.findUnique({
+        where: { organizationId },
+      }),
+    ]);
+
+  try {
+    return await load();
+  } catch (error) {
+    if (!isTransientDatabaseError(error)) throw error;
+
+    await wait(350);
+    return load();
+  }
 }
 
 export default async function QtrPage({
@@ -174,10 +273,7 @@ export default async function QtrPage({
   const canEdit = hasClubPermission(user, "QTR_EDIT");
   const params = await searchParams;
 
-  const requested = params.week
-    ? new Date(`${params.week}T12:00:00`)
-    : new Date();
-
+  const requested = safeRequestedDate(params.week);
   const weekStart = mondayOf(requested);
 
   const weekEnd = new Date(weekStart);
@@ -189,93 +285,25 @@ export default async function QtrPage({
   const next = new Date(weekStart);
   next.setDate(next.getDate() + 7);
 
-  const [qtr, categories] = await Promise.all([
-    prisma.qtr.findUnique({
-      where: {
-        organizationId_weekStart: {
-          organizationId: user.organizationId,
-          weekStart,
-        },
-      },
-    }),
-
-    prisma.category.findMany({
-      where: {
-        organizationId: user.organizationId,
-      },
-      select: {
-        id: true,
-        name: true,
-        birthYear: true,
-        accentColor: true,
-      },
-      orderBy: [
-        {
-          birthYear: "desc",
-        },
-        {
-          name: "asc",
-        },
-      ],
-    }),
-  ]);
-  const qtrSettings =
-    await prisma.qtrSettings.findUnique({
-      where: {
-        organizationId: user.organizationId,
-      },
-    });
-
+  const [qtr, categories, qtrSettings] = await loadQtrData(
+    user.organizationId,
+    weekStart,
+  );
 
   const validCategory =
     params.category &&
     (params.category === "__all__" ||
-      categories.some(
-        (category) =>
-          category.name === params.category,
-      ))
+      categories.some((category) => category.name === params.category))
       ? params.category
       : null;
 
   const selectedCategory =
-    validCategory ||
-    categories[0]?.name ||
-    "__all__";
+    validCategory || categories[0]?.name || "__all__";
 
-  if (!qtr && categories.length > 0 && canEdit) {
-    const formData = new FormData();
-
-    formData.set(
-      "weekStart",
-      isoDate(weekStart),
-    );
-
-    formData.set(
-      "category",
-      selectedCategory,
-    );
-
-    await generateQtr(formData);
-  }
-
-  let initialRows: any[] = [];
-
-  if (qtr?.dataJson) {
-    try {
-      const parsed = JSON.parse(qtr.dataJson);
-      initialRows = Array.isArray(parsed)
-        ? parsed
-        : [];
-    } catch {
-      initialRows = [];
-    }
-  }
+  const initialRows = parseRows(qtr?.dataJson, categories);
 
   const activityCount = countEvents(initialRows);
-  const trainingCount = countEvents(
-    initialRows,
-    "TRAINING",
-  );
+  const trainingCount = countEvents(initialRows, "TRAINING");
   const matchCount =
     countEvents(initialRows, "MATCH") +
     countEvents(initialRows, "FRIENDLY");
@@ -287,54 +315,29 @@ export default async function QtrPage({
           <span className="qts-v11-eyebrow">
             11UP CLUB · PLANEJAMENTO SEMANAL
           </span>
-
           <h1>QTS</h1>
-
-          <p>
-            Organização semanal de treinos, jogos e atividades por categoria.
-          </p>
+          <p>Organização semanal de treinos, jogos e atividades por categoria.</p>
         </div>
 
         <div className="qts-v11-hero-aside">
           <small>SEMANA</small>
-          <strong>
-            {formatDate(weekStart)}
-          </strong>
-          <span>
-            até {formatDate(weekEnd)}
-          </span>
+          <strong>{formatDate(weekStart)}</strong>
+          <span>até {formatDate(weekEnd)}</span>
         </div>
       </section>
 
       <section className="qts-v11-week-nav">
         <div>
-          <span className="qts-v11-eyebrow">
-            NAVEGAÇÃO
-          </span>
-          <strong>
-            {formatDate(weekStart)} a{" "}
-            {formatDate(weekEnd)}
-          </strong>
+          <span className="qts-v11-eyebrow">NAVEGAÇÃO</span>
+          <strong>{formatDate(weekStart)} a {formatDate(weekEnd)}</strong>
         </div>
 
         <div>
-          <Link
-            href={qtrHref(
-              isoDate(previous),
-              selectedCategory,
-            )}
-          >
+          <Link href={qtrHref(isoDate(previous), selectedCategory)}>
             <Icon name="left" size={16} />
             Semana anterior
           </Link>
-
-          <Link
-            className="primary"
-            href={qtrHref(
-              isoDate(next),
-              selectedCategory,
-            )}
-          >
+          <Link className="primary" href={qtrHref(isoDate(next), selectedCategory)}>
             Próxima semana
             <Icon name="right" size={16} />
           </Link>
@@ -343,188 +346,109 @@ export default async function QtrPage({
 
       <section className="qts-v11-kpis">
         <article>
-          <span className="qts-v11-kpi-icon">
-            <Icon name="category" />
-          </span>
-
-          <div>
-            <small>CATEGORIAS</small>
-            <strong>
-              {categories.length}
-            </strong>
-            <span>no quadro semanal</span>
-          </div>
+          <span className="qts-v11-kpi-icon"><Icon name="category" /></span>
+          <div><small>CATEGORIAS</small><strong>{categories.length}</strong><span>no quadro semanal</span></div>
         </article>
-
         <article>
-          <span className="qts-v11-kpi-icon">
-            <Icon name="calendar" />
-          </span>
-
-          <div>
-            <small>ATIVIDADES</small>
-            <strong>
-              {activityCount}
-            </strong>
-            <span>na semana</span>
-          </div>
+          <span className="qts-v11-kpi-icon"><Icon name="calendar" /></span>
+          <div><small>ATIVIDADES</small><strong>{activityCount}</strong><span>na semana</span></div>
         </article>
-
         <article>
-          <span className="qts-v11-kpi-icon">
-            <Icon name="training" />
-          </span>
-
-          <div>
-            <small>TREINOS</small>
-            <strong>
-              {trainingCount}
-            </strong>
-            <span>programados</span>
-          </div>
+          <span className="qts-v11-kpi-icon"><Icon name="training" /></span>
+          <div><small>TREINOS</small><strong>{trainingCount}</strong><span>programados</span></div>
         </article>
-
         <article>
-          <span className="qts-v11-kpi-icon">
-            <Icon name="match" />
-          </span>
-
-          <div>
-            <small>JOGOS</small>
-            <strong>
-              {matchCount}
-            </strong>
-            <span>oficiais + amistosos</span>
-          </div>
+          <span className="qts-v11-kpi-icon"><Icon name="match" /></span>
+          <div><small>JOGOS</small><strong>{matchCount}</strong><span>oficiais + amistosos</span></div>
         </article>
       </section>
 
-      {params.gerado === "1" ||
-      params.salvo === "1" ? (
-        <div
-          className="qts-v11-notice success"
-          role="status"
-        >
+      {params.gerado === "1" || params.salvo === "1" ? (
+        <div className="qts-v11-notice success" role="status">
           <strong>✓</strong>
-          <span>
-            {params.gerado === "1"
-              ? "QTS atualizado com a agenda."
-              : "Alterações salvas com sucesso."}
-          </span>
+          <span>{params.gerado === "1" ? "QTS atualizado com a agenda." : "Alterações salvas com sucesso."}</span>
         </div>
       ) : null}
 
       {params.erro ? (
-        <div
-          className="qts-v11-notice"
-          role="alert"
-        >
+        <div className="qts-v11-notice" role="alert">
           Não foi possível concluir a operação do QTS.
+        </div>
+      ) : null}
+
+      {!qtr && categories.length > 0 ? (
+        <div className="qts-v11-notice neutral" role="status">
+          <strong>QTS ainda não gerado para esta semana.</strong>
+          <span>
+            {canEdit
+              ? ' Use "Atualizar com agenda" para carregar os treinos e jogos programados.'
+              : " O Gestor ou Coordenador ainda não gerou este QTS."}
+          </span>
         </div>
       ) : null}
 
       {canEdit ? (
         <section className="qts-v11-sync">
-          <div className="qts-v11-sync-icon">
-            <Icon name="sync" size={21} />
-          </div>
-
+          <div className="qts-v11-sync-icon"><Icon name="sync" size={21} /></div>
           <div>
-            <span className="qts-v11-eyebrow">
-              SINCRONIZAÇÃO
-            </span>
-
+            <span className="qts-v11-eyebrow">SINCRONIZAÇÃO</span>
             <h2>Atualizar com a agenda</h2>
-
             <p>
               Recria esta semana com os treinos e jogos cadastrados.
               Ajustes manuais feitos somente no QTS podem ser substituídos.
             </p>
           </div>
-
           <form action={generateQtr}>
-            <input
-              type="hidden"
-              name="weekStart"
-              value={isoDate(weekStart)}
-            />
-
-            <input
-              type="hidden"
-              name="category"
-              value={selectedCategory}
-            />
-
+            <input type="hidden" name="weekStart" value={isoDate(weekStart)} />
+            <input type="hidden" name="category" value={selectedCategory} />
             <QtrGenerateButton />
           </form>
         </section>
       ) : (
         <div className="qts-v11-notice neutral">
           <strong>Somente visualização.</strong>
-          <span>
-            O QTS é atualizado pelo Gestor ou Coordenador.
-          </span>
+          <span>O QTS é atualizado pelo Gestor ou Coordenador.</span>
         </div>
       )}
 
-      {!qtr && !canEdit ? (
+      {!qtr && !canEdit && categories.length === 0 ? (
         <div className="qts-v11-empty">
-          <strong>
-            QTS ainda não disponível
-          </strong>
-
-          <p>
-            O Gestor ou Coordenador ainda não gerou o QTS desta semana.
-          </p>
+          <strong>QTS ainda não disponível</strong>
+          <p>Ainda não existem categorias disponíveis para montar o QTS.</p>
         </div>
       ) : null}
 
       <section className="qts-v11-editor">
         {canEdit ? (
-        <QtrColorSettings
-          settings={{
-            trainingColor:
-              qtrSettings?.trainingColor ??
-              "#2B9D47",
-            matchColor:
-              qtrSettings?.matchColor ??
-              "#D4AA18",
-            friendlyColor:
-              qtrSettings?.friendlyColor ??
-              "#3377A5",
-            eventColor:
-              qtrSettings?.eventColor ??
-              "#76539A",
-            otherColor:
-              qtrSettings?.otherColor ??
-              "#29333D",
-            trainingUsesCategoryColor:
-              qtrSettings?.trainingUsesCategoryColor ??
-              false,
-          }}
-          saveAction={saveQtrSettings}
-        />
-      ) : null}
-      <QtrEditor
-          key={`${isoDate(weekStart)}-${
-            qtr?.updatedAt?.getTime() ?? 0
-          }-${selectedCategory}`}
+          <QtrColorSettings
+            settings={{
+              trainingColor: qtrSettings?.trainingColor ?? "#2B9D47",
+              matchColor: qtrSettings?.matchColor ?? "#D4AA18",
+              friendlyColor: qtrSettings?.friendlyColor ?? "#3377A5",
+              eventColor: qtrSettings?.eventColor ?? "#76539A",
+              otherColor: qtrSettings?.otherColor ?? "#29333D",
+              trainingUsesCategoryColor: qtrSettings?.trainingUsesCategoryColor ?? false,
+            }}
+            saveAction={saveQtrSettings}
+          />
+        ) : null}
+
+        <QtrEditor
+          key={`${isoDate(weekStart)}-${qtr?.updatedAt?.getTime() ?? 0}-${selectedCategory}`}
           weekStart={isoDate(weekStart)}
           qtrId={qtr?.id ?? null}
           initialRows={initialRows}
           categories={categories}
           initialCategory={selectedCategory}
-        eventColors={{
-          TRAINING: qtrSettings?.trainingColor ?? "#2B9D47",
-          MATCH: qtrSettings?.matchColor ?? "#D4AA18",
-          FRIENDLY: qtrSettings?.friendlyColor ?? "#3377A5",
-          EVENT: qtrSettings?.eventColor ?? "#76539A",
-          OTHER: qtrSettings?.otherColor ?? "#29333D",
-        }}
-          trainingUsesCategoryColor={
-          qtrSettings?.trainingUsesCategoryColor ?? false
-        }
-        saveAction={saveQtr}
+          eventColors={{
+            TRAINING: qtrSettings?.trainingColor ?? "#2B9D47",
+            MATCH: qtrSettings?.matchColor ?? "#D4AA18",
+            FRIENDLY: qtrSettings?.friendlyColor ?? "#3377A5",
+            EVENT: qtrSettings?.eventColor ?? "#76539A",
+            OTHER: qtrSettings?.otherColor ?? "#29333D",
+          }}
+          trainingUsesCategoryColor={qtrSettings?.trainingUsesCategoryColor ?? false}
+          saveAction={saveQtr}
           canEdit={canEdit}
         />
       </section>
