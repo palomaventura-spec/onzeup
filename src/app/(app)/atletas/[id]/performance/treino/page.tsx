@@ -71,6 +71,111 @@ function TrainingIcon({
   );
 }
 
+
+const COUNTED_STATUSES = new Set([
+  "PRESENT",
+  "LATE",
+  "PARTIAL",
+  "ABSENT",
+  "JUSTIFIED_ABSENCE",
+  "INJURED",
+  "EXCUSED",
+]);
+
+const PRESENT_STATUSES = new Set([
+  "PRESENT",
+  "LATE",
+  "PARTIAL",
+]);
+
+function attendanceLabel(status: string) {
+  switch (status) {
+    case "PRESENT":
+      return "Presente";
+    case "LATE":
+      return "Atraso";
+    case "PARTIAL":
+      return "Parcial";
+    case "ABSENT":
+      return "Falta";
+    case "JUSTIFIED_ABSENCE":
+      return "Falta justificada";
+    case "INJURED":
+      return "Lesionado";
+    case "EXCUSED":
+      return "Dispensado";
+    default:
+      return status;
+  }
+}
+
+function sessionDurationMinutes(session: {
+  actualStartedAt: Date | null;
+  actualEndedAt: Date | null;
+  startsAt: Date;
+  endsAt: Date | null;
+}) {
+  const start = session.actualStartedAt ?? session.startsAt;
+  const end = session.actualEndedAt ?? session.endsAt;
+
+  if (!end || end <= start) return null;
+
+  return Math.max(
+    0,
+    Math.round((end.getTime() - start.getTime()) / 60_000),
+  );
+}
+
+function participationPercent(
+  minutesPresent: number | null,
+  durationMinutes: number | null,
+) {
+  if (
+    minutesPresent === null ||
+    durationMinutes === null ||
+    durationMinutes <= 0
+  ) {
+    return null;
+  }
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round((minutesPresent / durationMinutes) * 1000) / 10,
+    ),
+  );
+}
+
+function formatPercent(value: number | null) {
+  if (value === null) return "—";
+
+  return `${value.toLocaleString("pt-BR", {
+    maximumFractionDigits: 1,
+  })}%`;
+}
+
+function historyTopicLabel(topic: string) {
+  switch (topic) {
+    case "TECHNICAL":
+      return "Técnico";
+    case "TACTICAL":
+      return "Tático";
+    case "PHYSICAL":
+      return "Físico";
+    case "COGNITIVE":
+      return "Cognitivo";
+    case "EMOTIONAL":
+      return "Emocional";
+    case "BEHAVIORAL":
+      return "Comportamental";
+    case "OCCURRENCE":
+      return "Ocorrência";
+    default:
+      return "Geral";
+  }
+}
+
 export default async function AthleteTrainingPerformancePage({
   params,
 }: {
@@ -87,54 +192,121 @@ export default async function AthleteTrainingPerformancePage({
     include: {
       category: true,
       trainingAttendances: {
+        where: {
+          session: {
+            status: "COMPLETED",
+          },
+        },
         orderBy: {
           session: {
             startsAt: "desc",
           },
         },
-        take: 30,
+        take: 50,
         include: {
-          session: true,
+          session: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
         },
+      },
+      historyEntries: {
+        where: {
+          source: "TRAINING",
+        },
+        orderBy: {
+          occurredAt: "desc",
+        },
+        take: 30,
       },
     },
   });
 
   if (!athlete) notFound();
 
-  const countedStatuses = new Set([
-    "PRESENT",
-    "LATE",
-    "PARTIAL",
-    "ABSENT",
-    "JUSTIFIED_ABSENCE",
-    "INJURED",
-    "EXCUSED",
-  ]);
-
-  const presentStatuses = new Set([
-    "PRESENT",
-    "LATE",
-    "PARTIAL",
-  ]);
-
-  const countedAttendances =
+  const completedAttendances =
     athlete.trainingAttendances.filter((item) =>
-      countedStatuses.has(item.status),
+      COUNTED_STATUSES.has(item.status),
     );
 
   const presentAttendances =
-    countedAttendances.filter((item) =>
-      presentStatuses.has(item.status),
+    completedAttendances.filter((item) =>
+      PRESENT_STATUSES.has(item.status),
     );
 
-  const attendanceRate = countedAttendances.length
+  const absentAttendances =
+    completedAttendances.filter(
+      (item) => item.status === "ABSENT",
+    );
+
+  const justifiedAbsences =
+    completedAttendances.filter(
+      (item) => item.status === "JUSTIFIED_ABSENCE",
+    );
+
+  const otherZeroAttendances =
+    completedAttendances.filter((item) =>
+      ["INJURED", "EXCUSED"].includes(item.status),
+    );
+
+  /*
+   * Frequência oficial:
+   * falta justificada continua no denominador e vale zero,
+   * conforme a regra definida para rendimento.
+   */
+  const attendanceRate = completedAttendances.length
     ? Math.round(
         (presentAttendances.length /
-          countedAttendances.length) *
-          100,
-      )
+          completedAttendances.length) *
+          1000,
+      ) / 10
     : null;
+
+  /*
+   * Aproveitamento real de minutos:
+   * soma os minutos efetivamente cumpridos e divide pela
+   * soma da duração dos treinos FINALIZADOS.
+   */
+  const minuteTotals = completedAttendances.reduce(
+    (total, attendance) => {
+      const duration = sessionDurationMinutes(
+        attendance.session,
+      );
+
+      return {
+        available:
+          total.available + (duration ?? 0),
+        present:
+          total.present +
+          (attendance.minutesPresent ?? 0),
+      };
+    },
+    {
+      available: 0,
+      present: 0,
+    },
+  );
+
+  const minuteUtilization =
+    minuteTotals.available > 0
+      ? Math.max(
+          0,
+          Math.min(
+            100,
+            Math.round(
+              (minuteTotals.present /
+                minuteTotals.available) *
+                1000,
+            ) / 10,
+          ),
+        )
+      : null;
 
   return (
     <main className="athlete-performance-page athlete-performance-v4 athlete-training-v5">
@@ -273,9 +445,9 @@ export default async function AthleteTrainingPerformancePage({
           <div>
             <small>PRESENÇA</small>
             <strong>
-              {attendanceRate === null ? "—" : `${attendanceRate}%`}
+              {formatPercent(attendanceRate)}
             </strong>
-            <span>percentual de participação</span>
+            <span>treinos finalizados · faltas justificadas contam 0</span>
           </div>
         </article>
 
@@ -285,8 +457,8 @@ export default async function AthleteTrainingPerformancePage({
           </span>
           <div>
             <small>TREINOS REGISTRADOS</small>
-            <strong>{countedAttendances.length || "—"}</strong>
-            <span>últimos registros disponíveis</span>
+            <strong>{completedAttendances.length || "—"}</strong>
+            <span>sessões concluídas contabilizadas</span>
           </div>
         </article>
 
@@ -295,9 +467,9 @@ export default async function AthleteTrainingPerformancePage({
             <TrainingIcon name="present" />
           </span>
           <div>
-            <small>PRESENÇAS</small>
-            <strong>{presentAttendances.length || "—"}</strong>
-            <span>presenças contabilizadas</span>
+            <small>APROVEITAMENTO</small>
+            <strong>{formatPercent(minuteUtilization)}</strong>
+            <span>{minuteTotals.present} de {minuteTotals.available || "—"} min realizados</span>
           </div>
         </article>
 
@@ -308,11 +480,14 @@ export default async function AthleteTrainingPerformancePage({
           <div>
             <small>FALTAS</small>
             <strong>
-              {countedAttendances.length
-                ? countedAttendances.length - presentAttendances.length
+              {completedAttendances.length
+                ? absentAttendances.length
                 : "—"}
             </strong>
-            <span>incluindo faltas justificadas</span>
+            <span>
+              {justifiedAbsences.length} justificada(s) ·{" "}
+              {otherZeroAttendances.length} dispensa/lesão
+            </span>
           </div>
         </article>
       </section>
@@ -321,18 +496,23 @@ export default async function AthleteTrainingPerformancePage({
         <div className="section-title-row">
           <div>
             <span className="page-eyebrow">
-              HISTÓRICO
+              HISTÓRICO OFICIAL
             </span>
 
-            <h2>Últimos treinos</h2>
+            <h2>Treinos finalizados</h2>
+
+            <p className="muted">
+              Somente sessões concluídas entram nos KPIs,
+              minutagem e relatórios oficiais.
+            </p>
           </div>
 
           <span className="badge">
-            {athlete.trainingAttendances.length} registro(s)
+            {completedAttendances.length} registro(s)
           </span>
         </div>
 
-        {athlete.trainingAttendances.length ? (
+        {completedAttendances.length ? (
           <div
             className="table-wrap"
             style={{ marginTop: 18 }}
@@ -341,43 +521,167 @@ export default async function AthleteTrainingPerformancePage({
               <thead>
                 <tr>
                   <th>Data</th>
-                  <th>Status</th>
+                  <th>Categoria</th>
+                  <th>Presença</th>
+                  <th>Minutos</th>
+                  <th>Aproveitamento</th>
                   <th>Treino</th>
                 </tr>
               </thead>
 
               <tbody>
-                {athlete.trainingAttendances.map(
-                  (attendance) => (
-                    <tr key={attendance.id}>
+                {completedAttendances.map(
+                  (attendance) => {
+                    const duration =
+                      sessionDurationMinutes(
+                        attendance.session,
+                      );
+
+                    const percent =
+                      participationPercent(
+                        attendance.minutesPresent,
+                        duration,
+                      );
+
+                    return (
+                      <tr key={attendance.id}>
+                        <td>
+                          {attendance.session.startsAt.toLocaleDateString(
+                            "pt-BR",
+                          )}
+                        </td>
+
+                        <td>
+                          {attendance.session.category.name}
+                        </td>
+
+                        <td>
+                          <span className="badge">
+                            {attendanceLabel(
+                              attendance.status,
+                            )}
+                          </span>
+
+                          {attendance.status ===
+                            "JUSTIFIED_ABSENCE" &&
+                          attendance.justification ? (
+                            <small
+                              style={{
+                                display: "block",
+                                marginTop: 5,
+                              }}
+                            >
+                              {attendance.justification}
+                            </small>
+                          ) : null}
+                        </td>
+
+                        <td>
+                          {attendance.minutesPresent ??
+                            0}{" "}
+                          / {duration ?? "—"} min
+                        </td>
+
+                        <td>
+                          <strong>
+                            {formatPercent(percent)}
+                          </strong>
+                        </td>
+
+                        <td>
+                          <span className="badge">
+                            Finalizado
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  },
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="muted">
+            Nenhum treino finalizado registrado para este atleta.
+          </p>
+        )}
+      </section>
+
+      <section className="card">
+        <div className="section-title-row">
+          <div>
+            <span className="page-eyebrow">
+              REGISTROS DA COMISSÃO
+            </span>
+
+            <h2>Histórico individual do treino</h2>
+
+            <p className="muted">
+              Observações lançadas manualmente pelo botão Registro
+              continuam preservadas separadamente dos cálculos de presença.
+            </p>
+          </div>
+
+          <span className="badge">
+            {athlete.historyEntries.length} registro(s)
+          </span>
+        </div>
+
+        {athlete.historyEntries.length ? (
+          <div
+            className="table-wrap"
+            style={{ marginTop: 18 }}
+          >
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Tipo</th>
+                  <th>Origem</th>
+                  <th>Observação</th>
+                  <th>Acompanhamento</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {athlete.historyEntries.map(
+                  (entry) => (
+                    <tr key={entry.id}>
                       <td>
-                        {attendance.session.startsAt.toLocaleDateString(
+                        {entry.occurredAt.toLocaleDateString(
                           "pt-BR",
                         )}
                       </td>
 
                       <td>
-                        <span className="badge">
-                          {attendance.status === "PRESENT"
-                            ? "Presente"
-                            : attendance.status === "LATE"
-                              ? "Atraso"
-                              : attendance.status === "PARTIAL"
-                                ? "Parcial"
-                                : attendance.status === "ABSENT"
-                                  ? "Falta"
-                                  : attendance.status === "JUSTIFIED_ABSENCE"
-                                    ? "Falta justificada"
-                                    : attendance.status === "INJURED"
-                                      ? "Lesionado"
-                                      : attendance.status === "EXCUSED"
-                                        ? "Dispensado"
-                                        : attendance.status}
-                        </span>
+                        {historyTopicLabel(entry.topic)}
                       </td>
 
                       <td>
-                        Treino
+                        {entry.sourceLabelSnapshot ||
+                          entry.title ||
+                          "Treino"}
+                      </td>
+
+                      <td
+                        style={{
+                          minWidth: 260,
+                          whiteSpace: "normal",
+                        }}
+                      >
+                        {entry.content}
+                      </td>
+
+                      <td>
+                        {entry.followUpRequired ? (
+                          <span className="badge">
+                            {entry.followUpResolvedAt
+                              ? "Resolvido"
+                              : "Acompanhar"}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                     </tr>
                   ),
@@ -387,7 +691,7 @@ export default async function AthleteTrainingPerformancePage({
           </div>
         ) : (
           <p className="muted">
-            Nenhum treino registrado para este atleta.
+            Nenhuma observação manual registrada nos treinos deste atleta.
           </p>
         )}
       </section>

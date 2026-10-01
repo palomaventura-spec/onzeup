@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import TrainingAttendanceForm from "../TrainingAttendanceForm";
 import { getClubTrainingCategoryAccess } from "@/lib/club-access";
 import { requireOrganizationUser } from "@/lib/auth";
+import { findEligibleTrainingAthletes } from "@/lib/training-athletes";
 import { prisma } from "@/lib/prisma";
 
 type AttendanceUiStatus =
@@ -142,46 +143,11 @@ export default async function EditTrainingPage({
 
   const [athletes, session] = await Promise.all([
     canViewAttendance
-      ? prisma.athlete.findMany({
-          where: {
-            organizationId:
-              user.organizationId,
-            active: true,
-            OR: [
-              {
-                categoryId:
-                  training.categoryId,
-              },
-              {
-                memberships: {
-                  some: {
-                    organizationId:
-                      user.organizationId,
-                    categoryId:
-                      training.categoryId,
-                    status: "ACTIVE",
-                    sport: {
-                      in: [
-                        "BOTH",
-                        training.sport,
-                      ],
-                    },
-                  },
-                },
-              },
-            ],
-          },
-          select: {
-            id: true,
-            name: true,
-            nickname: true,
-            jerseyNumber: true,
-            photoUrl: true,
-          },
-          orderBy: {
-            name: "asc",
-          },
-        })
+      ? findEligibleTrainingAthletes(
+          user.organizationId,
+          training.categoryId,
+          training.sport,
+        )
       : Promise.resolve([]),
 
     canViewAttendance
@@ -208,6 +174,34 @@ export default async function EditTrainingPage({
     ]) ?? [],
   );
 
+  const evaluationByAthlete = new Map<string, { id: string }>();
+
+  if (session) {
+    const finalizedEvaluations =
+      await prisma.athleteEvaluation.findMany({
+        where: {
+          organizationId: user.organizationId,
+          trainingSessionId: session.id,
+          status: "FINALIZED",
+        },
+        select: {
+          id: true,
+          athleteId: true,
+        },
+        orderBy: {
+          evaluatedAt: "desc",
+        },
+      });
+
+    for (const evaluation of finalizedEvaluations) {
+      if (!evaluationByAthlete.has(evaluation.athleteId)) {
+        evaluationByAthlete.set(
+          evaluation.athleteId,
+          { id: evaluation.id },
+        );
+      }
+    }
+  }
   const attendanceRows =
     athletes.map((athlete) => {
       const attendance =
@@ -230,6 +224,8 @@ export default async function EditTrainingPage({
           ),
         justification:
           attendance?.justification ?? "",
+        evaluationId:
+          evaluationByAthlete.get(athlete.id)?.id ?? null,
         minutesPresent:
           attendance?.minutesPresent ??
           null,

@@ -1,16 +1,18 @@
 "use client";
+import Link from "next/link";
 
 import {
   useEffect,
   useMemo,
   useState,
+  useTransition,
   type ReactNode,
 } from "react";
 import { useFormStatus } from "react-dom";
 
 import {
   completeTrainingSession,
-  saveTrainingAttendance,
+  saveTrainingAttendanceItem,
   startTrainingSession,
 } from "./actions";
 
@@ -36,11 +38,14 @@ type AthleteRow = {
   nickname: string | null;
   jerseyNumber: number | null;
   photoUrl: string | null;
+  rosterType: "ROSTER" | "EVALUATION";
+  categoryAccentColor: string;
   status: AttendanceStatus | null;
   arrivalTime: string;
   exitTime?: string;
   justification?: string;
   minutesPresent?: number | null;
+  evaluationId: string | null;
 };
 
 type AttendanceIcon =
@@ -236,6 +241,7 @@ function statusTone(status: AttendanceStatus | null) {
   }
 }
 
+
 function percentageFor(
   minutesPresent: number | null | undefined,
   sessionDurationMinutes: number | null | undefined,
@@ -348,14 +354,22 @@ export default function TrainingAttendanceForm({
   sessionDurationMinutes?: number | null;
   canCreateHistory?: boolean;
 }) {
+
   const [rows, setRows] = useState(() =>
     makeEditableRows(athletes),
   );
-  const [isDirty, setIsDirty] = useState(false);
+  const [savingIds, setSavingIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [saveErrors, setSaveErrors] = useState<
+    Record<string, string>
+  >({});
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setRows(makeEditableRows(athletes));
-    setIsDirty(false);
+    setSavingIds(new Set());
+    setSaveErrors({});
   }, [athletes]);
 
   const counts = useMemo(
@@ -383,27 +397,32 @@ export default function TrainingAttendanceForm({
     [rows],
   );
 
-  const persistedRecordedCount = useMemo(
+  const recordedCount = useMemo(
     () =>
-      athletes.filter(
+      rows.filter(
         (athlete) => athlete.status !== null,
       ).length,
-    [athletes],
+    [rows],
   );
 
-  const persistedAttendanceComplete =
-    athletes.length > 0 &&
-    persistedRecordedCount === athletes.length;
-
-  const currentSelectionComplete =
+  const attendanceComplete =
     rows.length > 0 &&
-    rows.every((row) => row.status !== null);
+    rows.every((row) => row.status !== null) &&
+    savingIds.size === 0 &&
+    Object.keys(saveErrors).length === 0;
 
   const canOperateSession =
     canEdit &&
     sessionStatus !== "COMPLETED" &&
     sessionStatus !== "CANCELLED" &&
     sessionStatus !== "ARCHIVED";
+
+  /*
+   * Fluxo de campo/iPad:
+   * iniciar treino -> tocar presença -> autosave -> avaliar -> finalizar.
+   */
+  const canEditAttendance =
+    canEdit && sessionStatus === "IN_PROGRESS";
 
   const isHistoricalReadOnly =
     !canEdit &&
@@ -412,82 +431,182 @@ export default function TrainingAttendanceForm({
       sessionStatus === "ARCHIVED");
 
   const canFinalizePersistedAttendance =
-    persistedAttendanceComplete && !isDirty;
+    attendanceComplete && !isPending;
 
   const stateCopy = sessionStateCopy(sessionStatus);
+
+  function setSaving(id: string, saving: boolean) {
+    setSavingIds((current) => {
+      const next = new Set(current);
+      if (saving) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function autosave(
+    row: AthleteRow,
+    overrides: Partial<{
+      status: AttendanceStatus;
+      arrivalTime: string;
+      exitTime: string;
+      justification: string;
+    }> = {},
+  ) {
+    const status = overrides.status ?? row.status;
+
+    if (!status || sessionStatus !== "IN_PROGRESS") {
+      return;
+    }
+
+    const next = {
+      status,
+      arrivalTime:
+        overrides.arrivalTime ?? row.arrivalTime ?? "",
+      exitTime:
+        overrides.exitTime ?? row.exitTime ?? "",
+      justification:
+        overrides.justification ??
+        row.justification ??
+        "",
+    };
+
+    setSaving(row.id, true);
+    setSaveErrors((current) => {
+      const copy = { ...current };
+      delete copy[row.id];
+      return copy;
+    });
+
+    startTransition(async () => {
+      try {
+        const data = new FormData();
+        data.set("scheduleId", scheduleId);
+        data.set("athleteId", row.id);
+        data.set("status", next.status);
+        data.set("arrivalTime", next.arrivalTime);
+        data.set("exitTime", next.exitTime);
+        data.set("justification", next.justification);
+
+        const result =
+          await saveTrainingAttendanceItem(data);
+
+        setRows((current) =>
+          current.map((item) =>
+            item.id === row.id
+              ? {
+                  ...item,
+                  minutesPresent:
+                    result?.minutesPresent ??
+                    item.minutesPresent,
+                }
+              : item,
+          ),
+        );
+      } catch (error) {
+        setSaveErrors((current) => ({
+          ...current,
+          [row.id]:
+            error instanceof Error
+              ? error.message
+              : "Não foi possível salvar.",
+        }));
+      } finally {
+        setSaving(row.id, false);
+      }
+    });
+  }
 
   function updateStatus(
     id: string,
     status: AttendanceStatus,
   ) {
-    setIsDirty(true);
+    const row = rows.find((item) => item.id === id);
+    if (!row) return;
+
+    const nextRow = {
+      ...row,
+      status,
+      arrivalTime:
+        status === "LATE" ||
+        status === "PARTIAL"
+          ? row.arrivalTime
+          : "",
+      exitTime:
+        status === "PARTIAL"
+          ? row.exitTime ?? ""
+          : "",
+      justification:
+        status === "JUSTIFIED_ABSENCE"
+          ? row.justification ?? ""
+          : "",
+    };
 
     setRows((current) =>
-      current.map((row) =>
-        row.id === id
-          ? {
-              ...row,
-              status,
-              arrivalTime:
-                status === "LATE" ||
-                status === "PARTIAL"
-                  ? row.arrivalTime
-                  : "",
-              exitTime:
-                status === "PARTIAL"
-                  ? row.exitTime
-                  : "",
-              justification:
-                status === "JUSTIFIED_ABSENCE"
-                  ? row.justification
-                  : "",
-            }
-          : row,
+      current.map((item) =>
+        item.id === id ? nextRow : item,
       ),
     );
+
+    autosave(nextRow);
   }
 
   function markAllPresent() {
-    setIsDirty(true);
+    const nextRows = rows.map((row) => ({
+      ...row,
+      status: "PRESENT" as AttendanceStatus,
+      arrivalTime: "",
+      exitTime: "",
+      justification: "",
+    }));
 
-    setRows((current) =>
-      current.map((row) => ({
-        ...row,
-        status: "PRESENT" as AttendanceStatus,
-        arrivalTime: "",
-        exitTime: "",
-        justification: "",
-      })),
-    );
+    setRows(nextRows);
+
+    for (const row of nextRows) {
+      autosave(row);
+    }
   }
 
   function updateArrival(id: string, value: string) {
-    setIsDirty(true);
+    const row = rows.find((item) => item.id === id);
+    if (!row) return;
+
+    const nextRow = {
+      ...row,
+      arrivalTime: value,
+    };
+
     setRows((current) =>
-      current.map((row) =>
-        row.id === id
-          ? { ...row, arrivalTime: value }
-          : row,
+      current.map((item) =>
+        item.id === id ? nextRow : item,
       ),
     );
+
+    autosave(nextRow, { arrivalTime: value });
   }
 
   function updateExit(id: string, value: string) {
-    setIsDirty(true);
+    const row = rows.find((item) => item.id === id);
+    if (!row) return;
+
+    const nextRow = {
+      ...row,
+      exitTime: value,
+    };
+
     setRows((current) =>
-      current.map((row) =>
-        row.id === id
-          ? { ...row, exitTime: value }
-          : row,
+      current.map((item) =>
+        item.id === id ? nextRow : item,
       ),
     );
+
+    autosave(nextRow, { exitTime: value });
   }
 
   function updateJustification(
     id: string,
     value: string,
   ) {
-    setIsDirty(true);
     setRows((current) =>
       current.map((row) =>
         row.id === id
@@ -495,6 +614,12 @@ export default function TrainingAttendanceForm({
           : row,
       ),
     );
+  }
+
+  function saveJustification(id: string) {
+    const row = rows.find((item) => item.id === id);
+    if (!row) return;
+    autosave(row);
   }
 
   return (
@@ -576,7 +701,6 @@ export default function TrainingAttendanceForm({
               <PendingButton
                 className="attendance-v8-start"
                 pendingText="Iniciando..."
-                disabled={isDirty}
               >
                 <Icon name="play" size={17} />
                 Iniciar treino
@@ -627,22 +751,22 @@ export default function TrainingAttendanceForm({
             </form>
           ) : null}
 
-          {canOperateSession && isDirty ? (
-            <div className="attendance-v8-session-warning">
-              Salve a chamada antes de iniciar ou finalizar o
-              treino.
-            </div>
-          ) : null}
-
           {canOperateSession &&
           sessionStatus === "IN_PROGRESS" &&
-          !persistedAttendanceComplete ? (
+          !attendanceComplete ? (
             <div className="attendance-v8-session-warning">
               Finalização bloqueada até todos os atletas terem
-              a chamada salva.
+              uma presença definida e salva automaticamente.
             </div>
           ) : null}
         </section>
+      ) : null}
+
+      {canEdit && sessionStatus === "SCHEDULED" ? (
+        <div className="attendance-v8-session-warning">
+          Informe a hora real de início e clique em <strong>Iniciar treino</strong>.
+          A presença e as avaliações serão liberadas depois.
+        </div>
       ) : null}
 
       {!isHistoricalReadOnly ? (
@@ -668,7 +792,7 @@ export default function TrainingAttendanceForm({
             </span>
           </div>
 
-          {canEdit ? (
+          {canEditAttendance ? (
             <button
               type="button"
               className="attendance-v8-mark-all"
@@ -684,35 +808,44 @@ export default function TrainingAttendanceForm({
       {!isHistoricalReadOnly ? (
         <div
           className={`attendance-v8-save-state ${
-            isDirty
+            savingIds.size > 0
               ? "dirty"
-              : persistedAttendanceComplete
-                ? "saved"
-                : "pending"
+              : Object.keys(saveErrors).length > 0
+                ? "dirty"
+                : attendanceComplete
+                  ? "saved"
+                  : "pending"
           }`}
         >
-          {isDirty ? (
+          {savingIds.size > 0 ? (
             <>
-              <strong>Alterações não salvas.</strong>
+              <strong>Salvando automaticamente…</strong>
               <span>
-                Salve a chamada para atualizar os cálculos do
-                treino.
+                Pode continuar a chamada; não é necessário clicar
+                em salvar.
               </span>
             </>
-          ) : persistedAttendanceComplete ? (
+          ) : Object.keys(saveErrors).length > 0 ? (
             <>
-              <strong>Chamada salva.</strong>
+              <strong>Falha ao salvar uma presença.</strong>
               <span>
-                {persistedRecordedCount} de {athletes.length} atletas
-                registrados.
+                Toque novamente no status do atleta indicado.
+              </span>
+            </>
+          ) : attendanceComplete ? (
+            <>
+              <strong>Presenças salvas ✓</strong>
+              <span>
+                {recordedCount} de {rows.length} atletas registrados.
               </span>
             </>
           ) : (
             <>
-              <strong>Chamada pendente.</strong>
+              <strong>
+                {counts.unrecorded} atleta(s) sem presença definida
+              </strong>
               <span>
-                Nenhum atleta é considerado presente
-                automaticamente.
+                Cada toque é salvo automaticamente.
               </span>
             </>
           )}
@@ -751,17 +884,32 @@ export default function TrainingAttendanceForm({
                     <img
                       src={athlete.photoUrl}
                       alt=""
-                    />
+                    style={{
+  border: `3px solid ${athlete.categoryAccentColor}`,
+  boxSizing: "border-box",
+}} />
                   ) : (
-                    <span>
-                      {(athlete.nickname || athlete.name)
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </span>
+                    <span
+  style={{
+    border: `3px solid ${athlete.categoryAccentColor}`,
+    boxSizing: "border-box",
+    borderRadius: "50%",
+  }}
+>
+  {(athlete.nickname || athlete.name)
+    .slice(0, 2)
+    .toUpperCase()}
+</span>
                   )}
 
                   <div>
-                    <strong>
+                    <strong
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 7,
+                      }}
+                    >
                       {athlete.nickname || athlete.name}
                     </strong>
                     <small>
@@ -777,6 +925,49 @@ export default function TrainingAttendanceForm({
                       }
                       canCreate={canCreateHistory}
                     />
+                    {athlete.evaluationId ? (
+  <div
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+      marginLeft: 8,
+      flexWrap: "wrap",
+    }}
+  >
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 30,
+        padding: "0 10px",
+        borderRadius: 8,
+        border: "1px solid #bbf7d0",
+        background: "#f0fdf4",
+        color: "#15803d",
+        fontSize: 11,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+    >
+      ✓ Avaliação concluída
+    </span>
+
+    <Link
+      href={`/atletas/${athlete.id}/performance/avaliacoes/${athlete.evaluationId}`}
+      style={{
+        fontSize: 11,
+        fontWeight: 800,
+        color: "#15803d",
+        textDecoration: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Ver avaliação
+    </Link>
+  </div>
+) : null}
                   </div>
                 </div>
 
@@ -846,18 +1037,81 @@ export default function TrainingAttendanceForm({
           })}
         </section>
       ) : (
-        <form
-          action={saveTrainingAttendance}
-          className="attendance-v8-form"
-        >
-          <input
-            type="hidden"
-            name="scheduleId"
-            value={scheduleId}
-          />
+        <div className="attendance-v8-form">
 
           <div className="attendance-v8-list">
-            {rows.map((athlete) => {
+            {[
+  {
+    key: "ROSTER",
+    title: "ELENCO",
+    athletes: rows
+      .filter(
+        (athlete) =>
+          athlete.rosterType === "ROSTER",
+      )
+      .sort((a, b) =>
+        (a.nickname || a.name).localeCompare(
+          b.nickname || b.name,
+          "pt-BR",
+        ),
+      ),
+  },
+  {
+    key: "EVALUATION",
+    title: "AVALIAÇÃO",
+    athletes: rows
+      .filter(
+        (athlete) =>
+          athlete.rosterType === "EVALUATION",
+      )
+      .sort((a, b) =>
+        (a.nickname || a.name).localeCompare(
+          b.nickname || b.name,
+          "pt-BR",
+        ),
+      ),
+  },
+]
+  .filter(
+    (group) =>
+      group.athletes.length > 0,
+  )
+  .map((group) => (
+    <div key={group.key}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "16px 4px 10px",
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: "0.12em",
+          color: "#667585",
+        }}
+      >
+        <span>{group.title}</span>
+
+        <span
+          style={{
+            minWidth: 22,
+            height: 22,
+            padding: "0 7px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 999,
+            background: "#f1f5f9",
+            color: "#475569",
+            fontSize: 11,
+            letterSpacing: 0,
+          }}
+        >
+          {group.athletes.length}
+        </span>
+      </div>
+
+      {group.athletes.map((athlete) => {
               const effectiveMinutes =
                 effectiveMinutesForDisplay(
                   athlete.status,
@@ -880,17 +1134,32 @@ export default function TrainingAttendanceForm({
                       <img
                         src={athlete.photoUrl}
                         alt=""
-                      />
+                      style={{
+  border: `3px solid ${athlete.categoryAccentColor}`,
+  boxSizing: "border-box",
+}} />
                     ) : (
-                      <span>
-                        {(athlete.nickname || athlete.name)
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </span>
+                      <span
+  style={{
+    border: `3px solid ${athlete.categoryAccentColor}`,
+    boxSizing: "border-box",
+    borderRadius: "50%",
+  }}
+>
+  {(athlete.nickname || athlete.name)
+    .slice(0, 2)
+    .toUpperCase()}
+</span>
                     )}
 
                     <div>
-                      <strong>
+                      <strong
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 7,
+                        }}
+                      >
                         {athlete.nickname || athlete.name}
                       </strong>
                       <small>
@@ -906,6 +1175,126 @@ export default function TrainingAttendanceForm({
                       }
                       canCreate={canCreateHistory}
                     />
+                    {athlete.evaluationId ? (
+  <div
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+      marginLeft: 8,
+      flexWrap: "wrap",
+    }}
+  >
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 30,
+        padding: "0 10px",
+        borderRadius: 8,
+        border: "1px solid #bbf7d0",
+        background: "#f0fdf4",
+        color: "#15803d",
+        fontSize: 11,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+    >
+      ✓ Avaliação concluída
+    </span>
+
+    <Link
+      href={`/atletas/${athlete.id}/performance/avaliacoes/${athlete.evaluationId}`}
+      style={{
+        fontSize: 11,
+        fontWeight: 800,
+        color: "#15803d",
+        textDecoration: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Ver avaliação
+    </Link>
+  </div>
+) : (
+  sessionStatus !== "IN_PROGRESS" ? (
+    <span
+      style={{
+        marginLeft: 8,
+        fontSize: 10,
+        fontWeight: 800,
+        color: "#7b8790",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Inicie o treino
+    </span>
+  ) : athlete.status === null ? (
+    <span
+      style={{
+        marginLeft: 8,
+        fontSize: 10,
+        fontWeight: 800,
+        color: "#b45309",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Defina a presença
+    </span>
+  ) : savingIds.has(athlete.id) ? (
+    <span
+      style={{
+        marginLeft: 8,
+        fontSize: 10,
+        fontWeight: 800,
+        color: "#64748b",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Salvando…
+    </span>
+  ) : athlete.status === "ABSENT" ||
+      athlete.status === "JUSTIFIED_ABSENCE" ? (
+    <span
+      style={{
+        marginLeft: 8,
+        fontSize: 10,
+        fontWeight: 800,
+        color: "#b91c1c",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Atleta ausente
+    </span>
+  ) : (
+    <Link
+      href={`/atletas/${athlete.id}/performance/avaliacoes/nova?trainingScheduleId=${encodeURIComponent(scheduleId)}&returnTo=${encodeURIComponent(`/treinos/${scheduleId}`)}`}
+      title={`Avaliar ${athlete.nickname || athlete.name}`}
+      aria-label={`Avaliar ${athlete.nickname || athlete.name}`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 30,
+        padding: "0 10px",
+        marginLeft: 8,
+        borderRadius: 8,
+        border: "1px solid #99e600",
+        background: "#99e600",
+        color: "#10200a",
+        fontSize: 11,
+        fontWeight: 800,
+        lineHeight: 1,
+        textDecoration: "none",
+        whiteSpace: "nowrap",
+        flex: "0 0 auto",
+      }}
+    >
+      Avaliar
+    </Link>
+  )
+)}
                     </div>
                   </div>
 
@@ -940,7 +1329,7 @@ export default function TrainingAttendanceForm({
                             athlete.status === status
                           }
                           required
-                          disabled={!canEdit}
+                          disabled={!canEditAttendance}
                           onChange={() =>
                             updateStatus(
                               athlete.id,
@@ -959,6 +1348,39 @@ export default function TrainingAttendanceForm({
                       </label>
                     ))}
                   </div>
+
+                  {savingIds.has(athlete.id) ? (
+                    <small
+                      style={{
+                        color: "#64748b",
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Salvando…
+                    </small>
+                  ) : saveErrors[athlete.id] ? (
+                    <small
+                      style={{
+                        color: "#b91c1c",
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
+                      }}
+                      title={saveErrors[athlete.id]}
+                    >
+                      Erro ao salvar
+                    </small>
+                  ) : athlete.status ? (
+                    <small
+                      style={{
+                        color: "#15803d",
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Salvo ✓
+                    </small>
+                  ) : null}
 
                   <div className="attendance-v8-result">
                     <span>MIN / %</span>
@@ -992,7 +1414,7 @@ export default function TrainingAttendanceForm({
                           name={`arrival_${athlete.id}`}
                           value={athlete.arrivalTime}
                           required
-                          disabled={!canEdit}
+                          disabled={!canEditAttendance}
                           onChange={(event) =>
                             updateArrival(
                               athlete.id,
@@ -1012,7 +1434,7 @@ export default function TrainingAttendanceForm({
                           type="time"
                           name={`arrival_${athlete.id}`}
                           value={athlete.arrivalTime}
-                          disabled={!canEdit}
+                          disabled={!canEditAttendance}
                           onChange={(event) =>
                             updateArrival(
                               athlete.id,
@@ -1028,7 +1450,7 @@ export default function TrainingAttendanceForm({
                           type="time"
                           name={`exit_${athlete.id}`}
                           value={athlete.exitTime}
-                          disabled={!canEdit}
+                          disabled={!canEditAttendance}
                           onChange={(event) =>
                             updateExit(
                               athlete.id,
@@ -1054,12 +1476,15 @@ export default function TrainingAttendanceForm({
                           name={`justification_${athlete.id}`}
                           value={athlete.justification}
                           placeholder="Motivo informado"
-                          disabled={!canEdit}
+                          disabled={!canEditAttendance}
                           onChange={(event) =>
                             updateJustification(
                               athlete.id,
                               event.target.value,
                             )
+                          }
+                          onBlur={() =>
+                            saveJustification(athlete.id)
                           }
                         />
                       </label>
@@ -1067,34 +1492,26 @@ export default function TrainingAttendanceForm({
                   ) : null}
                 </article>
               );
-            })}
+                  })}
+                </div>
+              ))}
           </div>
 
-          {canEdit ? (
+          {canEditAttendance ? (
             <div className="attendance-v8-savebar">
               <div>
                 <strong>
-                  {currentSelectionComplete
-                    ? "Chamada pronta para salvar"
-                    : `${counts.unrecorded} atleta(s) pendente(s)`}
+                  {counts.unrecorded === 0
+                    ? "Chamada completa"
+                    : `${counts.unrecorded} atleta(s) sem presença`}
                 </strong>
                 <span>
-                  Faltas, inclusive justificadas, contam 0 minuto
-                  no aproveitamento.
+                  Autosave ativo · cada alteração é salva na hora.
                 </span>
               </div>
-
-              <PendingButton
-                className="attendance-v8-save"
-                pendingText="Salvando chamada..."
-                disabled={!currentSelectionComplete}
-              >
-                <Icon name="save" size={17} />
-                Salvar chamada
-              </PendingButton>
             </div>
           ) : null}
-        </form>
+        </div>
       )}
     </div>
   );

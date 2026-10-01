@@ -94,6 +94,7 @@ model Organization {
   linkedCompetitionTeams      CompetitionTeam[]               @relation("LinkedCompetitionOrganization")
   competitionCallUpRules      CompetitionCallUpRule[]
   formationTemplates          FormationTemplate[]
+  AdminSupportSession         AdminSupportSession[]
 }
 
 model Competition {
@@ -399,6 +400,7 @@ model User {
   payments                      Payment[]
   sessions                      Session[]
   organization                  Organization?                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  AdminSupportSession           AdminSupportSession[]
 
   @@index([organizationId])
 }
@@ -859,6 +861,7 @@ model TrainingSession {
   responsibleStaffMember   StaffMember?           @relation("TrainingSessionResponsible", fields: [responsibleStaffMemberId], references: [id], onDelete: SetNull)
   attendances              TrainingAttendance[]
   gpsRecords               AthleteGpsRecord[]
+  evaluations              AthleteEvaluation[]
   auditLogs                TrainingAuditLog[]
 
   @@index([organizationId, startsAt])
@@ -948,10 +951,13 @@ model AthleteEvaluation {
   category          Category?                @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   evaluator         User?                    @relation("AthleteEvaluationAuthor", fields: [evaluatorUserId], references: [id], onDelete: SetNull)
   template          PerformanceTemplate?     @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  trainingSessionId String?
+  trainingSession   TrainingSession?         @relation(fields: [trainingSessionId], references: [id], onDelete: SetNull)
   scores            AthleteEvaluationScore[]
   reports           PerformanceReport[]
 
   @@index([organizationId, athleteId, evaluatedAt])
+  @@index([trainingSessionId])
   @@index([categoryId, evaluatedAt])
   @@index([evaluatorUserId])
   @@index([templateId])
@@ -2222,4 +2228,23 @@ enum AthleteHistoryVisibility {
   TECHNICAL_STAFF
   MANAGEMENT
   SHAREABLE
+}
+
+model AdminSupportSession {
+  id             String    @id @default(cuid())
+  adminUserId    String
+  organizationId String
+  mode           String    @default("SUPPORT")
+  reason         String?
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  adminUser    User         @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId, startedAt])
+  @@index([organizationId, startedAt])
+  @@index([endedAt])
 }

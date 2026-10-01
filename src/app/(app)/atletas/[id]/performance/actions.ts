@@ -2,7 +2,11 @@
 
 import { createHash, randomBytes } from "node:crypto";
 
-import { Prisma } from "@prisma/client";
+import {
+  Prisma,
+  TrainingAttendanceStatus,
+  TrainingSessionStatus,
+} from "@prisma/client";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -41,6 +45,28 @@ function optionalInt(value: FormDataEntryValue | null) {
   if (number === null) return null;
 
   return Number.isInteger(number) ? number : null;
+}
+
+
+function trainingStartAt(date: Date, value: string) {
+  if (!/^\d{2}:\d{2}$/.test(value)) return null;
+
+  const [hours, minutes] = value.split(":").map(Number);
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  const result = new Date(date);
+  result.setHours(hours, minutes, 0, 0);
+
+  return Number.isNaN(result.getTime()) ? null : result;
 }
 
 function activityDate(value: FormDataEntryValue | null) {
@@ -90,8 +116,8 @@ export async function createPerformanceEvaluation(formData: FormData) {
   const intent = clean(formData.get("intent"));
   const status = intent === "FINALIZED" ? "FINALIZED" : "DRAFT";
 
-  const periodStart = formDate(formData.get("periodStart"));
-  const periodEnd = formDate(formData.get("periodEnd"));
+  let periodStart = formDate(formData.get("periodStart"));
+  let periodEnd = formDate(formData.get("periodEnd"));
 
   if (!athleteId || !templateId || !periodStart || !periodEnd) {
     redirect(
@@ -130,6 +156,93 @@ export async function createPerformanceEvaluation(formData: FormData) {
     redirect(`/atletas/${athleteId}/performance/avaliacoes/nova?erro=acesso`);
   }
 
+  const trainingScheduleId = nullable(formData.get("trainingScheduleId"));
+  const returnToRaw = nullable(formData.get("returnTo"));
+  const returnTo =
+    returnToRaw && returnToRaw.startsWith("/")
+      ? returnToRaw
+      : `/atletas/${athleteId}/performance`;
+
+  let trainingSessionId: string | null = null;
+  let trainingDate: Date | null = null;
+
+  if (trainingScheduleId) {
+    const trainingSchedule = await prisma.trainingSchedule.findFirst({
+      where: {
+        id: trainingScheduleId,
+        organizationId: user.organizationId,
+      },
+      select: {
+        id: true,
+        date: true,
+        startTime: true,
+        categoryId: true,
+        location: true,
+        notes: true,
+      },
+    });
+
+    if (!trainingSchedule?.date) {
+      redirect(
+        `/atletas/${athleteId}/performance/avaliacoes/nova?erro=treino`,
+      );
+    }
+
+    trainingDate = trainingSchedule.date;
+
+    const startsAt = trainingStartAt(
+      trainingSchedule.date,
+      trainingSchedule.startTime,
+    );
+
+    if (!startsAt) {
+      redirect(
+        `/atletas/${athleteId}/performance/avaliacoes/nova?erro=treino`,
+      );
+    }
+
+    const session = await prisma.trainingSession.findFirst({
+      where: {
+        organizationId: user.organizationId,
+        scheduleId: trainingSchedule.id,
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        status: true,
+        actualStartedAt: true,
+        actualEndedAt: true,
+      },
+    });
+
+    /*
+     * A avaliação aberta a partir de um treino nunca deve criar uma sessão
+     * paralela/silenciosa. A sessão precisa ter sido iniciada pelo fluxo de
+     * Treinos. Treinos já concluídos continuam aceitos para histórico.
+     */
+    if (
+      !session ||
+      (!session.actualStartedAt &&
+        session.status !== TrainingSessionStatus.COMPLETED)
+    ) {
+      redirect(
+        `${returnTo}?erro=treino-nao-iniciado&athleteId=${encodeURIComponent(
+          athleteId,
+        )}`,
+      );
+    }
+
+    trainingSessionId = session.id;
+    periodStart = trainingDate;
+    periodEnd = trainingDate;
+  }
+
+  if (!periodStart || !periodEnd) {
+    redirect(
+      `/atletas/${athleteId}/performance/avaliacoes/nova?erro=dados`,
+    );
+  }
+
   const scores = template.criteria.flatMap((criterion) => {
     const rawScore = Number(clean(formData.get(`score_${criterion.id}`)));
     if (!Number.isInteger(rawScore) || rawScore < 1 || rawScore > 4) return [];
@@ -156,39 +269,188 @@ export async function createPerformanceEvaluation(formData: FormData) {
     redirect(`/atletas/${athleteId}/performance/avaliacoes/nova?erro=notas`);
   }
 
-  const evaluation = await prisma.athleteEvaluation.create({
-    data: {
-      organizationId: user.organizationId,
-      athleteId: athlete.id,
-      categoryId: athlete.categoryId,
-      evaluatorUserId: user.id,
-      templateId: template.id,
-      title: nullable(formData.get("title")),
-      periodStart,
-      periodEnd,
-      season: nullable(formData.get("season")),
-      sport: template.sport,
-      athleteRole: template.athleteRole,
-      positionSnapshot: athlete.position,
-      status,
-      strengths: nullable(formData.get("strengths")),
-      developmentPoints: nullable(formData.get("developmentPoints")),
-      nextGoals: nullable(formData.get("nextGoals")),
-      internalNotes: nullable(formData.get("internalNotes")),
-      summary: nullable(formData.get("summary")),
-      scores: { create: scores },
-    },
-    select: { id: true },
+  if (trainingSessionId && status === "FINALIZED") {
+    const existingEvaluation =
+      await prisma.athleteEvaluation.findFirst({
+        where: {
+          organizationId: user.organizationId,
+          athleteId: athlete.id,
+          trainingSessionId,
+          status: "FINALIZED",
+        },
+        select: {
+          id: true,
+        },
+        orderBy: {
+          evaluatedAt: "desc",
+        },
+      });
+
+    if (existingEvaluation) {
+      revalidatePath(`/treinos/${trainingScheduleId}`);
+
+      redirect(
+        `${returnTo}?status=avaliacao-ja-existente&athleteId=${encodeURIComponent(
+          athleteId,
+        )}&evaluationId=${encodeURIComponent(
+          existingEvaluation.id,
+        )}`,
+      );
+    }
+  }
+  /*
+   * Se a avaliação pertence a um treino e está sendo FINALIZADA, presença
+   * e avaliação precisam permanecer coerentes.
+   *
+   * - PRESente / atraso / parcial já registrados: preserva.
+   * - Ausência registrada: não sobrescreve silenciosamente.
+   * - Sem chamada ou PENDING: cria/atualiza como PRESENTE.
+   *
+   * Isso também protege chamadas antigas/URLs abertas diretamente.
+   */
+  if (trainingSessionId && status === "FINALIZED") {
+    const attendance = await prisma.trainingAttendance.findUnique({
+      where: {
+        sessionId_athleteId: {
+          sessionId: trainingSessionId,
+          athleteId: athlete.id,
+        },
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    if (
+      attendance?.status === TrainingAttendanceStatus.ABSENT ||
+      attendance?.status === TrainingAttendanceStatus.JUSTIFIED_ABSENCE ||
+      attendance?.status === TrainingAttendanceStatus.EXCUSED ||
+      attendance?.status === TrainingAttendanceStatus.INJURED
+    ) {
+      redirect(
+        `${returnTo}?erro=avaliacao-conflito-presenca&athleteId=${encodeURIComponent(
+          athleteId,
+        )}`,
+      );
+    }
+  }
+
+  const evaluation = await prisma.$transaction(async (tx) => {
+    const createdEvaluation = await tx.athleteEvaluation.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        categoryId: athlete.categoryId,
+        evaluatorUserId: user.id,
+        templateId: template.id,
+        title: nullable(formData.get("title")),
+        periodStart,
+        periodEnd,
+        season: nullable(formData.get("season")),
+        sport: template.sport,
+        athleteRole: template.athleteRole,
+        positionSnapshot: athlete.position,
+        trainingSessionId,
+        status,
+        strengths: nullable(formData.get("strengths")),
+        developmentPoints: nullable(formData.get("developmentPoints")),
+        nextGoals: nullable(formData.get("nextGoals")),
+        internalNotes: nullable(formData.get("internalNotes")),
+        summary: nullable(formData.get("summary")),
+        scores: { create: scores },
+      },
+      select: { id: true },
+    });
+
+    if (trainingSessionId && status === "FINALIZED") {
+      const session = await tx.trainingSession.findUnique({
+        where: { id: trainingSessionId },
+        select: {
+          actualStartedAt: true,
+          actualEndedAt: true,
+        },
+      });
+
+      const minutesPresent =
+        session?.actualStartedAt &&
+        session.actualEndedAt &&
+        session.actualEndedAt > session.actualStartedAt
+          ? Math.round(
+              (session.actualEndedAt.getTime() -
+                session.actualStartedAt.getTime()) /
+                60_000,
+            )
+          : null;
+
+      const existingAttendance =
+        await tx.trainingAttendance.findUnique({
+          where: {
+            sessionId_athleteId: {
+              sessionId: trainingSessionId,
+              athleteId: athlete.id,
+            },
+          },
+          select: {
+            id: true,
+            status: true,
+          },
+        });
+
+      if (!existingAttendance) {
+        await tx.trainingAttendance.create({
+          data: {
+            organizationId: user.organizationId,
+            sessionId: trainingSessionId,
+            athleteId: athlete.id,
+            status: TrainingAttendanceStatus.PRESENT,
+            minutesPresent,
+            recordedByUserId: user.id,
+          },
+        });
+      } else if (
+        existingAttendance.status ===
+        TrainingAttendanceStatus.PENDING
+      ) {
+        await tx.trainingAttendance.update({
+          where: {
+            id: existingAttendance.id,
+          },
+          data: {
+            status: TrainingAttendanceStatus.PRESENT,
+            minutesPresent,
+            recordedByUserId: user.id,
+          },
+        });
+      }
+      /*
+       * PRESENT, LATE e PARTIAL já registrados pela chamada
+       * são preservados. A avaliação nunca transforma atraso/parcial
+       * em presença integral.
+       */
+    }
+
+    return createdEvaluation;
   });
 
   revalidatePath("/performance");
   revalidatePath(`/atletas/${athleteId}/performance`);
   revalidatePath(`/atletas/${athleteId}/performance/avaliacoes/${evaluation.id}`);
 
+  if (trainingScheduleId) {
+    revalidatePath(`/treinos/${trainingScheduleId}`);
+    revalidatePath("/treinos");
+  }
+
   redirect(
-    `/atletas/${athleteId}/performance?status=${
-      status === "FINALIZED" ? "avaliacao-finalizada" : "rascunho-salvo"
-    }`
+    trainingScheduleId
+      ? `${returnTo}?status=${
+          status === "FINALIZED"
+            ? "avaliacao-finalizada"
+            : "rascunho-salvo"
+        }&athleteId=${encodeURIComponent(athleteId)}&evaluationId=${encodeURIComponent(evaluation.id)}`
+      : `/atletas/${athleteId}/performance?status=${
+          status === "FINALIZED" ? "avaliacao-finalizada" : "rascunho-salvo"
+        }`,
   );
 }
 
@@ -350,7 +612,9 @@ function reportDate(value: FormDataEntryValue | null, endOfDay = false) {
   const raw = clean(value);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
 
-  const date = new Date(`${raw}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}`);
+  const date = new Date(
+    `${raw}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}`,
+  );
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -384,9 +648,10 @@ function reportFileName(
     .replace(/^-|-$/g, "")
     .toLowerCase();
 
-  const suffix = start && end
-    ? `-${start.toISOString().slice(0, 10)}-${end.toISOString().slice(0, 10)}`
-    : "";
+  const suffix =
+    start && end
+      ? `-${start.toISOString().slice(0, 10)}-${end.toISOString().slice(0, 10)}`
+      : "";
 
   return `11up-${athlete}-${type.toLowerCase()}${suffix}.pdf`;
 }
@@ -417,7 +682,9 @@ async function requireEliteReportGeneration() {
   return user;
 }
 
-export async function generateIndividualPerformanceReport(formData: FormData) {
+export async function generateIndividualPerformanceReport(
+  formData: FormData,
+) {
   const user = await requireEliteReportGeneration();
 
   const athleteId = clean(formData.get("athleteId"));
@@ -475,7 +742,9 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
 
   if (reportType === "EVALUATION") {
     if (!evaluationId) {
-      redirect(`/atletas/${athleteId}/performance/relatorios?erro=avaliacao`);
+      redirect(
+        `/atletas/${athleteId}/performance/relatorios?erro=avaliacao`,
+      );
     }
 
     const evaluation = await prisma.athleteEvaluation.findFirst({
@@ -499,7 +768,9 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
     });
 
     if (!evaluation) {
-      redirect(`/atletas/${athleteId}/performance/relatorios?erro=avaliacao`);
+      redirect(
+        `/atletas/${athleteId}/performance/relatorios?erro=avaliacao`,
+      );
     }
 
     periodStart = evaluation.periodStart;
@@ -553,6 +824,7 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
           organizationId: user.organizationId,
           athleteId,
           session: {
+            status: "COMPLETED",
             startsAt: {
               gte: periodStart,
               lte: periodEnd,
@@ -570,6 +842,13 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
               trainingType: true,
               location: true,
               status: true,
+              durationSource: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },
@@ -580,7 +859,9 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
 
       const presentStatuses = new Set(["PRESENT", "LATE", "PARTIAL"]);
       const counted = attendances.filter((item) => item.status !== "PENDING");
-      const present = counted.filter((item) => presentStatuses.has(item.status));
+      const present = counted.filter((item) =>
+        presentStatuses.has(item.status),
+      );
       const minutes = counted.reduce(
         (sum, item) => sum + (item.minutesPresent || 0),
         0,
@@ -598,35 +879,107 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
         summary: {
           sessions: counted.length,
           present: present.length,
-          absences: counted.filter((item) =>
-            ["ABSENT", "JUSTIFIED_ABSENCE", "INJURED", "EXCUSED"].includes(
-              item.status,
-            ),
+          absences: counted.filter(
+            (item) => item.status === "ABSENT",
+          ).length,
+          justifiedAbsences: counted.filter(
+            (item) =>
+              item.status === "JUSTIFIED_ABSENCE",
+          ).length,
+          otherZeroAttendances: counted.filter((item) =>
+            ["INJURED", "EXCUSED"].includes(item.status),
           ).length,
           attendanceRate: counted.length
             ? Math.round((present.length / counted.length) * 1000) / 10
             : 0,
           minutesPresent: minutes,
+          minutesAvailable: counted.reduce((sum, item) => {
+            const start =
+              item.session.actualStartedAt ??
+              item.session.startsAt;
+            const end =
+              item.session.actualEndedAt ??
+              item.session.endsAt;
+
+            if (!end || end <= start) return sum;
+
+            return (
+              sum +
+              Math.round(
+                (end.getTime() - start.getTime()) /
+                  60_000,
+              )
+            );
+          }, 0),
         },
-        records: counted.map((item) => ({
-          id: item.id,
-          status: item.status,
-          minutesPresent: item.minutesPresent,
-          arrivedAt: item.arrivedAt?.toISOString() || null,
-          leftAt: item.leftAt?.toISOString() || null,
-          justification: item.justification,
-          notes: item.notes,
-          session: {
-            id: item.session.id,
-            startsAt: item.session.startsAt.toISOString(),
-            endsAt: item.session.endsAt?.toISOString() || null,
-            actualStartedAt: item.session.actualStartedAt?.toISOString() || null,
-            actualEndedAt: item.session.actualEndedAt?.toISOString() || null,
-            trainingType: item.session.trainingType,
-            location: item.session.location,
-            status: item.session.status,
-          },
-        })),
+        records: counted.map((item) => {
+          const sessionStart =
+            item.session.actualStartedAt ??
+            item.session.startsAt;
+          const sessionEnd =
+            item.session.actualEndedAt ??
+            item.session.endsAt;
+
+          const durationMinutes =
+            sessionEnd && sessionEnd > sessionStart
+              ? Math.round(
+                  (sessionEnd.getTime() -
+                    sessionStart.getTime()) /
+                    60_000,
+                )
+              : null;
+
+          const participationPercent =
+            durationMinutes &&
+            item.minutesPresent !== null
+              ? Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    Math.round(
+                      (item.minutesPresent /
+                        durationMinutes) *
+                        1000,
+                    ) / 10,
+                  ),
+                )
+              : null;
+
+          return {
+            id: item.id,
+            status: item.status,
+            minutesPresent: item.minutesPresent,
+            durationMinutes,
+            participationPercent,
+            arrivedAt:
+              item.arrivedAt?.toISOString() || null,
+            leftAt:
+              item.leftAt?.toISOString() || null,
+            justification: item.justification,
+            notes: item.notes,
+            session: {
+              id: item.session.id,
+              startsAt:
+                item.session.startsAt.toISOString(),
+              endsAt:
+                item.session.endsAt?.toISOString() ||
+                null,
+              actualStartedAt:
+                item.session.actualStartedAt?.toISOString() ||
+                null,
+              actualEndedAt:
+                item.session.actualEndedAt?.toISOString() ||
+                null,
+              trainingType:
+                item.session.trainingType,
+              location: item.session.location,
+              status: item.session.status,
+              durationSource:
+                item.session.durationSource,
+              category: item.session.category,
+            },
+          };
+        }),
       };
     } else if (reportType === "MATCH") {
       const matchStats = await prisma.matchAthleteStat.findMany({
@@ -690,7 +1043,10 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
             (sum, item) => sum + item.yellowCards,
             0,
           ),
-          redCards: matchStats.reduce((sum, item) => sum + item.redCards, 0),
+          redCards: matchStats.reduce(
+            (sum, item) => sum + item.redCards,
+            0,
+          ),
         },
         records: matchStats.map((item) => ({
           id: item.id,
@@ -737,14 +1093,19 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
         distanceMeters: record.distanceMeters
           ? Number(record.distanceMeters)
           : null,
-        maxSpeedKmh: record.maxSpeedKmh ? Number(record.maxSpeedKmh) : null,
+        maxSpeedKmh: record.maxSpeedKmh
+          ? Number(record.maxSpeedKmh)
+          : null,
         averageSpeedKmh: record.averageSpeedKmh
           ? Number(record.averageSpeedKmh)
           : null,
-        highIntensityDistanceMeters: record.highIntensityDistanceMeters
-          ? Number(record.highIntensityDistanceMeters)
+        highIntensityDistanceMeters:
+          record.highIntensityDistanceMeters
+            ? Number(record.highIntensityDistanceMeters)
+            : null,
+        playerLoad: record.playerLoad
+          ? Number(record.playerLoad)
           : null,
-        playerLoad: record.playerLoad ? Number(record.playerLoad) : null,
       }));
 
       const totalDistance = numbers.reduce(
@@ -752,7 +1113,8 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
         0,
       );
       const totalHighIntensity = numbers.reduce(
-        (sum, item) => sum + (item.highIntensityDistanceMeters || 0),
+        (sum, item) =>
+          sum + (item.highIntensityDistanceMeters || 0),
         0,
       );
       const maxSpeed = numbers.reduce(
@@ -777,13 +1139,16 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
           trainingSessions: gpsRecords.filter(
             (item) => item.context === "TRAINING",
           ).length,
-          matches: gpsRecords.filter((item) => item.context === "MATCH").length,
+          matches: gpsRecords.filter(
+            (item) => item.context === "MATCH",
+          ).length,
           totalDistanceMeters: totalDistance,
           totalHighIntensityDistanceMeters: totalHighIntensity,
           maxSpeedKmh: maxSpeed,
           averagePlayerLoad: loads.length
             ? Math.round(
-                (loads.reduce((sum, value) => sum + value, 0) / loads.length) *
+                (loads.reduce((sum, value) => sum + value, 0) /
+                  loads.length) *
                   10,
               ) / 10
             : null,
@@ -804,12 +1169,15 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
             ? Number(record.averageSpeedKmh)
             : null,
           sprintCount: record.sprintCount,
-          highIntensityDistanceMeters: record.highIntensityDistanceMeters
-            ? Number(record.highIntensityDistanceMeters)
-            : null,
+          highIntensityDistanceMeters:
+            record.highIntensityDistanceMeters
+              ? Number(record.highIntensityDistanceMeters)
+              : null,
           accelerations: record.accelerations,
           decelerations: record.decelerations,
-          playerLoad: record.playerLoad ? Number(record.playerLoad) : null,
+          playerLoad: record.playerLoad
+            ? Number(record.playerLoad)
+            : null,
           notes: record.notes,
         })),
       };
@@ -853,4 +1221,3 @@ export async function generateIndividualPerformanceReport(formData: FormData) {
 
   redirect(`/performance-report/${report.id}?print=1`);
 }
-

@@ -19,6 +19,7 @@ import {
 } from "@/lib/club-access";
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { findEligibleTrainingAthletes } from "@/lib/training-athletes";
 
 function clean(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -207,39 +208,6 @@ async function findTrainingForAttendance(
       sport: true,
       trainingType: true,
       responsibleStaffMemberId: true,
-    },
-  });
-}
-
-async function findEligibleTrainingAthletes(
-  organizationId: string,
-  categoryId: string,
-  sport: "FOOTBALL" | "FUTSAL" | "BOTH",
-) {
-  return prisma.athlete.findMany({
-    where: {
-      organizationId,
-      active: true,
-      OR: [
-        {
-          categoryId,
-        },
-        {
-          memberships: {
-            some: {
-              organizationId,
-              categoryId,
-              status: "ACTIVE",
-              sport: {
-                in: ["BOTH", sport],
-              },
-            },
-          },
-        },
-      ],
-    },
-    select: {
-      id: true,
     },
   });
 }
@@ -516,6 +484,174 @@ export async function startTrainingSession(formData: FormData) {
   });
 
   revalidateTrainingPaths(scheduleId);
+}
+
+
+export async function saveTrainingAttendanceItem(
+  formData: FormData,
+) {
+  const user = await requireOrganizationUser();
+
+  const scheduleId = clean(formData.get("scheduleId"));
+  const athleteId = clean(formData.get("athleteId"));
+  const status = normalizeAttendanceStatus(
+    clean(formData.get("status")),
+  );
+
+  if (!scheduleId || !athleteId || !status) {
+    throw new Error("Dados de presença inválidos.");
+  }
+
+  const training = await findTrainingForAttendance(
+    scheduleId,
+    user.organizationId,
+  );
+
+  if (!training?.date) {
+    throw new Error("Treino não encontrado ou sem data.");
+  }
+
+  const access = await getClubTrainingCategoryAccess(
+    user,
+    training.categoryId,
+    training.sport,
+  );
+
+  if (!access.canManageAttendance) {
+    throw new Error("Sem permissão para registrar presença.");
+  }
+
+  const eligibleAthletes =
+    await findEligibleTrainingAthletes(
+      user.organizationId,
+      training.categoryId,
+      training.sport,
+    );
+
+  if (
+    !eligibleAthletes.some(
+      (athlete) => athlete.id === athleteId,
+    )
+  ) {
+    throw new Error(
+      "Este atleta não está vinculado ao elenco ou à avaliação deste treino.",
+    );
+  }
+
+  const session =
+    await prisma.trainingSession.findFirst({
+      where: {
+        organizationId: user.organizationId,
+        scheduleId: training.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+  if (!session) {
+    throw new Error(
+      "Inicie o treino antes de registrar a presença.",
+    );
+  }
+
+  if (
+    session.status !== TrainingSessionStatus.IN_PROGRESS ||
+    !session.actualStartedAt
+  ) {
+    throw new Error(
+      "A presença só pode ser registrada com o treino em andamento.",
+    );
+  }
+
+  const arrivalValue = clean(formData.get("arrivalTime"));
+  const exitValue = clean(formData.get("exitTime"));
+
+  const arrivedAt = arrivalValue
+    ? dateWithTime(training.date, arrivalValue)
+    : null;
+
+  const leftAt = exitValue
+    ? dateWithTime(training.date, exitValue)
+    : null;
+
+  const justification =
+    status === TrainingAttendanceStatus.JUSTIFIED_ABSENCE
+      ? nullable(formData.get("justification"))
+      : null;
+
+  const bounds = effectiveSessionBounds(session);
+
+  const minutesPresent = attendanceMinutes({
+    status,
+    arrivedAt,
+    leftAt,
+    sessionStart: bounds.start,
+    sessionEnd: bounds.end,
+  });
+
+  const attendance = await prisma.$transaction(
+    async (tx) => {
+      const saved =
+        await tx.trainingAttendance.upsert({
+          where: {
+            sessionId_athleteId: {
+              sessionId: session.id,
+              athleteId,
+            },
+          },
+          update: {
+            status,
+            arrivedAt,
+            leftAt,
+            justification,
+            minutesPresent,
+            recordedByUserId: user.id,
+          },
+          create: {
+            organizationId: user.organizationId,
+            sessionId: session.id,
+            athleteId,
+            status,
+            arrivedAt,
+            leftAt,
+            justification,
+            minutesPresent,
+            recordedByUserId: user.id,
+          },
+          select: {
+            id: true,
+            status: true,
+            minutesPresent: true,
+          },
+        });
+
+      await createTrainingAudit(tx, {
+        organizationId: user.organizationId,
+        scheduleId: training.id,
+        sessionId: session.id,
+        attendanceId: saved.id,
+        actorUserId: user.id,
+        action: TrainingAuditAction.ATTENDANCE_RECORDED,
+        metadata: {
+          athleteId,
+          status,
+          source: "AUTOSAVE",
+        },
+      });
+
+      return saved;
+    },
+  );
+
+  revalidateTrainingPaths(scheduleId);
+
+  return {
+    ok: true as const,
+    athleteId,
+    status: attendance.status,
+    minutesPresent: attendance.minutesPresent,
+  };
 }
 
 export async function saveTrainingAttendance(
@@ -862,7 +998,7 @@ export async function completeTrainingSession(
 
     if (!session) {
       throw new Error(
-        "Não existe chamada salva para este treino.",
+        "Não existe sessão iniciada para este treino.",
       );
     }
 
@@ -894,7 +1030,7 @@ export async function completeTrainingSession(
 
     if (missingAthletes.length > 0) {
       throw new Error(
-        `Não é possível finalizar o treino. Existem ${missingAthletes.length} atleta(s) sem chamada salva.`,
+        `Não é possível finalizar o treino. Existem ${missingAthletes.length} atleta(s) sem presença definida.`,
       );
     }
 
