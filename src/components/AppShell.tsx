@@ -6,6 +6,7 @@ import MobileClubNavigation, {
   type MobileClubNavItem,
 } from "@/components/MobileClubNavigation";
 import NotificationBell from "@/components/NotificationBell";
+import MobileCreateMenu from "@/components/MobileCreateMenu";
 import { brand } from "@/config/brand";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -402,16 +403,7 @@ export default async function AppShell({
               />
             ) : null}
 
-            <details className="club-mobile-create-menu">
-              <summary>＋ Criar</summary>
-              <div>
-                <Link href="/treinos">Novo treino</Link>
-                <Link href="/jogos">Novo jogo</Link>
-                <Link href="/convocacoes">Nova convocação</Link>
-                <Link href="/comunicacao">Novo comunicado</Link>
-                <Link href="/atletas">Novo atleta</Link>
-              </div>
-            </details>
+            <MobileCreateMenu />
           </div>
         </header>
 
