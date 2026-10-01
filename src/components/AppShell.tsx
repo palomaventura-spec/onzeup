@@ -9,6 +9,8 @@ import NotificationBell from "@/components/NotificationBell";
 import MobileCreateMenu from "@/components/MobileCreateMenu";
 import { brand } from "@/config/brand";
 import { getCurrentUser } from "@/lib/auth";
+import { getAdminSupportSession } from "@/lib/admin-support";
+import { endAdminSupportSession } from "@/app/admin/support/actions";
 import {
   hasClubPermission,
   type ClubPermission,
@@ -272,13 +274,32 @@ export default async function AppShell({
 }) {
   const user = await getCurrentUser();
 
-  const canSee = (item: { permission?: ClubPermission }) => {
-    if (!user) return false;
+  const supportSession =
+    user?.role === "SUPER_ADMIN"
+      ? await getAdminSupportSession(user.id)
+      : null;
 
-    return !item.permission || hasClubPermission(user, item.permission);
+  const shellUser = user
+    ? supportSession
+      ? {
+          ...user,
+          organizationId: supportSession.organizationId,
+          organization: supportSession.organization,
+          isSupportMode: true,
+        }
+      : user
+    : null;
+
+  const canSee = (item: { permission?: ClubPermission }) => {
+    if (!shellUser) return false;
+
+    return (
+      !item.permission ||
+      hasClubPermission(shellUser, item.permission)
+    );
   };
 
-  const visibleGroups = user
+  const visibleGroups = shellUser
     ? groups
         .map((group) => ({
           ...group,
@@ -296,13 +317,13 @@ export default async function AppShell({
     .map(({ permission: _, ...item }) => item);
 
   const organizationName =
-    user?.organization?.publicName ||
-    user?.organization?.name ||
+    shellUser?.organization?.publicName ||
+    shellUser?.organization?.name ||
     "Meu Clube";
 
   const currentSeason = new Date().getFullYear();
   const canManagePlan =
-    user ? hasClubPermission(user, "PLAN_MANAGE") : false;
+    shellUser ? hasClubPermission(shellUser, "PLAN_MANAGE") : false;
 
   return (
     <div className="shell club-app-light">
@@ -325,9 +346,9 @@ export default async function AppShell({
 
           <div className="club-sidebar-club-card" aria-label={`${organizationName} · Temporada ${currentSeason}`}>
             <span className="club-sidebar-club-mark">
-              {user?.organization?.logoUrl ? (
+              {shellUser?.organization?.logoUrl ? (
                 <img
-                  src={user.organization.logoUrl}
+                  src={shellUser.organization.logoUrl}
                   alt=""
                 />
               ) : (
@@ -378,6 +399,47 @@ export default async function AppShell({
       </aside>
 
       <div className="club-workspace">
+        {supportSession ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              flexWrap: "wrap",
+              padding: "10px 18px",
+              background: "#facc15",
+              color: "#111827",
+              borderBottom: "1px solid #d4a900",
+              fontSize: "14px",
+              fontWeight: 700,
+            }}
+          >
+            <div>
+              <strong>MODO SUPORTE 11UP</strong>
+              <span style={{ marginLeft: "10px", fontWeight: 500 }}>
+                Você está visualizando: {organizationName}
+              </span>
+            </div>
+
+            <form action={endAdminSupportSession}>
+              <button
+                type="submit"
+                style={{
+                  border: "1px solid #111827",
+                  borderRadius: "8px",
+                  padding: "7px 12px",
+                  background: "#111827",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                Voltar ao Super Admin
+              </button>
+            </form>
+          </div>
+        ) : null}
         <header className="club-system-topbar">
           <div className="club-mobile-topbar-left">
             <Link
@@ -397,9 +459,9 @@ export default async function AppShell({
           </div>
 
           <div className="club-system-actions">
-            {user?.organizationId ? (
+            {shellUser?.organizationId ? (
               <NotificationBell
-                organizationId={user.organizationId}
+                organizationId={shellUser.organizationId}
               />
             ) : null}
 

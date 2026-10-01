@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/auth";
 import AdminConfirmSubmit from "../../AdminConfirmSubmit";
+import { startAdminSupportSession } from "../../support/actions";
 import {
   deactivateOrganization,
   deleteInactiveOrganization,
@@ -151,6 +152,32 @@ export default async function OrganizationAdminDetail({
         </article>
       </div>
 
+      <section className="card admin-access-card admin-plan-card">
+        <div>
+          <span className="page-eyebrow">SUPORTE REMOTO 11UP</span>
+          <h2>Entrar em modo suporte</h2>
+          <p className="muted">
+            Visualize temporariamente o ambiente desta organização para diagnóstico e suporte técnico.
+            O acesso será registrado internamente pela 11UP.
+          </p>
+        </div>
+
+        <form action={startAdminSupportSession} className="admin-plan-form">
+          <input type="hidden" name="organizationId" value={org.id} />
+
+          <label>
+            Motivo do atendimento
+            <input
+              name="reason"
+              placeholder="Ex.: verificar erro na convocação"
+            />
+          </label>
+
+          <button className="btn" type="submit">
+            Entrar em modo suporte
+          </button>
+        </form>
+      </section>
       <section className="card admin-access-card admin-plan-card">
         <div>
           <span className="page-eyebrow">PLANO DO CLUBE</span>

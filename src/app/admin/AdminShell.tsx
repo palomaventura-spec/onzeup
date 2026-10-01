@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/admin/organizacoes", label: "Organizações", icon: "▣" },
   { href: "/admin/players", label: "Players", icon: "⚽" },
   { href: "/admin/coaches", label: "Coaches", icon: "◇" },
+  { href: "/admin/support", label: "Suporte", icon: "S" },
   { href: "/admin/pagamentos", label: "Pagamentos", icon: "R$" },
   { href: "/admin/planos", label: "Planos", icon: "★" },
 ];
@@ -42,7 +43,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         <nav className="admin-nav-v171" aria-label="Navegação administrativa">
           <span className="admin-nav-group-v171">PLATAFORMA</span>
 
-          {NAV_ITEMS.slice(0, 4).map((item) => (
+          {NAV_ITEMS.slice(0, 5).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -55,7 +56,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
 
           <span className="admin-nav-group-v171">FINANCEIRO</span>
 
-          {NAV_ITEMS.slice(4).map((item) => (
+          {NAV_ITEMS.slice(5).map((item) => (
             <Link
               key={item.href}
               href={item.href}

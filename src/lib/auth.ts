@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { isPastGrace } from "@/lib/billing-entitlements";
+import { getAdminSupportSession } from "@/lib/admin-support";
 
 const COOKIE_NAME = "onzeup_session";
 
@@ -78,17 +79,29 @@ export async function requireOrganizationUser() {
   if (user.role === "GUARDIAN") redirect("/responsavel");
   if (user.role === "COACH") redirect("/coach/dashboard");
 
-  if (user.role === "SUPER_ADMIN" && !user.organizationId) {
-    redirect("/admin");
+  let effectiveOrganizationId = user.organizationId;
+  let effectiveOrganization = user.organization;
+  let isSupportMode = false;
+
+  if (user.role === "SUPER_ADMIN") {
+    const supportSession = await getAdminSupportSession(user.id);
+
+    if (!supportSession) {
+      redirect("/admin");
+    }
+
+    effectiveOrganizationId = supportSession.organizationId;
+    effectiveOrganization = supportSession.organization;
+    isSupportMode = true;
   }
 
-  if (!user.organizationId) {
+  if (!effectiveOrganizationId) {
     redirect("/login");
   }
 
   const organization = await prisma.organization.findUnique({
     where: {
-      id: user.organizationId,
+      id: effectiveOrganizationId,
     },
     select: {
       accessStatus: true,
@@ -103,7 +116,18 @@ export async function requireOrganizationUser() {
   });
 
   if (!organization) {
-    redirect("/login");
+    redirect(user.role === "SUPER_ADMIN" ? "/admin" : "/login");
+  }
+
+  const effectiveUser = {
+    ...user,
+    organizationId: effectiveOrganizationId,
+    organization: effectiveOrganization,
+    isSupportMode,
+  };
+
+  if (isSupportMode) {
+    return effectiveUser;
   }
 
   if (organization.accessStatus === "SUSPENDED") {
@@ -122,7 +146,7 @@ export async function requireOrganizationUser() {
       redirect("/acesso-bloqueado?status=expired");
     }
 
-    return user as typeof user & { organizationId: string };
+    return effectiveUser;
   }
 
   const subscription = organization.subscription;
@@ -138,7 +162,7 @@ export async function requireOrganizationUser() {
     redirect("/acesso-bloqueado?status=past_due");
   }
 
-  return user as typeof user & { organizationId: string };
+  return effectiveUser;
 }
 
 export async function destroySession() {
