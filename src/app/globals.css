@@ -19858,3 +19858,87 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
     width:100% !important;
   }
 }
+
+/* 11UP — Cabeçalho harmonizado da ficha da categoria */
+.club-app-light .category-premium-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 170px;
+  padding: 28px 34px !important;
+  margin-bottom: 22px;
+
+  background: linear-gradient(
+    110deg,
+    #061827 0%,
+    #0a2539 65%,
+    #123a55 100%
+  ) !important;
+
+  border: 1px solid #234357;
+  border-radius: 22px;
+  box-shadow: 0 12px 32px rgba(6, 24, 39, 0.12);
+}
+
+.club-app-light .category-premium-detail-head > div:first-child {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.club-app-light .category-premium-detail-head .page-eyebrow {
+  margin: 0 !important;
+  color: #a3e635 !important;
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+}
+
+.club-app-light .category-premium-detail-head h1 {
+  margin: 0 !important;
+  color: #ffffff !important;
+  font-size: clamp(32px, 3vw, 42px);
+  line-height: 1.12;
+}
+
+.club-app-light .category-premium-detail-head p {
+  margin: 0 !important;
+  color: #d5e0e8 !important;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.club-app-light .category-premium-detail-head .category-hub-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.club-app-light .category-premium-detail-head .category-hub-actions .btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+@media (max-width: 900px) {
+  .club-app-light .category-premium-detail-head {
+    display: grid;
+    gap: 20px;
+    padding: 24px 20px !important;
+  }
+
+  .club-app-light .category-premium-detail-head .category-hub-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .club-app-light .category-premium-detail-head .category-hub-actions .btn {
+    width: 100%;
+  }
+}

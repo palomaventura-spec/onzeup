@@ -6,6 +6,7 @@ import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createCategory, deleteCategory } from "./actions";
 import CategoryEvaluationFields from "./CategoryEvaluationFields";
+import CategoryOpenLink from "./CategoryOpenLink";
 
 type CategoryFilter = "ALL" | "FOOTBALL" | "FUTSAL" | "EVALUATION";
 
@@ -365,9 +366,7 @@ export default async function CategoriesPage({
               ) : null}
 
               <div className="category-v2-card-actions">
-                <Link className="category-v2-primary" href={`/categorias/${category.id}`}>
-                  Abrir categoria <span>→</span>
-                </Link>
+                <CategoryOpenLink href={`/categorias/${category.id}`} />
                 <Link href={`/atletas?category=${category.id}`}>
                   {isEvaluation ? "Avaliados" : "Elenco"}
                 </Link>
@@ -375,7 +374,10 @@ export default async function CategoriesPage({
               </div>
 
               <details className="category-v2-manage">
-                <summary>Gerenciar</summary>
+                <summary>
+                   <span className="category-v2-manage-open-label">Gerenciar</span>
+                   <span className="category-v2-manage-back-label">← Voltar</span>
+                 </summary>
                 <form action={deleteCategory}>
                   <input type="hidden" name="id" value={category.id} />
                   <button className="btn-danger btn-small" type="submit">
@@ -393,6 +395,12 @@ export default async function CategoriesPage({
           Nenhuma categoria encontrada neste filtro.
         </div>
       ) : null}
+      <style>{`
+        .category-v2-manage-back-label { display: none; }
+        .category-v2-manage[open] .category-v2-manage-open-label { display: none; }
+        .category-v2-manage[open] .category-v2-manage-back-label { display: inline; }
+        .category-v2-manage > summary { cursor: pointer; }
+      `}</style>
     </div>
   );
 }

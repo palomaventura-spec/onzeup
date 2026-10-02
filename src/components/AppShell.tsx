@@ -7,6 +7,7 @@ import MobileClubNavigation, {
 } from "@/components/MobileClubNavigation";
 import NotificationBell from "@/components/NotificationBell";
 import MobileCreateMenu from "@/components/MobileCreateMenu";
+import ClubNavigationBar from "@/components/ClubNavigationBar";
 import { brand } from "@/config/brand";
 import { getCurrentUser } from "@/lib/auth";
 import { getAdminSupportSession } from "@/lib/admin-support";
@@ -321,6 +322,10 @@ export default async function AppShell({
     shellUser?.organization?.name ||
     "Meu Clube";
 
+  const homeHref = visibleGroups.flatMap((group) => group.items).find((item) => item.href === "/dashboard")?.href
+    || visibleGroups[0]?.items[0]?.href
+    || "/dashboard";
+
   const currentSeason = new Date().getFullYear();
   const canManagePlan =
     shellUser ? hasClubPermission(shellUser, "PLAN_MANAGE") : false;
@@ -331,7 +336,7 @@ export default async function AppShell({
         <div className="club-sidebar-head club-sidebar-reference-head">
           <Link
             className="brand club-sidebar-reference-brand"
-            href="/dashboard"
+            href={homeHref}
             aria-label={`${brand.name} ${brand.product}`}
           >
             <Image
@@ -444,7 +449,7 @@ export default async function AppShell({
           <div className="club-mobile-topbar-left">
             <Link
               className="club-mobile-topbar-brand"
-              href="/dashboard"
+              href={homeHref}
               aria-label={`${brand.name} ${brand.product}`}
             >
               <Image
@@ -470,6 +475,7 @@ export default async function AppShell({
         </header>
 
         <div className="main club-main-content">
+          <ClubNavigationBar homeHref={homeHref} />
           {children}
         </div>
       </div>

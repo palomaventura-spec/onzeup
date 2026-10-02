@@ -19,6 +19,7 @@ import { prisma } from "@/lib/prisma";
 import { toggleAthleteStatus } from "./actions";
 
 import AthleteCreateForm from "./AthleteCreateForm";
+import AthleteCreateDialog from "./AthleteCreateDialog";
 
 import AthletePreRegistrationPanel from "./AthletePreRegistrationPanel";
 
@@ -978,19 +979,16 @@ export default async function AthletesPage({
 
                {canEdit ? (
 
-                  <a
-
-                     className="athletes-v4-primary-button"
-
-                     href="#novo-atleta"
-
+                  <AthleteCreateDialog
+                     trigger={
+                        <>
+                           <Icon name="plus" size={17} />
+                           Novo atleta
+                        </>
+                     }
                   >
-
-                     <Icon name="plus" size={17} />
-
-                     Novo atleta
-
-                  </a>
+                     <AthleteCreateForm categories={categories} />
+                  </AthleteCreateDialog>
 
                ) : null}
 
@@ -1115,78 +1113,6 @@ export default async function AthletesPage({
             </article>
 
          </section>
-
-
-
-         {canEdit ? (
-
-            <details
-
-               id="novo-atleta"
-
-               className="athletes-v4-create"
-
-               open={!athletes.length}
-
-            >
-
-               <summary>
-
-                  <div className="athletes-v4-create-copy">
-
-                     <span className="athletes-v4-create-icon">
-
-                        <Icon name="plus" />
-
-                     </span>
-
-
-
-                     <div>
-
-                        <span className="athletes-v4-eyebrow">
-
-                           NOVO CADASTRO
-
-                        </span>
-
-                        <h2>Adicionar atleta</h2>
-
-                        <p>
-
-                           Cadastre diretamente no elenco ou em uma categoria
-
-                           de avaliação.
-
-                        </p>
-
-                     </div>
-
-                  </div>
-
-
-
-                  <span className="athletes-v4-open-create">
-
-                     Abrir cadastro
-
-                     <Icon name="arrow" size={16} />
-
-                  </span>
-
-               </summary>
-
-
-
-               <div className="athletes-v4-create-body">
-
-                  <AthleteCreateForm categories={categories} />
-
-               </div>
-
-            </details>
-
-         ) : null}
 
 
 
@@ -4590,6 +4516,80 @@ export default async function AthletesPage({
 
             }
 
+
+
+            /* Correção 07: janela de cadastro, sem rolagem inesperada. */
+            .athletes-v4-create-dialog {
+               width: min(940px, calc(100vw - 32px));
+               max-width: 940px;
+               max-height: calc(100dvh - 32px);
+               padding: 0;
+               border: 1px solid #dfe6ea;
+               border-radius: 20px;
+               color: #07131d;
+               background: #fff;
+               box-shadow: 0 28px 80px rgba(7,19,29,.32);
+               overflow-y: auto;
+               overscroll-behavior: contain;
+            }
+            .athletes-v4-create-dialog::backdrop {
+               background: rgba(4,14,24,.68);
+               backdrop-filter: blur(3px);
+            }
+            .athletes-v4-create-dialog-head {
+               position: sticky;
+               top: 0;
+               z-index: 2;
+               display: flex;
+               align-items: flex-start;
+               justify-content: space-between;
+               gap: 16px;
+               padding: 22px 24px;
+               border-bottom: 1px solid #e8edf0;
+               background: #fff;
+            }
+            .athletes-v4-create-dialog-head h2 {
+               margin: 4px 0 0;
+               font-size: clamp(22px, 3vw, 28px);
+               line-height: 1.15;
+               color: #07131d;
+            }
+            .athletes-v4-create-dialog-head p {
+               margin: 8px 0 0;
+               font-size: 13px;
+               line-height: 1.5;
+               color: #647583;
+            }
+            .athletes-v4-create-dialog-close {
+               flex: 0 0 38px;
+               width: 38px;
+               height: 38px;
+               border: 1px solid #dfe6ea;
+               border-radius: 11px;
+               background: #f3f6f7;
+               color: #07131d;
+               font-size: 25px;
+               line-height: 1;
+               cursor: pointer;
+            }
+            .athletes-v4-create-dialog .athletes-v4-create-body {
+               padding: 24px;
+               border: 0;
+            }
+            .athletes-v4-hero-actions > .athletes-v4-primary-button {
+               border: 0;
+               cursor: pointer;
+               font-family: inherit;
+            }
+            @media (max-width: 520px) {
+               .athletes-v4-create-dialog {
+                  width: calc(100vw - 16px);
+                  max-height: calc(100dvh - 16px);
+                  border-radius: 15px;
+               }
+               .athletes-v4-create-dialog-head { padding: 16px; }
+               .athletes-v4-create-dialog .athletes-v4-create-body { padding: 16px; }
+            }
          `}</style>
 
       </div>
