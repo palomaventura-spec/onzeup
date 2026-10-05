@@ -95,6 +95,9 @@ model Organization {
   competitionCallUpRules      CompetitionCallUpRule[]
   formationTemplates          FormationTemplate[]
   AdminSupportSession         AdminSupportSession[]
+
+  athleteGrowthProfiles          AthleteGrowthProfile[]
+  athleteBoneAgeAssessments     AthleteBoneAgeAssessment[]
 }
 
 model Competition {
@@ -402,6 +405,9 @@ model User {
   organization                  Organization?                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   AdminSupportSession           AdminSupportSession[]
 
+  createdGrowthProfiles          AthleteGrowthProfile[]       @relation("AthleteGrowthProfileCreator")
+  recordedBoneAgeAssessments     AthleteBoneAgeAssessment[]   @relation("AthleteBoneAgeRecorder")
+
   @@index([organizationId])
 }
 
@@ -557,6 +563,9 @@ model Athlete {
   dataAuditLogs              AthleteDataAuditLog[]
   historyEntries             AthleteHistoryEntry[]
   competitionEntries         CompetitionAthlete[]         @relation("CompetitionAthleteSource")
+
+  growthProfile                AthleteGrowthProfile?
+  boneAgeAssessments           AthleteBoneAgeAssessment[]
 
   @@index([organizationId])
   @@index([categoryId])
@@ -740,6 +749,8 @@ model AthleteDocument {
   registrationRequest   AthleteRegistrationRequest? @relation(fields: [registrationRequestId], references: [id], onDelete: SetNull)
   uploadedBy            User?                       @relation("AthleteDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   reviewedBy            User?                       @relation("AthleteDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  growthBoneAgeAssessments    AthleteBoneAgeAssessment[]  @relation("AthleteGrowthBoneAgeDocument")
 
   @@index([organizationId, athleteId, category])
   @@index([guardianId, category])
@@ -1064,6 +1075,50 @@ model AthletePerformanceGoal {
   @@index([createdByUserId])
 }
 
+model AthleteGrowthProfile {
+  id                    String              @id @default(cuid())
+  organizationId        String
+  athleteId             String              @unique
+  createdByUserId       String?
+  referenceSex          GrowthReferenceSex?
+  motherHeightCm        Decimal?            @db.Decimal(6, 2)
+  fatherHeightCm        Decimal?            @db.Decimal(6, 2)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete         Athlete          @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  createdBy       User?            @relation("AthleteGrowthProfileCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([createdByUserId])
+}
+
+model AthleteBoneAgeAssessment {
+  id                    String              @id @default(cuid())
+  organizationId        String
+  athleteId             String
+  recordedByUserId      String?
+  reportDocumentId      String?
+  examinedAt            DateTime
+  boneAgeMonths         Int
+  method                GrowthBoneAgeMethod
+  professionalEncrypted String?
+  notesEncrypted        String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete        Athlete          @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  recordedBy     User?            @relation("AthleteBoneAgeRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  reportDocument AthleteDocument? @relation("AthleteGrowthBoneAgeDocument", fields: [reportDocumentId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, athleteId, examinedAt])
+  @@index([athleteId, examinedAt])
+  @@index([recordedByUserId])
+  @@index([reportDocumentId])
+}
+
 model AthleteBodyMeasurement {
   id               String       @id @default(cuid())
   organizationId   String
@@ -1082,6 +1137,9 @@ model AthleteBodyMeasurement {
   organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   athlete          Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
   recordedBy       User?        @relation("AthleteBodyMeasurementRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  sittingHeightCm  Decimal?                @db.Decimal(6, 2)
+  measurementSource GrowthMeasurementSource @default(CLUB)
 
   @@index([organizationId, athleteId, measuredAt])
   @@index([athleteId, measuredAt])
@@ -2069,6 +2127,7 @@ enum PerformanceReportType {
   MATCH
   GPS
   EVALUATION
+  TECHNICAL_RECORD
   CONSOLIDATED
 }
 
@@ -2085,7 +2144,25 @@ enum PerformanceGoalStatus {
   CANCELLED
 }
 
+enum GrowthReferenceSex {
+  BOY
+  GIRL
+}
+
+enum GrowthMeasurementSource {
+  CLUB
+  PROFESSIONAL
+}
+
+enum GrowthBoneAgeMethod {
+  GREULICH_PYLE
+  TANNER_WHITEHOUSE
+  OTHER
+}
+
 enum ClubPermissionCode {
+  GROWTH_VIEW
+  GROWTH_MANAGE
   DOCUMENTS_VIEW
   DOCUMENTS_MANAGE
   TRAININGS_VIEW

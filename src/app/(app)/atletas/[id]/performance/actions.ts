@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 
 import {
   Prisma,
+  SportType,
   TrainingAttendanceStatus,
   TrainingSessionStatus,
 } from "@prisma/client";
@@ -12,7 +13,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireClubPermission } from "@/lib/club-access";
+import { getEffectiveClubRole } from "@/lib/club-permissions";
 import { hasEffectiveClubElite } from "@/lib/billing-entitlements";
+import {
+  buildMeasurementMetrics,
+  familyTargetHeight,
+  GROWTH_DISCLAIMER,
+  khamisRocheProjection,
+} from "@/lib/growth-calculations";
 import { prisma } from "@/lib/prisma";
 
 function clean(value: FormDataEntryValue | null) {
@@ -37,6 +45,12 @@ function optionalNumber(value: FormDataEntryValue | null) {
   if (!raw) return null;
 
   const number = Number(raw);
+  return Number.isFinite(number) ? number : null;
+}
+
+function numericValue(value: unknown) {
+  if (value == null) return null;
+  const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
 
@@ -604,9 +618,29 @@ const INDIVIDUAL_REPORT_TYPES = [
   "MATCH",
   "GPS",
   "EVALUATION",
+  "TECHNICAL_RECORD",
 ] as const;
 
 type IndividualReportType = (typeof INDIVIDUAL_REPORT_TYPES)[number];
+
+// Uma modalidade so e atribuida quando a origem dos dados a identifica.
+// Dados mistos ou sem modalidade identificavel permanecem como BOTH.
+function sourceSport(
+  primary: SportType | null | undefined,
+  linked?: SportType | null,
+): SportType {
+  const first = primary ?? SportType.BOTH;
+  const second = linked ?? SportType.BOTH;
+
+  if (first === SportType.BOTH) return second;
+  if (second === SportType.BOTH || first === second) return first;
+  return SportType.BOTH;
+}
+
+function reportSportFromRecords(sports: SportType[]): SportType {
+  const unique = new Set(sports);
+  return unique.size === 1 ? (sports[0] ?? SportType.BOTH) : SportType.BOTH;
+}
 
 function reportDate(value: FormDataEntryValue | null, endOfDay = false) {
   const raw = clean(value);
@@ -628,6 +662,8 @@ function reportTypeLabel(type: IndividualReportType) {
       return "GPS";
     case "EVALUATION":
       return "avaliação";
+    case "TECHNICAL_RECORD":
+      return "registro técnico";
   }
 }
 
@@ -701,6 +737,13 @@ export async function generateIndividualPerformanceReport(
   }
 
   const reportType = rawType as IndividualReportType;
+  const rawSport = clean(formData.get("sport"));
+  const requestedSport: SportType | null =
+    rawSport === SportType.FOOTBALL
+      ? SportType.FOOTBALL
+      : rawSport === SportType.FUTSAL
+        ? SportType.FUTSAL
+        : null;
 
   const athlete = await prisma.athlete.findFirst({
     where: {
@@ -729,6 +772,7 @@ export async function generateIndividualPerformanceReport(
   let periodStart: Date | null = null;
   let periodEnd: Date | null = null;
   let linkedEvaluationId: string | null = null;
+  let reportSport: SportType = SportType.BOTH;
   let snapshot: Prisma.InputJsonObject = {};
 
   const athleteSnapshot = {
@@ -761,6 +805,9 @@ export async function generateIndividualPerformanceReport(
         template: {
           select: { name: true },
         },
+        trainingSession: {
+          select: { sport: true, category: { select: { sport: true } } },
+        },
         scores: {
           orderBy: [{ area: "asc" }, { sortOrder: "asc" }],
         },
@@ -776,6 +823,12 @@ export async function generateIndividualPerformanceReport(
     periodStart = evaluation.periodStart;
     periodEnd = evaluation.periodEnd;
     linkedEvaluationId = evaluation.id;
+    reportSport = sourceSport(
+      evaluation.sport,
+      evaluation.trainingSession
+        ? sourceSport(evaluation.trainingSession.category.sport, evaluation.trainingSession.sport)
+        : null,
+    );
 
     snapshot = {
       snapshotVersion: 1,
@@ -818,8 +871,82 @@ export async function generateIndividualPerformanceReport(
       redirect(`/atletas/${athleteId}/performance/relatorios?erro=periodo`);
     }
 
-    if (reportType === "TRAINING") {
-      const attendances = await prisma.trainingAttendance.findMany({
+    if (reportType === "TECHNICAL_RECORD") {
+      // O Registro Técnico é independente da Avaliação Profissional.
+      // Somente registros que a comissão marcou como compartilháveis
+      // podem ser copiados para um documento imprimível.
+      const entries = await prisma.athleteHistoryEntry.findMany({
+        where: {
+          organizationId: user.organizationId,
+          athleteId,
+          visibility: "SHAREABLE",
+          source: { in: ["TRAINING", "MATCH", "MANUAL"] },
+          occurredAt: { gte: periodStart, lte: periodEnd },
+          ...(requestedSport ? { sportSnapshot: requestedSport } : {}),
+        },
+        orderBy: [{ occurredAt: "asc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          occurredAt: true,
+          source: true,
+          sourceLabelSnapshot: true,
+          topic: true,
+          visibility: true,
+          title: true,
+          content: true,
+          followUpRequired: true,
+          followUpResolvedAt: true,
+          sportSnapshot: true,
+          categoryNameSnapshot: true,
+          authorNameSnapshot: true,
+          resolvedByNameSnapshot: true,
+        },
+      });
+
+      if (!entries.length) {
+        redirect(`/atletas/${athleteId}/performance/relatorios?erro=sem-registros`);
+      }
+
+      reportSport = reportSportFromRecords(
+        entries.map((entry) => entry.sportSnapshot ?? SportType.BOTH),
+      );
+
+      snapshot = {
+        snapshotVersion: 1,
+        generatedAt: new Date().toISOString(),
+        documentKind: "TECHNICAL_RECORD",
+        reportType,
+        athlete: athleteSnapshot,
+        period: {
+          start: periodStart.toISOString(),
+          end: periodEnd.toISOString(),
+        },
+        summary: {
+          entries: entries.length,
+          followUps: entries.filter((entry) => entry.followUpRequired).length,
+          pendingFollowUps: entries.filter(
+            (entry) => entry.followUpRequired && !entry.followUpResolvedAt,
+          ).length,
+        },
+        records: entries.map((entry) => ({
+          id: entry.id,
+          occurredAt: entry.occurredAt.toISOString(),
+          source: entry.source,
+          sourceLabelSnapshot: entry.sourceLabelSnapshot,
+          topic: entry.topic,
+          visibility: entry.visibility,
+          title: entry.title,
+          content: entry.content,
+          followUpRequired: entry.followUpRequired,
+          followUpResolvedAt: entry.followUpResolvedAt?.toISOString() ?? null,
+          sportSnapshot: entry.sportSnapshot,
+          categoryNameSnapshot: entry.categoryNameSnapshot,
+          authorNameSnapshot: entry.authorNameSnapshot,
+          resolvedByNameSnapshot: entry.resolvedByNameSnapshot,
+        })),
+      };
+    } else if (reportType === "TRAINING") {
+      let attendances = await prisma.trainingAttendance.findMany({
         where: {
           organizationId: user.organizationId,
           athleteId,
@@ -840,6 +967,7 @@ export async function generateIndividualPerformanceReport(
               actualStartedAt: true,
               actualEndedAt: true,
               trainingType: true,
+              sport: true,
               location: true,
               status: true,
               durationSource: true,
@@ -847,6 +975,7 @@ export async function generateIndividualPerformanceReport(
                 select: {
                   id: true,
                   name: true,
+                  sport: true,
                 },
               },
             },
@@ -857,8 +986,23 @@ export async function generateIndividualPerformanceReport(
         },
       });
 
+      if (requestedSport) {
+        attendances = attendances.filter(
+          (item) =>
+            sourceSport(item.session.category.sport, item.session.sport) ===
+            requestedSport,
+        );
+      }
+
       const presentStatuses = new Set(["PRESENT", "LATE", "PARTIAL"]);
       const counted = attendances.filter((item) => item.status !== "PENDING");
+      reportSport =
+        requestedSport ??
+        reportSportFromRecords(
+          counted.map((item) =>
+            sourceSport(item.session.category.sport, item.session.sport),
+          ),
+        );
       const present = counted.filter((item) =>
         presentStatuses.has(item.status),
       );
@@ -972,6 +1116,7 @@ export async function generateIndividualPerformanceReport(
                 null,
               trainingType:
                 item.session.trainingType,
+              sport: item.session.sport,
               location: item.session.location,
               status: item.session.status,
               durationSource:
@@ -982,7 +1127,7 @@ export async function generateIndividualPerformanceReport(
         }),
       };
     } else if (reportType === "MATCH") {
-      const matchStats = await prisma.matchAthleteStat.findMany({
+      let matchStats = await prisma.matchAthleteStat.findMany({
         where: {
           organizationId: user.organizationId,
           athleteId,
@@ -1014,6 +1159,15 @@ export async function generateIndividualPerformanceReport(
           match: { startsAt: "asc" },
         },
       });
+
+      if (requestedSport) {
+        matchStats = matchStats.filter(
+          (item) => item.match.sport === requestedSport,
+        );
+      }
+      reportSport =
+        requestedSport ??
+        reportSportFromRecords(matchStats.map((item) => item.match.sport));
 
       const participated = matchStats.filter(
         (item) =>
@@ -1077,7 +1231,7 @@ export async function generateIndividualPerformanceReport(
         })),
       };
     } else {
-      const gpsRecords = await prisma.athleteGpsRecord.findMany({
+      let gpsRecords = await prisma.athleteGpsRecord.findMany({
         where: {
           organizationId: user.organizationId,
           athleteId,
@@ -1087,7 +1241,37 @@ export async function generateIndividualPerformanceReport(
           },
         },
         orderBy: { activityAt: "asc" },
+        include: {
+          trainingSession: {
+            select: {
+              sport: true,
+              category: { select: { sport: true } },
+            },
+          },
+          match: { select: { sport: true } },
+        },
       });
+
+      const gpsSport = (record: (typeof gpsRecords)[number]): SportType => {
+        const linkedSport = record.match
+          ? record.match.sport
+          : record.trainingSession
+            ? sourceSport(
+                record.trainingSession.category.sport,
+                record.trainingSession.sport,
+              )
+            : SportType.BOTH;
+        return sourceSport(record.sport, linkedSport);
+      };
+
+      if (requestedSport) {
+        gpsRecords = gpsRecords.filter(
+          (record) => gpsSport(record) === requestedSport,
+        );
+      }
+      reportSport =
+        requestedSport ??
+        reportSportFromRecords(gpsRecords.map(gpsSport));
 
       const numbers = gpsRecords.map((record) => ({
         distanceMeters: record.distanceMeters
@@ -1157,6 +1341,7 @@ export async function generateIndividualPerformanceReport(
           id: record.id,
           context: record.context,
           source: record.source,
+          sport: gpsSport(record),
           activityAt: record.activityAt.toISOString(),
           durationMinutes: record.durationMinutes,
           distanceMeters: record.distanceMeters
@@ -1184,6 +1369,9 @@ export async function generateIndividualPerformanceReport(
     }
   }
 
+  // Congela tambem a modalidade no documento e em seu registro de historico.
+  snapshot = { ...snapshot, sport: reportSport };
+
   const rawToken = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(rawToken).digest("hex");
   const typeLabel = reportTypeLabel(reportType);
@@ -1200,6 +1388,7 @@ export async function generateIndividualPerformanceReport(
       generatedByUserId: user.id,
       title: `Relatório de ${typeLabel} · ${periodLabel}`,
       reportType,
+      sport: reportSport,
       status: "GENERATED",
       periodStart,
       periodEnd,
@@ -1220,4 +1409,342 @@ export async function generateIndividualPerformanceReport(
   revalidatePath(`/atletas/${athleteId}/performance/relatorios`);
 
   redirect(`/performance-report/${report.id}?print=1`);
+}
+
+
+/**
+ * Prontuário esportivo: snapshot independente dos relatórios individuais.
+ * Somente o gestor do clube (não o suporte) pode gerar as duas versões.
+ * O compartilhável não copia documentação, notas internas ou observações
+ * técnicas que não estejam explicitamente marcadas como SHAREABLE.
+ */
+export async function generateSportsDossier(formData: FormData) {
+  const user = await requireEliteReportGeneration();
+  if (user.role === "SUPER_ADMIN" || getEffectiveClubRole(user) !== "MANAGER") {
+    redirect("/acesso-bloqueado");
+  }
+
+  const athleteId = clean(formData.get("athleteId"));
+  const audience = clean(formData.get("audience"));
+  const internal = audience === "INTERNAL";
+  if (!athleteId || (audience !== "INTERNAL" && audience !== "SHAREABLE")) {
+    redirect(`/atletas/${athleteId || "invalido"}/performance/relatorios?erro=dados`);
+  }
+  if (!internal && clean(formData.get("confirmShare")) !== "yes") {
+    redirect(`/atletas/${athleteId}/performance/relatorios?erro=confirmacao`);
+  }
+
+  const periodStart = reportDate(formData.get("periodStart"));
+  const periodEnd = reportDate(formData.get("periodEnd"), true);
+  if (!periodStart || !periodEnd || periodEnd < periodStart) {
+    redirect(`/atletas/${athleteId}/performance/relatorios?erro=periodo`);
+  }
+  const sportRaw = clean(formData.get("sport"));
+  const selectedSport: SportType | null = sportRaw === "FOOTBALL"
+    ? SportType.FOOTBALL : sportRaw === "FUTSAL" ? SportType.FUTSAL : null;
+
+  const allowedSections = ["TRAINING", "MATCH", "GPS", "EVALUATION", "TECHNICAL_RECORD", "MEASUREMENTS", "GROWTH", "DOCUMENTS"] as const;
+  const requested = new Set(formData.getAll("sections").map((value) => String(value)));
+  // Crescimento/projeções e documentos são sempre privados e nunca entram no compartilhável.
+  const sections = allowedSections.filter((item) =>
+    requested.has(item) && (internal || (item !== "DOCUMENTS" && item !== "GROWTH")),
+  );
+  if (!sections.length) {
+    redirect(`/atletas/${athleteId}/performance/relatorios?erro=secoes`);
+  }
+
+  const athlete = await prisma.athlete.findFirst({
+    where: { id: athleteId, organizationId: user.organizationId },
+    select: {
+      id: true, name: true, nickname: true, position: true, photoUrl: true, categoryId: true,
+      category: { select: { name: true } },
+      privateData: { select: { birthDate: true } },
+      growthProfile: { select: { referenceSex: true, fatherHeightCm: true, motherHeightCm: true } },
+    },
+  });
+  if (!athlete) redirect(`/atletas/${athleteId}/performance/relatorios?erro=acesso`);
+
+  const [
+    attendances,
+    matchStats,
+    gpsRecords,
+    evaluations,
+    historyEntries,
+    measurements,
+    documents,
+    growthMeasurements,
+    boneAgeAssessments,
+  ] = await Promise.all([
+    sections.includes("TRAINING") ? prisma.trainingAttendance.findMany({
+      where: {
+        organizationId: user.organizationId, athleteId,
+        session: { status: "COMPLETED", startsAt: { gte: periodStart, lte: periodEnd } },
+      },
+      include: { session: { select: {
+        startsAt: true, trainingType: true, sport: true, location: true,
+        category: { select: { name: true, sport: true } },
+      } } },
+      orderBy: { session: { startsAt: "asc" } },
+    }) : Promise.resolve([]),
+    sections.includes("MATCH") ? prisma.matchAthleteStat.findMany({
+      where: {
+        organizationId: user.organizationId, athleteId,
+        match: { startsAt: { gte: periodStart, lte: periodEnd } },
+      },
+      include: { match: { select: {
+        startsAt: true, opponent: true, competition: true, sport: true,
+      } } },
+      orderBy: { match: { startsAt: "asc" } },
+    }) : Promise.resolve([]),
+    sections.includes("GPS") ? prisma.athleteGpsRecord.findMany({
+      where: { organizationId: user.organizationId, athleteId,
+        activityAt: { gte: periodStart, lte: periodEnd } },
+      orderBy: { activityAt: "asc" },
+    }) : Promise.resolve([]),
+    sections.includes("EVALUATION") ? prisma.athleteEvaluation.findMany({
+      where: { organizationId: user.organizationId, athleteId, status: "FINALIZED",
+        evaluatedAt: { gte: periodStart, lte: periodEnd } },
+      include: {
+        evaluator: { select: { name: true } },
+        template: { select: { name: true } },
+        trainingSession: { select: { sport: true, category: { select: { sport: true } } } },
+        scores: { orderBy: [{ area: "asc" }, { sortOrder: "asc" }] },
+      },
+      orderBy: { evaluatedAt: "asc" },
+    }) : Promise.resolve([]),
+    sections.includes("TECHNICAL_RECORD") ? prisma.athleteHistoryEntry.findMany({
+      where: {
+        organizationId: user.organizationId, athleteId,
+        occurredAt: { gte: periodStart, lte: periodEnd },
+        ...(!internal ? { visibility: "SHAREABLE" as const } : {}),
+      },
+      orderBy: [{ occurredAt: "asc" }, { createdAt: "asc" }],
+    }) : Promise.resolve([]),
+    sections.includes("MEASUREMENTS") ? prisma.athleteBodyMeasurement.findMany({
+      where: { organizationId: user.organizationId, athleteId,
+        measuredAt: { gte: periodStart, lte: periodEnd } },
+      orderBy: { measuredAt: "asc" },
+    }) : Promise.resolve([]),
+    internal && sections.includes("DOCUMENTS") ? prisma.athleteDocument.findMany({
+      where: { organizationId: user.organizationId, athleteId, deletedAt: null,
+        createdAt: { lte: periodEnd } },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, title: true, category: true, status: true,
+        originalFileName: true, createdAt: true, expiresAt: true },
+    }) : Promise.resolve([]),
+    internal && sections.includes("GROWTH") ? prisma.athleteBodyMeasurement.findMany({
+      where: { organizationId: user.organizationId, athleteId, measuredAt: { lte: periodEnd } },
+      orderBy: [{ measuredAt: "asc" }, { createdAt: "asc" }],
+    }) : Promise.resolve([]),
+    internal && sections.includes("GROWTH") ? prisma.athleteBoneAgeAssessment.findMany({
+      where: { organizationId: user.organizationId, athleteId, examinedAt: { lte: periodEnd } },
+      orderBy: { examinedAt: "asc" },
+      select: { id: true, examinedAt: true, boneAgeMonths: true, method: true },
+    }) : Promise.resolve([]),
+  ]);
+
+  const inSport = (value: SportType | null | undefined) =>
+    !selectedSport || value === selectedSport;
+  const training = attendances.filter((item) =>
+    inSport(sourceSport(item.session.category.sport, item.session.sport)) && item.status !== "PENDING",
+  );
+  const matches = matchStats.filter((item) => inSport(item.match.sport));
+  const gps = gpsRecords.filter((item) => inSport(item.sport));
+  const evaluationSport = (item: (typeof evaluations)[number]): SportType =>
+    sourceSport(item.sport, item.trainingSession
+      ? sourceSport(item.trainingSession.category.sport, item.trainingSession.sport)
+      : null);
+  const evals = evaluations.filter((item) => inSport(evaluationSport(item)));
+  const history = historyEntries.filter((item) =>
+    !selectedSport || item.sportSnapshot === selectedSport,
+  );
+  const present = training.filter((item) => ["PRESENT", "LATE", "PARTIAL"].includes(item.status));
+
+  const growthMetrics = internal && sections.includes("GROWTH")
+    ? buildMeasurementMetrics(
+        growthMeasurements.map((item) => ({
+          id: item.id,
+          measuredAt: item.measuredAt,
+          heightCm: numericValue(item.heightCm),
+          weightKg: numericValue(item.weightKg),
+          bmi: numericValue(item.bmi),
+          wingspanCm: numericValue(item.wingspanCm),
+          sittingHeightCm: numericValue(item.sittingHeightCm),
+        })),
+        athlete.privateData?.birthDate ?? null,
+      )
+    : [];
+  const growthLatest = growthMetrics[growthMetrics.length - 1] ?? null;
+  const growthTarget = internal && sections.includes("GROWTH")
+    ? familyTargetHeight({
+        sex: athlete.growthProfile?.referenceSex,
+        fatherHeightCm: numericValue(athlete.growthProfile?.fatherHeightCm),
+        motherHeightCm: numericValue(athlete.growthProfile?.motherHeightCm),
+      })
+    : null;
+  const growthProjection = growthLatest?.exactAge
+    ? khamisRocheProjection({
+        sex: athlete.growthProfile?.referenceSex,
+        ageYears: growthLatest.exactAge.decimalYears,
+        heightCm: growthLatest.heightCm,
+        weightKg: growthLatest.weightKg,
+        fatherHeightCm: numericValue(athlete.growthProfile?.fatherHeightCm),
+        motherHeightCm: numericValue(athlete.growthProfile?.motherHeightCm),
+      })
+    : null;
+
+  const snapshot: Prisma.InputJsonObject = {
+    snapshotVersion: 2,
+    documentKind: internal ? "INTERNAL_DOSSIER" : "SHAREABLE_DOSSIER",
+    audience,
+    generatedAt: new Date().toISOString(),
+    generatedByName: user.name || null,
+    sections,
+    athlete: { id: athlete.id, name: athlete.name, nickname: athlete.nickname,
+      photoUrl: athlete.photoUrl, position: athlete.position, categoryName: athlete.category?.name ?? null },
+    period: { start: periodStart.toISOString(), end: periodEnd.toISOString() },
+    selectedSport: selectedSport ?? "BOTH",
+    ...(sections.includes("TRAINING") ? { training: {
+      summary: {
+        sessions: training.length, present: present.length,
+        attendanceRate: training.length ? Math.round(1000 * present.length / training.length) / 10 : 0,
+        minutesPresent: training.reduce((total, item) => total + (item.minutesPresent ?? 0), 0),
+      },
+      records: training.map((item) => ({
+        date: item.session.startsAt.toISOString(),
+        category: item.session.category.name,
+        sport: sourceSport(item.session.category.sport, item.session.sport),
+        trainingType: item.session.trainingType, location: item.session.location,
+        status: !internal && item.status === "INJURED" ? "NOT_DISCLOSED" : item.status,
+        minutesPresent: item.minutesPresent,
+        ...(internal ? { justification: item.justification, notes: item.notes } : {}),
+      })),
+    } } : {}),
+    ...(sections.includes("MATCH") ? { matches: {
+      summary: {
+        matches: matches.length,
+        goals: matches.reduce((total, item) => total + item.goals, 0),
+        assists: matches.reduce((total, item) => total + item.assists, 0),
+        minutes: matches.reduce((total, item) => total + (item.minutesPlayed ?? 0), 0),
+      },
+      records: matches.map((item) => ({
+        date: item.match.startsAt.toISOString(), opponent: item.match.opponent,
+        competition: item.match.competition, sport: item.match.sport,
+        goals: item.goals, assists: item.assists, minutesPlayed: item.minutesPlayed,
+        lineupRole: item.lineupRole,
+        ...(internal ? { notes: item.notes } : {}),
+      })),
+    } } : {}),
+    ...(sections.includes("GPS") ? { gps: {
+      summary: {
+        sessions: gps.length,
+        totalDistanceMeters: gps.reduce((sum, item) => sum + Number(item.distanceMeters ?? 0), 0),
+        maxSpeedKmh: gps.reduce((max, item) => Math.max(max, Number(item.maxSpeedKmh ?? 0)), 0),
+      },
+      records: gps.map((item) => ({
+        date: item.activityAt.toISOString(), sport: item.sport, context: item.context,
+        durationMinutes: item.durationMinutes,
+        distanceMeters: item.distanceMeters === null ? null : Number(item.distanceMeters),
+        maxSpeedKmh: item.maxSpeedKmh === null ? null : Number(item.maxSpeedKmh),
+        sprintCount: item.sprintCount,
+        ...(internal ? { notes: item.notes } : {}),
+      })),
+    } } : {}),
+    ...(sections.includes("EVALUATION") ? { evaluations: evals.map((item) => ({
+      id: item.id, title: item.title ?? item.template?.name ?? "Avaliação",
+      sport: evaluationSport(item), date: item.evaluatedAt.toISOString(),
+      evaluatorName: item.evaluator?.name ?? null,
+      strengths: item.strengths, developmentPoints: item.developmentPoints,
+      nextGoals: item.nextGoals, summary: item.summary,
+      ...(internal ? { internalNotes: item.internalNotes } : {}),
+      scores: item.scores.map((score) => ({
+        area: score.area, criterion: score.metricLabel,
+        score: score.score, level: score.ratingLabel, description: score.ratingDescription,
+        ...(internal ? { notes: score.notes } : {}),
+      })),
+    })) } : {}),
+    ...(sections.includes("TECHNICAL_RECORD") ? { technicalRecords: history.map((entry) => ({
+      id: entry.id, date: entry.occurredAt.toISOString(),
+      title: entry.title, topic: entry.topic, source: entry.source,
+      sourceLabel: entry.sourceLabelSnapshot, sport: entry.sportSnapshot,
+      category: entry.categoryNameSnapshot, author: entry.authorNameSnapshot,
+      visibility: entry.visibility, content: entry.content,
+      followUpRequired: entry.followUpRequired,
+      followUpResolvedAt: entry.followUpResolvedAt?.toISOString() ?? null,
+      resolvedByName: entry.resolvedByNameSnapshot,
+    })) } : {}),
+    ...(sections.includes("MEASUREMENTS") ? { measurements: measurements.map((item) => ({
+      date: item.measuredAt.toISOString(),
+      heightCm: item.heightCm === null ? null : Number(item.heightCm),
+      weightKg: item.weightKg === null ? null : Number(item.weightKg),
+      wingspanCm: item.wingspanCm === null ? null : Number(item.wingspanCm),
+      ...(internal ? {
+        bmi: item.bmi === null ? null : Number(item.bmi),
+        bodyFatPercent: item.bodyFatPercent === null ? null : Number(item.bodyFatPercent),
+        muscleMassKg: item.muscleMassKg === null ? null : Number(item.muscleMassKg),
+        notes: item.notes,
+      } : {}),
+    })) } : {}),
+    ...(internal && sections.includes("GROWTH") ? { growth: {
+      whoReference: "OMS 2007 · altura por idade · 5–19 anos",
+      referenceSex: athlete.growthProfile?.referenceSex ?? null,
+      latest: growthLatest ? {
+        date: growthLatest.measuredAt.toISOString(),
+        ageLabel: growthLatest.exactAge?.label ?? null,
+        ageMonths: growthLatest.exactAge?.totalMonths ?? null,
+        heightCm: growthLatest.heightCm,
+        weightKg: growthLatest.weightKg,
+        bmi: growthLatest.bmi ?? null,
+        growthDeltaCm: growthLatest.growthDeltaCm ?? null,
+        growthVelocityCmPerYear: growthLatest.growthVelocityCmPerYear ?? null,
+      } : null,
+      targetHeight: growthTarget,
+      khamisRoche: growthProjection,
+      measurements: growthMetrics.map((item) => ({
+        id: item.id,
+        date: item.measuredAt.toISOString(),
+        ageLabel: item.exactAge?.label ?? null,
+        ageMonths: item.exactAge?.totalMonths ?? null,
+        heightCm: item.heightCm,
+        weightKg: item.weightKg,
+        bmi: item.bmi ?? null,
+        wingspanCm: item.wingspanCm ?? null,
+        sittingHeightCm: item.sittingHeightCm ?? null,
+        growthDeltaCm: item.growthDeltaCm ?? null,
+        growthVelocityCmPerYear: item.growthVelocityCmPerYear ?? null,
+      })),
+      boneAgeAssessments: boneAgeAssessments.map((item) => ({
+        id: item.id,
+        date: item.examinedAt.toISOString(),
+        boneAgeMonths: item.boneAgeMonths,
+        method: item.method,
+      })),
+      disclaimer: GROWTH_DISCLAIMER,
+    } } : {}),
+    ...(internal && sections.includes("DOCUMENTS") ? { documents: documents.map((item) => ({
+      id: item.id, title: item.title, category: item.category,
+      status: item.status, originalFileName: item.originalFileName,
+      createdAt: item.createdAt.toISOString(),
+      expiresAt: item.expiresAt?.toISOString() ?? null,
+    })) } : {}),
+  };
+
+  const rawToken = randomBytes(32).toString("hex");
+  const report = await prisma.performanceReport.create({
+    data: {
+      organizationId: user.organizationId, athleteId,
+      generatedByUserId: user.id,
+      title: `Prontuário ${internal ? "interno" : "compartilhável"} · ${reportDateLabel(periodStart)} a ${reportDateLabel(periodEnd)}`,
+      reportType: "CONSOLIDATED", sport: selectedSport ?? SportType.BOTH,
+      status: "GENERATED", periodStart, periodEnd,
+      includeScores: sections.includes("EVALUATION"), includeInternalNotes: internal,
+      snapshot,
+      fileName: `11up-prontuario-${internal ? "interno" : "compartilhavel"}-${athlete.id}-${periodStart.toISOString().slice(0,10)}.pdf`,
+      tokenHash: createHash("sha256").update(rawToken).digest("hex"),
+    },
+    select: { id: true },
+  });
+  revalidatePath(`/atletas/${athleteId}/performance/relatorios`);
+  revalidatePath(`/atletas/${athleteId}/dados`);
+  redirect(`/performance-report/${report.id}`);
 }

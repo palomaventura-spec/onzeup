@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { requireClubPermission } from "@/lib/club-access";
+import { getClubGrowthCategoryAccess, requireClubPermission } from "@/lib/club-access";
 import { hasEffectiveClubElite } from "@/lib/billing-entitlements";
 import ModuleTabs from "@/components/ModuleTabs";
 import SafeAvatar from "@/components/SafeAvatar";
@@ -286,6 +286,8 @@ export default async function AthletePerformancePage({
     { matches: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0 },
   );
 
+  const growthAccess = await getClubGrowthCategoryAccess(user, athlete.categoryId, "BOTH");
+
   const measurement = athlete.bodyMeasurements[0];
   const wellbeing = athlete.wellbeingEntries[0];
   const height = decimalNumber(measurement?.heightCm);
@@ -393,6 +395,9 @@ export default async function AthletePerformancePage({
             label: "Avaliações",
             href: `/atletas/${athlete.id}/performance/avaliacoes`,
           },
+          ...(growthAccess.canViewGrowth
+            ? [{ label: "Crescimento", href: `/atletas/${athlete.id}/performance/crescimento` }]
+            : []),
           {
             label: "Relatórios",
             href: `/atletas/${athlete.id}/performance/relatorios`,
@@ -576,7 +581,14 @@ export default async function AthletePerformancePage({
       <section className="athlete-performance-v4-secondary-grid">
         <article className="card athlete-performance-v4-detail-card">
           <span className="page-eyebrow">DADOS FÍSICOS</span>
-          <h2>Última medição</h2>
+          <div className="section-title-row" style={{ alignItems: "center" }}>
+            <h2>Última medição</h2>
+            {growthAccess.canViewGrowth ? (
+              <Link className="btn btn-small btn-secondary" href={`/atletas/${athlete.id}/performance/crescimento`}>
+                Abrir crescimento →
+              </Link>
+            ) : null}
+          </div>
 
           <div className="athlete-performance-v4-detail-grid">
             <div>

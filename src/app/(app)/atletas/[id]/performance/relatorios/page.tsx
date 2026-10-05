@@ -5,12 +5,13 @@ import SafeAvatar from "@/components/SafeAvatar";
 import ModuleTabs from "@/components/ModuleTabs";
 
 import { requireClubPermission } from "@/lib/club-access";
+import { getEffectiveClubRole } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
 
-import { generateIndividualPerformanceReport } from "../actions";
+import { generateIndividualPerformanceReport, generateSportsDossier } from "../actions";
 
 type ReportKind = "TRAINING" | "MATCH" | "GPS" | "EVALUATION";
-type ReportIconName = "training" | "match" | "gps" | "evaluation";
+type ReportIconName = "training" | "match" | "gps" | "evaluation" | "record";
 
 function ReportIcon({ name, size = 21 }: { name: ReportIconName; size?: number }) {
   const common = {
@@ -52,6 +53,16 @@ function ReportIcon({ name, size = 21 }: { name: ReportIconName; size?: number }
     );
   }
 
+  if (name === "record") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="3" width="16" height="18" rx="2" />
+        <path d="M8 8h8M8 12h8M8 16h5" />
+        <path d="m15 16 1.5 1.5 3-3" />
+      </svg>
+    );
+  }
+
   return (
     <svg {...common}>
       <rect x="5" y="3" width="14" height="18" rx="2" />
@@ -76,9 +87,16 @@ function reportTypeLabel(type: string) {
   if (type === "TRAINING") return "Treino";
   if (type === "MATCH") return "Jogo";
   if (type === "GPS") return "GPS";
-  if (type === "EVALUATION") return "Avaliação";
+  if (type === "EVALUATION") return "Avaliação profissional";
+  if (type === "TECHNICAL_RECORD") return "Registro técnico";
   if (type === "CONSOLIDATED") return "Consolidado";
   return type;
+}
+
+function reportSportLabel(sport: string) {
+  if (sport === "FOOTBALL") return "Campo";
+  if (sport === "FUTSAL") return "Futsal";
+  return "Mista / não definida";
 }
 
 function reportErrorMessage(error?: string) {
@@ -86,6 +104,9 @@ function reportErrorMessage(error?: string) {
   if (error === "avaliacao") return "Selecione uma avaliação finalizada para gerar o relatório.";
   if (error === "acesso") return "Atleta ou dados do relatório não encontrados.";
   if (error === "dados") return "Não foi possível identificar o tipo de relatório solicitado.";
+  if (error === "secoes") return "Escolha pelo menos uma seção para o prontuário.";
+  if (error === "confirmacao") return "Confirme a revisão do conteúdo antes de gerar o prontuário compartilhável.";
+  if (error === "sem-registros") return "Não há registros compartilháveis no período e na modalidade selecionados.";
   return null;
 }
 
@@ -140,6 +161,12 @@ export default async function AthleteReportsPage({
   const query = await searchParams;
 
   const pageSize = 10;
+  const canGenerateDossier = user.role !== "SUPER_ADMIN" && getEffectiveClubRole(user) === "MANAGER";
+  const reportWhere = {
+    athleteId: id,
+    organizationId: user.organizationId,
+    ...(canGenerateDossier ? {} : { reportType: { not: "CONSOLIDATED" as const } }),
+  };
 
   const athlete = await prisma.athlete.findFirst({
     where: {
@@ -165,11 +192,17 @@ export default async function AthleteReportsPage({
 
   if (!athlete) notFound();
 
-  const totalReports = await prisma.performanceReport.count({
+  const shareableTechnicalCount = await prisma.athleteHistoryEntry.count({
     where: {
-      athleteId: athlete.id,
       organizationId: user.organizationId,
+      athleteId: athlete.id,
+      visibility: "SHAREABLE",
+      source: { in: ["TRAINING", "MATCH", "MANUAL"] },
     },
+  });
+
+  const totalReports = await prisma.performanceReport.count({
+    where: reportWhere,
   });
 
   const totalPages = Math.max(1, Math.ceil(totalReports / pageSize));
@@ -179,10 +212,7 @@ export default async function AthleteReportsPage({
     : 1;
 
   const reports = await prisma.performanceReport.findMany({
-    where: {
-      athleteId: athlete.id,
-      organizationId: user.organizationId,
-    },
+    where: reportWhere,
     orderBy: { createdAt: "desc" },
     skip: (currentPage - 1) * pageSize,
     take: pageSize,
@@ -304,6 +334,10 @@ export default async function AthleteReportsPage({
             href: `/atletas/${athlete.id}/performance/avaliacoes`,
           },
           {
+            label: "Crescimento",
+            href: `/atletas/${athlete.id}/performance/crescimento`,
+          },
+          {
             label: "Relatórios",
             href: `/atletas/${athlete.id}/performance/relatorios`,
             active: true,
@@ -360,6 +394,57 @@ export default async function AthleteReportsPage({
           </article>
         ))}
 
+        <article className="card athlete-report-v8-card athlete-report-v8-record-card">
+          <div className="athlete-report-v8-card-head">
+            <span className="athlete-report-v8-icon">
+              <ReportIcon name="record" />
+            </span>
+            <div>
+              <span className="page-eyebrow">REGISTROS DA COMISSÃO</span>
+              <h3>Relatório de registro técnico</h3>
+            </div>
+          </div>
+
+          <p className="muted">
+            Observações técnicas registradas pela comissão, com data, modalidade,
+            categoria, responsável e acompanhamento. O documento será independente
+            da avaliação profissional e incluirá somente registros autorizados
+            para compartilhamento.
+          </p>
+
+          {shareableTechnicalCount ? (
+            <form action={generateIndividualPerformanceReport}>
+              <input type="hidden" name="athleteId" value={athlete.id} />
+              <input type="hidden" name="reportType" value="TECHNICAL_RECORD" />
+
+              <PeriodFields start={defaultStart} end={defaultEnd} />
+
+              <label className="athlete-report-v8-evaluation-select" style={{ marginTop: 12 }}>
+                Modalidade
+                <select name="sport" defaultValue="ALL">
+                  <option value="ALL">Todas as modalidades</option>
+                  <option value="FOOTBALL">Campo</option>
+                  <option value="FUTSAL">Futsal</option>
+                </select>
+              </label>
+
+              <div className="athlete-report-v8-card-actions">
+                <Link href={`/atletas/${athlete.id}/performance/treino`}>
+                  Ver registros do treino
+                </Link>
+                <button className="btn" type="submit">Gerar relatório</button>
+              </div>
+            </form>
+          ) : (
+            <div className="athlete-report-v8-no-evaluation">
+              <p>Não há registros autorizados para compartilhamento.</p>
+              <Link href={`/atletas/${athlete.id}/performance/treino`}>
+                Ver registros
+              </Link>
+            </div>
+          )}
+        </article>
+
         <article className="card athlete-report-v8-card athlete-report-v8-evaluation-card">
           <div className="athlete-report-v8-card-head">
             <span className="athlete-report-v8-icon">
@@ -415,6 +500,54 @@ export default async function AthleteReportsPage({
         </article>
       </section>
 
+      {canGenerateDossier ? (
+        <section className="card athlete-report-v8-dossier" aria-label="Prontuário esportivo">
+          <span className="page-eyebrow">PRONTUÁRIO ESPORTIVO</span>
+          <h2>Prontuário completo do atleta</h2>
+          <p className="muted">Os relatórios individuais acima continuam disponíveis. Gere uma versão consolidada com as seções desejadas, preservada no histórico.</p>
+          <div className="athlete-report-v8-dossier-grid">
+            {(["INTERNAL", "SHAREABLE"] as const).map((audience) => (
+              <form action={generateSportsDossier} key={audience} className="athlete-report-v8-dossier-form">
+                <h3>{audience === "INTERNAL" ? "Prontuário interno" : "Prontuário para compartilhamento"}</h3>
+                <p className="muted">{audience === "INTERNAL"
+                  ? "Apenas o gestor. Pode incluir crescimento, projeções e a relação dos documentos privados, com os anexos preservados na ficha."
+                  : "Sem crescimento/projeções, documentos, anexos e notas internas. Apenas registros técnicos marcados como compartilháveis."}</p>
+                <input type="hidden" name="athleteId" value={athlete.id}/>
+                <input type="hidden" name="audience" value={audience}/>
+                <PeriodFields start={defaultStart} end={defaultEnd}/>
+                <label className="athlete-report-v8-evaluation-select" style={{ marginTop: 12 }}>
+                  Modalidade
+                  <select name="sport" defaultValue="ALL">
+                    <option value="ALL">Campo e futsal</option>
+                    <option value="FOOTBALL">Campo</option>
+                    <option value="FUTSAL">Futsal</option>
+                  </select>
+                </label>
+                <div className="athlete-report-v8-dossier-checks">
+                  {([ ["TRAINING", "Treinos e frequência"], ["MATCH", "Jogos e estatísticas"],
+                      ["GPS", "GPS"], ["EVALUATION", "Avaliações e pareceres"],
+                      ["TECHNICAL_RECORD", "Registros técnicos"], ["MEASUREMENTS", "Evolução corporal"],
+                      ...(audience === "INTERNAL" ? [
+                        ["GROWTH", "Crescimento e projeções"],
+                        ["DOCUMENTS", "Inventário de documentos"],
+                      ] : []),
+                  ] as string[][]).map(([value, label]) => (
+                    <label key={value}><input type="checkbox" name="sections" value={value} defaultChecked/>{label}</label>
+                  ))}
+                </div>
+                {audience === "SHAREABLE" ? (
+                  <label className="athlete-report-v8-dossier-confirm">
+                    <input type="checkbox" name="confirmShare" value="yes" required/>
+                    Vou conferir o PDF e a autorização de compartilhamento antes de enviá-lo.
+                  </label>
+                ) : null}
+                <button className="btn" type="submit">Gerar {audience === "INTERNAL" ? "prontuário interno" : "prontuário compartilhável"}</button>
+              </form>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="card athlete-report-v8-history">
         <div className="section-title-row athlete-report-v8-history-head">
           <div>
@@ -437,9 +570,11 @@ export default async function AthleteReportsPage({
                     <th>Gerado em</th>
                     <th>Tipo</th>
                     <th>Relatório</th>
+                    <th>Modalidade</th>
                     <th>Período</th>
                     <th>Responsável</th>
                     <th>Status</th>
+                    <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -451,12 +586,31 @@ export default async function AthleteReportsPage({
                       <td>{report.createdAt.toLocaleDateString("pt-BR")}</td>
                       <td>
                         <span className="athlete-report-v8-type-badge">
-                          {reportTypeLabel(report.reportType)}
+                          {report.reportType === "CONSOLIDATED"
+                            ? (report.snapshot && !Array.isArray(report.snapshot)
+                                && typeof report.snapshot === "object"
+                                && "documentKind" in report.snapshot
+                                  ? report.snapshot.documentKind === "GROWTH_REPORT"
+                                    ? "Crescimento"
+                                    : report.snapshot.documentKind === "INTERNAL_DOSSIER"
+                                      ? "Prontuário interno"
+                                      : "Prontuário compartilhável"
+                                  : "Consolidado")
+                            : reportTypeLabel(report.reportType)}
                         </span>
                       </td>
                       <td>
-                        <strong>{report.title}</strong>
+                        <Link
+                          className="athlete-report-v8-document-link"
+                          href={`/performance-report/${report.id}`}
+                          title="Abrir o relatório salvo em uma nova aba"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {report.title} ↗
+                        </Link>
                       </td>
+                      <td>{reportSportLabel(report.sport)}</td>
                       <td>
                         {report.periodStart && report.periodEnd
                           ? `${formatDate(report.periodStart)} – ${formatDate(report.periodEnd)}`
@@ -467,6 +621,28 @@ export default async function AthleteReportsPage({
                         <span className="badge">
                           {report.status === "ARCHIVED" ? "Arquivado" : "Gerado"}
                         </span>
+                      </td>
+                      <td>
+                        <div className="athlete-report-v8-history-actions">
+                          <Link
+                            className="athlete-report-v8-history-action open"
+                            href={`/performance-report/${report.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Abrir o relatório salvo em uma nova aba"
+                          >
+                            Abrir relatório
+                          </Link>
+                          <Link
+                            className="athlete-report-v8-history-action pdf"
+                            href={`/performance-report/${report.id}?print=1`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Imprimir ou salvar novamente o relatório em PDF"
+                          >
+                            Imprimir / PDF
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -521,7 +697,7 @@ export default async function AthleteReportsPage({
           <div className="athlete-report-v8-empty">
             <strong>Nenhum relatório gerado ainda.</strong>
             <p className="muted">
-              Escolha Treino, Jogo, GPS ou uma Avaliação finalizada acima para criar o primeiro relatório.
+              Escolha Treino, Jogo, GPS, Registro Técnico ou uma Avaliação finalizada acima para criar o primeiro relatório.
             </p>
           </div>
         )}
@@ -664,13 +840,14 @@ export default async function AthleteReportsPage({
         }
 
         .athlete-report-v8-table-wrap {
-          overflow: hidden;
+          overflow-x: auto;
           border: 1px solid var(--report-line);
           border-radius: 14px;
         }
 
         .athlete-report-v8-table {
           width: 100%;
+          min-width: 1120px;
           margin: 0;
           border-collapse: collapse;
         }
@@ -702,6 +879,58 @@ export default async function AthleteReportsPage({
 
         .athlete-report-v8-table tbody tr.is-new {
           background: #f6fce9;
+        }
+
+        .athlete-report-v8-document-link {
+          color: #27547a;
+          font-weight: 800;
+          text-decoration: none;
+        }
+
+        .athlete-report-v8-document-link:hover {
+          color: #132f48;
+          text-decoration: underline;
+        }
+
+        .athlete-report-v8-history-actions {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 7px;
+          min-width: 205px;
+        }
+
+        .athlete-report-v8-history-action {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 30px;
+          padding: 5px 9px;
+          border: 1px solid #dce5e9;
+          border-radius: 8px;
+          color: #183746;
+          background: #fff;
+          font-size: 10px;
+          font-weight: 800;
+          text-decoration: none;
+          white-space: nowrap;
+        }
+
+        .athlete-report-v8-history-action:hover {
+          border-color: #99e600;
+          color: #07131d;
+          background: #f5fce7;
+        }
+
+        .athlete-report-v8-history-action.pdf {
+          background: #eff9d8;
+          border-color: #deefb6;
+          color: #365600;
+        }
+
+        .athlete-report-v8-record-card .btn:disabled {
+          opacity: .57;
+          cursor: not-allowed;
         }
 
         .athlete-report-v8-type-badge {
@@ -772,12 +1001,127 @@ export default async function AthleteReportsPage({
           margin: 5px 0 0;
         }
 
+        /* Prontuario: layout compacto */
+        .athlete-report-v8-dossier {
+          margin-top: 22px;
+          padding: 22px;
+          border: 1px solid var(--report-line);
+          border-radius: 20px;
+          background: #fff;
+        }
+
+        .athlete-report-v8-dossier h2 {
+          margin: 5px 0 8px;
+        }
+
+        .athlete-report-v8-dossier > .muted {
+          margin: 0;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .athlete-report-v8-dossier-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+          margin-top: 16px;
+        }
+
+        .athlete-report-v8-dossier-form {
+          display: grid;
+          min-width: 0;
+          align-content: start;
+          gap: 11px;
+          padding: 18px;
+          border: 1px solid var(--report-line);
+          border-radius: 16px;
+          background: #f9fbfa;
+        }
+
+        .athlete-report-v8-dossier-form h3 {
+          margin: 0;
+          font-size: 18px;
+        }
+
+        .athlete-report-v8-dossier-form > .muted {
+          margin: 0;
+          font-size: 12px;
+          line-height: 1.45;
+        }
+
+        .athlete-report-v8-dossier-checks {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 7px 10px;
+          margin: 2px 0;
+        }
+
+        .athlete-report-v8-dossier-checks label,
+        .athlete-report-v8-dossier-confirm {
+          display: flex !important;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 9px;
+          min-width: 0;
+          margin: 0;
+          padding: 8px 10px;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.35;
+          color: #34434d;
+          background: #fff;
+          border: 1px solid #e0e7e9;
+          border-radius: 9px;
+          cursor: pointer;
+        }
+
+        .athlete-report-v8-dossier-checks input[type="checkbox"],
+        .athlete-report-v8-dossier-confirm input[type="checkbox"] {
+          appearance: auto !important;
+          display: inline-block !important;
+          width: 16px !important;
+          min-width: 16px !important;
+          max-width: 16px !important;
+          height: 16px !important;
+          min-height: 16px !important;
+          max-height: 16px !important;
+          flex: 0 0 16px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          accent-color: #7daa00;
+          cursor: pointer;
+        }
+
+        .athlete-report-v8-dossier-form > .btn {
+          width: 100%;
+          margin-top: 2px;
+        }
+
+        @media (max-width: 1180px) {
+          .athlete-report-v8-dossier-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
         @media (max-width: 900px) {
           .athlete-report-v8-grid {
             grid-template-columns: 1fr;
           }
         }
 
+        @media (max-width: 600px) {
+          .athlete-report-v8-dossier {
+            padding: 15px;
+          }
+
+          .athlete-report-v8-dossier-form {
+            padding: 13px;
+          }
+
+          .athlete-report-v8-dossier-checks {
+            grid-template-columns: 1fr;
+          }
+        }
         @media (max-width: 760px) {
           .athlete-report-v8-history {
             padding: 18px 14px 14px;
@@ -788,7 +1132,7 @@ export default async function AthleteReportsPage({
           }
 
           .athlete-report-v8-table {
-            min-width: 820px;
+            min-width: 1120px;
           }
 
           .athlete-report-v8-pagination {

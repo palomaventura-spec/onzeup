@@ -23,6 +23,8 @@ type StaffScopedPermission = Extract<
   | "PERFORMANCE_REPORT_REVIEW"
   | "PERFORMANCE_REPORT_APPROVE"
   | "PERFORMANCE_REPORT_SEND"
+  | "GROWTH_VIEW"
+  | "GROWTH_MANAGE"
   | "GPS_VIEW"
   | "GPS_IMPORT"
   | "GPS_MANAGE"
@@ -257,6 +259,50 @@ export async function getClubTrainingCategoryAccess(
     canViewGps,
     canImportGps,
     canManageGps,
+  };
+}
+
+export async function getClubGrowthCategoryAccess(
+  user: OrganizationUser,
+  categoryId: string | null,
+  sport: SportType = "BOTH"
+) {
+  const roleCanView = hasClubPermission(
+    user,
+    "GROWTH_VIEW"
+  );
+
+  const roleCanManage = hasClubPermission(
+    user,
+    "GROWTH_MANAGE"
+  );
+
+  if (!categoryId) {
+    return {
+      canViewGrowth: roleCanView,
+      canManageGrowth: roleCanManage,
+    };
+  }
+
+  const scopedPermissions =
+    await findStaffCategoryPermissions(
+      user,
+      categoryId,
+      sport
+    );
+
+  const canManageGrowth =
+    roleCanManage ||
+    scopedPermissions.has("GROWTH_MANAGE");
+
+  const canViewGrowth =
+    canManageGrowth ||
+    roleCanView ||
+    scopedPermissions.has("GROWTH_VIEW");
+
+  return {
+    canViewGrowth,
+    canManageGrowth,
   };
 }
 
