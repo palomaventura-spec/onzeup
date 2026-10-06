@@ -17,6 +17,7 @@ import { prisma } from "@/lib/prisma";
 import { createTraining } from "./actions";
 
 import TrainingDeleteButton from "./TrainingDeleteButton";
+import TrainingCreateButton from "./TrainingCreateButton";
 
 type TrainingView = "upcoming" | "active" | "history";
 
@@ -27,6 +28,8 @@ type TrainingFilters = {
   view?: string;
 
   category?: string;
+
+  criado?: string;
 
 };
 
@@ -851,6 +854,18 @@ function statusCopy(item: (typeof rows)[number]) {
 
       ) : null}
 
+      {query.criado === "1" ? (
+
+        <div className="training-v10-notice" role="status">
+
+          <strong>✓ Treino adicionado com sucesso.</strong> O novo treino já está
+
+          exibido na categoria e na aba correspondentes à data cadastrada.
+
+        </div>
+
+      ) : null}
+
       <section className="training-v10-kpis">
 
         <article>
@@ -1061,7 +1076,7 @@ function statusCopy(item: (typeof rows)[number]) {
 
                 </label>
 
-                <button type="submit">Adicionar treino</button>
+                <TrainingCreateButton />
 
               </form>
 

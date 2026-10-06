@@ -12,6 +12,7 @@ import QtrColorSettings from "@/components/qtr/QtrColorSettings";
 type SearchParams = {
   week?: string;
   category?: string;
+  categories?: string;
   gerado?: string;
   salvo?: string;
   erro?: string;
@@ -40,6 +41,9 @@ type QtrEvent = {
   endTime?: string;
   location?: string;
   notes?: string;
+  sourceType?: "TRAINING" | "MATCH";
+  sourceId?: string;
+  hidden?: boolean;
 };
 
 type QtrRow = {
@@ -172,21 +176,44 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
-function qtrHref(week: string, category: string) {
-  return `/qtr?week=${encodeURIComponent(week)}&category=${encodeURIComponent(category)}`;
+function qtrHref(
+  week: string,
+  category: string,
+  selectedCategories: string[] = [],
+) {
+  const query = new URLSearchParams({
+    week,
+    category,
+  });
+
+  if (
+    category === "__custom__" &&
+    selectedCategories.length
+  ) {
+    query.set(
+      "categories",
+      selectedCategories.join("|"),
+    );
+  }
+
+  return `/qtr?${query.toString()}`;
 }
 
 function countEvents(rows: QtrRow[], type?: string) {
   const dayKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
   return rows.reduce((total, row) => {
-    const events = dayKeys.flatMap((day) =>
-      Array.isArray(row?.[day]) ? row[day] : [],
-    );
+    const events = dayKeys
+      .flatMap((day) =>
+        Array.isArray(row?.[day]) ? row[day] : [],
+      )
+      .filter((event) => !event?.hidden);
 
     if (!type) return total + events.length;
 
-    return total + events.filter((event) => event?.type === type).length;
+    return total + events.filter(
+      (event) => event?.type === type,
+    ).length;
   }, 0);
 }
 
@@ -290,15 +317,39 @@ export default async function QtrPage({
     weekStart,
   );
 
+  const requestedCustomCategories = String(
+    params.categories || "",
+  )
+    .split("|")
+    .map((value) => value.trim())
+    .filter(
+      (value) =>
+        value &&
+        categories.some(
+          (category) => category.name === value,
+        ),
+    );
+
   const validCategory =
-    params.category &&
-    (params.category === "__all__" ||
-      categories.some((category) => category.name === params.category))
-      ? params.category
-      : null;
+    params.category === "__custom__" &&
+    requestedCustomCategories.length
+      ? "__custom__"
+      : params.category &&
+          (params.category === "__all__" ||
+            categories.some(
+              (category) =>
+                category.name === params.category,
+            ))
+        ? params.category
+        : null;
 
   const selectedCategory =
     validCategory || categories[0]?.name || "__all__";
+
+  const selectedCategories =
+    selectedCategory === "__custom__"
+      ? requestedCustomCategories
+      : [];
 
   const initialRows = parseRows(qtr?.dataJson, categories);
 
@@ -333,11 +384,11 @@ export default async function QtrPage({
         </div>
 
         <div>
-          <Link href={qtrHref(isoDate(previous), selectedCategory)}>
+          <Link href={qtrHref(isoDate(previous), selectedCategory, selectedCategories)}>
             <Icon name="left" size={16} />
             Semana anterior
           </Link>
-          <Link className="primary" href={qtrHref(isoDate(next), selectedCategory)}>
+          <Link className="primary" href={qtrHref(isoDate(next), selectedCategory, selectedCategories)}>
             Próxima semana
             <Icon name="right" size={16} />
           </Link>
@@ -401,6 +452,11 @@ export default async function QtrPage({
           <form action={generateQtr}>
             <input type="hidden" name="weekStart" value={isoDate(weekStart)} />
             <input type="hidden" name="category" value={selectedCategory} />
+            <input
+              type="hidden"
+              name="categories"
+              value={selectedCategories.join("|")}
+            />
             <QtrGenerateButton />
           </form>
         </section>
@@ -434,12 +490,13 @@ export default async function QtrPage({
         ) : null}
 
         <QtrEditor
-          key={`${isoDate(weekStart)}-${qtr?.updatedAt?.getTime() ?? 0}-${selectedCategory}`}
+          key={`${isoDate(weekStart)}-${qtr?.updatedAt?.getTime() ?? 0}-${selectedCategory}-${selectedCategories.join("|")}`}
           weekStart={isoDate(weekStart)}
           qtrId={qtr?.id ?? null}
           initialRows={initialRows}
           categories={categories}
           initialCategory={selectedCategory}
+          initialSelectedCategories={selectedCategories}
           eventColors={{
             TRAINING: qtrSettings?.trainingColor ?? "#2B9D47",
             MATCH: qtrSettings?.matchColor ?? "#D4AA18",

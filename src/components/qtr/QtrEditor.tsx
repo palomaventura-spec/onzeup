@@ -12,6 +12,9 @@ type QtrEvent = {
   endTime?: string;
   location?: string;
   notes?: string;
+  sourceType?: "TRAINING" | "MATCH";
+  sourceId?: string;
+  hidden?: boolean;
 };
 
 type QtrRow = {
@@ -109,6 +112,7 @@ export default function QtrEditor({
   qtrId,
   categories,
   initialCategory,
+  initialSelectedCategories,
   eventColors,
   trainingUsesCategoryColor,
   saveAction,
@@ -124,6 +128,7 @@ export default function QtrEditor({
     accentColor: string;
   }[];
   initialCategory: string;
+  initialSelectedCategories: string[];
   eventColors: Record<EventType, string>;
   trainingUsesCategoryColor: boolean;
   saveAction: (formData: FormData) => Promise<void>;
@@ -132,6 +137,8 @@ export default function QtrEditor({
   const [rows, setRows] = useState<QtrRow[]>(initialRows);
   const [selectedCategory, setSelectedCategory] =
     useState(initialCategory);
+  const [selectedCategories, setSelectedCategories] =
+    useState<string[]>(initialSelectedCategories);
 
   const [editing, setEditing] = useState<{
     rowIndex: number;
@@ -146,12 +153,18 @@ export default function QtrEditor({
           row,
           rowIndex,
         }))
-        .filter(
-          ({ row }) =>
-            selectedCategory === "__all__" ||
-            row.category === selectedCategory
-        ),
-    [rows, selectedCategory]
+        .filter(({ row }) => {
+          if (selectedCategory === "__all__") return true;
+
+          if (selectedCategory === "__custom__") {
+            return selectedCategories.includes(
+              row.category,
+            );
+          }
+
+          return row.category === selectedCategory;
+        }),
+    [rows, selectedCategory, selectedCategories],
   );
 
   const currentEvent = useMemo(() => {
@@ -176,47 +189,102 @@ export default function QtrEditor({
     setSelectedCategory(category);
     setEditing(null);
 
+    if (category === "__custom__") {
+      if (!selectedCategories.length) {
+        setSelectedCategories(
+          categories
+            .slice(0, Math.min(2, categories.length))
+            .map((item) => item.name),
+        );
+      }
+
+      return;
+    }
+
     const query = new URLSearchParams({
       week: weekStart,
       category,
     });
 
     window.location.assign(
-      `/qtr?${query.toString()}`
+      `/qtr?${query.toString()}`,
+    );
+  }
+
+  function toggleCustomCategory(category: string) {
+    setSelectedCategories((current) =>
+      current.includes(category)
+        ? current.filter((item) => item !== category)
+        : [...current, category],
+    );
+  }
+
+  function applyCustomSelection() {
+    if (!selectedCategories.length) {
+      window.alert(
+        "Marque pelo menos uma categoria para visualizar.",
+      );
+      return;
+    }
+
+    const query = new URLSearchParams({
+      week: weekStart,
+      category: "__custom__",
+      categories: selectedCategories.join("|"),
+    });
+
+    window.location.assign(
+      `/qtr?${query.toString()}`,
     );
   }
 
   function saveEvent(formData: FormData) {
     if (!canEdit || !editing) return;
 
+    const existingEvent =
+      editing.eventIndex === null
+        ? null
+        : rows[editing.rowIndex]?.[
+            editing.day
+          ]?.[editing.eventIndex] ?? null;
+
     const event: QtrEvent = {
       type: String(
-        formData.get("type") || "OTHER"
+        formData.get("type") || "OTHER",
       ) as EventType,
 
       title: String(
-        formData.get("title") || ""
+        formData.get("title") || "",
       ).trim(),
 
       startTime:
         String(
-          formData.get("startTime") || ""
+          formData.get("startTime") || "",
         ).trim() || undefined,
 
       endTime:
         String(
-          formData.get("endTime") || ""
+          formData.get("endTime") || "",
         ).trim() || undefined,
 
       location:
         String(
-          formData.get("location") || ""
+          formData.get("location") || "",
         ).trim() || undefined,
 
       notes:
         String(
-          formData.get("notes") || ""
+          formData.get("notes") || "",
         ).trim() || undefined,
+
+      sourceType:
+        existingEvent?.sourceType,
+
+      sourceId:
+        existingEvent?.sourceId,
+
+      hidden:
+        existingEvent?.hidden === true,
     };
 
     setRows((current) =>
@@ -246,7 +314,7 @@ export default function QtrEditor({
     setEditing(null);
   }
 
-  function deleteEvent() {
+  function removeOrHideEvent() {
     if (
       !canEdit ||
       !editing ||
@@ -261,32 +329,125 @@ export default function QtrEditor({
           return row;
         }
 
-        const events = row[
-          editing.day
-        ].filter(
-          (_, index) =>
-            index !== editing.eventIndex
-        );
+        const events = [
+          ...row[editing.day],
+        ];
+
+        const currentEvent =
+          events[editing.eventIndex!];
+
+        if (!currentEvent) return row;
+
+        const synchronizedLike =
+          Boolean(
+            currentEvent.sourceType &&
+              currentEvent.sourceId,
+          ) ||
+          currentEvent.type === "TRAINING" ||
+          currentEvent.type === "MATCH" ||
+          currentEvent.type === "FRIENDLY";
+
+        if (synchronizedLike) {
+          events[editing.eventIndex!] = {
+            ...currentEvent,
+            hidden: true,
+          };
+        } else {
+          events.splice(
+            editing.eventIndex!,
+            1,
+          );
+        }
 
         return {
           ...row,
           [editing.day]: events,
         };
-      })
+      }),
     );
 
     setEditing(null);
   }
 
+  function restoreHiddenEvent(
+    rowIndex: number,
+    day: DayKey,
+    eventIndex: number,
+  ) {
+    setRows((current) =>
+      current.map((row, currentRowIndex) => {
+        if (currentRowIndex !== rowIndex) {
+          return row;
+        }
+
+        const events = [...row[day]];
+        const event = events[eventIndex];
+
+        if (!event) return row;
+
+        events[eventIndex] = {
+          ...event,
+          hidden: false,
+        };
+
+        return {
+          ...row,
+          [day]: events,
+        };
+      }),
+    );
+  }
+
+
   const hasSpecificCategory =
-    selectedCategory !== "__all__";
+    selectedCategory !== "__all__" &&
+    selectedCategory !== "__custom__";
+
+  const hasCustomSelection =
+    selectedCategory === "__custom__";
+
+  const customSelectionLabel =
+    selectedCategories.length === 1
+      ? selectedCategories[0]
+      : `${selectedCategories.length} categorias`;
+
+  const hiddenEvents = useMemo(
+    () =>
+      rows.flatMap((row, rowIndex) =>
+        DAYS.flatMap((day) =>
+          row[day.key]
+            .map((event, eventIndex) => ({
+              row,
+              rowIndex,
+              day: day.key,
+              dayLabel: day.label,
+              event,
+              eventIndex,
+            }))
+            .filter(({ event }) => event.hidden),
+        ),
+      ),
+    [rows],
+  );
 
   function openCategoryPdf() {
     const query = new URLSearchParams({
       week: weekStart,
     });
 
-    if (hasSpecificCategory) {
+    if (hasCustomSelection) {
+      if (!selectedCategories.length) {
+        window.alert(
+          "Marque pelo menos uma categoria para gerar o PDF.",
+        );
+        return;
+      }
+
+      query.set(
+        "categories",
+        selectedCategories.join("|"),
+      );
+    } else if (hasSpecificCategory) {
       query.set(
         "category",
         selectedCategory,
@@ -376,7 +537,7 @@ export default function QtrEditor({
           style={{
             display: "grid",
             gap: 6,
-            minWidth: 260,
+            minWidth: 280,
           }}
         >
           <span
@@ -387,14 +548,14 @@ export default function QtrEditor({
               letterSpacing: ".04em",
             }}
           >
-            CATEGORIA
+            CATEGORIAS NO QTS
           </span>
 
           <select
             value={selectedCategory}
             onChange={(event) =>
               changeCategory(
-                event.target.value
+                event.target.value,
               )
             }
             style={{
@@ -411,6 +572,10 @@ export default function QtrEditor({
               Todas as categorias
             </option>
 
+            <option value="__custom__">
+              Selecionar categorias...
+            </option>
+
             {categories.map(
               (category) => (
                 <option
@@ -419,7 +584,7 @@ export default function QtrEditor({
                 >
                   {category.name}
                 </option>
-              )
+              ),
             )}
           </select>
         </label>
@@ -430,15 +595,124 @@ export default function QtrEditor({
             fontSize: 13,
           }}
         >
-          {hasSpecificCategory
-            ? canEdit
-              ? `Você está editando apenas o QTS de ${selectedCategory}.`
-              : `Visualizando o QTS de ${selectedCategory}.`
-            : canEdit
-              ? "Visão geral da coordenação. Selecione uma categoria para compartilhar."
-              : "Visão geral do QTS. Selecione uma categoria para visualizar ou compartilhar."}
+          {hasCustomSelection
+            ? `${selectedCategories.length} categoria(s) selecionada(s).`
+            : hasSpecificCategory
+              ? canEdit
+                ? `Você está editando apenas o QTS de ${selectedCategory}.`
+                : `Visualizando o QTS de ${selectedCategory}.`
+              : canEdit
+                ? "Visão geral da coordenação. Você também pode selecionar várias categorias."
+                : "Visão geral do QTS. Você também pode selecionar várias categorias."}
         </div>
       </div>
+
+      {hasCustomSelection ? (
+        <section
+          style={{
+            margin: "0 0 16px",
+            padding: 14,
+            border: "1px solid #dfe6ea",
+            borderRadius: 14,
+            background: "#f8fafb",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 10,
+            }}
+          >
+            <div>
+              <strong
+                style={{
+                  display: "block",
+                  color: "#26343c",
+                }}
+              >
+                Seleção personalizada
+              </strong>
+              <span
+                style={{
+                  color: "#6b7785",
+                  fontSize: 12,
+                }}
+              >
+                Marque somente as categorias que deseja visualizar e levar para o PDF.
+              </span>
+            </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={applyCustomSelection}
+              style={{
+                minHeight: 36,
+                padding: "0 14px",
+                borderRadius: 9,
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              Aplicar seleção
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(118px, 1fr))",
+              gap: 7,
+            }}
+          >
+            {categories.map((category) => (
+              <label
+                key={category.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  minHeight: 38,
+                  padding: "6px 9px",
+                  border: "1px solid #e0e6ea",
+                  borderRadius: 9,
+                  background: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedCategories.includes(
+                    category.name,
+                  )}
+                  onChange={() =>
+                    toggleCustomCategory(
+                      category.name,
+                    )
+                  }
+                  style={{
+                    width: 18,
+                    height: 18,
+                    minWidth: 18,
+                    minHeight: 18,
+                    margin: 0,
+                    padding: 0,
+                    flex: "0 0 18px",
+                  }}
+                />
+                <span style={{ lineHeight: 1.15 }}>{category.name}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <form action={saveAction}>
         <input
@@ -451,6 +725,16 @@ export default function QtrEditor({
           type="hidden"
           name="category"
           value={selectedCategory}
+        />
+
+        <input
+          type="hidden"
+          name="categories"
+          value={
+            hasCustomSelection
+              ? selectedCategories.join("|")
+              : ""
+          }
         />
 
         <input
@@ -525,7 +809,9 @@ export default function QtrEditor({
 
                 {DAYS.map((day) => {
                   const events =
-                    row[day.key] || [];
+                    (row[day.key] || []).filter(
+                      (event) => !event.hidden,
+                    );
 
                   return (
                     <div
@@ -754,6 +1040,72 @@ export default function QtrEditor({
           </div>
         ) : null}
 
+        {canEdit && hiddenEvents.length ? (
+          <section
+            style={{
+              marginTop: 14,
+              padding: 14,
+              border: "1px dashed #c8d2d8",
+              borderRadius: 12,
+              background: "#fbfcfd",
+            }}
+          >
+            <strong
+              style={{
+                display: "block",
+                marginBottom: 8,
+                color: "#34434c",
+              }}
+            >
+              Ocultos do QTS ({hiddenEvents.length})
+            </strong>
+
+            <p
+              style={{
+                margin: "0 0 10px",
+                color: "#6b7785",
+                fontSize: 12,
+              }}
+            >
+              Estes itens continuam cadastrados em Treinos/Jogos, mas não aparecem no quadro nem no PDF.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
+              {hiddenEvents.map(
+                ({
+                  row,
+                  rowIndex,
+                  day,
+                  dayLabel,
+                  event,
+                  eventIndex,
+                }) => (
+                  <button
+                    key={`${rowIndex}-${day}-${eventIndex}`}
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() =>
+                      restoreHiddenEvent(
+                        rowIndex,
+                        day,
+                        eventIndex,
+                      )
+                    }
+                  >
+                    Mostrar novamente · {row.category} · {dayLabel} · {event.title}
+                  </button>
+                ),
+              )}
+            </div>
+          </section>
+        ) : null}
+
         <div className="qtr-bottom-actions">
           {canEdit ? (
             <button type="submit">
@@ -766,9 +1118,11 @@ export default function QtrEditor({
             className="btn-secondary"
             onClick={openCategoryPdf}
           >
-            {hasSpecificCategory
-              ? `Gerar PDF — ${selectedCategory}`
-              : "Gerar PDF — todas as categorias"}
+            {hasCustomSelection
+              ? `Gerar PDF — ${customSelectionLabel}`
+              : hasSpecificCategory
+                ? `Gerar PDF — ${selectedCategory}`
+                : "Gerar PDF — todas as categorias"}
           </button>
 
           {ENABLE_QTS_SHARING && hasSpecificCategory ? (
@@ -945,6 +1299,24 @@ export default function QtrEditor({
                 />
               </label>
 
+              {editing.eventIndex !== null &&
+              (currentEvent.sourceType ||
+                currentEvent.type === "TRAINING" ||
+                currentEvent.type === "MATCH" ||
+                currentEvent.type === "FRIENDLY") ? (
+                <div
+                  style={{
+                    padding: "9px 10px",
+                    borderRadius: 9,
+                    background: "#f4f7f8",
+                    color: "#5f6d75",
+                    fontSize: 12,
+                  }}
+                >
+                  Se este treino ou jogo ainda estiver incerto, use <strong>Ocultar do QTS</strong>. O cadastro original continuará no sistema e poderá ser mostrado novamente depois.
+                </div>
+              ) : null}
+
               <div className="actions">
                 <button type="submit">
                   Salvar atividade
@@ -955,9 +1327,14 @@ export default function QtrEditor({
                   <button
                     className="btn-danger"
                     type="button"
-                    onClick={deleteEvent}
+                    onClick={removeOrHideEvent}
                   >
-                    Excluir atividade
+                    {currentEvent.sourceType ||
+                    currentEvent.type === "TRAINING" ||
+                    currentEvent.type === "MATCH" ||
+                    currentEvent.type === "FRIENDLY"
+                      ? "Ocultar do QTS"
+                      : "Excluir atividade"}
                   </button>
                 ) : null}
               </div>

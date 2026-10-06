@@ -271,6 +271,21 @@ export async function createTraining(formData: FormData) {
 
   revalidateTrainingPaths(training.id);
   revalidatePath("/qtr");
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const query = new URLSearchParams({
+    sport: String(sport),
+    category: categoryId,
+    criado: "1",
+  });
+
+  if (date < today) {
+    query.set("view", "active");
+  }
+
+  redirect(`/treinos?${query.toString()}`);
 }
 
 export async function updateTraining(formData: FormData) {

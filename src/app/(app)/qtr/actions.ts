@@ -8,6 +8,8 @@ import { requireClubPermission } from "@/lib/club-access";
 const clean = (value: FormDataEntryValue | null) =>
   String(value ?? "").trim();
 
+type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
 type QtrEvent = {
   type: "TRAINING" | "MATCH" | "FRIENDLY" | "EVENT" | "OTHER";
   title: string;
@@ -15,6 +17,9 @@ type QtrEvent = {
   endTime?: string;
   location?: string;
   notes?: string;
+  sourceType?: "TRAINING" | "MATCH";
+  sourceId?: string;
+  hidden?: boolean;
 };
 
 type QtrRow = {
@@ -29,9 +34,19 @@ type QtrRow = {
   sun: QtrEvent[];
 };
 
+const DAY_KEYS: DayKey[] = [
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+  "sun",
+];
+
 function blankRow(
   category = "",
-  birthYear: number | null = null
+  birthYear: number | null = null,
 ): QtrRow {
   return {
     category,
@@ -49,24 +64,14 @@ function blankRow(
 function normalizeRows(raw: unknown): QtrRow[] {
   if (!Array.isArray(raw)) return [];
 
-  const keys = [
-    "mon",
-    "tue",
-    "wed",
-    "thu",
-    "fri",
-    "sat",
-    "sun",
-  ] as const;
-
   return raw
     .map((row: any) => {
       const normalized = blankRow(
         clean(row?.category),
-        row?.birthYear ?? null
+        row?.birthYear ?? null,
       );
 
-      for (const key of keys) {
+      for (const key of DAY_KEYS) {
         const value = row?.[key];
 
         if (Array.isArray(value)) {
@@ -100,12 +105,25 @@ function normalizeRows(raw: unknown): QtrRow[] {
               notes:
                 clean(event?.notes) ||
                 undefined,
+
+              sourceType:
+                event?.sourceType === "TRAINING" ||
+                event?.sourceType === "MATCH"
+                  ? event.sourceType
+                  : undefined,
+
+              sourceId:
+                clean(event?.sourceId) ||
+                undefined,
+
+              hidden:
+                event?.hidden === true,
             }))
             .filter(
               (event: QtrEvent) =>
                 event.title ||
                 event.startTime ||
-                event.location
+                event.location,
             );
         }
       }
@@ -115,10 +133,80 @@ function normalizeRows(raw: unknown): QtrRow[] {
     .filter((row) => row.category);
 }
 
+function readRows(raw?: string | null) {
+  if (!raw) return [] as QtrRow[];
+
+  try {
+    return normalizeRows(JSON.parse(raw));
+  } catch {
+    return [] as QtrRow[];
+  }
+}
+
+function eventSignature(
+  category: string,
+  day: DayKey,
+  event: QtrEvent,
+) {
+  return [
+    category,
+    day,
+    event.type,
+    event.title,
+    event.startTime ?? "",
+    event.location ?? "",
+  ].join("||");
+}
+
+function collectHiddenState(rows: QtrRow[]) {
+  const sources = new Set<string>();
+  const signatures = new Set<string>();
+
+  rows.forEach((row) => {
+    DAY_KEYS.forEach((day) => {
+      row[day].forEach((event) => {
+        if (!event.hidden) return;
+
+        if (event.sourceType && event.sourceId) {
+          sources.add(`${event.sourceType}:${event.sourceId}`);
+        }
+
+        signatures.add(
+          eventSignature(row.category, day, event),
+        );
+      });
+    });
+  });
+
+  return { sources, signatures };
+}
+
+function shouldStayHidden(
+  hidden: ReturnType<typeof collectHiddenState>,
+  category: string,
+  day: DayKey,
+  event: QtrEvent,
+) {
+  if (
+    event.sourceType &&
+    event.sourceId &&
+    hidden.sources.has(
+      `${event.sourceType}:${event.sourceId}`,
+    )
+  ) {
+    return true;
+  }
+
+  return hidden.signatures.has(
+    eventSignature(category, day, event),
+  );
+}
+
 function redirectToQtr(
   weekStart: string,
   category: string,
-  status: "gerado" | "salvo"
+  selectedCategories: string,
+  status: "gerado" | "salvo",
 ) {
   const query = new URLSearchParams({
     week: weekStart,
@@ -126,25 +214,35 @@ function redirectToQtr(
     [status]: "1",
   });
 
+  if (
+    category === "__custom__" &&
+    selectedCategories
+  ) {
+    query.set("categories", selectedCategories);
+  }
+
   redirect(`/qtr?${query.toString()}`);
 }
 
 export async function saveQtr(
-  formData: FormData
+  formData: FormData,
 ) {
   const user =
     await requireClubPermission("QTR_EDIT");
 
   const weekStart = clean(
-    formData.get("weekStart")
+    formData.get("weekStart"),
   );
 
   const category =
     clean(formData.get("category")) ||
     "__all__";
 
+  const selectedCategories =
+    clean(formData.get("categories"));
+
   const data = clean(
-    formData.get("qtrData")
+    formData.get("qtrData"),
   );
 
   if (!weekStart || !data) return;
@@ -166,7 +264,7 @@ export async function saveQtr(
           user.organizationId,
 
         weekStart: new Date(
-          `${weekStart}T12:00:00`
+          `${weekStart}T12:00:00`,
         ),
       },
     },
@@ -181,7 +279,7 @@ export async function saveQtr(
         user.organizationId,
 
       weekStart: new Date(
-        `${weekStart}T12:00:00`
+        `${weekStart}T12:00:00`,
       ),
 
       title: "QTS semanal",
@@ -195,42 +293,65 @@ export async function saveQtr(
   redirectToQtr(
     weekStart,
     category,
-    "salvo"
+    selectedCategories,
+    "salvo",
   );
 }
 
 export async function generateQtr(
-  formData: FormData
+  formData: FormData,
 ) {
   const user =
     await requireClubPermission("QTR_EDIT");
 
   const weekStart = clean(
-    formData.get("weekStart")
+    formData.get("weekStart"),
   );
 
   const category =
     clean(formData.get("category")) ||
     "__all__";
 
+  const selectedCategories =
+    clean(formData.get("categories"));
+
   if (!weekStart) {
     redirect(
-      "/qtr?erro=sem-semana"
+      "/qtr?erro=sem-semana",
     );
   }
 
   const start = new Date(
-    `${weekStart}T00:00:00`
+    `${weekStart}T00:00:00`,
   );
 
   const end = new Date(start);
+  end.setDate(end.getDate() + 7);
 
-  end.setDate(
-    end.getDate() + 7
+  const storedWeekStart = new Date(
+    `${weekStart}T12:00:00`,
   );
 
-  const categories =
-    await prisma.category.findMany({
+  const [
+    existingQtr,
+    categories,
+    trainings,
+    matches,
+  ] = await Promise.all([
+    prisma.qtr.findUnique({
+      where: {
+        organizationId_weekStart: {
+          organizationId:
+            user.organizationId,
+          weekStart: storedWeekStart,
+        },
+      },
+      select: {
+        dataJson: true,
+      },
+    }),
+
+    prisma.category.findMany({
       where: {
         organizationId:
           user.organizationId,
@@ -245,10 +366,9 @@ export async function generateQtr(
           name: "asc",
         },
       ],
-    });
+    }),
 
-  const trainings =
-    await prisma.trainingSchedule.findMany({
+    prisma.trainingSchedule.findMany({
       where: {
         organizationId:
           user.organizationId,
@@ -272,10 +392,9 @@ export async function generateQtr(
           startTime: "asc",
         },
       ],
-    });
+    }),
 
-  const matches =
-    await prisma.match.findMany({
+    prisma.match.findMany({
       where: {
         organizationId:
           user.organizationId,
@@ -291,7 +410,12 @@ export async function generateQtr(
           startsAt: "asc",
         },
       ],
-    });
+    }),
+  ]);
+
+  const hidden = collectHiddenState(
+    readRows(existingQtr?.dataJson),
+  );
 
   const dayKeys = [
     "sun",
@@ -311,15 +435,15 @@ export async function generateQtr(
       item.id,
       blankRow(
         item.name,
-        item.birthYear
-      )
+        item.birthYear,
+      ),
     );
   }
 
   for (const training of trainings) {
     const row =
       rowsByCategory.get(
-        training.categoryId
+        training.categoryId,
       );
 
     if (!row) continue;
@@ -334,7 +458,7 @@ export async function generateQtr(
 
     if (!key) continue;
 
-    row[key].push({
+    const event: QtrEvent = {
       type: "TRAINING",
       title: "Treino",
       startTime:
@@ -347,13 +471,24 @@ export async function generateQtr(
       notes:
         training.notes ??
         undefined,
-    });
+      sourceType: "TRAINING",
+      sourceId: training.id,
+    };
+
+    event.hidden = shouldStayHidden(
+      hidden,
+      row.category,
+      key,
+      event,
+    );
+
+    row[key].push(event);
   }
 
   for (const match of matches) {
     const row =
       rowsByCategory.get(
-        match.categoryId
+        match.categoryId,
       );
 
     if (!row) continue;
@@ -370,10 +505,10 @@ export async function generateQtr(
 
     const friendly =
       competition.includes(
-        "amistoso"
+        "amistoso",
       );
 
-    row[key].push({
+    const event: QtrEvent = {
       type: friendly
         ? "FRIENDLY"
         : "MATCH",
@@ -389,7 +524,7 @@ export async function generateQtr(
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
-          }
+          },
         ),
 
       location:
@@ -399,15 +534,27 @@ export async function generateQtr(
       notes:
         match.competition ??
         undefined,
-    });
+
+      sourceType: "MATCH",
+      sourceId: match.id,
+    };
+
+    event.hidden = shouldStayHidden(
+      hidden,
+      row.category,
+      key,
+      event,
+    );
+
+    row[key].push(event);
   }
 
   const rows =
     categories.map(
       (item) =>
         rowsByCategory.get(
-          item.id
-        )!
+          item.id,
+        )!,
     );
 
   await prisma.qtr.upsert({
@@ -416,9 +563,7 @@ export async function generateQtr(
         organizationId:
           user.organizationId,
 
-        weekStart: new Date(
-          `${weekStart}T12:00:00`
-        ),
+        weekStart: storedWeekStart,
       },
     },
 
@@ -434,9 +579,7 @@ export async function generateQtr(
       organizationId:
         user.organizationId,
 
-      weekStart: new Date(
-        `${weekStart}T12:00:00`
-      ),
+      weekStart: storedWeekStart,
 
       title:
         "QTS semanal",
@@ -451,7 +594,8 @@ export async function generateQtr(
   redirectToQtr(
     weekStart,
     category,
-    "gerado"
+    selectedCategories,
+    "gerado",
   );
 }
 
