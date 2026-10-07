@@ -1,3 +1,4 @@
+import { AthleteHistoryVisibility } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -5,6 +6,7 @@ import SafeAvatar from "@/components/SafeAvatar";
 import ModuleTabs from "@/components/ModuleTabs";
 
 import { requireClubPermission } from "@/lib/club-access";
+import { getEffectiveClubRole } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
 
 
@@ -155,6 +157,24 @@ function formatPercent(value: number | null) {
   })}%`;
 }
 
+function historyVisibilityLabel(visibility: AthleteHistoryVisibility) {
+  switch (visibility) {
+    case AthleteHistoryVisibility.MANAGEMENT:
+      return "Restrito à gestão";
+    case AthleteHistoryVisibility.SHAREABLE:
+      return "Autorizado para compartilhamento";
+    default:
+      return "Equipe técnica";
+  }
+}
+
+function historySportLabel(sport: string | null) {
+  if (sport === "FOOTBALL") return "Campo";
+  if (sport === "FUTSAL") return "Futsal";
+  if (sport === "BOTH") return "Ambas";
+  return "Não informada";
+}
+
 function historyTopicLabel(topic: string) {
   switch (topic) {
     case "TECHNICAL":
@@ -182,6 +202,7 @@ export default async function AthleteTrainingPerformancePage({
   params: Promise<{ id: string }>;
 }) {
   const user = await requireClubPermission("ATHLETES_VIEW");
+  const canViewManagement = getEffectiveClubRole(user) === "MANAGER";
   const { id } = await params;
 
   const athlete = await prisma.athlete.findFirst({
@@ -219,6 +240,17 @@ export default async function AthleteTrainingPerformancePage({
       historyEntries: {
         where: {
           source: "TRAINING",
+          // Registros exclusivos da gestão nunca são carregados para os demais perfis.
+          ...(canViewManagement
+            ? {}
+            : {
+                visibility: {
+                  in: [
+                    AthleteHistoryVisibility.TECHNICAL_STAFF,
+                    AthleteHistoryVisibility.SHAREABLE,
+                  ],
+                },
+              }),
         },
         orderBy: {
           occurredAt: "desc",
@@ -628,70 +660,105 @@ export default async function AthleteTrainingPerformancePage({
         </div>
 
         {athlete.historyEntries.length ? (
-          <div
-            className="table-wrap"
-            style={{ marginTop: 18 }}
-          >
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Tipo</th>
-                  <th>Origem</th>
-                  <th>Observação</th>
-                  <th>Acompanhamento</th>
-                </tr>
-              </thead>
+          <div className="athlete-training-v5-history-list">
+            <div className="athlete-training-v5-history-head" aria-hidden="true">
+              <span>Data</span>
+              <span>Tipo</span>
+              <span>Origem</span>
+              <span>Observação</span>
+              <span>Acompanhamento</span>
+              <span>Ação</span>
+            </div>
 
-              <tbody>
-                {athlete.historyEntries.map(
-                  (entry) => (
-                    <tr key={entry.id}>
-                      <td>
-                        {entry.occurredAt.toLocaleDateString(
-                          "pt-BR",
-                        )}
-                      </td>
+            {athlete.historyEntries.map((entry) => (
+              <details className="athlete-training-v5-history-item" key={entry.id}>
+                <summary className="athlete-training-v5-history-row">
+                  <span data-label="Data">
+                    {entry.occurredAt.toLocaleDateString("pt-BR")}
+                  </span>
+                  <span data-label="Tipo">{historyTopicLabel(entry.topic)}</span>
+                  <span data-label="Origem">
+                    {entry.sourceLabelSnapshot || entry.title || "Treino"}
+                  </span>
+                  <span
+                    data-label="Observação"
+                    className="athlete-training-v5-history-preview"
+                    title={entry.content}
+                  >
+                    {entry.content}
+                  </span>
+                  <span data-label="Acompanhamento">
+                    {entry.followUpRequired ? (
+                      <span className="athlete-training-v5-history-status">
+                        {entry.followUpResolvedAt ? "Resolvido" : "Pendente"}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </span>
+                  <span className="athlete-training-v5-history-action">
+                    <span className="athlete-training-v5-history-open">Abrir registro</span>
+                    <span className="athlete-training-v5-history-close">Fechar registro</span>
+                  </span>
+                </summary>
 
-                      <td>
-                        {historyTopicLabel(entry.topic)}
-                      </td>
+                <div className="athlete-training-v5-history-detail">
+                  <div className="athlete-training-v5-history-content">
+                    <span className="athlete-training-v5-history-label">Observação completa</span>
+                    {entry.title ? <h3>{entry.title}</h3> : null}
+                    <p>{entry.content}</p>
+                  </div>
 
-                      <td>
-                        {entry.sourceLabelSnapshot ||
-                          entry.title ||
-                          "Treino"}
-                      </td>
-
-                      <td
-                        style={{
-                          minWidth: 260,
-                          whiteSpace: "normal",
-                        }}
-                      >
-                        {entry.content}
-                      </td>
-
-                      <td>
-                        {entry.followUpRequired ? (
-                          <span className="badge">
-                            {entry.followUpResolvedAt
-                              ? "Resolvido"
-                              : "Acompanhar"}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                    </tr>
-                  ),
-                )}
-              </tbody>
-            </table>
+                  <dl className="athlete-training-v5-history-meta">
+                    <div>
+                      <dt>Data e hora</dt>
+                      <dd>{entry.occurredAt.toLocaleString("pt-BR")}</dd>
+                    </div>
+                    <div>
+                      <dt>Tipo</dt>
+                      <dd>{historyTopicLabel(entry.topic)}</dd>
+                    </div>
+                    <div>
+                      <dt>Origem</dt>
+                      <dd>{entry.sourceLabelSnapshot || "Treino"}</dd>
+                    </div>
+                    <div>
+                      <dt>Modalidade</dt>
+                      <dd>{historySportLabel(entry.sportSnapshot)}</dd>
+                    </div>
+                    <div>
+                      <dt>Categoria registrada</dt>
+                      <dd>{entry.categoryNameSnapshot || "Não informada"}</dd>
+                    </div>
+                    <div>
+                      <dt>Registrado por</dt>
+                      <dd>{entry.authorNameSnapshot || "Não informado"}</dd>
+                    </div>
+                    <div>
+                      <dt>Visibilidade</dt>
+                      <dd>{historyVisibilityLabel(entry.visibility)}</dd>
+                    </div>
+                    <div>
+                      <dt>Acompanhamento</dt>
+                      <dd>
+                        {!entry.followUpRequired
+                          ? "Não solicitado"
+                          : entry.followUpResolvedAt
+                            ? `Resolvido em ${entry.followUpResolvedAt.toLocaleDateString("pt-BR")}`
+                            : "Pendente"}
+                        {entry.followUpResolvedAt && entry.resolvedByNameSnapshot
+                          ? ` · ${entry.resolvedByNameSnapshot}`
+                          : ""}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </details>
+            ))}
           </div>
         ) : (
           <p className="muted">
-            Nenhuma observação manual registrada nos treinos deste atleta.
+            Nenhuma observação de treino disponível para o seu perfil.
           </p>
         )}
       </section>
@@ -1037,6 +1104,177 @@ export default async function AthleteTrainingPerformancePage({
 
         .athlete-training-v5 .table td {
           font-size: 11px;
+        }
+
+        .athlete-training-v5-history-list {
+          margin-top: 18px;
+          overflow: hidden;
+          border: 1px solid #e2e8eb;
+          border-radius: 14px;
+        }
+
+        .athlete-training-v5-history-head,
+        .athlete-training-v5-history-row {
+          display: grid;
+          grid-template-columns: 100px 90px minmax(115px, 1fr) minmax(160px, 1.6fr) 110px 116px;
+          gap: 12px;
+          align-items: center;
+          padding: 13px 15px;
+        }
+
+        .athlete-training-v5-history-head {
+          background: #f7f9fa;
+          color: #6e7e89;
+          font-size: 9px;
+          font-weight: 900;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+        }
+
+        .athlete-training-v5-history-item {
+          border-top: 1px solid #e8edef;
+          background: #fff;
+        }
+
+        .athlete-training-v5-history-row {
+          list-style: none;
+          cursor: pointer;
+          color: #24323b;
+          font-size: 11px;
+          line-height: 1.5;
+        }
+
+        .athlete-training-v5-history-row::-webkit-details-marker { display: none; }
+        .athlete-training-v5-history-row::marker { content: ""; }
+        .athlete-training-v5-history-row:hover,
+        .athlete-training-v5-history-item[open] > .athlete-training-v5-history-row {
+          background: #f6fbe9;
+        }
+        .athlete-training-v5-history-row:focus-visible {
+          outline: 3px solid #719f00;
+          outline-offset: -3px;
+        }
+        .athlete-training-v5-history-row > span { min-width: 0; }
+        .athlete-training-v5-history-preview {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .athlete-training-v5-history-status {
+          display: inline-flex;
+          padding: 6px 9px;
+          border-radius: 999px;
+          background: #f2f6f8;
+          font-size: 10px;
+          font-weight: 800;
+        }
+        .athlete-training-v5-history-action {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 34px;
+          padding: 6px 10px;
+          border: 1px solid #cfe99c;
+          border-radius: 9px;
+          background: #eef9d8;
+          color: #355400;
+          font-size: 10px;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+        .athlete-training-v5-history-close { display: none; }
+        .athlete-training-v5-history-item[open] .athlete-training-v5-history-open { display: none; }
+        .athlete-training-v5-history-item[open] .athlete-training-v5-history-close { display: inline; }
+        .athlete-training-v5-history-detail {
+          padding: 20px;
+          border-top: 1px solid #dfe6ea;
+          background: #fbfcfc;
+        }
+        .athlete-training-v5-history-content {
+          padding: 16px;
+          border: 1px solid #e0e8e8;
+          border-radius: 12px;
+          background: #fff;
+        }
+        .athlete-training-v5-history-label,
+        .athlete-training-v5-history-meta dt {
+          display: block;
+          color: #6d8510;
+          font-size: 9px;
+          font-weight: 900;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+        }
+        .athlete-training-v5-history-content h3 {
+          margin: 8px 0 0;
+          color: #07131d;
+          font-size: 16px;
+        }
+        .athlete-training-v5-history-content p {
+          margin: 8px 0 0;
+          color: #24323b;
+          font-size: 12px;
+          line-height: 1.65;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }
+        .athlete-training-v5-history-meta {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
+          margin: 18px 0 0;
+        }
+        .athlete-training-v5-history-meta div { min-width: 0; }
+        .athlete-training-v5-history-meta dd {
+          margin: 5px 0 0;
+          color: #263741;
+          font-size: 11px;
+          font-weight: 700;
+          overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 1200px) {
+          .athlete-training-v5-history-head,
+          .athlete-training-v5-history-row {
+            grid-template-columns: 83px 80px minmax(90px, 1fr) minmax(120px, 1.3fr) 96px 112px;
+            gap: 9px;
+            padding: 12px;
+          }
+          .athlete-training-v5-history-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 850px) {
+          .athlete-training-v5-history-head { display: none; }
+          .athlete-training-v5-history-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            align-items: start;
+          }
+          .athlete-training-v5-history-row > span::before {
+            content: attr(data-label);
+            display: block;
+            margin-bottom: 3px;
+            color: #6e7e89;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+          }
+          .athlete-training-v5-history-preview {
+            white-space: normal;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+          }
+          .athlete-training-v5-history-action { align-self: end; }
+        }
+
+        @media (max-width: 520px) {
+          .athlete-training-v5-history-row { grid-template-columns: 1fr; }
+          .athlete-training-v5-history-meta { grid-template-columns: 1fr; }
+          .athlete-training-v5-history-detail { padding: 12px; }
         }
 
         @media (max-width: 980px) {

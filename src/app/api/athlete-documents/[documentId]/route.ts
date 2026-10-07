@@ -33,10 +33,24 @@ function safeFileName(value: string) {
 
 async function context() {
   const user = await getCurrentUser();
-  if (!user?.organizationId) return null;
+
+  if (!user) return null;
+
+  // SUPER_ADMIN / suporte 11UP nunca acessa documentos privados de atletas.
+  if (user.role === "SUPER_ADMIN") {
+    return null;
+  }
+
+  if (!user.organizationId) return null;
+
   const allowed = hasClubPermission(user, "ATHLETES_EDIT");
+
   if (!allowed) return null;
-  return { user, organizationId: user.organizationId as string };
+
+  return {
+    user,
+    organizationId: user.organizationId as string,
+  };
 }
 
 async function documentForOrganization(documentId: string, organizationId: string) {

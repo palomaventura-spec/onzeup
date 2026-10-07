@@ -16,7 +16,6 @@ import { prisma } from "@/lib/prisma";
 
 
 
-import { toggleAthleteStatus } from "./actions";
 
 import AthleteCreateForm from "./AthleteCreateForm";
 import AthleteCreateDialog from "./AthleteCreateDialog";
@@ -34,6 +33,8 @@ type AthleteFilters = {
    position?: string;
 
    status?: string;
+
+   view?: string;
 
    page?: string;
 
@@ -323,6 +324,8 @@ function athletesUrl({
 
    status,
 
+   view,
+
    page,
 
 }: {
@@ -334,6 +337,8 @@ function athletesUrl({
    position?: string;
 
    status?: string;
+
+   view?: string;
 
    page?: number;
 
@@ -350,6 +355,8 @@ function athletesUrl({
    if (position && position !== "ALL") query.set("position", position);
 
    if (status && status !== "ALL") query.set("status", status);
+
+   if (view && view !== "ELENCO") query.set("view", view);
 
    if (page && page > 1) query.set("page", String(page));
 
@@ -395,7 +402,7 @@ export default async function AthletesPage({
 
 
 
-   const statusFilter = ["ACTIVE", "INACTIVE"].includes(
+   const statusFilter = ["APTO", "INAPTO"].includes(
 
       filters.status || "",
 
@@ -404,6 +411,26 @@ export default async function AthletesPage({
       ? filters.status!
 
       : "ALL";
+
+
+
+   const athleteView = [
+
+      "ELENCO",
+
+      "EVALUATION",
+
+      "REJECTED",
+
+      "RELEASED",
+
+      "ALL",
+
+   ].includes(filters.view || "")
+
+      ? filters.view!
+
+      : "ELENCO";
 
 
 
@@ -518,6 +545,64 @@ export default async function AthletesPage({
                select: {
 
                   id: true,
+
+               },
+
+            },
+
+            evaluationProcesses: {
+
+               orderBy: {
+
+                  startedAt: "desc",
+
+               },
+
+               take: 1,
+
+               select: {
+
+                  id: true,
+
+                  status: true,
+
+                  entryMode: true,
+
+                  startedAt: true,
+
+                  decidedAt: true,
+
+                  evaluationCategoryNameSnapshot: true,
+
+                  targetCategoryNameSnapshot: true,
+
+               },
+
+            },
+
+            eligibilityIssues: {
+
+               where: {
+
+                  blocking: true,
+
+                  resolvedAt: null,
+
+               },
+
+               select: {
+
+                  id: true,
+
+                  type: true,
+
+                  startedAt: true,
+
+               },
+
+               orderBy: {
+
+                  startedAt: "asc",
 
                },
 
@@ -649,13 +734,69 @@ export default async function AthletesPage({
 
 
 
+   function athleteFolder(
+
+      athlete: (typeof athletes)[number],
+
+   ) {
+
+      if (athlete.currentStatus === "EVALUATION") return "EVALUATION";
+
+      if (athlete.currentStatus === "REJECTED") return "REJECTED";
+
+      if (athlete.currentStatus === "RELEASED") return "RELEASED";
+
+      if (
+
+         athlete.currentStatus === "ACTIVE" &&
+
+         athlete.category?.type === "STANDARD"
+
+      ) {
+
+         return "ELENCO";
+
+      }
+
+      return "OTHER";
+
+   }
+
+
+
+   function athleteEligibility(
+
+      athlete: (typeof athletes)[number],
+
+   ) {
+
+      if (athleteFolder(athlete) !== "ELENCO") return null;
+
+      return athlete.eligibilityIssues.length > 0 ? "INAPTO" : "APTO";
+
+   }
+
+
+
    const activeCount = athletes.filter(
 
-      (athlete) =>
+      (athlete) => athleteFolder(athlete) === "ELENCO",
 
-         athlete.active &&
+   ).length;
 
-         athlete.category?.type === "STANDARD",
+
+
+   const aptCount = athletes.filter(
+
+      (athlete) => athleteEligibility(athlete) === "APTO",
+
+   ).length;
+
+
+
+   const unfitCount = athletes.filter(
+
+      (athlete) => athleteEligibility(athlete) === "INAPTO",
 
    ).length;
 
@@ -663,11 +804,7 @@ export default async function AthletesPage({
 
    const evaluationCount = athletes.filter(
 
-      (athlete) =>
-
-         athlete.active &&
-
-         athlete.category?.type === "EVALUATION",
+      (athlete) => athleteFolder(athlete) === "EVALUATION",
 
    ).length;
 
@@ -675,11 +812,23 @@ export default async function AthletesPage({
 
    const standardCategoryCount = categories.filter(
 
-      (category) =>
+      (category) => category.active && category.type === "STANDARD",
 
-         category.active &&
+   ).length;
 
-         category.type === "STANDARD",
+
+
+   const rejectedCount = athletes.filter(
+
+      (athlete) => athleteFolder(athlete) === "REJECTED",
+
+   ).length;
+
+
+
+   const releasedCount = athletes.filter(
+
+      (athlete) => athleteFolder(athlete) === "RELEASED",
 
    ).length;
 
@@ -689,7 +838,7 @@ export default async function AthletesPage({
 
       (athlete) =>
 
-         athlete.active &&
+         athlete.currentStatus === "ACTIVE" &&
 
          (!athlete.photoUrl ||
 
@@ -706,6 +855,22 @@ export default async function AthletesPage({
 
 
    const documentAlertCount = athletes.filter((athlete) => {
+
+      if (
+
+         !["ELENCO", "EVALUATION"].includes(
+
+            athleteFolder(athlete),
+
+         )
+
+      ) {
+
+         return false;
+
+      }
+
+
 
       const activeDocuments = athlete.documents.filter(
 
@@ -819,7 +984,15 @@ export default async function AthletesPage({
 
 
 
+      const folder = athleteFolder(athlete);
+
+
+
       return (
+
+         (athleteView === "ALL" ||
+
+            folder === athleteView) &&
 
          (!query || searchable.includes(query)) &&
 
@@ -837,11 +1010,7 @@ export default async function AthletesPage({
 
          (statusFilter === "ALL" ||
 
-            (statusFilter === "ACTIVE"
-
-               ? athlete.active
-
-               : !athlete.active))
+            athleteEligibility(athlete) === statusFilter)
 
       );
 
@@ -885,6 +1054,8 @@ export default async function AthletesPage({
 
       query ||
 
+         athleteView !== "ELENCO" ||
+
          categoryFilter !== "ALL" ||
 
          positionFilter !== "ALL" ||
@@ -904,6 +1075,8 @@ export default async function AthletesPage({
       position: positionFilter,
 
       status: statusFilter,
+
+      view: athleteView,
 
    };
 
@@ -1128,6 +1301,77 @@ export default async function AthletesPage({
         />
       ) : null}
 
+      <nav
+
+         className="athletes-v4-folders"
+
+         aria-label="Pastas de atletas"
+
+      >
+
+         <Link href="/atletas" className={athleteView === "ELENCO" ? "active" : ""}>
+
+            Elenco <strong>{activeCount}</strong>
+
+         </Link>
+
+         <Link href="/atletas?view=EVALUATION" className={athleteView === "EVALUATION" ? "active" : ""}>
+
+            Em avaliação <strong>{evaluationCount}</strong>
+
+         </Link>
+
+         <Link href="/atletas?view=REJECTED" className={athleteView === "REJECTED" ? "active" : ""}>
+
+            Reprovados <strong>{rejectedCount}</strong>
+
+         </Link>
+
+         <Link href="/atletas?view=RELEASED" className={athleteView === "RELEASED" ? "active" : ""}>
+
+            Dispensados <strong>{releasedCount}</strong>
+
+         </Link>
+
+
+         <Link href="/atletas?view=ALL" className={athleteView === "ALL" ? "active" : ""}>
+
+            Todos <strong>{athletes.length}</strong>
+
+         </Link>
+
+      </nav>
+
+
+
+      {athleteView === "ELENCO" ? (
+
+         <nav className="athletes-v4-subfolders" aria-label="Elegibilidade do elenco">
+
+            <Link href="/atletas" className={statusFilter === "ALL" ? "active" : ""}>
+
+               Todos <strong>{activeCount}</strong>
+
+            </Link>
+
+            <Link href="/atletas?status=APTO" className={statusFilter === "APTO" ? "active" : ""}>
+
+               Aptos <strong>{aptCount}</strong>
+
+            </Link>
+
+            <Link href="/atletas?status=INAPTO" className={statusFilter === "INAPTO" ? "active" : ""}>
+
+               Inaptos <strong>{unfitCount}</strong>
+
+            </Link>
+
+         </nav>
+
+      ) : null}
+
+
+
       <section className="athletes-v4-search-card">
 
             <header className="athletes-v4-section-head">
@@ -1171,6 +1415,16 @@ export default async function AthletesPage({
                className="athletes-v4-filter-form"
 
             >
+
+               <input
+
+                  type="hidden"
+
+                  name="view"
+
+                  value={athleteView}
+
+               />
 
                <label className="athletes-v4-search-field">
 
@@ -1286,7 +1540,7 @@ export default async function AthletesPage({
 
                <label>
 
-                  <span>Status</span>
+                  <span>Elegibilidade</span>
 
                   <select
 
@@ -1298,9 +1552,9 @@ export default async function AthletesPage({
 
                      <option value="ALL">Todos</option>
 
-                     <option value="ACTIVE">Ativos</option>
+                     <option value="APTO">Aptos</option>
 
-                     <option value="INACTIVE">Inativos</option>
+                     <option value="INAPTO">Inaptos</option>
 
                   </select>
 
@@ -1328,7 +1582,15 @@ export default async function AthletesPage({
 
                      className="athletes-v4-clear"
 
-                     href="/atletas"
+                     href={
+
+                        athleteView === "ELENCO"
+
+                           ? "/atletas"
+
+                           : `/atletas?view=${athleteView}`
+
+                     }
 
                   >
 
@@ -1378,11 +1640,63 @@ export default async function AthletesPage({
 
                   <span className="athletes-v4-eyebrow">
 
-                     ELENCO
+                     {athleteView === "ELENCO"
+
+                        ? "ELENCO"
+
+                        : athleteView === "EVALUATION"
+
+                           ? "AVALIAÇÃO"
+
+                           : athleteView === "REJECTED"
+
+                              ? "ATLETAS REPROVADOS"
+
+                              : athleteView === "RELEASED"
+
+                                 ? "ATLETAS DISPENSADOS"
+
+                                 : athleteView === "WITHDRAWN"
+
+                                    ? "DESISTÊNCIAS"
+
+                                    : athleteView === "INACTIVE"
+
+                                       ? "INATIVOS"
+
+                                       : "TODOS OS ATLETAS"}
 
                   </span>
 
-                  <h2>Atletas encontrados</h2>
+                  <h2>
+
+                     {athleteView === "REJECTED"
+
+                        ? "Atletas reprovados"
+
+                        : athleteView === "RELEASED"
+
+                           ? "Atletas dispensados"
+
+                           : athleteView === "WITHDRAWN"
+
+                              ? "Atletas que desistiram"
+
+                              : athleteView === "EVALUATION"
+
+                                 ? "Atletas em avaliação"
+
+                                 : athleteView === "INACTIVE"
+
+                                    ? "Atletas inativos"
+
+                                    : athleteView === "ALL"
+
+                                       ? "Todos os atletas"
+
+                                       : "Atletas do elenco"}
+
+                  </h2>
 
                </div>
 
@@ -1628,9 +1942,71 @@ export default async function AthletesPage({
 
                         const athleteInEvaluation =
 
-                           athlete.category?.type ===
+                           athlete.currentStatus === "EVALUATION";
 
-                           "EVALUATION";
+
+
+                        const eligibility = athleteEligibility(athlete);
+
+                        const eligibilityIssueCount = athlete.eligibilityIssues.length;
+
+
+
+                        const currentStatusLabel =
+
+                           athlete.currentStatus === "EVALUATION"
+
+                              ? "Em avaliação"
+
+                              : athlete.currentStatus === "REJECTED"
+
+                                 ? "Reprovado"
+
+                                 : athlete.currentStatus === "RELEASED"
+
+                                    ? "Dispensado"
+
+                                    : "Ativo";
+
+
+
+                        const currentStatusClass =
+
+                           athlete.currentStatus === "EVALUATION"
+
+                              ? "evaluation"
+
+                              : athlete.currentStatus === "REJECTED"
+
+                                 ? "rejected"
+
+                                 : athlete.currentStatus === "RELEASED"
+
+                                    ? "released"
+
+                                    : "active";
+
+
+
+                        const latestProcess =
+
+                           athlete.evaluationProcesses[0] ?? null;
+
+
+
+                        const categoryDisplay =
+
+                           athlete.category?.name ||
+
+                           ((athlete.currentStatus === "REJECTED" ||
+
+                             athlete.currentStatus === "RELEASED") &&
+
+                           latestProcess?.evaluationCategoryNameSnapshot
+
+                              ? `Avaliação · ${latestProcess.evaluationCategoryNameSnapshot}`
+
+                              : "Sem categoria");
 
 
 
@@ -1639,9 +2015,10 @@ export default async function AthletesPage({
                            <article
 
                               className={`athletes-v4-row ${
-
-                                 !athlete.active ? "inactive" : ""
-
+                                 athlete.currentStatus === "REJECTED" ||
+                                 athlete.currentStatus === "RELEASED"
+                                    ? "inactive"
+                                    : ""
                               }`}
 
                               key={athlete.id}
@@ -1754,9 +2131,7 @@ export default async function AthletesPage({
 
                                  >
 
-                                    {athlete.category?.name ||
-
-                                       "Sem categoria"}
+                                    {categoryDisplay}
 
                                  </span>
 
@@ -1866,35 +2241,41 @@ export default async function AthletesPage({
 
                               >
 
-                                 <span
+                                 <div className="athletes-v4-status-stack">
 
-                                    className={`athletes-v4-status ${
+                                    <span className={`athletes-v4-status ${currentStatusClass}`}>
 
-                                       athlete.active
+                                       {currentStatusLabel}
 
-                                          ? athleteInEvaluation
+                                    </span>
 
-                                             ? "evaluation"
+                                    {eligibility ? (
 
-                                             : "active"
+                                       <span
 
-                                          : "inactive"
+                                          className={`athletes-v4-eligibility ${
 
-                                    }`}
+                                             eligibility === "APTO" ? "apt" : "unfit"
 
-                                 >
+                                          }`}
 
-                                    {athlete.active
+                                       >
 
-                                       ? athleteInEvaluation
+                                          {eligibility === "APTO"
 
-                                          ? "Avaliação"
+                                             ? "Apto"
 
-                                          : "Ativo"
+                                             : `Inapto · ${eligibilityIssueCount} ${
 
-                                       : "Inativo"}
+                                                  eligibilityIssueCount === 1 ? "pendência" : "pendências"
 
-                                 </span>
+                                               }`}
+
+                                       </span>
+
+                                    ) : null}
+
+                                 </div>
 
                               </div>
 
@@ -1973,66 +2354,6 @@ export default async function AthletesPage({
                                           Performance
 
                                        </Link>
-
-
-
-                                       {canEdit ? (
-
-                                          <>
-
-                                             <form
-
-                                                action={
-
-                                                   toggleAthleteStatus
-
-                                                }
-
-                                             >
-
-                                                <input
-
-                                                   type="hidden"
-
-                                                   name="id"
-
-                                                   value={athlete.id}
-
-                                                />
-
-                                                <input
-
-                                                   type="hidden"
-
-                                                   name="next"
-
-                                                   value={String(
-
-                                                      !athlete.active,
-
-                                                   )}
-
-                                                />
-
-                                                <button
-
-                                                   type="submit"
-
-                                                >
-
-                                                   {athlete.active
-
-                                                      ? "Inativar"
-
-                                                      : "Ativar"}
-
-                                                </button>
-
-                                             </form>
-
-                                          </>
-
-                                       ) : null}
 
                                     </div>
 
@@ -2767,6 +3088,151 @@ export default async function AthletesPage({
                font-size: 12px;
 
                font-weight: 700;
+
+            }
+
+
+
+            .athletes-v4-folders,
+
+
+
+
+            .athletes-v4-subfolders {
+
+               display: flex;
+
+               align-items: center;
+
+               gap: 8px;
+
+               overflow-x: auto;
+
+               padding: 4px 2px;
+
+               scrollbar-width: thin;
+
+            }
+
+
+
+            .athletes-v4-folders a,
+
+
+
+
+            .athletes-v4-subfolders a {
+
+               min-height: 42px;
+
+               display: inline-flex;
+
+               align-items: center;
+
+               gap: 8px;
+
+               flex: 0 0 auto;
+
+               padding: 0 13px;
+
+               border: 1px solid var(--athletes-line);
+
+               border-radius: 12px;
+
+               color: #586974;
+
+               background: #ffffff;
+
+               font-size: 11px;
+
+               font-weight: 900;
+
+               text-decoration: none;
+
+               box-shadow: 0 6px 18px rgba(8, 26, 38, .03);
+
+            }
+
+
+
+            .athletes-v4-folders a strong,
+
+
+
+
+            .athletes-v4-subfolders a strong {
+
+               min-width: 22px;
+
+               height: 22px;
+
+               display: inline-flex;
+
+               align-items: center;
+
+               justify-content: center;
+
+               padding: 0 6px;
+
+               border-radius: 999px;
+
+               color: #667680;
+
+               background: #eef2f4;
+
+               font-size: 9px;
+
+            }
+
+
+
+            .athletes-v4-folders a.active,
+
+
+
+
+            .athletes-v4-subfolders a.active {
+
+               border-color: var(--athletes-lime);
+
+               color: #10200a;
+
+               background: var(--athletes-lime-soft);
+
+            }
+
+
+
+            .athletes-v4-folders a.active strong,
+
+
+
+
+            .athletes-v4-subfolders a.active strong {
+
+               color: #10200a;
+
+               background: var(--athletes-lime);
+
+            }
+
+
+
+            .athletes-v4-subfolders {
+
+               padding-left: 12px;
+
+            }
+
+
+
+            .athletes-v4-subfolders a {
+
+               min-height: 36px;
+
+               padding: 0 11px;
+
+               font-size: 10px;
 
             }
 
@@ -3616,6 +4082,60 @@ export default async function AthletesPage({
 
 
 
+            .athletes-v4-status-stack {
+
+               display: grid;
+
+               justify-items: start;
+
+               gap: 5px;
+
+            }
+
+
+
+            .athletes-v4-eligibility {
+
+               display: inline-flex;
+
+               align-items: center;
+
+               min-height: 22px;
+
+               padding: 0 8px;
+
+               border-radius: 999px;
+
+               font-size: 9px;
+
+               font-weight: 900;
+
+               white-space: nowrap;
+
+            }
+
+
+
+            .athletes-v4-eligibility.apt {
+
+               color: #4f7300;
+
+               background: #eff9d8;
+
+            }
+
+
+
+            .athletes-v4-eligibility.unfit {
+
+               color: #9b5a00;
+
+               background: #fff1d6;
+
+            }
+
+
+
             .athletes-v4-status {
 
                min-height: 27px;
@@ -3663,6 +4183,36 @@ export default async function AthletesPage({
                color: #6f7c84;
 
                background: #edf1f3;
+
+            }
+
+
+
+            .athletes-v4-status.rejected {
+
+               color: #b91c1c;
+
+               background: #fee2e2;
+
+            }
+
+
+
+            .athletes-v4-status.released {
+
+               color: #c2410c;
+
+               background: #ffedd5;
+
+            }
+
+
+
+            .athletes-v4-status.withdrawn {
+
+               color: #475569;
+
+               background: #e2e8f0;
 
             }
 

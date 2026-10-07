@@ -12,7 +12,6 @@ type CategoryOption = {
   name: string;
   type: "STANDARD" | "EVALUATION";
   sport: "FOOTBALL" | "FUTSAL" | "BOTH";
-  active: boolean;
   accentColor: string;
 };
 
@@ -27,38 +26,82 @@ export default function AthleteCreateForm({
     "STANDARD",
   );
   const [categoryId, setCategoryId] = useState("");
+  const [sportMode, setSportMode] = useState<
+    "FOOTBALL" | "FUTSAL" | "BOTH"
+  >("FOOTBALL");
+  const [footballCategoryId, setFootballCategoryId] =
+    useState("");
+  const [futsalCategoryId, setFutsalCategoryId] =
+    useState("");
   const [created, setCreated] = useState<{
     athleteId: string;
     athleteName: string;
   } | null>(null);
 
-  const availableCategories = useMemo(
+  const evaluationCategories = useMemo(
+    () =>
+      categories.filter(
+        (category) => category.type === "EVALUATION",
+      ),
+    [categories],
+  );
+
+  const footballCategories = useMemo(
     () =>
       categories.filter(
         (category) =>
-          category.type === entryType &&
-          category.active,
+          category.type === "STANDARD" &&
+          (category.sport === "FOOTBALL" ||
+            category.sport === "BOTH"),
       ),
-    [categories, entryType],
+    [categories],
   );
 
+  const futsalCategories = useMemo(
+    () =>
+      categories.filter(
+        (category) =>
+          category.type === "STANDARD" &&
+          (category.sport === "FUTSAL" ||
+            category.sport === "BOTH"),
+      ),
+    [categories],
+  );
 
-  function changeEntryType(
-    value: "STANDARD" | "EVALUATION",
-  ) {
+  function changeEntryType(value: "STANDARD" | "EVALUATION") {
     setEntryType(value);
 
-    const firstCompatible = categories.find(
-      (category) =>
-        category.type === value &&
-        category.active,
-    );
+    if (value === "EVALUATION") {
+      setCategoryId(evaluationCategories[0]?.id ?? "");
+      return;
+    }
 
-    setCategoryId(firstCompatible?.id ?? "");
+    setFootballCategoryId(
+      footballCategories[0]?.id ?? "",
+    );
+    setFutsalCategoryId(futsalCategories[0]?.id ?? "");
   }
 
-  function changeCategory(categoryId: string) {
-    setCategoryId(categoryId);
+  function changeSportMode(
+    value: "FOOTBALL" | "FUTSAL" | "BOTH",
+  ) {
+    setSportMode(value);
+
+    if (
+      (value === "FOOTBALL" || value === "BOTH") &&
+      !footballCategoryId
+    ) {
+      setFootballCategoryId(
+        footballCategories[0]?.id ?? "",
+      );
+    }
+
+    if (
+      (value === "FUTSAL" || value === "BOTH") &&
+      !futsalCategoryId
+    ) {
+      setFutsalCategoryId(futsalCategories[0]?.id ?? "");
+    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -173,55 +216,164 @@ export default function AthleteCreateForm({
             </option>
           </select>
         </label>
-        <label>
-          {evaluationMode
-            ? "Categoria em avaliação"
-            : "Categoria"}
 
-          <select
-            name="categoryId"
-            value={categoryId}
-            onChange={(event) =>
-              changeCategory(event.target.value)
-            }
-            required={evaluationMode}
-          >
-            {!evaluationMode ? (
-              <option value="">
-                Sem categoria
-              </option>
-            ) : (
-              <option value="" disabled>
-                Selecione a categoria em avaliação
-              </option>
-            )}
-
-            {availableCategories.map((category) => (
-              <option
-                key={category.id}
-                value={category.id}
-              >
-                {category.name} ·{" "}
-                {category.sport === "FOOTBALL"
-                  ? "Futebol"
-                  : category.sport === "FUTSAL"
-                    ? "Futsal"
-                    : "Futebol + Futsal"}
-              </option>
-            ))}
-          </select>
-        </label>
-        {evaluationMode && !availableCategories.length ? (
-          <p className="form-error" role="alert">
-            Nenhuma categoria de avaliação ativa foi cadastrada.
-            Crie primeiro uma categoria do tipo Avaliação.
-          </p>
-        ) : null}
         {evaluationMode ? (
-          <p className="muted">
-            O atleta ficará nesta categoria durante o período de avaliação.
-          </p>
-        ) : null}
+          <>
+            <label>
+              Categoria de avaliação
+              <select
+                name="categoryId"
+                value={categoryId}
+                onChange={(event) =>
+                  setCategoryId(event.target.value)
+                }
+                required
+              >
+                <option value="" disabled>
+                  Selecione
+                </option>
+
+                {evaluationCategories.map((category) => (
+                  <option
+                    key={category.id}
+                    value={category.id}
+                  >
+                    {category.name} ·{" "}
+                    {category.sport === "FUTSAL"
+                      ? "Futsal"
+                      : category.sport === "FOOTBALL"
+                        ? "Campo"
+                        : "Campo + Futsal"}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {!evaluationCategories.length ? (
+              <p className="form-error" role="alert">
+                Nenhuma categoria do tipo Avaliação foi criada.
+                Crie uma categoria de avaliação antes de cadastrar
+                este atleta.
+              </p>
+            ) : null}
+
+            <p className="muted">
+              O atleta permanecerá nessa categoria durante o
+              processo de avaliação. O histórico será preservado
+              quando houver aprovação, reprovação ou saída.
+            </p>
+          </>
+        ) : (
+          <>
+            <label>
+              Modalidade
+              <select
+                name="sportMode"
+                value={sportMode}
+                onChange={(event) =>
+                  changeSportMode(
+                    event.target.value as
+                      | "FOOTBALL"
+                      | "FUTSAL"
+                      | "BOTH",
+                  )
+                }
+                required
+              >
+                <option value="FOOTBALL">
+                  Futebol de Campo
+                </option>
+                <option value="FUTSAL">Futsal</option>
+                <option value="BOTH">
+                  Futebol de Campo + Futsal
+                </option>
+              </select>
+            </label>
+
+            {sportMode === "FOOTBALL" ||
+            sportMode === "BOTH" ? (
+              <label>
+                Categoria · Futebol de Campo
+                <select
+                  name="footballCategoryId"
+                  value={footballCategoryId}
+                  onChange={(event) =>
+                    setFootballCategoryId(
+                      event.target.value,
+                    )
+                  }
+                  required
+                >
+                  <option value="" disabled>
+                    Selecione
+                  </option>
+                  {footballCategories.map((category) => (
+                    <option
+                      key={category.id}
+                      value={category.id}
+                    >
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {sportMode === "FUTSAL" ||
+            sportMode === "BOTH" ? (
+              <label>
+                Categoria · Futsal
+                <select
+                  name="futsalCategoryId"
+                  value={futsalCategoryId}
+                  onChange={(event) =>
+                    setFutsalCategoryId(
+                      event.target.value,
+                    )
+                  }
+                  required
+                >
+                  <option value="" disabled>
+                    Selecione
+                  </option>
+                  {futsalCategories.map((category) => (
+                    <option
+                      key={category.id}
+                      value={category.id}
+                    >
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {(sportMode === "FOOTBALL" ||
+              sportMode === "BOTH") &&
+            !footballCategories.length ? (
+              <p className="form-error" role="alert">
+                Não há categoria oficial de Futebol de Campo
+                disponível.
+              </p>
+            ) : null}
+
+            {(sportMode === "FUTSAL" ||
+              sportMode === "BOTH") &&
+            !futsalCategories.length ? (
+              <p className="form-error" role="alert">
+                Não há categoria oficial de Futsal disponível.
+                Crie a categoria antes de cadastrar o atleta nessa
+                modalidade.
+              </p>
+            ) : null}
+
+            <p className="muted">
+              Todo atleta do elenco precisa ter pelo menos uma
+              modalidade e uma categoria. Se jogar Campo e Futsal,
+              cada modalidade terá seu próprio vínculo.
+            </p>
+          </>
+        )}
       </fieldset>
 
       <fieldset>
@@ -292,59 +444,7 @@ export default function AthleteCreateForm({
         </div>
       </fieldset>
 
-            <fieldset>
-        <legend>Registros esportivos</legend>
-
-        <p
-          className="muted"
-          style={{ gridColumn: "1 / -1" }}
-        >
-          Preencha apenas os registros que o atleta possui.
-          O mesmo atleta pode ter inscrição no futsal e no
-          futebol.
-        </p>
-
-        <label>
-          Futsal · Federação
-          <input
-            name="futsalFederationName"
-            placeholder="Ex.: Federação estadual"
-          />
-        </label>
-
-        <label>
-          Futsal · Nº de inscrição na Federação
-          <input
-            name="futsalFederationNumber"
-            placeholder="Número de inscrição"
-          />
-        </label>
-
-        <label>
-          Futebol · Federação
-          <input
-            name="footballFederationName"
-            placeholder="Ex.: Federação estadual"
-          />
-        </label>
-
-        <label>
-          Futebol · Nº de inscrição na Federação
-          <input
-            name="footballFederationNumber"
-            placeholder="Número de inscrição"
-          />
-        </label>
-
-        <label style={{ gridColumn: "1 / -1" }}>
-          Futebol · Nº de registro CBF
-          <input
-            name="cbfRegistrationNumber"
-            placeholder="Número de registro CBF"
-          />
-        </label>
-      </fieldset>
-<fieldset>
+      <fieldset>
         <legend>Família e responsável • privado</legend>
 
         <label>
@@ -401,7 +501,7 @@ export default function AthleteCreateForm({
         type="submit"
         disabled={
           saving ||
-          (evaluationMode && !availableCategories.length)
+          (evaluationMode && !evaluationCategories.length)
         }
       >
         {saving

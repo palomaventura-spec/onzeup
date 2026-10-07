@@ -1,7 +1,14 @@
 "use server";
 
 import {
+  AthleteCurrentStatus,
   AthleteDataAuditAction,
+  AthleteEligibilityIssueSource,
+  AthleteEligibilityIssueType,
+  AthleteEligibilityScope,
+  AthleteEvaluationProcessEntryMode,
+  AthleteEvaluationProcessStatus,
+  AthleteExitOrigin,
   Prisma,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -52,7 +59,27 @@ async function validateCategory(
       id: true,
       name: true,
       type: true,
+      sport: true,
       accentColor: true,
+      evaluationTargets: {
+        where: {
+          targetCategory: {
+            organizationId,
+            type: "STANDARD",
+          },
+        },
+        select: {
+          targetCategory: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              sport: true,
+              active: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -115,7 +142,365 @@ async function syncSportRegistration(
       status: "ACTIVE",
     },
   });
+
 }
+
+type EligibilityActor = {
+  id: string;
+  name: string;
+};
+
+type AutomaticEligibilityIssue = {
+  key: string;
+  type: AthleteEligibilityIssueType;
+  scope: AthleteEligibilityScope;
+  reason: string;
+  shouldBeOpen: boolean;
+};
+
+async function setAutomaticEligibilityIssue(
+  tx: Prisma.TransactionClient,
+  input: {
+    organizationId: string;
+    athleteId: string;
+    issue: AutomaticEligibilityIssue;
+    actor: EligibilityActor;
+    effectiveAt?: Date;
+  },
+) {
+  const openIssues = await tx.athleteEligibilityIssue.findMany({
+    where: {
+      organizationId: input.organizationId,
+      athleteId: input.athleteId,
+      source: AthleteEligibilityIssueSource.AUTOMATIC,
+      key: input.issue.key,
+      resolvedAt: null,
+    },
+    orderBy: {
+      startedAt: "asc",
+    },
+  });
+
+  if (input.issue.shouldBeOpen) {
+    if (!openIssues.length) {
+      await tx.athleteEligibilityIssue.create({
+        data: {
+          organizationId: input.organizationId,
+          athleteId: input.athleteId,
+          type: input.issue.type,
+          source: AthleteEligibilityIssueSource.AUTOMATIC,
+          scope: input.issue.scope,
+          blocking: true,
+          key: input.issue.key,
+          reason: input.issue.reason,
+          startedAt: input.effectiveAt ?? new Date(),
+          createdByUserId: input.actor.id,
+          createdByNameSnapshot: input.actor.name,
+        },
+      });
+      return;
+    }
+
+    const [primary, ...duplicates] = openIssues;
+
+    if (
+      primary.reason !== input.issue.reason ||
+      primary.scope !== input.issue.scope
+    ) {
+      await tx.athleteEligibilityIssue.update({
+        where: {
+          id: primary.id,
+        },
+        data: {
+          reason: input.issue.reason,
+          scope: input.issue.scope,
+        },
+      });
+    }
+
+    if (duplicates.length) {
+      await tx.athleteEligibilityIssue.updateMany({
+        where: {
+          id: {
+            in: duplicates.map((issue) => issue.id),
+          },
+        },
+        data: {
+          resolvedAt: new Date(),
+          resolutionNotes:
+            "Pendência automática duplicada encerrada pelo sistema.",
+          resolvedByUserId: input.actor.id,
+          resolvedByNameSnapshot: input.actor.name,
+        },
+      });
+    }
+
+    return;
+  }
+
+  if (openIssues.length) {
+    await tx.athleteEligibilityIssue.updateMany({
+      where: {
+        id: {
+          in: openIssues.map((issue) => issue.id),
+        },
+      },
+      data: {
+        resolvedAt: new Date(),
+        resolutionNotes:
+          "Requisito regularizado e conferido pelo 11UP.",
+        resolvedByUserId: input.actor.id,
+        resolvedByNameSnapshot: input.actor.name,
+      },
+    });
+  }
+}
+
+async function closeAutomaticEligibilityIssues(
+  tx: Prisma.TransactionClient,
+  input: {
+    organizationId: string;
+    athleteId: string;
+    actor: EligibilityActor;
+    note: string;
+  },
+) {
+  await tx.athleteEligibilityIssue.updateMany({
+    where: {
+      organizationId: input.organizationId,
+      athleteId: input.athleteId,
+      source: AthleteEligibilityIssueSource.AUTOMATIC,
+      resolvedAt: null,
+    },
+    data: {
+      resolvedAt: new Date(),
+      resolutionNotes: input.note,
+      resolvedByUserId: input.actor.id,
+      resolvedByNameSnapshot: input.actor.name,
+    },
+  });
+}
+
+async function syncAutomaticEligibility(
+  tx: Prisma.TransactionClient,
+  input: {
+    organizationId: string;
+    athleteId: string;
+    actor: EligibilityActor;
+    effectiveAt?: Date;
+  },
+) {
+  const now = new Date();
+
+  const athlete = await tx.athlete.findFirst({
+    where: {
+      id: input.athleteId,
+      organizationId: input.organizationId,
+    },
+    select: {
+      id: true,
+      currentStatus: true,
+      documentationConfirmedAt: true,
+      memberships: {
+        where: {
+          status: "ACTIVE",
+        },
+        select: {
+          id: true,
+          sport: true,
+          category: {
+            select: {
+              id: true,
+              type: true,
+              sport: true,
+              requiresDocumentation: true,
+              requiresMedicalExam: true,
+              requiresFederationRegistration: true,
+            },
+          },
+        },
+      },
+      documents: {
+        where: {
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          category: true,
+          status: true,
+          expiresAt: true,
+          createdAt: true,
+        },
+      },
+      sportRegistrations: {
+        where: {
+          authorityType: "FEDERATION",
+          status: "ACTIVE",
+        },
+        select: {
+          sport: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (
+    !athlete ||
+    athlete.currentStatus !== AthleteCurrentStatus.ACTIVE
+  ) {
+    if (athlete) {
+      await closeAutomaticEligibilityIssues(tx, {
+        organizationId: input.organizationId,
+        athleteId: input.athleteId,
+        actor: input.actor,
+        note:
+          "Pendência automática encerrada porque o atleta não está no elenco ativo.",
+      });
+    }
+
+    return;
+  }
+
+  const activeStandardMemberships =
+    athlete.memberships.filter(
+      (membership) =>
+        membership.category?.type === "STANDARD",
+    );
+
+  if (!activeStandardMemberships.length) {
+    await closeAutomaticEligibilityIssues(tx, {
+      organizationId: input.organizationId,
+      athleteId: input.athleteId,
+      actor: input.actor,
+      note:
+        "Pendência automática encerrada porque o atleta não possui vínculo esportivo ativo no elenco.",
+    });
+    return;
+  }
+
+  const activeDocuments = athlete.documents.filter(
+    (document) => document.status !== "ARCHIVED",
+  );
+
+  const hasExpiredDocument = activeDocuments.some(
+    (document) =>
+      document.status === "EXPIRED" ||
+      Boolean(document.expiresAt && document.expiresAt < now),
+  );
+
+  const hasPendingOrRejectedDocument = activeDocuments.some(
+    (document) =>
+      document.status === "PENDING" ||
+      document.status === "REJECTED",
+  );
+
+  const hasDocumentAfterConfirmation =
+    athlete.documentationConfirmedAt
+      ? activeDocuments.some(
+          (document) =>
+            document.createdAt > athlete.documentationConfirmedAt!,
+        )
+      : false;
+
+  const documentationReady =
+    Boolean(athlete.documentationConfirmedAt) &&
+    activeDocuments.length > 0 &&
+    !hasExpiredDocument &&
+    !hasPendingOrRejectedDocument &&
+    !hasDocumentAfterConfirmation;
+
+  const validMedicalDocument = activeDocuments.some(
+    (document) =>
+      (document.category === "MEDICAL_EXAM" ||
+        document.category === "MEDICAL_CLEARANCE") &&
+      document.status === "APPROVED" &&
+      (!document.expiresAt || document.expiresAt >= now),
+  );
+
+  const federationSports = new Set(
+    athlete.sportRegistrations.map(
+      (registration) => registration.sport,
+    ),
+  );
+
+  const requiresDocumentation =
+    activeStandardMemberships.some(
+      (membership) =>
+        membership.category?.requiresDocumentation,
+    );
+
+  const requiresMedicalExam =
+    activeStandardMemberships.some(
+      (membership) =>
+        membership.category?.requiresMedicalExam,
+    );
+
+  const automaticIssues: AutomaticEligibilityIssue[] = [
+    {
+      key: "AUTO:DOCUMENTATION",
+      type: AthleteEligibilityIssueType.DOCUMENTATION,
+      scope: AthleteEligibilityScope.GLOBAL,
+      reason:
+        "Documentação obrigatória ainda não está completa e confirmada.",
+      shouldBeOpen:
+        requiresDocumentation && !documentationReady,
+    },
+    {
+      key: "AUTO:MEDICAL_EXAM",
+      type: AthleteEligibilityIssueType.MEDICAL_EXAM,
+      scope: AthleteEligibilityScope.GLOBAL,
+      reason:
+        "Exame ou atestado médico obrigatório ainda não foi apresentado, aprovado ou está fora da validade.",
+      shouldBeOpen:
+        requiresMedicalExam && !validMedicalDocument,
+    },
+  ];
+
+  for (const sport of ["FOOTBALL", "FUTSAL"] as const) {
+    const sportMemberships =
+      activeStandardMemberships.filter(
+        (membership) =>
+          membership.sport === sport ||
+          membership.sport === "BOTH",
+      );
+
+    const required =
+      sportMemberships.some(
+        (membership) =>
+          membership.category
+            ?.requiresFederationRegistration,
+      );
+
+    automaticIssues.push({
+      key: `AUTO:FEDERATION:${sport}`,
+      type:
+        AthleteEligibilityIssueType.FEDERATION_REGISTRATION,
+      scope:
+        sport === "FOOTBALL"
+          ? AthleteEligibilityScope.FOOTBALL
+          : AthleteEligibilityScope.FUTSAL,
+      reason:
+        sport === "FOOTBALL"
+          ? "Inscrição na federação de futebol ainda não está ativa."
+          : "Inscrição na federação de futsal ainda não está ativa.",
+      shouldBeOpen:
+        required && !federationSports.has(sport),
+    });
+  }
+
+  for (const issue of automaticIssues) {
+    await setAutomaticEligibilityIssue(tx, {
+      organizationId: input.organizationId,
+      athleteId: input.athleteId,
+      issue,
+      actor: input.actor,
+      effectiveAt: input.effectiveAt,
+    });
+  }
+}
+
+
 function categoryEvent(
   fromType: "STANDARD" | "EVALUATION" | null,
   toType: "STANDARD" | "EVALUATION" | null,
@@ -141,6 +526,238 @@ function categoryEvent(
   }
 
   return "CATEGORY_ASSIGNMENT";
+}
+
+type EvaluationCategorySnapshot = {
+  id: string;
+  name: string;
+  type: "STANDARD" | "EVALUATION";
+  sport: "FOOTBALL" | "FUTSAL" | "BOTH";
+  evaluationTargets: Array<{
+    targetCategory: {
+      id: string;
+      name: string;
+      type: "STANDARD" | "EVALUATION";
+      sport: "FOOTBALL" | "FUTSAL" | "BOTH";
+      active: boolean;
+    };
+  }>;
+};
+
+function parseDateInput(
+  value: FormDataEntryValue | null,
+  fallback = new Date(),
+) {
+  const raw = clean(value);
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return fallback;
+  }
+
+  const parsed = new Date(`${raw}T12:00:00.000Z`);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+}
+
+function processTarget(
+  category: EvaluationCategorySnapshot,
+  requestedTargetCategoryId?: string | null,
+) {
+  const validTargets = category.evaluationTargets
+    .map((item) => item.targetCategory)
+    .filter((target) => target.active);
+
+  if (requestedTargetCategoryId) {
+    return (
+      validTargets.find(
+        (target) => target.id === requestedTargetCategoryId,
+      ) ?? null
+    );
+  }
+
+  return validTargets.length === 1 ? validTargets[0] : null;
+}
+
+function processSeason(date: Date) {
+  return String(date.getUTCFullYear());
+}
+
+async function findLegacyEvaluationStart(
+  tx: Prisma.TransactionClient,
+  organizationId: string,
+  athleteId: string,
+  evaluationCategoryId: string,
+) {
+  const logs = await tx.athleteDataAuditLog.findMany({
+    where: {
+      organizationId,
+      athleteId,
+      entityType: "ATHLETE_CATEGORY",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: 50,
+    select: {
+      metadataJson: true,
+      createdAt: true,
+    },
+  });
+
+  for (const log of logs) {
+    if (!log.metadataJson) continue;
+
+    try {
+      const metadata = JSON.parse(log.metadataJson) as {
+        event?: string;
+        toCategory?: {
+          id?: string;
+        } | null;
+      };
+
+      if (
+        (metadata.event === "EVALUATION_ENTRY" ||
+          metadata.event === "EVALUATION_TRANSFER") &&
+        metadata.toCategory?.id === evaluationCategoryId
+      ) {
+        return log.createdAt;
+      }
+    } catch {
+      // Histórico legado inválido não deve bloquear o processo atual.
+    }
+  }
+
+  return null;
+}
+
+async function createCurrentEvaluationProcess(
+  tx: Prisma.TransactionClient,
+  input: {
+    organizationId: string;
+    athleteId: string;
+    category: EvaluationCategorySnapshot;
+    userId: string;
+    userName: string;
+    startedAt?: Date;
+  },
+) {
+  const target = processTarget(input.category);
+  const startedAt = input.startedAt ?? new Date();
+
+  return tx.athleteEvaluationProcess.create({
+    data: {
+      organizationId: input.organizationId,
+      athleteId: input.athleteId,
+      evaluationCategoryId: input.category.id,
+      targetCategoryId: target?.id ?? null,
+      sport: input.category.sport,
+      status: AthleteEvaluationProcessStatus.IN_EVALUATION,
+      entryMode: AthleteEvaluationProcessEntryMode.CURRENT,
+      startedAt,
+      evaluationCategoryNameSnapshot: input.category.name,
+      targetCategoryNameSnapshot: target?.name ?? null,
+      seasonSnapshot: processSeason(startedAt),
+      createdByUserId: input.userId,
+      createdByNameSnapshot: input.userName,
+    },
+  });
+}
+
+async function ensureCurrentEvaluationProcess(
+  tx: Prisma.TransactionClient,
+  input: {
+    organizationId: string;
+    athleteId: string;
+    category: EvaluationCategorySnapshot;
+    userId: string;
+    userName: string;
+  },
+) {
+  const existing = await tx.athleteEvaluationProcess.findFirst({
+    where: {
+      organizationId: input.organizationId,
+      athleteId: input.athleteId,
+      evaluationCategoryId: input.category.id,
+      entryMode: AthleteEvaluationProcessEntryMode.CURRENT,
+      status: AthleteEvaluationProcessStatus.IN_EVALUATION,
+    },
+    orderBy: {
+      startedAt: "desc",
+    },
+  });
+
+  if (existing) return existing;
+
+  const legacyStart =
+    await findLegacyEvaluationStart(
+      tx,
+      input.organizationId,
+      input.athleteId,
+      input.category.id,
+    );
+
+  return createCurrentEvaluationProcess(tx, {
+    ...input,
+    startedAt: legacyStart ?? new Date(),
+  });
+}
+
+async function finalizeCurrentEvaluationProcess(
+  tx: Prisma.TransactionClient,
+  input: {
+    organizationId: string;
+    athleteId: string;
+    category: EvaluationCategorySnapshot;
+    userId: string;
+    userName: string;
+    status: Exclude<
+      AthleteEvaluationProcessStatus,
+      "IN_EVALUATION"
+    >;
+    decidedAt: Date;
+    decisionReason?: string | null;
+    notes?: string | null;
+    targetCategory?: {
+      id: string;
+      name: string;
+    } | null;
+  },
+) {
+  const process = await ensureCurrentEvaluationProcess(tx, {
+    organizationId: input.organizationId,
+    athleteId: input.athleteId,
+    category: input.category,
+    userId: input.userId,
+    userName: input.userName,
+  });
+
+  return tx.athleteEvaluationProcess.update({
+    where: {
+      id: process.id,
+    },
+    data: {
+      status: input.status,
+      decidedAt: input.decidedAt,
+      decisionReason: input.decisionReason ?? null,
+      notes: input.notes ?? null,
+      decidedByUserId: input.userId,
+      decidedByNameSnapshot: input.userName,
+      ...(input.targetCategory
+        ? {
+            targetCategoryId: input.targetCategory.id,
+            targetCategoryNameSnapshot:
+              input.targetCategory.name,
+          }
+        : {}),
+    },
+  });
+}
+
+function revalidateEvaluationPaths(athleteId: string) {
+  revalidatePath("/atletas");
+  revalidatePath(`/atletas/${athleteId}`);
+  revalidatePath("/categorias");
+  revalidatePath("/treinos");
+  revalidatePath("/performance");
 }
 
 export async function createAthlete(formData: FormData) {
@@ -174,35 +791,133 @@ export async function createAthlete(formData: FormData) {
   const cbfRegistrationNumber = nullable(
     formData.get("cbfRegistrationNumber"),
   );
+
   const entryType = requestedEntryType(formData.get("entryType"));
-  const requestedCategoryId = nullable(formData.get("categoryId"));
+  const sportModeRaw = clean(formData.get("sportMode"));
+  const sportMode =
+    sportModeRaw === "FUTSAL"
+      ? "FUTSAL"
+      : sportModeRaw === "BOTH"
+        ? "BOTH"
+        : "FOOTBALL";
+
+  const evaluationCategoryId = nullable(
+    formData.get("categoryId"),
+  );
+  const footballCategoryId = nullable(
+    formData.get("footballCategoryId"),
+  );
+  const futsalCategoryId = nullable(
+    formData.get("futsalCategoryId"),
+  );
 
   if (!name) {
     return { error: "Informe o nome do atleta." };
   }
 
-  if (entryType === "EVALUATION" && !requestedCategoryId) {
-    return {
-      error: "Nenhum grupo de avaliação válido foi encontrado.",
-    };
+  let evaluationCategory: Awaited<
+    ReturnType<typeof validateCategory>
+  > = null;
+  let footballCategory: Awaited<
+    ReturnType<typeof validateCategory>
+  > = null;
+  let futsalCategory: Awaited<
+    ReturnType<typeof validateCategory>
+  > = null;
+
+  if (entryType === "EVALUATION") {
+    if (!evaluationCategoryId) {
+      return {
+        error: "Selecione uma categoria de avaliação.",
+      };
+    }
+
+    evaluationCategory = await validateCategory(
+      evaluationCategoryId,
+      user.organizationId,
+      "EVALUATION",
+    );
+
+    if (!evaluationCategory) {
+      return {
+        error:
+          "A categoria selecionada não é uma categoria de avaliação válida.",
+      };
+    }
+  } else {
+    if (
+      (sportMode === "FOOTBALL" || sportMode === "BOTH") &&
+      !footballCategoryId
+    ) {
+      return {
+        error:
+          "Selecione a categoria do Futebol de Campo.",
+      };
+    }
+
+    if (
+      (sportMode === "FUTSAL" || sportMode === "BOTH") &&
+      !futsalCategoryId
+    ) {
+      return {
+        error: "Selecione a categoria do Futsal.",
+      };
+    }
+
+    if (footballCategoryId) {
+      footballCategory = await validateCategory(
+        footballCategoryId,
+        user.organizationId,
+        "STANDARD",
+      );
+
+      if (
+        !footballCategory ||
+        !["FOOTBALL", "BOTH"].includes(
+          footballCategory.sport,
+        )
+      ) {
+        return {
+          error:
+            "A categoria escolhida para Campo não é válida para Futebol de Campo.",
+        };
+      }
+    }
+
+    if (futsalCategoryId) {
+      futsalCategory = await validateCategory(
+        futsalCategoryId,
+        user.organizationId,
+        "STANDARD",
+      );
+
+      if (
+        !futsalCategory ||
+        !["FUTSAL", "BOTH"].includes(futsalCategory.sport)
+      ) {
+        return {
+          error:
+            "A categoria escolhida para Futsal não é válida para Futsal.",
+        };
+      }
+    }
   }
 
-  const category = await validateCategory(
-    requestedCategoryId,
-    user.organizationId,
-    requestedCategoryId ? entryType : undefined,
-  );
+  const legacyPrimaryCategory =
+    entryType === "EVALUATION"
+      ? evaluationCategory
+      : footballCategory ?? futsalCategory;
 
-  if (requestedCategoryId && !category) {
+  if (!legacyPrimaryCategory) {
     return {
       error:
-        entryType === "EVALUATION"
-          ? "A categoria selecionada não é uma categoria de avaliação válida."
-          : "A categoria selecionada não é uma categoria do elenco válida.",
+        "Todo atleta precisa estar vinculado a pelo menos uma modalidade e categoria.",
     };
   }
 
   const athlete = await prisma.$transaction(async (tx) => {
+    const now = new Date();
+
     const created = await tx.athlete.create({
       data: {
         name,
@@ -216,15 +931,70 @@ export async function createAthlete(formData: FormData) {
         guardianRelation,
         guardianPhone,
         guardianEmail,
-        categoryId: category?.id ?? null,
+        categoryId: legacyPrimaryCategory.id,
         organizationId: user.organizationId,
         active: true,
+        currentStatus:
+          entryType === "EVALUATION"
+            ? AthleteCurrentStatus.EVALUATION
+            : AthleteCurrentStatus.ACTIVE,
       },
       select: {
         id: true,
         name: true,
       },
     });
+
+    if (entryType === "EVALUATION" && evaluationCategory) {
+      await tx.athleteMembership.create({
+        data: {
+          athleteId: created.id,
+          organizationId: user.organizationId,
+          categoryId: evaluationCategory.id,
+          sport: evaluationCategory.sport,
+          season: processSeason(now),
+          status: "ACTIVE",
+          verified: true,
+          startedAt: now,
+        },
+      });
+    } else {
+      if (
+        (sportMode === "FOOTBALL" || sportMode === "BOTH") &&
+        footballCategory
+      ) {
+        await tx.athleteMembership.create({
+          data: {
+            athleteId: created.id,
+            organizationId: user.organizationId,
+            categoryId: footballCategory.id,
+            sport: "FOOTBALL",
+            season: processSeason(now),
+            status: "ACTIVE",
+            verified: true,
+            startedAt: now,
+          },
+        });
+      }
+
+      if (
+        (sportMode === "FUTSAL" || sportMode === "BOTH") &&
+        futsalCategory
+      ) {
+        await tx.athleteMembership.create({
+          data: {
+            athleteId: created.id,
+            organizationId: user.organizationId,
+            categoryId: futsalCategory.id,
+            sport: "FUTSAL",
+            season: processSeason(now),
+            status: "ACTIVE",
+            verified: true,
+            startedAt: now,
+          },
+        });
+      }
+    }
 
     await syncSportRegistration(tx, {
       organizationId: user.organizationId,
@@ -252,28 +1022,73 @@ export async function createAthlete(formData: FormData) {
       authorityName: "CBF",
       registrationNumber: cbfRegistrationNumber,
     });
-    if (category) {
-      await tx.athleteDataAuditLog.create({
-        data: {
-          organizationId: user.organizationId,
-          athleteId: created.id,
-          actorUserId: user.id,
-          action: AthleteDataAuditAction.CREATED,
-          entityType: "ATHLETE_CATEGORY",
-          entityId: created.id,
-          metadataJson: JSON.stringify({
-            event:
-              category.type === "EVALUATION"
-                ? "EVALUATION_ENTRY"
-                : "CATEGORY_ASSIGNMENT",
-            fromCategory: null,
-            toCategory: {
-              id: category.id,
-              name: category.name,
-              type: category.type,
-            },
-          }),
-        },
+
+    await syncAutomaticEligibility(tx, {
+      organizationId: user.organizationId,
+      athleteId: created.id,
+      actor: {
+        id: user.id,
+        name: user.name,
+      },
+    });
+
+    await tx.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId: created.id,
+        actorUserId: user.id,
+        action: AthleteDataAuditAction.CREATED,
+        entityType: "ATHLETE_CATEGORY",
+        entityId: created.id,
+        metadataJson: JSON.stringify({
+          event:
+            entryType === "EVALUATION"
+              ? "EVALUATION_ENTRY"
+              : "SPORT_MEMBERSHIPS_CREATED",
+          sportMode:
+            entryType === "EVALUATION"
+              ? evaluationCategory?.sport
+              : sportMode,
+          memberships:
+            entryType === "EVALUATION"
+              ? [
+                  {
+                    sport: evaluationCategory?.sport,
+                    categoryId: evaluationCategory?.id,
+                    categoryName: evaluationCategory?.name,
+                  },
+                ]
+              : [
+                  ...(footballCategory
+                    ? [
+                        {
+                          sport: "FOOTBALL",
+                          categoryId: footballCategory.id,
+                          categoryName: footballCategory.name,
+                        },
+                      ]
+                    : []),
+                  ...(futsalCategory
+                    ? [
+                        {
+                          sport: "FUTSAL",
+                          categoryId: futsalCategory.id,
+                          categoryName: futsalCategory.name,
+                        },
+                      ]
+                    : []),
+                ],
+        }),
+      },
+    });
+
+    if (entryType === "EVALUATION" && evaluationCategory) {
+      await createCurrentEvaluationProcess(tx, {
+        organizationId: user.organizationId,
+        athleteId: created.id,
+        category: evaluationCategory,
+        userId: user.id,
+        userName: user.name,
       });
     }
 
@@ -321,8 +1136,14 @@ export async function updateAthlete(formData: FormData) {
   const cbfRegistrationNumber = nullable(
     formData.get("cbfRegistrationNumber"),
   );
-  const active = clean(formData.get("active")) === "true";
+
   const requestedCategoryId = nullable(formData.get("categoryId"));
+  const footballCategoryId = nullable(
+    formData.get("footballCategoryId"),
+  );
+  const futsalCategoryId = nullable(
+    formData.get("futsalCategoryId"),
+  );
 
   if (!id || !name) return;
 
@@ -333,6 +1154,43 @@ export async function updateAthlete(formData: FormData) {
 
   if (requestedCategoryId && !category) return;
 
+  const [footballCategory, futsalCategory] = await Promise.all([
+    footballCategoryId
+      ? validateCategory(
+          footballCategoryId,
+          user.organizationId,
+        )
+      : Promise.resolve(null),
+    futsalCategoryId
+      ? validateCategory(
+          futsalCategoryId,
+          user.organizationId,
+        )
+      : Promise.resolve(null),
+  ]);
+
+  if (
+    footballCategoryId &&
+    (!footballCategory ||
+      footballCategory.type !== "STANDARD" ||
+      !["FOOTBALL", "BOTH"].includes(
+        footballCategory.sport,
+      ))
+  ) {
+    return;
+  }
+
+  if (
+    futsalCategoryId &&
+    (!futsalCategory ||
+      futsalCategory.type !== "STANDARD" ||
+      !["FUTSAL", "BOTH"].includes(
+        futsalCategory.sport,
+      ))
+  ) {
+    return;
+  }
+
   await prisma.$transaction(async (tx) => {
     const current = await tx.athlete.findFirst({
       where: {
@@ -342,11 +1200,49 @@ export async function updateAthlete(formData: FormData) {
       select: {
         id: true,
         categoryId: true,
+        currentStatus: true,
+        active: true,
         category: {
           select: {
             id: true,
             name: true,
             type: true,
+            sport: true,
+            evaluationTargets: {
+              where: {
+                targetCategory: {
+                  organizationId: user.organizationId,
+                  type: "STANDARD",
+                },
+              },
+              select: {
+                targetCategory: {
+                  select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    sport: true,
+                    active: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        memberships: {
+          where: {
+            status: "ACTIVE",
+          },
+          select: {
+            id: true,
+            sport: true,
+            categoryId: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -354,24 +1250,320 @@ export async function updateAthlete(formData: FormData) {
 
     if (!current) return;
 
-    await tx.athlete.update({
-      where: { id: current.id },
-      data: {
-        name,
-        nickname,
-        jerseyNumber,
-        position,
-        dominantFoot,
-        birthYear,
-        photoUrl,
-        guardianName,
-        guardianRelation,
-        guardianPhone,
-        guardianEmail,
-        categoryId: category?.id ?? null,
-        active,
-      },
-    });
+    const isActiveRoster =
+      current.currentStatus === AthleteCurrentStatus.ACTIVE;
+
+    if (isActiveRoster) {
+      const now = new Date();
+
+      const requestedMemberships = [
+        {
+          sport: "FOOTBALL" as const,
+          category: footballCategory,
+        },
+        {
+          sport: "FUTSAL" as const,
+          category: futsalCategory,
+        },
+      ];
+
+      for (const requested of requestedMemberships) {
+        if (!requested.category) continue;
+
+        const existing = current.memberships.find(
+          (membership) =>
+            membership.sport === requested.sport,
+        );
+
+        if (existing) {
+          if (
+            existing.categoryId !== requested.category.id
+          ) {
+            await tx.athleteMembership.update({
+              where: {
+                id: existing.id,
+              },
+              data: {
+                categoryId: requested.category.id,
+              },
+            });
+
+            await tx.athleteDataAuditLog.create({
+              data: {
+                organizationId: user.organizationId,
+                athleteId: current.id,
+                actorUserId: user.id,
+                action: AthleteDataAuditAction.UPDATED,
+                entityType: "ATHLETE_MEMBERSHIP",
+                entityId: existing.id,
+                metadataJson: JSON.stringify({
+                  event: "SPORT_CATEGORY_CHANGED",
+                  sport: requested.sport,
+                  fromCategory: existing.category
+                    ? {
+                        id: existing.category.id,
+                        name: existing.category.name,
+                      }
+                    : null,
+                  toCategory: {
+                    id: requested.category.id,
+                    name: requested.category.name,
+                  },
+                }),
+              },
+            });
+          }
+        } else {
+          const createdMembership =
+            await tx.athleteMembership.create({
+              data: {
+                athleteId: current.id,
+                organizationId: user.organizationId,
+                categoryId: requested.category.id,
+                sport: requested.sport,
+                season: processSeason(now),
+                status: "ACTIVE",
+                verified: true,
+                startedAt: now,
+              },
+            });
+
+          await tx.athleteDataAuditLog.create({
+            data: {
+              organizationId: user.organizationId,
+              athleteId: current.id,
+              actorUserId: user.id,
+              action: AthleteDataAuditAction.CREATED,
+              entityType: "ATHLETE_MEMBERSHIP",
+              entityId: createdMembership.id,
+              metadataJson: JSON.stringify({
+                event: "SPORT_MEMBERSHIP_ADDED",
+                sport: requested.sport,
+                toCategory: {
+                  id: requested.category.id,
+                  name: requested.category.name,
+                },
+              }),
+            },
+          });
+        }
+      }
+
+      const activeMembershipsAfter =
+        await tx.athleteMembership.findMany({
+          where: {
+            athleteId: current.id,
+            organizationId: user.organizationId,
+            status: "ACTIVE",
+          },
+          orderBy: [
+            {
+              sport: "asc",
+            },
+            {
+              startedAt: "asc",
+            },
+          ],
+          select: {
+            sport: true,
+            categoryId: true,
+          },
+        });
+
+      const primaryMembership =
+        activeMembershipsAfter.find(
+          (membership) =>
+            membership.sport === "FOOTBALL",
+        ) ??
+        activeMembershipsAfter.find(
+          (membership) =>
+            membership.sport === "FUTSAL",
+        ) ??
+        activeMembershipsAfter[0] ??
+        null;
+
+      await tx.athlete.update({
+        where: { id: current.id },
+        data: {
+          name,
+          nickname,
+          jerseyNumber,
+          position,
+          dominantFoot,
+          birthYear,
+          photoUrl,
+          guardianName,
+          guardianRelation,
+          guardianPhone,
+          guardianEmail,
+          categoryId:
+            primaryMembership?.categoryId ??
+            current.categoryId,
+          currentStatus: AthleteCurrentStatus.ACTIVE,
+          active: true,
+        },
+      });
+    } else {
+      const changedCategory =
+        current.categoryId !== (category?.id ?? null);
+
+      if (
+        changedCategory &&
+        current.category?.type === "EVALUATION" &&
+        category?.type === "STANDARD"
+      ) {
+        const linkedTarget =
+          current.category.evaluationTargets.some(
+            (item) =>
+              item.targetCategory.id === category.id &&
+              item.targetCategory.active,
+          );
+
+        if (!linkedTarget) return;
+      }
+
+      await tx.athlete.update({
+        where: { id: current.id },
+        data: {
+          name,
+          nickname,
+          jerseyNumber,
+          position,
+          dominantFoot,
+          birthYear,
+          photoUrl,
+          guardianName,
+          guardianRelation,
+          guardianPhone,
+          guardianEmail,
+          categoryId: category?.id ?? null,
+          currentStatus:
+            category?.type === "EVALUATION"
+              ? AthleteCurrentStatus.EVALUATION
+              : category?.type === "STANDARD"
+                ? AthleteCurrentStatus.ACTIVE
+                : current.currentStatus,
+          active:
+            category?.type === "EVALUATION" ||
+            category?.type === "STANDARD"
+              ? true
+              : current.active,
+        },
+      });
+
+      if (changedCategory) {
+        const event = categoryEvent(
+          current.category?.type ?? null,
+          category?.type ?? null,
+        );
+
+        if (
+          category?.type === "EVALUATION" &&
+          current.category?.type !== "EVALUATION"
+        ) {
+          await createCurrentEvaluationProcess(tx, {
+            organizationId: user.organizationId,
+            athleteId: current.id,
+            category,
+            userId: user.id,
+            userName: user.name,
+          });
+        } else if (
+          category?.type === "EVALUATION" &&
+          current.category?.type === "EVALUATION"
+        ) {
+          const target = processTarget(category);
+
+          const openProcess =
+            await tx.athleteEvaluationProcess.findFirst({
+              where: {
+                organizationId: user.organizationId,
+                athleteId: current.id,
+                entryMode:
+                  AthleteEvaluationProcessEntryMode.CURRENT,
+                status:
+                  AthleteEvaluationProcessStatus.IN_EVALUATION,
+              },
+              orderBy: {
+                startedAt: "desc",
+              },
+            });
+
+          if (openProcess) {
+            await tx.athleteEvaluationProcess.update({
+              where: {
+                id: openProcess.id,
+              },
+              data: {
+                evaluationCategoryId: category.id,
+                evaluationCategoryNameSnapshot:
+                  category.name,
+                targetCategoryId: target?.id ?? null,
+                targetCategoryNameSnapshot:
+                  target?.name ?? null,
+                sport: category.sport,
+              },
+            });
+          } else {
+            await createCurrentEvaluationProcess(tx, {
+              organizationId: user.organizationId,
+              athleteId: current.id,
+              category,
+              userId: user.id,
+              userName: user.name,
+            });
+          }
+        } else if (
+          current.category?.type === "EVALUATION" &&
+          category?.type === "STANDARD"
+        ) {
+          await finalizeCurrentEvaluationProcess(tx, {
+            organizationId: user.organizationId,
+            athleteId: current.id,
+            category: current.category,
+            userId: user.id,
+            userName: user.name,
+            status: AthleteEvaluationProcessStatus.APPROVED,
+            decidedAt: new Date(),
+            targetCategory: {
+              id: category.id,
+              name: category.name,
+            },
+          });
+        }
+
+        await tx.athleteDataAuditLog.create({
+          data: {
+            organizationId: user.organizationId,
+            athleteId: current.id,
+            actorUserId: user.id,
+            action:
+              event === "EVALUATION_APPROVED"
+                ? AthleteDataAuditAction.APPROVED
+                : AthleteDataAuditAction.UPDATED,
+            entityType: "ATHLETE_CATEGORY",
+            entityId: current.id,
+            metadataJson: JSON.stringify({
+              event,
+              fromCategory: current.category
+                ? {
+                    id: current.category.id,
+                    name: current.category.name,
+                    type: current.category.type,
+                  }
+                : null,
+              toCategory: category
+                ? {
+                    id: category.id,
+                    name: category.name,
+                    type: category.type,
+                  }
+                : null,
+            }),
+          },
+        });
+      }
+    }
 
     await syncSportRegistration(tx, {
       organizationId: user.organizationId,
@@ -399,54 +1591,21 @@ export async function updateAthlete(formData: FormData) {
       authorityName: "CBF",
       registrationNumber: cbfRegistrationNumber,
     });
-    const changedCategory =
-      current.categoryId !== (category?.id ?? null);
 
-    if (changedCategory) {
-      const event = categoryEvent(
-        current.category?.type ?? null,
-        category?.type ?? null,
-      );
-
-      await tx.athleteDataAuditLog.create({
-        data: {
-          organizationId: user.organizationId,
-          athleteId: current.id,
-          actorUserId: user.id,
-          action:
-            event === "EVALUATION_APPROVED"
-              ? AthleteDataAuditAction.APPROVED
-              : AthleteDataAuditAction.UPDATED,
-          entityType: "ATHLETE_CATEGORY",
-          entityId: current.id,
-          metadataJson: JSON.stringify({
-            event,
-            fromCategory: current.category
-              ? {
-                  id: current.category.id,
-                  name: current.category.name,
-                  type: current.category.type,
-                }
-              : null,
-            toCategory: category
-              ? {
-                  id: category.id,
-                  name: category.name,
-                  type: category.type,
-                }
-              : null,
-          }),
-        },
-      });
-    }
+    await syncAutomaticEligibility(tx, {
+      organizationId: user.organizationId,
+      athleteId: current.id,
+      actor: {
+        id: user.id,
+        name: user.name,
+      },
+    });
   });
 
-  revalidatePath("/atletas");
-  revalidatePath(`/atletas/${id}`);
-  revalidatePath("/categorias");
-
-  redirect("/atletas");
+  revalidateEvaluationPaths(id);
+  redirect(`/atletas/${id}`);
 }
+
 
 export async function deleteAthlete(formData: FormData) {
   const user = await requireClubPermission("ATHLETES_EDIT");
@@ -461,6 +1620,7 @@ export async function deleteAthlete(formData: FormData) {
     },
     data: {
       active: false,
+      currentStatus: AthleteCurrentStatus.RELEASED,
     },
   });
 
@@ -474,15 +1634,32 @@ export async function toggleAthleteStatus(formData: FormData) {
   const id = clean(formData.get("id"));
   const next = clean(formData.get("next")) === "true";
 
-  if (!id) return;
+  if (!id || !next) return;
 
-  await prisma.athlete.updateMany({
+  const athlete = await prisma.athlete.findFirst({
     where: {
       id,
       organizationId: user.organizationId,
+      currentStatus: {
+        in: [
+          AthleteCurrentStatus.ACTIVE,
+          AthleteCurrentStatus.EVALUATION,
+        ],
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!athlete) return;
+
+  await prisma.athlete.update({
+    where: {
+      id: athlete.id,
     },
     data: {
-      active: next,
+      active: true,
     },
   });
 
@@ -491,11 +1668,19 @@ export async function toggleAthleteStatus(formData: FormData) {
   revalidatePath("/categorias");
 }
 
-
-export async function approveEvaluationAthlete(formData: FormData) {
+export async function approveEvaluationAthlete(
+  formData: FormData,
+) {
   const user = await requireClubPermission("ATHLETES_EDIT");
 
   const athleteId = clean(formData.get("athleteId"));
+  const requestedTargetCategoryId = nullable(
+    formData.get("targetCategoryId"),
+  );
+  const decidedAt = parseDateInput(
+    formData.get("decisionDate"),
+  );
+  const notes = nullable(formData.get("notes"));
 
   if (!athleteId) return;
 
@@ -507,7 +1692,6 @@ export async function approveEvaluationAthlete(formData: FormData) {
       },
       select: {
         id: true,
-        categoryId: true,
         category: {
           select: {
             id: true,
@@ -529,10 +1713,10 @@ export async function approveEvaluationAthlete(formData: FormData) {
                     name: true,
                     type: true,
                     sport: true,
+                    active: true,
                   },
                 },
               },
-              take: 2,
             },
           },
         },
@@ -547,13 +1731,25 @@ export async function approveEvaluationAthlete(formData: FormData) {
       return;
     }
 
-    const targets = athlete.category.evaluationTargets;
+    const targetCategory = processTarget(
+      athlete.category,
+      requestedTargetCategoryId,
+    );
 
-    if (targets.length !== 1) {
-      return;
-    }
+    if (!targetCategory) return;
 
-    const targetCategory = targets[0].targetCategory;
+    const process =
+      await finalizeCurrentEvaluationProcess(tx, {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        category: athlete.category,
+        userId: user.id,
+        userName: user.name,
+        status: AthleteEvaluationProcessStatus.APPROVED,
+        decidedAt,
+        notes,
+        targetCategory,
+      });
 
     await tx.athlete.update({
       where: {
@@ -562,7 +1758,19 @@ export async function approveEvaluationAthlete(formData: FormData) {
       data: {
         categoryId: targetCategory.id,
         evaluationTargetCategoryId: null,
+        currentStatus: AthleteCurrentStatus.ACTIVE,
+        active: true,
       },
+    });
+
+    await syncAutomaticEligibility(tx, {
+      organizationId: user.organizationId,
+      athleteId: athlete.id,
+      actor: {
+        id: user.id,
+        name: user.name,
+      },
+      effectiveAt: decidedAt,
     });
 
     await tx.athleteDataAuditLog.create({
@@ -575,6 +1783,8 @@ export async function approveEvaluationAthlete(formData: FormData) {
         entityId: athlete.id,
         metadataJson: JSON.stringify({
           event: "EVALUATION_APPROVED",
+          evaluationProcessId: process.id,
+          decidedAt: decidedAt.toISOString(),
           fromCategory: {
             id: athlete.category.id,
             name: athlete.category.name,
@@ -590,20 +1800,34 @@ export async function approveEvaluationAthlete(formData: FormData) {
     });
   });
 
-  revalidatePath("/atletas");
-  revalidatePath(`/atletas/${athleteId}`);
-  revalidatePath("/categorias");
-
+  revalidateEvaluationPaths(athleteId);
   redirect(`/atletas/${athleteId}`);
 }
 
-export async function rejectEvaluationAthlete(formData: FormData) {
+async function finishEvaluationWithoutApproval(
+  formData: FormData,
+  status:
+    | "REJECTED"
+    | "RELEASED"
+    | "WITHDRAWN",
+  event:
+    | "EVALUATION_REJECTED"
+    | "EVALUATION_RELEASED"
+    | "EVALUATION_WITHDRAWN",
+  requireReason: boolean,
+) {
   const user = await requireClubPermission("ATHLETES_EDIT");
 
   const athleteId = clean(formData.get("athleteId"));
-  const reason = clean(formData.get("reason"));
+  const reason = nullable(formData.get("reason"));
+  const notes = nullable(formData.get("notes"));
+  const decidedAt = parseDateInput(
+    formData.get("decisionDate"),
+  );
 
-  if (!athleteId || !reason) return;
+  if (!athleteId || (requireReason && !reason)) {
+    return null;
+  }
 
   await prisma.$transaction(async (tx) => {
     const athlete = await tx.athlete.findFirst({
@@ -613,12 +1837,31 @@ export async function rejectEvaluationAthlete(formData: FormData) {
       },
       select: {
         id: true,
-        categoryId: true,
         category: {
           select: {
             id: true,
             name: true,
             type: true,
+            sport: true,
+            evaluationTargets: {
+              where: {
+                targetCategory: {
+                  organizationId: user.organizationId,
+                  type: "STANDARD",
+                },
+              },
+              select: {
+                targetCategory: {
+                  select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    sport: true,
+                    active: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -632,14 +1875,73 @@ export async function rejectEvaluationAthlete(formData: FormData) {
       return;
     }
 
+    const process =
+      await finalizeCurrentEvaluationProcess(tx, {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        category: athlete.category,
+        userId: user.id,
+        userName: user.name,
+        status,
+        decidedAt,
+        decisionReason: reason,
+        notes,
+      });
+
+    const currentStatus =
+      status === AthleteEvaluationProcessStatus.REJECTED
+        ? AthleteCurrentStatus.REJECTED
+        : AthleteCurrentStatus.RELEASED;
+
     await tx.athlete.update({
       where: {
         id: athlete.id,
       },
       data: {
         categoryId: null,
+        evaluationTargetCategoryId: null,
+        currentStatus,
+        active: false,
       },
     });
+
+    await closeAutomaticEligibilityIssues(tx, {
+      organizationId: user.organizationId,
+      athleteId: athlete.id,
+      actor: {
+        id: user.id,
+        name: user.name,
+      },
+      note:
+        currentStatus === AthleteCurrentStatus.REJECTED
+          ? "Pendência encerrada porque a avaliação terminou sem aprovação."
+          : "Pendência encerrada porque o atleta saiu do clube.",
+    });
+
+    if (
+      status === AthleteEvaluationProcessStatus.RELEASED ||
+      status === AthleteEvaluationProcessStatus.WITHDRAWN
+    ) {
+      await tx.athleteExitRecord.create({
+        data: {
+          organizationId: user.organizationId,
+          athleteId: athlete.id,
+          origin:
+            status === AthleteEvaluationProcessStatus.WITHDRAWN
+              ? AthleteExitOrigin.FAMILY
+              : AthleteExitOrigin.CLUB,
+          occurredAt: decidedAt,
+          reason,
+          notes,
+          previousCategoryId: athlete.category.id,
+          previousCategoryNameSnapshot:
+            athlete.category.name,
+          seasonSnapshot: processSeason(decidedAt),
+          recordedByUserId: user.id,
+          recordedByNameSnapshot: user.name,
+        },
+      });
+    }
 
     await tx.athleteDataAuditLog.create({
       data: {
@@ -650,7 +1952,9 @@ export async function rejectEvaluationAthlete(formData: FormData) {
         entityType: "ATHLETE_CATEGORY",
         entityId: athlete.id,
         metadataJson: JSON.stringify({
-          event: "EVALUATION_REJECTED",
+          event,
+          evaluationProcessId: process.id,
+          decidedAt: decidedAt.toISOString(),
           reason,
           fromCategory: {
             id: athlete.category.id,
@@ -663,13 +1967,756 @@ export async function rejectEvaluationAthlete(formData: FormData) {
     });
   });
 
-  revalidatePath("/atletas");
-  revalidatePath(`/atletas/${athleteId}`);
-  revalidatePath("/categorias");
+  revalidateEvaluationPaths(athleteId);
+  return athleteId;
+}
 
+export async function rejectEvaluationAthlete(
+  formData: FormData,
+) {
+  const athleteId =
+    await finishEvaluationWithoutApproval(
+      formData,
+      AthleteEvaluationProcessStatus.REJECTED,
+      "EVALUATION_REJECTED",
+      true,
+    );
+
+  if (athleteId) {
+    redirect(`/atletas/${athleteId}`);
+  }
+}
+
+export async function releaseEvaluationAthlete(
+  formData: FormData,
+) {
+  const athleteId =
+    await finishEvaluationWithoutApproval(
+      formData,
+      AthleteEvaluationProcessStatus.RELEASED,
+      "EVALUATION_RELEASED",
+      true,
+    );
+
+  if (athleteId) {
+    redirect(`/atletas/${athleteId}`);
+  }
+}
+
+export async function withdrawEvaluationAthlete(
+  formData: FormData,
+) {
+  const athleteId =
+    await finishEvaluationWithoutApproval(
+      formData,
+      AthleteEvaluationProcessStatus.WITHDRAWN,
+      "EVALUATION_WITHDRAWN",
+      false,
+    );
+
+  if (athleteId) {
+    redirect(`/atletas/${athleteId}`);
+  }
+}
+
+export async function releaseAthlete(
+  formData: FormData,
+) {
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
+  const athleteId = clean(formData.get("athleteId"));
+  const membershipId = clean(formData.get("membershipId"));
+  const originRaw = clean(formData.get("origin"));
+  const reason = nullable(formData.get("reason"));
+  const notes = nullable(formData.get("notes"));
+  const occurredAt = parseDateInput(
+    formData.get("occurredAt"),
+  );
+
+  const origin =
+    originRaw === AthleteExitOrigin.FAMILY
+      ? AthleteExitOrigin.FAMILY
+      : originRaw === AthleteExitOrigin.CLUB
+        ? AthleteExitOrigin.CLUB
+        : null;
+
+  if (
+    !athleteId ||
+    !membershipId ||
+    !origin ||
+    !reason
+  ) {
+    return;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const athlete = await tx.athlete.findFirst({
+      where: {
+        id: athleteId,
+        organizationId: user.organizationId,
+        currentStatus: AthleteCurrentStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        categoryId: true,
+      },
+    });
+
+    if (!athlete) return;
+
+    const membership = await tx.athleteMembership.findFirst({
+      where: {
+        id: membershipId,
+        athleteId: athlete.id,
+        organizationId: user.organizationId,
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        sport: true,
+        categoryId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!membership) return;
+
+    await tx.athleteMembership.update({
+      where: {
+        id: membership.id,
+      },
+      data: {
+        status: "RELEASED",
+        endedAt: occurredAt,
+      },
+    });
+
+    const exitRecord = await tx.athleteExitRecord.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        sport: membership.sport,
+        origin,
+        occurredAt,
+        reason,
+        notes,
+        previousCategoryId: membership.categoryId,
+        previousCategoryNameSnapshot:
+          membership.category?.name ?? null,
+        seasonSnapshot: processSeason(occurredAt),
+        recordedByUserId: user.id,
+        recordedByNameSnapshot: user.name,
+      },
+    });
+
+    const remainingMembership =
+      await tx.athleteMembership.findFirst({
+        where: {
+          athleteId: athlete.id,
+          organizationId: user.organizationId,
+          status: "ACTIVE",
+        },
+        orderBy: {
+          startedAt: "asc",
+        },
+        select: {
+          id: true,
+          sport: true,
+          categoryId: true,
+        },
+      });
+
+    if (remainingMembership) {
+      await tx.athlete.update({
+        where: {
+          id: athlete.id,
+        },
+        data: {
+          currentStatus: AthleteCurrentStatus.ACTIVE,
+          active: true,
+          categoryId: remainingMembership.categoryId,
+          evaluationTargetCategoryId: null,
+        },
+      });
+
+      await tx.athleteEligibilityIssue.updateMany({
+        where: {
+          athleteId: athlete.id,
+          organizationId: user.organizationId,
+          source: AthleteEligibilityIssueSource.AUTOMATIC,
+          scope:
+            membership.sport === "FUTSAL"
+              ? "FUTSAL"
+              : "FOOTBALL",
+          resolvedAt: null,
+        },
+        data: {
+          resolvedAt: occurredAt,
+          resolutionNotes:
+            "Pendência encerrada porque o vínculo desta modalidade foi encerrado.",
+          resolvedByUserId: user.id,
+          resolvedByNameSnapshot: user.name,
+        },
+      });
+
+      await syncAutomaticEligibility(tx, {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        actor: {
+          id: user.id,
+          name: user.name,
+        },
+        effectiveAt: occurredAt,
+      });
+    } else {
+      await tx.athlete.update({
+        where: {
+          id: athlete.id,
+        },
+        data: {
+          currentStatus: AthleteCurrentStatus.RELEASED,
+          active: false,
+          categoryId: null,
+          evaluationTargetCategoryId: null,
+        },
+      });
+
+      await closeAutomaticEligibilityIssues(tx, {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        actor: {
+          id: user.id,
+          name: user.name,
+        },
+        note:
+          origin === AthleteExitOrigin.FAMILY
+            ? "Pendência encerrada porque a família/atleta solicitou a saída da última modalidade ativa."
+            : "Pendência encerrada porque o clube encerrou a última modalidade ativa do atleta.",
+      });
+    }
+
+    await tx.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        actorUserId: user.id,
+        action: AthleteDataAuditAction.UPDATED,
+        entityType: "ATHLETE_STATUS",
+        entityId: exitRecord.id,
+        metadataJson: JSON.stringify({
+          event: remainingMembership
+            ? "ATHLETE_SPORT_RELEASED"
+            : "ATHLETE_RELEASED",
+          sport: membership.sport,
+          origin,
+          occurredAt: occurredAt.toISOString(),
+          reason,
+          fromCategory: membership.category
+            ? {
+                id: membership.category.id,
+                name: membership.category.name,
+              }
+            : null,
+          athleteStillActive: Boolean(remainingMembership),
+          remainingMembership: remainingMembership
+            ? {
+                id: remainingMembership.id,
+                sport: remainingMembership.sport,
+                categoryId: remainingMembership.categoryId,
+              }
+            : null,
+        }),
+      },
+    });
+  });
+
+  revalidateEvaluationPaths(athleteId);
   redirect(`/atletas/${athleteId}`);
 }
 
+
+export async function createAthleteEligibilityIssue(
+  formData: FormData,
+) {
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
+  const athleteId = clean(formData.get("athleteId"));
+  const typeRaw = clean(formData.get("type"));
+  const reason = nullable(formData.get("reason"));
+  const notes = nullable(formData.get("notes"));
+  const startedAt = parseDateInput(
+    formData.get("startedAt"),
+  );
+
+  const allowedTypes = new Set<string>([
+    AthleteEligibilityIssueType.DOCUMENTATION,
+    AthleteEligibilityIssueType.MEDICAL_EXAM,
+    AthleteEligibilityIssueType.FEDERATION_REGISTRATION,
+    AthleteEligibilityIssueType.COMPETITION_REGISTRATION,
+    AthleteEligibilityIssueType.OTHER,
+  ]);
+
+  if (
+    !athleteId ||
+    !reason ||
+    !allowedTypes.has(typeRaw)
+  ) {
+    return;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const athlete = await tx.athlete.findFirst({
+      where: {
+        id: athleteId,
+        organizationId: user.organizationId,
+        currentStatus: AthleteCurrentStatus.ACTIVE,
+        category: {
+          type: "STANDARD",
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!athlete) return;
+
+    const issue = await tx.athleteEligibilityIssue.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        type: typeRaw as AthleteEligibilityIssueType,
+        source: AthleteEligibilityIssueSource.MANUAL,
+        blocking: true,
+        reason,
+        notes,
+        startedAt,
+        createdByUserId: user.id,
+        createdByNameSnapshot: user.name,
+      },
+    });
+
+    await tx.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        actorUserId: user.id,
+        action: AthleteDataAuditAction.CREATED,
+        entityType: "ATHLETE_ELIGIBILITY",
+        entityId: issue.id,
+        metadataJson: JSON.stringify({
+          event: "ATHLETE_MARKED_UNFIT",
+          type: issue.type,
+          startedAt: startedAt.toISOString(),
+          reason,
+        }),
+      },
+    });
+  });
+
+  revalidateEvaluationPaths(athleteId);
+  redirect(`/atletas/${athleteId}`);
+}
+
+export async function resolveAthleteEligibilityIssue(
+  formData: FormData,
+) {
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
+  const issueId = clean(formData.get("issueId"));
+  const athleteId = clean(formData.get("athleteId"));
+  const resolutionNotes = nullable(
+    formData.get("resolutionNotes"),
+  );
+  const resolvedAt = parseDateInput(
+    formData.get("resolvedAt"),
+  );
+
+  if (!issueId || !athleteId) return;
+
+  await prisma.$transaction(async (tx) => {
+    const issue = await tx.athleteEligibilityIssue.findFirst({
+      where: {
+        id: issueId,
+        athleteId,
+        organizationId: user.organizationId,
+        resolvedAt: null,
+      },
+      select: {
+        id: true,
+        type: true,
+        source: true,
+      },
+    });
+
+    if (!issue) return;
+
+    await tx.athleteEligibilityIssue.update({
+      where: {
+        id: issue.id,
+      },
+      data: {
+        resolvedAt,
+        resolutionNotes:
+          resolutionNotes ??
+          "Pendência regularizada pela gestão.",
+        resolvedByUserId: user.id,
+        resolvedByNameSnapshot: user.name,
+      },
+    });
+
+    await tx.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId,
+        actorUserId: user.id,
+        action: AthleteDataAuditAction.UPDATED,
+        entityType: "ATHLETE_ELIGIBILITY",
+        entityId: issue.id,
+        metadataJson: JSON.stringify({
+          event: "ATHLETE_ELIGIBILITY_RESOLVED",
+          type: issue.type,
+          source: issue.source,
+          resolvedAt: resolvedAt.toISOString(),
+        }),
+      },
+    });
+
+    await syncAutomaticEligibility(tx, {
+      organizationId: user.organizationId,
+      athleteId,
+      actor: {
+        id: user.id,
+        name: user.name,
+      },
+    });
+  });
+
+  revalidateEvaluationPaths(athleteId);
+  redirect(`/atletas/${athleteId}`);
+}
+
+export async function allowAthleteEligibilityOverride(
+  formData: FormData,
+) {
+  const user = await requireClubPermission("ORGANIZATION_MANAGE");
+
+  const issueId = clean(formData.get("issueId"));
+  const athleteId = clean(formData.get("athleteId"));
+  const reason = nullable(formData.get("reason"));
+  const notes = nullable(formData.get("notes"));
+
+  if (!issueId || !athleteId || !reason) return;
+
+  await prisma.$transaction(async (tx) => {
+    const issue = await tx.athleteEligibilityIssue.findFirst({
+      where: {
+        id: issueId,
+        athleteId,
+        organizationId: user.organizationId,
+        resolvedAt: null,
+        blocking: true,
+      },
+      select: {
+        id: true,
+        type: true,
+        source: true,
+        key: true,
+        reason: true,
+      },
+    });
+
+    if (!issue) return;
+
+    await tx.athleteEligibilityIssue.update({
+      where: {
+        id: issue.id,
+      },
+      data: {
+        blocking: false,
+      },
+    });
+
+    await tx.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId,
+        actorUserId: user.id,
+        action: AthleteDataAuditAction.UPDATED,
+        entityType: "ATHLETE_ELIGIBILITY",
+        entityId: issue.id,
+        metadataJson: JSON.stringify({
+          event: "ATHLETE_ELIGIBILITY_OVERRIDE_ALLOWED",
+          type: issue.type,
+          source: issue.source,
+          key: issue.key,
+          issueReason: issue.reason,
+          reason,
+          notes,
+          changedAt: new Date().toISOString(),
+          blocking: {
+            from: true,
+            to: false,
+          },
+          authorizedBy: {
+            userId: user.id,
+            name: user.name,
+          },
+        }),
+      },
+    });
+  });
+
+  revalidateEvaluationPaths(athleteId);
+  redirect(`/atletas/${athleteId}`);
+}
+
+export async function revokeAthleteEligibilityOverride(
+  formData: FormData,
+) {
+  const user = await requireClubPermission("ORGANIZATION_MANAGE");
+
+  const issueId = clean(formData.get("issueId"));
+  const athleteId = clean(formData.get("athleteId"));
+  const reason = nullable(formData.get("reason"));
+
+  if (!issueId || !athleteId) return;
+
+  await prisma.$transaction(async (tx) => {
+    const issue = await tx.athleteEligibilityIssue.findFirst({
+      where: {
+        id: issueId,
+        athleteId,
+        organizationId: user.organizationId,
+        resolvedAt: null,
+        blocking: false,
+      },
+      select: {
+        id: true,
+        type: true,
+        source: true,
+        key: true,
+        reason: true,
+      },
+    });
+
+    if (!issue) return;
+
+    await tx.athleteEligibilityIssue.update({
+      where: {
+        id: issue.id,
+      },
+      data: {
+        blocking: true,
+      },
+    });
+
+    await tx.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId,
+        actorUserId: user.id,
+        action: AthleteDataAuditAction.UPDATED,
+        entityType: "ATHLETE_ELIGIBILITY",
+        entityId: issue.id,
+        metadataJson: JSON.stringify({
+          event: "ATHLETE_ELIGIBILITY_OVERRIDE_REVOKED",
+          type: issue.type,
+          source: issue.source,
+          key: issue.key,
+          issueReason: issue.reason,
+          reason,
+          changedAt: new Date().toISOString(),
+          blocking: {
+            from: false,
+            to: true,
+          },
+          revokedBy: {
+            userId: user.id,
+            name: user.name,
+          },
+        }),
+      },
+    });
+  });
+
+  revalidateEvaluationPaths(athleteId);
+  redirect(`/atletas/${athleteId}`);
+}
+
+export async function resyncAthleteEligibility(
+  formData: FormData,
+) {
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
+  const athleteId = clean(formData.get("athleteId"));
+
+  if (!athleteId) return;
+
+  await prisma.$transaction(async (tx) => {
+    await syncAutomaticEligibility(tx, {
+      organizationId: user.organizationId,
+      athleteId,
+      actor: {
+        id: user.id,
+        name: user.name,
+      },
+    });
+  });
+
+  revalidateEvaluationPaths(athleteId);
+  redirect(`/atletas/${athleteId}`);
+}
+
+export async function registerRetroactiveEvaluation(
+  formData: FormData,
+) {
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
+  const athleteId = clean(formData.get("athleteId"));
+  const pair = clean(formData.get("evaluationTargetPair"));
+  const statusRaw = clean(formData.get("status"));
+  const reason = nullable(formData.get("reason"));
+  const notes = nullable(formData.get("notes"));
+
+  const [evaluationCategoryId, targetCategoryId] =
+    pair.split("::");
+
+  const allowedStatuses = new Set<string>([
+    AthleteEvaluationProcessStatus.APPROVED,
+    AthleteEvaluationProcessStatus.REJECTED,
+    AthleteEvaluationProcessStatus.RELEASED,
+    AthleteEvaluationProcessStatus.WITHDRAWN,
+  ]);
+
+  if (
+    !athleteId ||
+    !evaluationCategoryId ||
+    !targetCategoryId ||
+    !allowedStatuses.has(statusRaw)
+  ) {
+    return;
+  }
+
+  const startedAt = parseDateInput(
+    formData.get("startedAt"),
+  );
+  const decidedAt = parseDateInput(
+    formData.get("decidedAt"),
+  );
+
+  if (decidedAt.getTime() < startedAt.getTime()) {
+    return;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const [athlete, targetLink] = await Promise.all([
+      tx.athlete.findFirst({
+        where: {
+          id: athleteId,
+          organizationId: user.organizationId,
+        },
+        select: {
+          id: true,
+        },
+      }),
+      tx.categoryEvaluationTarget.findFirst({
+        where: {
+          evaluationCategoryId,
+          targetCategoryId,
+          evaluationCategory: {
+            organizationId: user.organizationId,
+            type: "EVALUATION",
+          },
+          targetCategory: {
+            organizationId: user.organizationId,
+            type: "STANDARD",
+          },
+        },
+        select: {
+          evaluationCategory: {
+            select: {
+              id: true,
+              name: true,
+              sport: true,
+            },
+          },
+          targetCategory: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    if (!athlete || !targetLink) return;
+
+    const process =
+      await tx.athleteEvaluationProcess.create({
+        data: {
+          organizationId: user.organizationId,
+          athleteId: athlete.id,
+          evaluationCategoryId:
+            targetLink.evaluationCategory.id,
+          targetCategoryId:
+            targetLink.targetCategory.id,
+          sport: targetLink.evaluationCategory.sport,
+          status:
+            statusRaw as AthleteEvaluationProcessStatus,
+          entryMode:
+            AthleteEvaluationProcessEntryMode.RETROACTIVE,
+          startedAt,
+          decidedAt,
+          decisionReason: reason,
+          notes,
+          evaluationCategoryNameSnapshot:
+            targetLink.evaluationCategory.name,
+          targetCategoryNameSnapshot:
+            targetLink.targetCategory.name,
+          seasonSnapshot: processSeason(startedAt),
+          createdByUserId: user.id,
+          decidedByUserId: user.id,
+          createdByNameSnapshot: user.name,
+          decidedByNameSnapshot: user.name,
+        },
+      });
+
+    await tx.athleteDataAuditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        athleteId: athlete.id,
+        actorUserId: user.id,
+        action: AthleteDataAuditAction.CREATED,
+        entityType: "ATHLETE_EVALUATION_PROCESS",
+        entityId: process.id,
+        metadataJson: JSON.stringify({
+          event: "EVALUATION_RETROACTIVE_REGISTERED",
+          status: process.status,
+          startedAt: startedAt.toISOString(),
+          decidedAt: decidedAt.toISOString(),
+          evaluationCategory: {
+            id: targetLink.evaluationCategory.id,
+            name: targetLink.evaluationCategory.name,
+          },
+          targetCategory: {
+            id: targetLink.targetCategory.id,
+            name: targetLink.targetCategory.name,
+          },
+        }),
+      },
+    });
+  });
+
+  revalidateEvaluationPaths(athleteId);
+  redirect(`/atletas/${athleteId}`);
+}
 
 export async function createAthleteMembership(formData: FormData) {
   const user = await requireClubPermission("ATHLETES_EDIT");

@@ -650,13 +650,6 @@ export default function QtrEditor({
               type="button"
               className="btn-secondary"
               onClick={applyCustomSelection}
-              style={{
-                minHeight: 36,
-                padding: "0 14px",
-                borderRadius: 9,
-                fontSize: 13,
-                fontWeight: 800,
-              }}
             >
               Aplicar seleção
             </button>
@@ -666,8 +659,8 @@ export default function QtrEditor({
             style={{
               display: "grid",
               gridTemplateColumns:
-                "repeat(auto-fit, minmax(118px, 1fr))",
-              gap: 7,
+                "repeat(auto-fit, minmax(150px, 1fr))",
+              gap: 8,
             }}
           >
             {categories.map((category) => (
@@ -676,13 +669,11 @@ export default function QtrEditor({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 7,
-                  minHeight: 38,
-                  padding: "6px 9px",
+                  gap: 8,
+                  padding: "9px 10px",
                   border: "1px solid #e0e6ea",
-                  borderRadius: 9,
+                  borderRadius: 10,
                   background: "#fff",
-                  fontSize: 13,
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
@@ -697,17 +688,8 @@ export default function QtrEditor({
                       category.name,
                     )
                   }
-                  style={{
-                    width: 18,
-                    height: 18,
-                    minWidth: 18,
-                    minHeight: 18,
-                    margin: 0,
-                    padding: 0,
-                    flex: "0 0 18px",
-                  }}
                 />
-                <span style={{ lineHeight: 1.15 }}>{category.name}</span>
+                <span>{category.name}</span>
               </label>
             ))}
           </div>
@@ -886,7 +868,10 @@ export default function QtrEditor({
                                 (r * 299 + g * 587 + b * 114) /
                                 1000;
 
-                              const eventTextColor = "#101820";
+                              const eventTextColor =
+                                luminance > 160
+                                  ? "#101820"
+                                  : "#ffffff";
 
                               return (
                                 <button

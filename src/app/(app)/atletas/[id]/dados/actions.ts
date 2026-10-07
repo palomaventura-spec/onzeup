@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requireClubPermission } from "@/lib/club-access";
 import { encryptPrivateData } from "@/lib/private-data-crypto";
@@ -67,9 +68,20 @@ function refresh(athleteId: string) {
   revalidatePath(`/atletas/${athleteId}/dados`);
   revalidatePath(`/atletas/${athleteId}/performance`);
 }
+async function requirePrivateAthleteActionUser() {
+  const user = await requireClubPermission("ATHLETES_EDIT");
+
+  // SUPER_ADMIN / suporte 11UP nunca altera dados privados,
+  // médicos, responsáveis ou documentação sensível do atleta.
+  if (user.role === "SUPER_ADMIN") {
+    redirect("/dashboard?support=private-data-restricted");
+  }
+
+  return user;
+}
 
 export async function saveAthletePrivateData(formData: FormData) {
-  const user = await requireClubPermission("ATHLETES_EDIT");
+  const user = await requirePrivateAthleteActionUser();
   const athleteId = clean(formData.get("athleteId"));
   const athlete = await ownedAthlete(athleteId, user.organizationId);
   if (!athlete) return;
@@ -136,7 +148,7 @@ export async function saveAthletePrivateData(formData: FormData) {
 }
 
 export async function saveAthleteGuardian(formData: FormData) {
-  const user = await requireClubPermission("ATHLETES_EDIT");
+  const user = await requirePrivateAthleteActionUser();
   const athleteId = clean(formData.get("athleteId"));
   const guardianId = nullable(formData.get("guardianId"));
   const athlete = await ownedAthlete(athleteId, user.organizationId);
@@ -219,7 +231,7 @@ export async function saveAthleteGuardian(formData: FormData) {
 }
 
 export async function deleteAthleteGuardian(formData: FormData) {
-  const user = await requireClubPermission("ATHLETES_EDIT");
+  const user = await requirePrivateAthleteActionUser();
   const athleteId = clean(formData.get("athleteId"));
   const guardianId = clean(formData.get("guardianId"));
   const athlete = await ownedAthlete(athleteId, user.organizationId);
@@ -245,7 +257,7 @@ export async function deleteAthleteGuardian(formData: FormData) {
 }
 
 export async function createBodyMeasurement(formData: FormData) {
-  const user = await requireClubPermission("ATHLETES_EDIT");
+  const user = await requirePrivateAthleteActionUser();
   const athleteId = clean(formData.get("athleteId"));
   const athlete = await ownedAthlete(athleteId, user.organizationId);
   if (!athlete) return;
@@ -300,7 +312,7 @@ export async function createBodyMeasurement(formData: FormData) {
 }
 
 export async function deleteBodyMeasurement(formData: FormData) {
-  const user = await requireClubPermission("ATHLETES_EDIT");
+  const user = await requirePrivateAthleteActionUser();
   const athleteId = clean(formData.get("athleteId"));
   const measurementId = clean(formData.get("measurementId"));
   const athlete = await ownedAthlete(athleteId, user.organizationId);
@@ -331,7 +343,7 @@ export async function deleteBodyMeasurement(formData: FormData) {
   refresh(athleteId);
 }
 export async function confirmAthleteDocumentation(formData: FormData) {
-  const user = await requireClubPermission("ATHLETES_EDIT");
+  const user = await requirePrivateAthleteActionUser();
   const athleteId = clean(formData.get("athleteId"));
 
   const athlete = await ownedAthlete(athleteId, user.organizationId);

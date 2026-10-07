@@ -393,14 +393,17 @@ export default async function PerformancePage({
     (category) => category.sport === SportType.FUTSAL,
   );
 
+  // Respeita a modalidade escolhida, mesmo sem categorias cadastradas nela.
   const selectedSport: SportType =
-    query.sport === SportType.FUTSAL && hasFutsal
+    query.sport === SportType.FUTSAL
       ? SportType.FUTSAL
-      : query.sport === SportType.FOOTBALL && hasFootball
+      : query.sport === SportType.FOOTBALL
         ? SportType.FOOTBALL
         : hasFootball
           ? SportType.FOOTBALL
-          : SportType.FUTSAL;
+          : hasFutsal
+            ? SportType.FUTSAL
+            : SportType.FOOTBALL;
 
   const sportCategories = categories.filter(
     (category) => category.sport === selectedSport,
@@ -859,6 +862,14 @@ export default async function PerformancePage({
         </div>
       </section>
 
+      {sportCategories.length === 0 ? (
+        <div className="notice" role="status">
+          Nenhuma categoria ativa ou autorizada de {sportLabel(selectedSport)}
+          disponível. A modalidade permanece selecionada; os indicadores serão
+          exibidos quando houver categorias e atletas vinculados.
+        </div>
+      ) : null}
+
       <section className="performance-v5-kpis">
         <article>
           <span className="performance-v5-kpi-icon">
@@ -1278,7 +1289,9 @@ export default async function PerformancePage({
           </>
         ) : (
           <div className="performance-v5-empty">
-            Nenhum atleta encontrado em {sportLabel(selectedSport)}.
+            {sportCategories.length === 0
+              ? `Nenhuma categoria de ${sportLabel(selectedSport)} disponível.`
+              : `Nenhum atleta encontrado em ${sportLabel(selectedSport)}.`}
           </div>
         )}
       </section>

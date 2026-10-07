@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import SafeAvatar from "@/components/SafeAvatar";
 
 import { requireClubPermission } from "@/lib/club-access";
+import { getEffectiveClubRole } from "@/lib/club-permissions";
 import { safeDecryptPrivateData } from "@/lib/private-data-crypto";
 import { prisma } from "@/lib/prisma";
 
@@ -170,6 +171,12 @@ export default async function AthletePrivateDataPage({
   const user = await requireClubPermission("ATHLETES_EDIT");
   const { id } = await params;
 
+  // O suporte 11UP pode diagnosticar o sistema,
+  // mas nunca acessa dados privados ou médicos do atleta.
+  if (user.role === "SUPER_ADMIN") {
+    redirect(`/atletas/${id}?support=private-data-restricted`);
+  }
+
   const athlete = await prisma.athlete.findFirst({
     where: { id, organizationId: user.organizationId },
     include: {
@@ -211,6 +218,14 @@ export default async function AthletePrivateDataPage({
 
   if (!athlete) notFound();
 
+  const internalDossiers = getEffectiveClubRole(user) === "MANAGER"
+    ? await prisma.performanceReport.findMany({
+        where: { organizationId: user.organizationId, athleteId: athlete.id,
+          reportType: "CONSOLIDATED" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, title: true, snapshot: true, createdAt: true },
+      })
+    : [];
   const privateData = athlete.privateData;
   const now = new Date();
 
@@ -633,6 +648,28 @@ export default async function AthletePrivateDataPage({
           </div>
         ) : <p className="muted" style={{ marginTop: 18 }}>Nenhuma medição registrada.</p>}
       </section>
+
+      {getEffectiveClubRole(user) === "MANAGER" ? (
+        <section className="card" style={{ marginTop: 18 }}>
+          <span className="page-eyebrow">PRONTUÁRIOS ARQUIVADOS</span>
+          <h2>Histórico do prontuário esportivo</h2>
+          <p className="muted">As versões geradas ficam disponíveis para consulta e nova impressão. Os anexos originais continuam na central privada abaixo.</p>
+          {internalDossiers.length ? <div className="table-wrap" style={{ marginTop: 16 }}>
+            <table className="table"><thead><tr><th>Data</th><th>Versão</th><th>Prontuário</th><th>Acesso</th></tr></thead><tbody>
+            {internalDossiers.map((item) => {
+              const kind = item.snapshot && typeof item.snapshot === "object" && !Array.isArray(item.snapshot) && "documentKind" in item.snapshot
+                ? item.snapshot.documentKind : null;
+              return <tr key={item.id}><td>{dateLabel(item.createdAt)}</td>
+                <td>{kind === "INTERNAL_DOSSIER" ? "Interno" : "Compartilhável"}</td>
+                <td>{item.title}</td>
+                <td><Link href={`/performance-report/${item.id}`} target="_blank" rel="noopener noreferrer">Abrir prontuário ↗</Link></td>
+              </tr>;
+            })}
+            </tbody></table>
+          </div> : <p className="muted">Nenhum prontuário gerado ainda.</p>}
+          <Link className="btn btn-secondary" href={`/atletas/${athlete.id}/performance/relatorios`} style={{ marginTop: 12 }}>Gerar prontuário</Link>
+        </section>
+      ) : null}
 
       <section
         id="documentos"

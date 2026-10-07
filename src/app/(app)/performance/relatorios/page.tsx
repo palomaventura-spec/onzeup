@@ -433,16 +433,12 @@ export default async function MonthlyReportsPage({
     (category) =>
       category.sport === SportType.FOOTBALL,
   );
-  const hasFutsal = categories.some(
-    (category) =>
-      category.sport === SportType.FUTSAL,
-  );
-
+  // Respeita a modalidade solicitada mesmo sem categorias cadastradas.
+  // Sem parâmetro, prefere Campo quando houver categorias da modalidade.
   const selectedSport: SportType =
-    query.sport === SportType.FUTSAL && hasFutsal
+    query.sport === SportType.FUTSAL
       ? SportType.FUTSAL
-      : query.sport === SportType.FOOTBALL &&
-          hasFootball
+      : query.sport === SportType.FOOTBALL
         ? SportType.FOOTBALL
         : hasFootball
           ? SportType.FOOTBALL
@@ -810,6 +806,14 @@ export default async function MonthlyReportsPage({
           </Link>
         </div>
       </section>
+
+      {sportCategories.length === 0 ? (
+        <div className="reports-v6-notice" role="status">
+          Nenhuma categoria ativa ou autorizada de {sportLabel(selectedSport)}
+          {" "}disponível. A modalidade permanece selecionada; os relatórios
+          aparecerão quando houver categorias e atletas vinculados.
+        </div>
+      ) : null}
 
       <section className="reports-v6-kpis">
         <article>

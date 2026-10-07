@@ -20,12 +20,13 @@ function clean(value: FormDataEntryValue | null) {
 function reportsUrl(
   month: string,
   suffix = "",
+  sport?: SportType | null,
 ) {
-  const base =
-    `/performance/relatorios?month=${encodeURIComponent(
-      month,
-    )}`;
+  const params = new URLSearchParams();
+  params.set("month", month);
+  if (sport) params.set("sport", sport);
 
+  const base = `/performance/relatorios?${params.toString()}`;
   return suffix ? `${base}&${suffix}` : base;
 }
 
@@ -50,12 +51,12 @@ export async function generateMonthlyAthleteReport(
         : null;
 
   if (!sport) {
-    redirect(reportsUrl(month, "erro=modalidade"));
+    redirect(reportsUrl(month, "erro=modalidade", sport));
   }
 
   if (!athleteId) {
     redirect(
-      reportsUrl(month, "erro=atleta"),
+      reportsUrl(month, "erro=atleta", sport),
     );
   }
 
@@ -75,38 +76,73 @@ export async function generateMonthlyAthleteReport(
             id: true,
             name: true,
             type: true,
+            sport: true,
+            active: true,
+            organizationId: true,
+          },
+        },
+        memberships: {
+          where: {
+            organizationId: user.organizationId,
+            sport,
+            status: "ACTIVE",
+          },
+          orderBy: { updatedAt: "desc" },
+          select: {
+            category: {
+              select: {
+                id: true,
+                type: true,
+                sport: true,
+                active: true,
+                organizationId: true,
+              },
+            },
           },
         },
       },
     });
 
-  if (
-    !athlete ||
-    !athlete.categoryId ||
-    athlete.category?.type !== "STANDARD"
-  ) {
-    redirect(
-      reportsUrl(
-        month,
-        "erro=categoria",
-      ),
-    );
+  // Um atleta pode estar em Campo e Futsal com categorias diferentes.
+  // Nunca associar um relatório à categoria da outra modalidade.
+  const isValidCategory = (
+    category: {
+      organizationId: string;
+      active: boolean;
+      type: string;
+      sport: SportType;
+    } | null,
+  ) =>
+    category?.organizationId === user.organizationId &&
+    category.active &&
+    category.type === "STANDARD" &&
+    category.sport === sport;
+
+  if (!athlete) {
+    redirect(reportsUrl(month, "erro=atleta", sport));
   }
 
-  const access =
-    await getClubTrainingCategoryAccess(
-      user,
-      athlete.categoryId,
-    );
+  const categoryId = isValidCategory(athlete.category)
+    ? athlete.category!.id
+    : athlete.memberships
+        .map((membership) => membership.category)
+        .find(isValidCategory)?.id;
+
+  if (!categoryId) {
+    redirect(reportsUrl(month, "erro=categoria", sport));
+  }
+
+  const access = await getClubTrainingCategoryAccess(
+    user,
+    categoryId,
+    sport,
+  );
 
   if (
     !access.canGeneratePerformanceReport
   ) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=permissao",
-      ),
+      reportsUrl(month, "erro=permissao", sport),
     );
   }
 
@@ -140,10 +176,7 @@ export async function generateMonthlyAthleteReport(
 
   if (isLocked) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=bloqueado",
-      ),
+      reportsUrl(month, "erro=bloqueado", sport),
     );
   }
 
@@ -171,8 +204,7 @@ export async function generateMonthlyAthleteReport(
       organizationId:
         user.organizationId,
       athleteId,
-      categoryId:
-        athlete.categoryId,
+      categoryId,
       createdByUserId: user.id,
       periodStart: period.start,
       periodEnd: period.end,
@@ -188,8 +220,7 @@ export async function generateMonthlyAthleteReport(
       snapshotVersion: 1,
     },
     update: {
-      categoryId:
-        athlete.categoryId,
+      categoryId,
       periodEnd: period.end,
       title: `Relatório Mensal · ${period.label}`,
       includePresence: true,
@@ -204,10 +235,7 @@ export async function generateMonthlyAthleteReport(
   );
 
   redirect(
-    reportsUrl(
-      month,
-      "ok=gerado",
-    ),
+    reportsUrl(month, "ok=gerado", sport),
   );
 }
 
@@ -232,15 +260,15 @@ export async function sendMonthlyReportToReview(
         : null;
 
   if (!sport) {
-    redirect(reportsUrl(month, "erro=modalidade"));
+    redirect(reportsUrl(month, "erro=modalidade", sport));
   }
 
   const report =
     await prisma.monthlyAthleteReport.findFirst({
       where: {
         id: reportId,
-        organizationId:
-          user.organizationId,
+        organizationId: user.organizationId,
+        sport,
       },
       select: {
         id: true,
@@ -251,10 +279,7 @@ export async function sendMonthlyReportToReview(
 
   if (!report?.categoryId) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=relatorio",
-      ),
+      reportsUrl(month, "erro=relatorio", sport),
     );
   }
 
@@ -262,16 +287,14 @@ export async function sendMonthlyReportToReview(
     await getClubTrainingCategoryAccess(
       user,
       report.categoryId,
+      sport,
     );
 
   if (
     !access.canGeneratePerformanceReport
   ) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=permissao",
-      ),
+      reportsUrl(month, "erro=permissao", sport),
     );
   }
 
@@ -280,10 +303,7 @@ export async function sendMonthlyReportToReview(
     MonthlyAthleteReportStatus.DRAFT
   ) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=status",
-      ),
+      reportsUrl(month, "erro=status", sport),
     );
   }
 
@@ -304,10 +324,7 @@ export async function sendMonthlyReportToReview(
   );
 
   redirect(
-    reportsUrl(
-      month,
-      "ok=revisao",
-    ),
+    reportsUrl(month, "ok=revisao", sport),
   );
 }
 
@@ -332,15 +349,15 @@ export async function approveMonthlyReport(
         : null;
 
   if (!sport) {
-    redirect(reportsUrl(month, "erro=modalidade"));
+    redirect(reportsUrl(month, "erro=modalidade", sport));
   }
 
   const report =
     await prisma.monthlyAthleteReport.findFirst({
       where: {
         id: reportId,
-        organizationId:
-          user.organizationId,
+        organizationId: user.organizationId,
+        sport,
       },
       select: {
         id: true,
@@ -351,10 +368,7 @@ export async function approveMonthlyReport(
 
   if (!report?.categoryId) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=relatorio",
-      ),
+      reportsUrl(month, "erro=relatorio", sport),
     );
   }
 
@@ -362,16 +376,14 @@ export async function approveMonthlyReport(
     await getClubTrainingCategoryAccess(
       user,
       report.categoryId,
+      sport,
     );
 
   if (
     !access.canApprovePerformanceReport
   ) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=permissao",
-      ),
+      reportsUrl(month, "erro=permissao", sport),
     );
   }
 
@@ -380,10 +392,7 @@ export async function approveMonthlyReport(
     MonthlyAthleteReportStatus.IN_REVIEW
   ) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=status",
-      ),
+      reportsUrl(month, "erro=status", sport),
     );
   }
 
@@ -408,10 +417,7 @@ export async function approveMonthlyReport(
   );
 
   redirect(
-    reportsUrl(
-      month,
-      "ok=aprovado",
-    ),
+    reportsUrl(month, "ok=aprovado", sport),
   );
 }
 
@@ -436,15 +442,15 @@ export async function markMonthlyReportSent(
         : null;
 
   if (!sport) {
-    redirect(reportsUrl(month, "erro=modalidade"));
+    redirect(reportsUrl(month, "erro=modalidade", sport));
   }
 
   const report =
     await prisma.monthlyAthleteReport.findFirst({
       where: {
         id: reportId,
-        organizationId:
-          user.organizationId,
+        organizationId: user.organizationId,
+        sport,
       },
       select: {
         id: true,
@@ -455,10 +461,7 @@ export async function markMonthlyReportSent(
 
   if (!report?.categoryId) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=relatorio",
-      ),
+      reportsUrl(month, "erro=relatorio", sport),
     );
   }
 
@@ -466,16 +469,14 @@ export async function markMonthlyReportSent(
     await getClubTrainingCategoryAccess(
       user,
       report.categoryId,
+      sport,
     );
 
   if (
     !access.canSendPerformanceReport
   ) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=permissao",
-      ),
+      reportsUrl(month, "erro=permissao", sport),
     );
   }
 
@@ -484,10 +485,7 @@ export async function markMonthlyReportSent(
     MonthlyAthleteReportStatus.APPROVED
   ) {
     redirect(
-      reportsUrl(
-        month,
-        "erro=status",
-      ),
+      reportsUrl(month, "erro=status", sport),
     );
   }
 
@@ -508,9 +506,6 @@ export async function markMonthlyReportSent(
   );
 
   redirect(
-    reportsUrl(
-      month,
-      "ok=enviado",
-    ),
+    reportsUrl(month, "ok=enviado", sport),
   );
 }

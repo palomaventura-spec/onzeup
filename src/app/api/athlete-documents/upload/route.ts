@@ -70,8 +70,27 @@ export async function POST(request: Request) {
 
   try {
     const user = await getCurrentUser();
-    if (!user?.organizationId) {
-      return NextResponse.json({ error: "Sessão inválida." }, { status: 401 });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Sessão inválida." },
+        { status: 401 },
+      );
+    }
+
+    // SUPER_ADMIN / suporte 11UP nunca envia documentos privados de atletas.
+    if (user.role === "SUPER_ADMIN") {
+      return NextResponse.json(
+        { error: "Acesso não autorizado." },
+        { status: 403 },
+      );
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json(
+        { error: "Sessão inválida." },
+        { status: 401 },
+      );
     }
 
     const organizationId: string = user.organizationId;
