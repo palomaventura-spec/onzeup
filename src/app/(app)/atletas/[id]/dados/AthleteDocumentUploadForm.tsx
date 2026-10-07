@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,6 +7,13 @@ type GuardianOption = {
   id: string;
   name: string;
 };
+
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
+const MAX_FILE_SIZE_LABEL = "4 MB";
+
+function fileSizeInMb(size: number) {
+  return (size / (1024 * 1024)).toFixed(1).replace(".", ",");
+}
 
 export default function AthleteDocumentUploadForm({
   athleteId,
@@ -19,42 +26,100 @@ export default function AthleteDocumentUploadForm({
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [category, setCategory] = useState("");
 
-  const requiresExpiry = [
-    "MEDICAL_CLEARANCE",
-    "ELECTROCARDIOGRAM",
-    "ECHOCARDIOGRAM",
-    "SCHOOL_DECLARATION",
-  ].includes(category);
+  function validateSelectedFile(file: File | null) {
+    setMessage("");
+
+    if (!file) {
+      setError("");
+      return true;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError(
+        `Arquivo muito grande. O arquivo selecionado possui ${fileSizeInMb(
+          file.size
+        )} MB e o limite permitido é de ${MAX_FILE_SIZE_LABEL}. Escolha um arquivo menor.`
+      );
+      return false;
+    }
+
+    setError("");
+    return true;
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSending(true);
+
     setMessage("");
     setError("");
+
+    const formData = new FormData(event.currentTarget);
+    const selectedFile = formData.get("file");
+
+    if (!(selectedFile instanceof File) || selectedFile.size <= 0) {
+      setError("Selecione um arquivo para anexar.");
+      return;
+    }
+
+    if (!validateSelectedFile(selectedFile)) {
+      return;
+    }
+
+    setSending(true);
 
     try {
       const response = await fetch("/api/athlete-documents/upload", {
         method: "POST",
-        body: new FormData(event.currentTarget),
+        body: formData,
       });
-      const result = (await response.json()) as { error?: string };
+
+      const contentType = response.headers.get("content-type") || "";
+      let result: { error?: string } = {};
+
+      if (contentType.includes("application/json")) {
+        result = (await response.json()) as { error?: string };
+      } else {
+        const rawText = await response.text();
+
+        if (!response.ok) {
+          if (
+            response.status === 413 ||
+            /request entity too large/i.test(rawText)
+          ) {
+            throw new Error(
+              `Arquivo muito grande. O limite permitido é de ${MAX_FILE_SIZE_LABEL}. Escolha um arquivo menor.`
+            );
+          }
+
+          throw new Error(
+            "Não foi possível anexar o arquivo. Tente novamente."
+          );
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(result.error || "Não foi possível anexar o arquivo.");
+        throw new Error(
+          result.error || "Não foi possível anexar o arquivo."
+        );
       }
 
       formRef.current?.reset();
-      setCategory("");
-      setMessage("Documento anexado com sucesso. Aguardando aprovação do gestor.");
-      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      setMessage("Documento anexado com segurança.");
+      setError("");
+
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível anexar o arquivo.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Não foi possível anexar o arquivo."
+      );
     } finally {
       setSending(false);
     }
@@ -65,56 +130,90 @@ export default function AthleteDocumentUploadForm({
       ref={formRef}
       onSubmit={submit}
       className="form"
-      style={{ width: "100%", maxWidth: "none", marginTop: 18 }}
+      style={{
+        width: "100%",
+        maxWidth: "none",
+        marginTop: 18,
+      }}
     >
-      <input type="hidden" name="athleteId" value={athleteId} />
+      <input
+        type="hidden"
+        name="athleteId"
+        value={athleteId}
+      />
 
       <div className="form-grid-2">
         <label>
           Título do documento
-          <input name="title" required placeholder="Ex.: Atestado médico 2026" />
+
+          <input
+            name="title"
+            required
+            placeholder="Ex.: Atestado médico 2026"
+          />
         </label>
 
         <label>
           Categoria
+
           <select
             name="category"
             required
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
+            defaultValue=""
           >
-            <option value="" disabled>Selecione</option>
-            <option value="IDENTITY">Documento de identificação</option>
+            <option
+              value=""
+              disabled
+            >
+              Selecione
+            </option>
+
+            <option value="IDENTITY">
+              Documento de identificação
+            </option>
+
+            <option value="MEDICAL_EXAM">
+              Exame médico
+            </option>
+
             <option value="MEDICAL_CLEARANCE">
               Atestado / liberação médica
             </option>
-            <option value="ELECTROCARDIOGRAM">
-              Eletrocardiograma
+
+            <option value="AUTHORIZATION">
+              Autorização
             </option>
-            <option value="ECHOCARDIOGRAM">
-              Ecocardiograma
+
+            <option value="SPORTS_REGISTRATION">
+              Registro esportivo
             </option>
-            <option value="MEDICAL_EXAM">
-              Outro exame médico
-            </option>
-            <option value="AUTHORIZATION">Autorização</option>
-            <option value="SPORTS_REGISTRATION">Registro esportivo</option>
-            <option value="SCHOOL_DECLARATION">
-              Declaração escolar
-            </option>
+
             <option value="SCHOOL">
-              Outro documento escolar
+              Documento escolar
             </option>
-            <option value="OTHER">Outro</option>
+
+            <option value="OTHER">
+              Outro
+            </option>
           </select>
         </label>
 
         <label>
           Documento referente a
-          <select name="guardianId" defaultValue="">
-            <option value="">Atleta: {athleteName}</option>
+
+          <select
+            name="guardianId"
+            defaultValue=""
+          >
+            <option value="">
+              Atleta: {athleteName}
+            </option>
+
             {guardians.map((guardian) => (
-              <option key={guardian.id} value={guardian.id}>
+              <option
+                key={guardian.id}
+                value={guardian.id}
+              >
                 Responsável: {guardian.name}
               </option>
             ))}
@@ -123,40 +222,69 @@ export default function AthleteDocumentUploadForm({
 
         <label>
           Arquivo privado
+
           <input
             type="file"
             name="file"
             required
             accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"
+            onChange={(event) =>
+              validateSelectedFile(
+                event.currentTarget.files?.[0] ?? null
+              )
+            }
           />
-          <span className="help">PDF, JPG ou PNG, com até 4 MB.</span>
+
+          <span className="help">
+            PDF, JPG ou PNG. Tamanho máximo permitido:{" "}
+            <strong>{MAX_FILE_SIZE_LABEL}</strong>.
+          </span>
         </label>
 
         <label>
           Data de emissão
-          <input type="date" name="issuedAt" />
+
+          <input
+            type="date"
+            name="issuedAt"
+          />
         </label>
 
         <label>
-          Data de validade{requiresExpiry ? " *" : ""}
+          Data de validade
+
           <input
             type="date"
             name="expiresAt"
-            required={requiresExpiry}
           />
-          {requiresExpiry ? (
-            <span className="help">
-              Obrigatória para este tipo de documento.
-            </span>
-          ) : null}
         </label>
       </div>
 
-      {message ? <p className="form-success" role="status">{message}</p> : null}
-      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {message ? (
+        <p
+          className="form-success"
+          role="status"
+        >
+          {message}
+        </p>
+      ) : null}
 
-      <button type="submit" disabled={sending}>
-        {sending ? "Enviando arquivo..." : "Anexar documento privado"}
+      {error ? (
+        <p
+          className="form-error"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={sending}
+      >
+        {sending
+          ? "Enviando arquivo..."
+          : "Anexar documento privado"}
       </button>
     </form>
   );
