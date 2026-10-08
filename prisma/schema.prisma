@@ -56,6 +56,7 @@ model Organization {
   athletes                    Athlete[]
   athleteAuditLogs            AthleteDataAuditLog[]
   athleteDocuments            AthleteDocument[]
+  categoryDocumentRequirements CategoryDocumentRequirement[]
   athleteRegistrationRequests AthleteRegistrationRequest[]
   athletePreRegistrations     AthletePreRegistrationRequest[]
   athleteSportRegistrations   AthleteSportRegistration[]
@@ -384,6 +385,8 @@ model User {
   athleteExitRecordsRecorded     AthleteExitRecord[]             @relation("AthleteExitRecordRecorder")
   athleteEligibilityIssuesCreated AthleteEligibilityIssue[]       @relation("AthleteEligibilityIssueCreator")
   athleteEligibilityIssuesResolved AthleteEligibilityIssue[]      @relation("AthleteEligibilityIssueResolver")
+  athleteEligibilityIssuesAuthorized AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueAuthorizer")
+  athleteEligibilityIssuesAuthorizationRevoked AthleteEligibilityIssue[] @relation("AthleteEligibilityIssueAuthorizationRevoker")
   athletePerformanceGoals       AthletePerformanceGoal[]     @relation("AthletePerformanceGoalAuthor")
   performanceReports            PerformanceReport[]          @relation("PerformanceReportAuthor")
   monthlyReportsCreated         MonthlyAthleteReport[]       @relation("MonthlyAthleteReportCreator")
@@ -472,6 +475,7 @@ model Category {
   trainingSchedules        TrainingSchedule[]
   trainingSessions         TrainingSession[]
   competitionCallUpRules   CompetitionCallUpRule[]
+  documentRequirements CategoryDocumentRequirement[]
 
   evaluationTargets              CategoryEvaluationTarget[]  @relation("EvaluationCategoryTargets")
   targetedByEvaluations          CategoryEvaluationTarget[]  @relation("EvaluationTargetCategories")
@@ -746,6 +750,9 @@ model AthleteDocument {
   reviewedByUserId      String?
   category              AthleteDocumentCategory
   requestItemKey        String?
+  requirementId String?
+  requirementKeySnapshot String?
+  requirementLabelSnapshot String?
   status                AthleteDocumentStatus       @default(PENDING)
   title                 String
   storageProvider       String                      @default("VERCEL_BLOB_PRIVATE")
@@ -767,6 +774,7 @@ model AthleteDocument {
   registrationRequest   AthleteRegistrationRequest? @relation(fields: [registrationRequestId], references: [id], onDelete: SetNull)
   uploadedBy            User?                       @relation("AthleteDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   reviewedBy            User?                       @relation("AthleteDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  requirement CategoryDocumentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
 
   growthBoneAgeAssessments    AthleteBoneAgeAssessment[]  @relation("AthleteGrowthBoneAgeDocument")
 
@@ -776,8 +784,37 @@ model AthleteDocument {
   @@index([expiresAt])
   @@index([registrationRequestId])
   @@index([registrationRequestId, requestItemKey])
+  @@index([requirementId])
+  @@index([athleteId, requirementId, status])
 }
 
+
+model CategoryDocumentRequirement {
+  id                  String                             @id @default(cuid())
+  organizationId      String
+  categoryId          String
+  key                 String
+  label               String
+  documentCategory    AthleteDocumentCategory
+  subject             AthleteDocumentRequirementSubject @default(ATHLETE)
+  minCount            Int                                @default(1)
+  required            Boolean                            @default(true)
+  requiresApproval    Boolean                            @default(true)
+  requiresExpiry      Boolean                            @default(false)
+  instructions        String?
+  active              Boolean                            @default(true)
+  sortOrder           Int                                @default(0)
+  createdAt           DateTime                           @default(now())
+  updatedAt           DateTime                           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category     Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  documents    AthleteDocument[]
+
+  @@unique([categoryId, key])
+  @@index([organizationId, active])
+  @@index([categoryId, active, sortOrder])
+}
 model AthleteDataAuditLog {
   id             String                 @id @default(cuid())
   organizationId String
@@ -1038,19 +1075,29 @@ model AthleteEligibilityIssue {
   sourceReferenceType    String?
   sourceReferenceId      String?
   startedAt              DateTime                      @default(now())
-  resolvedAt             DateTime?
-  resolutionNotes        String?
-  createdByUserId        String?
-  resolvedByUserId       String?
-  createdByNameSnapshot  String?
-  resolvedByNameSnapshot String?
-  createdAt              DateTime                      @default(now())
+  resolvedAt                         DateTime?
+  resolutionNotes                    String?
+  createdByUserId                    String?
+  resolvedByUserId                   String?
+  createdByNameSnapshot              String?
+  resolvedByNameSnapshot             String?
+  authorizedAt                       DateTime?
+  authorizedByUserId                 String?
+  authorizationReason                String?
+  authorizedByNameSnapshot           String?
+  authorizationRevokedAt             DateTime?
+  authorizationRevokedByUserId       String?
+  authorizationRevocationReason      String?
+  authorizationRevokedByNameSnapshot String?
+  createdAt                          DateTime                      @default(now())
   updatedAt              DateTime                      @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   athlete      Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  createdBy    User?        @relation("AthleteEligibilityIssueCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  resolvedBy   User?        @relation("AthleteEligibilityIssueResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  createdBy              User? @relation("AthleteEligibilityIssueCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  resolvedBy             User? @relation("AthleteEligibilityIssueResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  authorizedBy           User? @relation("AthleteEligibilityIssueAuthorizer", fields: [authorizedByUserId], references: [id], onDelete: SetNull)
+  authorizationRevokedBy User? @relation("AthleteEligibilityIssueAuthorizationRevoker", fields: [authorizationRevokedByUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, resolvedAt])
   @@index([athleteId, blocking, resolvedAt])
@@ -1059,6 +1106,9 @@ model AthleteEligibilityIssue {
   @@index([athleteId, key, resolvedAt])
   @@index([createdByUserId])
   @@index([resolvedByUserId])
+  @@index([authorizedByUserId])
+  @@index([authorizationRevokedByUserId])
+  @@index([athleteId, authorizedAt, authorizationRevokedAt])
 }
 
 model AthleteEvaluation {
@@ -2175,7 +2225,7 @@ enum PerformanceArea {
   PHYSICAL
   COGNITIVE
   EMOTIONAL
-  // Mantidos por compatibilidade com dados já existentes.
+  // Mantidos por compatibilidade com dados jÃƒÆ’Ã‚Â¡ existentes.
   BEHAVIORAL
   COMPETITIVE
 }
@@ -2372,6 +2422,11 @@ enum AthleteRegistrationRequestStatus {
   REVOKED
 }
 
+
+enum AthleteDocumentRequirementSubject {
+  ATHLETE
+  GUARDIAN
+}
 enum AthleteDocumentCategory {
   IDENTITY
   MEDICAL_EXAM

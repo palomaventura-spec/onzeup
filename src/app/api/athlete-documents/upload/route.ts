@@ -5,13 +5,20 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
 import { hasClubPermission } from "@/lib/club-permissions";
+import { syncAutomaticEligibility } from "@/lib/athlete-eligibility";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
-const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"] as const;
+
+const ALLOWED_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+] as const;
+
 const CATEGORIES = [
   "IDENTITY",
   "MEDICAL_EXAM",
@@ -40,28 +47,65 @@ function clean(value: FormDataEntryValue | null) {
 
 function optionalDate(value: FormDataEntryValue | null) {
   const normalized = clean(value);
-  if (!normalized) return null;
+
+  if (!normalized) {
+    return null;
+  }
+
   const parsed = new Date(`${normalized}T12:00:00.000Z`);
+
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function validSignature(buffer: Buffer, mimeType: string) {
   if (mimeType === "application/pdf") {
-    return buffer.length >= 5 && buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+    return (
+      buffer.length >= 5 &&
+      buffer.subarray(0, 5).toString("ascii") === "%PDF-"
+    );
   }
+
   if (mimeType === "image/jpeg") {
-    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    return (
+      buffer.length >= 3 &&
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff
+    );
   }
+
   if (mimeType === "image/png") {
-    const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-    return buffer.length >= signature.length && signature.every((byte, index) => buffer[index] === byte);
+    const signature = [
+      0x89,
+      0x50,
+      0x4e,
+      0x47,
+      0x0d,
+      0x0a,
+      0x1a,
+      0x0a,
+    ];
+
+    return (
+      buffer.length >= signature.length &&
+      signature.every(
+        (byte, index) => buffer[index] === byte,
+      )
+    );
   }
+
   return false;
 }
 
 function extension(mimeType: string) {
-  if (mimeType === "application/pdf") return "pdf";
-  if (mimeType === "image/png") return "png";
+  if (mimeType === "application/pdf") {
+    return "pdf";
+  }
+
+  if (mimeType === "image/png") {
+    return "png";
+  }
+
   return "jpg";
 }
 
@@ -93,166 +137,491 @@ export async function POST(request: Request) {
       );
     }
 
-    const organizationId: string = user.organizationId;
+    const organizationId = user.organizationId;
 
     if (!hasClubPermission(user, "ATHLETES_EDIT")) {
-      return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
+      return NextResponse.json(
+        { error: "Acesso não autorizado." },
+        { status: 403 },
+      );
     }
 
-    const token = process.env.PRIVATE_BLOB_READ_WRITE_TOKEN;
+    const token =
+      process.env.PRIVATE_BLOB_READ_WRITE_TOKEN;
+
     if (!token) {
-      return NextResponse.json({ error: "Armazenamento privado não configurado." }, { status: 503 });
+      return NextResponse.json(
+        { error: "Armazenamento privado não configurado." },
+        { status: 503 },
+      );
     }
 
     const formData = await request.formData();
+
     const file = formData.get("file");
-    const athleteId = clean(formData.get("athleteId"));
-    const guardianId = clean(formData.get("guardianId")) || null;
-    const title = clean(formData.get("title"));
-    const categoryInput = clean(formData.get("category"));
-    const category = CATEGORIES.includes(categoryInput as DocumentCategory)
-      ? (categoryInput as DocumentCategory)
-      : null;
 
-    const issuedAt = optionalDate(formData.get("issuedAt"));
-    const expiresAt = optionalDate(formData.get("expiresAt"));
+    const athleteId = clean(
+      formData.get("athleteId"),
+    );
 
-    if (
-      category &&
-      EXPIRY_REQUIRED_CATEGORIES.has(category) &&
-      !expiresAt
-    ) {
-      return NextResponse.json(
-        { error: "Informe a data de validade deste documento." },
-        { status: 400 },
-      );
-    }
+    let guardianId =
+      clean(formData.get("guardianId")) || null;
 
-    if (issuedAt && expiresAt && expiresAt < issuedAt) {
-      return NextResponse.json(
-        { error: "A validade não pode ser anterior à data de emissão." },
-        { status: 400 },
-      );
-    }
+    const requirementId =
+      clean(formData.get("requirementId")) || null;
+
+    const title = clean(
+      formData.get("title"),
+    );
+
+    const categoryInput = clean(
+      formData.get("category"),
+    );
+
+    const issuedAt = optionalDate(
+      formData.get("issuedAt"),
+    );
+
+    const expiresAt = optionalDate(
+      formData.get("expiresAt"),
+    );
 
     if (!(file instanceof File)) {
-      return NextResponse.json({ error: "Selecione um arquivo." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Selecione um arquivo." },
+        { status: 400 },
+      );
     }
-    if (!athleteId || !title || !category) {
-      return NextResponse.json({ error: "Informe atleta, título e categoria." }, { status: 400 });
-    }
-    if (!ALLOWED_TYPES.includes(file.type as (typeof ALLOWED_TYPES)[number])) {
-      return NextResponse.json({ error: "Formato não permitido. Use PDF, JPG ou PNG." }, { status: 400 });
-    }
-    if (file.size <= 0 || file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: "O arquivo deve possuir no máximo 4 MB." }, { status: 400 });
+
+    if (!athleteId || !title) {
+      return NextResponse.json(
+        {
+          error:
+            "Informe atleta e título do documento.",
+        },
+        { status: 400 },
+      );
     }
 
     const athlete = await prisma.athlete.findFirst({
-      where: { id: athleteId, organizationId },
-      select: { id: true },
+      where: {
+        id: athleteId,
+        organizationId,
+      },
+      select: {
+        id: true,
+        memberships: {
+          where: {
+            status: "ACTIVE",
+            categoryId: { not: null },
+          },
+          select: {
+            categoryId: true,
+          },
+        },
+      },
     });
+
     if (!athlete) {
-      return NextResponse.json({ error: "Atleta não encontrado." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Atleta não encontrado." },
+        { status: 404 },
+      );
     }
 
-    if (guardianId) {
-      const guardian = await prisma.athleteGuardian.findFirst({
-        where: { id: guardianId, athleteId },
-        select: { id: true },
-      });
-      if (!guardian) {
-        return NextResponse.json({ error: "Responsável não encontrado." }, { status: 404 });
+    let requirement:
+      | {
+          id: string;
+          key: string;
+          label: string;
+          documentCategory: DocumentCategory;
+          subject: "ATHLETE" | "GUARDIAN";
+          requiresExpiry: boolean;
+          categoryId: string;
+        }
+      | null = null;
+
+    if (requirementId) {
+      const foundRequirement =
+        await prisma.categoryDocumentRequirement.findFirst({
+          where: {
+            id: requirementId,
+            organizationId,
+            active: true,
+          },
+          select: {
+            id: true,
+            key: true,
+            label: true,
+            documentCategory: true,
+            subject: true,
+            requiresExpiry: true,
+            categoryId: true,
+          },
+        });
+
+      if (!foundRequirement) {
+        return NextResponse.json(
+          {
+            error:
+              "O requisito selecionado não está disponível para este clube.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const athleteCategoryIds = new Set(
+        athlete.memberships
+          .map((membership) => membership.categoryId)
+          .filter(
+            (categoryId): categoryId is string =>
+              Boolean(categoryId),
+          ),
+      );
+
+      if (
+        !athleteCategoryIds.has(
+          foundRequirement.categoryId,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "O requisito selecionado não pertence a uma categoria ativa deste atleta.",
+          },
+          { status: 400 },
+        );
+      }
+
+      requirement = {
+        ...foundRequirement,
+        documentCategory:
+          foundRequirement.documentCategory as DocumentCategory,
+      };
+
+      if (
+        requirement.subject === "GUARDIAN" &&
+        !guardianId
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Selecione o responsável referente a este documento.",
+          },
+          { status: 400 },
+        );
+      }
+
+      if (
+        requirement.subject === "ATHLETE" &&
+        guardianId
+      ) {
+        guardianId = null;
       }
     }
 
-    const organization = await prisma.organization.findUnique({
-      where: { id: organizationId },
-      select: { documentStorageLimitBytes: true, documentStorageUsedBytes: true },
-    });
+    const category = requirement
+      ? requirement.documentCategory
+      : CATEGORIES.includes(
+            categoryInput as DocumentCategory,
+          )
+        ? (categoryInput as DocumentCategory)
+        : null;
+
+    if (!category) {
+      return NextResponse.json(
+        {
+          error:
+            "Selecione a categoria do documento.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const requiresExpiry = requirement
+      ? requirement.requiresExpiry
+      : EXPIRY_REQUIRED_CATEGORIES.has(category);
+
+    if (requiresExpiry && !expiresAt) {
+      return NextResponse.json(
+        {
+          error:
+            "Informe a data de validade deste documento.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      issuedAt &&
+      expiresAt &&
+      expiresAt < issuedAt
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "A validade não pode ser anterior à data de emissão.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !ALLOWED_TYPES.includes(
+        file.type as (typeof ALLOWED_TYPES)[number],
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Formato não permitido. Use PDF, JPG ou PNG.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      file.size <= 0 ||
+      file.size > MAX_FILE_SIZE
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "O arquivo deve possuir no máximo 4 MB.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (guardianId) {
+      const guardian =
+        await prisma.athleteGuardian.findFirst({
+          where: {
+            id: guardianId,
+            athleteId,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      if (!guardian) {
+        return NextResponse.json(
+          {
+            error:
+              "Responsável não encontrado.",
+          },
+          { status: 404 },
+        );
+      }
+    }
+
+    const organization =
+      await prisma.organization.findUnique({
+        where: {
+          id: organizationId,
+        },
+        select: {
+          documentStorageLimitBytes: true,
+          documentStorageUsedBytes: true,
+        },
+      });
+
     if (!organization) {
-      return NextResponse.json({ error: "Organização não encontrada." }, { status: 404 });
+      return NextResponse.json(
+        {
+          error:
+            "Organização não encontrada.",
+        },
+        { status: 404 },
+      );
     }
 
-    const nextUsage = organization.documentStorageUsedBytes + BigInt(file.size);
-    if (nextUsage > organization.documentStorageLimitBytes) {
-      return NextResponse.json({ error: "O limite de armazenamento de documentos foi atingido." }, { status: 413 });
+    const nextUsage =
+      organization.documentStorageUsedBytes +
+      BigInt(file.size);
+
+    if (
+      nextUsage >
+      organization.documentStorageLimitBytes
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "O limite de armazenamento de documentos foi atingido.",
+        },
+        { status: 413 },
+      );
     }
 
-    const bytes = Buffer.from(await file.arrayBuffer());
+    const bytes = Buffer.from(
+      await file.arrayBuffer(),
+    );
+
     if (!validSignature(bytes, file.type)) {
-      return NextResponse.json({ error: "O conteúdo não corresponde ao formato informado." }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            "O conteúdo não corresponde ao formato informado.",
+        },
+        { status: 400 },
+      );
     }
 
-    const checksum = crypto.createHash("sha256").update(bytes).digest("hex");
+    const checksum = crypto
+      .createHash("sha256")
+      .update(bytes)
+      .digest("hex");
+
     const pathname = [
       "onzeup-private",
       organizationId,
       "athletes",
       athleteId,
-      `${Date.now()}-${crypto.randomUUID()}.${extension(file.type)}`,
+      `${Date.now()}-${crypto.randomUUID()}.${extension(
+        file.type,
+      )}`,
     ].join("/");
 
-    const blob = await put(pathname, bytes, {
-      access: "private",
-      addRandomSuffix: false,
-      token,
-      contentType: file.type,
-    });
+    const blob = await put(
+      pathname,
+      bytes,
+      {
+        access: "private",
+        addRandomSuffix: false,
+        token,
+        contentType: file.type,
+      },
+    );
+
     uploadedUrl = blob.url;
 
-    const document = await prisma.$transaction(async (transaction) => {
-      const created = await transaction.athleteDocument.create({
-        data: {
-          organizationId,
-          athleteId,
-          guardianId,
-          uploadedByUserId: user.id,
-          category,
-          status: "PENDING",
-          title,
-          storageProvider: "VERCEL_BLOB_PRIVATE",
-          storageKey: blob.url,
-          originalFileName: file.name.slice(0, 255),
-          mimeType: file.type,
-          sizeBytes: file.size,
-          checksumSha256: checksum,
-          issuedAt,
-          expiresAt,
-        },
-        select: { id: true },
-      });
+    const document = await prisma.$transaction(
+      async (transaction) => {
+        const created =
+          await transaction.athleteDocument.create({
+            data: {
+              organizationId,
+              athleteId,
+              guardianId,
+              uploadedByUserId: user.id,
+              category,
+              status: "PENDING",
+              title,
 
-      await transaction.organization.update({
-        where: { id: organizationId },
-        data: { documentStorageUsedBytes: { increment: BigInt(file.size) } },
-      });
+              requirementId:
+                requirement?.id ?? null,
 
-      await transaction.athleteDataAuditLog.create({
-        data: {
-          organizationId,
-          athleteId,
-          actorUserId: user.id,
-          action: "CREATED",
-          entityType: "AthleteDocument",
-          entityId: created.id,
-          metadataJson: JSON.stringify({ category, sizeBytes: file.size }),
-        },
-      });
+              requirementKeySnapshot:
+                requirement?.key ?? null,
 
-      return created;
+              requirementLabelSnapshot:
+                requirement?.label ?? null,
+
+              storageProvider:
+                "VERCEL_BLOB_PRIVATE",
+
+              storageKey: blob.url,
+
+              originalFileName:
+                file.name.slice(0, 255),
+
+              mimeType: file.type,
+              sizeBytes: file.size,
+              checksumSha256: checksum,
+              issuedAt,
+              expiresAt,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+        await transaction.organization.update({
+          where: {
+            id: organizationId,
+          },
+          data: {
+            documentStorageUsedBytes: {
+              increment: BigInt(file.size),
+            },
+          },
+        });
+
+        await transaction.athleteDataAuditLog.create({
+          data: {
+            organizationId,
+            athleteId,
+            actorUserId: user.id,
+            action: "CREATED",
+            entityType: "AthleteDocument",
+            entityId: created.id,
+
+            metadataJson: JSON.stringify({
+              category,
+              sizeBytes: file.size,
+              requirementId:
+                requirement?.id ?? null,
+              requirementKey:
+                requirement?.key ?? null,
+              requirementLabel:
+                requirement?.label ?? null,
+            }),
+          },
+        });
+
+        await syncAutomaticEligibility(
+          transaction,
+          {
+            organizationId,
+            athleteId,
+            actor: {
+              id: user.id,
+              name: user.name,
+            },
+          },
+        );
+
+        return created;
+      },
+    );
+
+    return NextResponse.json({
+      id: document.id,
+      status: "PENDING",
     });
-
-    return NextResponse.json({ id: document.id, status: "PENDING" });
   } catch (error) {
-    if (uploadedUrl && process.env.PRIVATE_BLOB_READ_WRITE_TOKEN) {
+    if (
+      uploadedUrl &&
+      process.env.PRIVATE_BLOB_READ_WRITE_TOKEN
+    ) {
       try {
-        await del(uploadedUrl, { token: process.env.PRIVATE_BLOB_READ_WRITE_TOKEN });
+        await del(uploadedUrl, {
+          token:
+            process.env
+              .PRIVATE_BLOB_READ_WRITE_TOKEN,
+        });
       } catch (cleanupError) {
-        console.error("PRIVATE_DOCUMENT_CLEANUP_ERROR", cleanupError);
+        console.error(
+          "PRIVATE_DOCUMENT_CLEANUP_ERROR",
+          cleanupError,
+        );
       }
     }
-    console.error("PRIVATE_DOCUMENT_UPLOAD_ERROR", error instanceof Error ? error.message : error);
-    return NextResponse.json({ error: "Não foi possível enviar o documento." }, { status: 500 });
+
+    console.error(
+      "PRIVATE_DOCUMENT_UPLOAD_ERROR",
+      error instanceof Error
+        ? error.message
+        : error,
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Não foi possível enviar o documento.",
+      },
+      { status: 500 },
+    );
   }
 }

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -6,6 +6,16 @@ import { useRouter } from "next/navigation";
 type GuardianOption = {
   id: string;
   name: string;
+};
+
+type DocumentRequirementOption = {
+  id: string;
+  label: string;
+  documentCategory: string;
+  subject: "ATHLETE" | "GUARDIAN";
+  requiresExpiry: boolean;
+  instructions: string | null;
+  status: string;
 };
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
@@ -19,10 +29,12 @@ export default function AthleteDocumentUploadForm({
   athleteId,
   athleteName,
   guardians,
+  documentRequirements,
 }: {
   athleteId: string;
   athleteName: string;
   guardians: GuardianOption[];
+  documentRequirements: DocumentRequirementOption[];
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -30,6 +42,21 @@ export default function AthleteDocumentUploadForm({
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  const [selectedRequirementId, setSelectedRequirementId] =
+    useState("");
+
+  const [selectedCategory, setSelectedCategory] =
+    useState("");
+
+  const [selectedGuardianId, setSelectedGuardianId] =
+    useState("");
+
+  const selectedRequirement =
+    documentRequirements.find(
+      (requirement) =>
+        requirement.id === selectedRequirementId
+    ) ?? null;
 
   function validateSelectedFile(file: File | null) {
     setMessage("");
@@ -45,6 +72,7 @@ export default function AthleteDocumentUploadForm({
           file.size
         )} MB e o limite permitido é de ${MAX_FILE_SIZE_LABEL}. Escolha um arquivo menor.`
       );
+
       return false;
     }
 
@@ -52,17 +80,54 @@ export default function AthleteDocumentUploadForm({
     return true;
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  function handleRequirementChange(
+    requirementId: string
+  ) {
+    setSelectedRequirementId(requirementId);
+
+    const requirement =
+      documentRequirements.find(
+        (item) => item.id === requirementId
+      ) ?? null;
+
+    if (!requirement) {
+      setSelectedCategory("");
+      setSelectedGuardianId("");
+      return;
+    }
+
+    setSelectedCategory(
+      requirement.documentCategory
+    );
+
+    if (requirement.subject === "ATHLETE") {
+      setSelectedGuardianId("");
+    }
+  }
+
+  async function submit(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     setMessage("");
     setError("");
 
-    const formData = new FormData(event.currentTarget);
-    const selectedFile = formData.get("file");
+    const formData = new FormData(
+      event.currentTarget
+    );
 
-    if (!(selectedFile instanceof File) || selectedFile.size <= 0) {
-      setError("Selecione um arquivo para anexar.");
+    const selectedFile =
+      formData.get("file");
+
+    if (
+      !(selectedFile instanceof File) ||
+      selectedFile.size <= 0
+    ) {
+      setError(
+        "Selecione um arquivo para anexar."
+      );
+
       return;
     }
 
@@ -73,23 +138,37 @@ export default function AthleteDocumentUploadForm({
     setSending(true);
 
     try {
-      const response = await fetch("/api/athlete-documents/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        "/api/athlete-documents/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
-      const contentType = response.headers.get("content-type") || "";
+      const contentType =
+        response.headers.get("content-type") || "";
+
       let result: { error?: string } = {};
 
-      if (contentType.includes("application/json")) {
-        result = (await response.json()) as { error?: string };
+      if (
+        contentType.includes(
+          "application/json"
+        )
+      ) {
+        result = (await response.json()) as {
+          error?: string;
+        };
       } else {
-        const rawText = await response.text();
+        const rawText =
+          await response.text();
 
         if (!response.ok) {
           if (
             response.status === 413 ||
-            /request entity too large/i.test(rawText)
+            /request entity too large/i.test(
+              rawText
+            )
           ) {
             throw new Error(
               `Arquivo muito grande. O limite permitido é de ${MAX_FILE_SIZE_LABEL}. Escolha um arquivo menor.`
@@ -104,13 +183,21 @@ export default function AthleteDocumentUploadForm({
 
       if (!response.ok) {
         throw new Error(
-          result.error || "Não foi possível anexar o arquivo."
+          result.error ||
+            "Não foi possível anexar o arquivo."
         );
       }
 
       formRef.current?.reset();
 
-      setMessage("Documento anexado com segurança.");
+      setSelectedRequirementId("");
+      setSelectedCategory("");
+      setSelectedGuardianId("");
+
+      setMessage(
+        "Documento anexado com segurança."
+      );
+
       setError("");
 
       router.refresh();
@@ -144,12 +231,60 @@ export default function AthleteDocumentUploadForm({
 
       <div className="form-grid-2">
         <label>
+          Documento exigido
+
+          <select
+            name="requirementId"
+            value={selectedRequirementId}
+            onChange={(event) =>
+              handleRequirementChange(
+                event.currentTarget.value
+              )
+            }
+          >
+            <option value="">
+              Outro documento / sem requisito específico
+            </option>
+
+            {documentRequirements.map(
+              (requirement) => (
+                <option
+                  key={requirement.id}
+                  value={requirement.id}
+                >
+                  {requirement.label}
+                  {requirement.status ===
+                  "APPROVED"
+                    ? " — já aprovado"
+                    : requirement.status ===
+                        "PENDING"
+                      ? " — pendente"
+                      : requirement.status ===
+                          "EXPIRED"
+                        ? " — vencido"
+                        : " — faltando"}
+                </option>
+              )
+            )}
+          </select>
+
+          <span className="help">
+            Selecione o documento obrigatório ao qual este arquivo corresponde.
+          </span>
+        </label>
+
+        <label>
           Título do documento
 
           <input
             name="title"
             required
-            placeholder="Ex.: Atestado médico 2026"
+            defaultValue=""
+            placeholder={
+              selectedRequirement
+                ? selectedRequirement.label
+                : "Ex.: Atestado médico 2026"
+            }
           />
         </label>
 
@@ -158,8 +293,16 @@ export default function AthleteDocumentUploadForm({
 
           <select
             name="category"
-            required
-            defaultValue=""
+            required={!selectedRequirement}
+            value={selectedCategory}
+            disabled={Boolean(
+              selectedRequirement
+            )}
+            onChange={(event) =>
+              setSelectedCategory(
+                event.currentTarget.value
+              )
+            }
           >
             <option
               value=""
@@ -180,6 +323,14 @@ export default function AthleteDocumentUploadForm({
               Atestado / liberação médica
             </option>
 
+            <option value="ELECTROCARDIOGRAM">
+              Eletrocardiograma
+            </option>
+
+            <option value="ECHOCARDIOGRAM">
+              Ecocardiograma
+            </option>
+
             <option value="AUTHORIZATION">
               Autorização
             </option>
@@ -192,10 +343,20 @@ export default function AthleteDocumentUploadForm({
               Documento escolar
             </option>
 
+            <option value="SCHOOL_DECLARATION">
+              Declaração escolar
+            </option>
+
             <option value="OTHER">
               Outro
             </option>
           </select>
+
+          {selectedRequirement ? (
+            <span className="help">
+              Categoria definida automaticamente pelo requisito.
+            </span>
+          ) : null}
         </label>
 
         <label>
@@ -203,10 +364,26 @@ export default function AthleteDocumentUploadForm({
 
           <select
             name="guardianId"
-            defaultValue=""
+            value={selectedGuardianId}
+            required={
+              selectedRequirement?.subject ===
+              "GUARDIAN"
+            }
+            disabled={
+              selectedRequirement?.subject ===
+              "ATHLETE"
+            }
+            onChange={(event) =>
+              setSelectedGuardianId(
+                event.currentTarget.value
+              )
+            }
           >
             <option value="">
-              Atleta: {athleteName}
+              {selectedRequirement?.subject ===
+              "GUARDIAN"
+                ? "Selecione o responsável"
+                : `Atleta: ${athleteName}`}
             </option>
 
             {guardians.map((guardian) => (
@@ -218,6 +395,15 @@ export default function AthleteDocumentUploadForm({
               </option>
             ))}
           </select>
+
+          {selectedRequirement ? (
+            <span className="help">
+              {selectedRequirement.subject ===
+              "GUARDIAN"
+                ? "Este documento deve ser vinculado a um responsável."
+                : "Este documento pertence ao atleta."}
+            </span>
+          ) : null}
         </label>
 
         <label>
@@ -230,14 +416,18 @@ export default function AthleteDocumentUploadForm({
             accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"
             onChange={(event) =>
               validateSelectedFile(
-                event.currentTarget.files?.[0] ?? null
+                event.currentTarget.files?.[0] ??
+                  null
               )
             }
           />
 
           <span className="help">
             PDF, JPG ou PNG. Tamanho máximo permitido:{" "}
-            <strong>{MAX_FILE_SIZE_LABEL}</strong>.
+            <strong>
+              {MAX_FILE_SIZE_LABEL}
+            </strong>
+            .
           </span>
         </label>
 
@@ -252,13 +442,47 @@ export default function AthleteDocumentUploadForm({
 
         <label>
           Data de validade
+          {selectedRequirement?.requiresExpiry
+            ? " *"
+            : ""}
 
           <input
             type="date"
             name="expiresAt"
+            required={
+              selectedRequirement?.requiresExpiry ??
+              false
+            }
           />
+
+          {selectedRequirement?.requiresExpiry ? (
+            <span className="help">
+              Obrigatória para este documento.
+            </span>
+          ) : null}
         </label>
       </div>
+
+      {selectedRequirement?.instructions ? (
+        <div
+          className="card"
+          style={{
+            marginTop: 14,
+            padding: 14,
+          }}
+        >
+          <strong>
+            Orientação para este documento
+          </strong>
+
+          <p
+            className="muted"
+            style={{ margin: "6px 0 0" }}
+          >
+            {selectedRequirement.instructions}
+          </p>
+        </div>
+      ) : null}
 
       {message ? (
         <p

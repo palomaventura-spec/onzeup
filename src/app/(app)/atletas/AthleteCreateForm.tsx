@@ -163,6 +163,7 @@ export default function AthleteCreateForm({
           athleteId={created.athleteId}
           athleteName={created.athleteName}
           guardians={[]}
+          documentRequirements={[]}
         />
 
         <div className="actions" style={{ marginTop: 16 }}>

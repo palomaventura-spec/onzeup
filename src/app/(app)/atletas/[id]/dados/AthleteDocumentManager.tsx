@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,12 +9,22 @@ type DocumentItem = {
   originalFileName: string;
   categoryLabel: string;
   subjectLabel: string;
+  subject: "ATHLETE" | "GUARDIAN";
+  requirementId: string | null;
+  requirementLabelSnapshot: string | null;
   status: string;
   sizeLabel: string;
   createdAtLabel: string;
   issuedAt: string;
   expiresAt: string;
   rejectionReason: string | null;
+};
+
+type DocumentRequirementOption = {
+  id: string;
+  label: string;
+  subject: "ATHLETE" | "GUARDIAN";
+  status: string;
 };
 
 const statusLabels: Record<string, string> = {
@@ -27,8 +37,10 @@ const statusLabels: Record<string, string> = {
 
 export default function AthleteDocumentManager({
   documents,
+  documentRequirements,
 }: {
   documents: DocumentItem[];
+  documentRequirements: DocumentRequirementOption[];
 }) {
   const router = useRouter();
 
@@ -45,6 +57,20 @@ export default function AthleteDocumentManager({
       ])
     )
   );
+
+  const [requirementSelections, setRequirementSelections] = useState<
+    Record<string, string>
+  >(
+    Object.fromEntries(
+      documents.map((document) => [
+        document.id,
+        document.requirementId ?? "",
+      ])
+    )
+  );
+
+  const [linkingDocumentId, setLinkingDocumentId] =
+    useState<string | null>(null);
 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -107,6 +133,65 @@ export default function AthleteDocumentManager({
         cause instanceof Error
           ? cause.message
           : "Não foi possível atualizar."
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function linkRequirement(documentId: string) {
+    const requirementId =
+      requirementSelections[documentId] ?? "";
+
+    if (!requirementId) {
+      setError(
+        "Selecione um documento obrigatório para vincular."
+      );
+      setMessage("");
+      return;
+    }
+
+    setBusy(documentId);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `/api/athlete-documents/${documentId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "LINK_REQUIREMENT",
+            requirementId,
+          }),
+        }
+      );
+
+      const result = (await response.json()) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+            "Não foi possível vincular o documento."
+        );
+      }
+
+      setMessage(
+        "Documento vinculado ao requisito obrigatório com sucesso."
+      );
+
+      setLinkingDocumentId(null);
+      router.refresh();
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Não foi possível vincular o documento."
       );
     } finally {
       setBusy(null);
@@ -357,6 +442,167 @@ export default function AthleteDocumentManager({
                 Motivo: {document.rejectionReason}
               </p>
             ) : null}
+
+            <div
+              style={{
+                marginTop: 16,
+                padding: 12,
+                border: document.requirementId
+                  ? "1px solid rgba(34, 197, 94, 0.24)"
+                  : "1px solid rgba(245, 158, 11, 0.28)",
+                borderRadius: 12,
+                background: document.requirementId
+                  ? "rgba(34, 197, 94, 0.05)"
+                  : "rgba(245, 158, 11, 0.06)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  {document.requirementLabelSnapshot ? (
+                    <>
+                      <strong
+                        style={{
+                          display: "block",
+                          color: "#16733b",
+                        }}
+                      >
+                        ✓ Requisito:{" "}
+                        {document.requirementLabelSnapshot}
+                      </strong>
+
+                      <span className="help">
+                        Documento já integrado ao checklist da categoria.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <strong
+                        style={{
+                          display: "block",
+                        }}
+                      >
+                        ⚠ Documento antigo sem vínculo
+                      </strong>
+
+                      <span className="help">
+                        Vincule este documento apenas para integrar o histórico
+                        aos novos requisitos da categoria.
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={isBusy}
+                  onClick={() =>
+                    setLinkingDocumentId(
+                      linkingDocumentId === document.id
+                        ? null
+                        : document.id
+                    )
+                  }
+                >
+                  {linkingDocumentId === document.id
+                    ? "Cancelar"
+                    : document.requirementId
+                      ? "Alterar vínculo"
+                      : "Vincular"}
+                </button>
+              </div>
+
+              {linkingDocumentId === document.id ? (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "flex-end",
+                    flexWrap: "wrap",
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTop: "1px solid var(--line)",
+                  }}
+                >
+                  <label
+                    style={{
+                      flex: "1 1 280px",
+                      margin: 0,
+                    }}
+                  >
+                    Requisito da categoria
+
+                    <select
+                      value={
+                        requirementSelections[document.id] ??
+                        ""
+                      }
+                      onChange={(event) =>
+                        setRequirementSelections(
+                          (current) => ({
+                            ...current,
+                            [document.id]:
+                              event.currentTarget.value,
+                          })
+                        )
+                      }
+                    >
+                      <option value="">
+                        Selecione
+                      </option>
+
+                      {documentRequirements
+                        .filter(
+                          (requirement) =>
+                            requirement.subject ===
+                            document.subject
+                        )
+                        .map((requirement) => (
+                          <option
+                            key={requirement.id}
+                            value={requirement.id}
+                          >
+                            {requirement.label}
+                            {requirement.status ===
+                            "APPROVED"
+                              ? " — já atendido"
+                              : requirement.status ===
+                                  "PENDING"
+                                ? " — pendente"
+                                : requirement.status ===
+                                    "EXPIRED"
+                                  ? " — vencido"
+                                  : " — faltando"}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+
+                  <button
+                    type="button"
+                    disabled={
+                      isBusy ||
+                      !requirementSelections[
+                        document.id
+                      ]
+                    }
+                    onClick={() =>
+                      linkRequirement(document.id)
+                    }
+                  >
+                    Salvar vínculo
+                  </button>
+                </div>
+              ) : null}
+            </div>
 
             <div
               className="form-grid-2"

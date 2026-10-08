@@ -4,9 +4,15 @@ import type React from "react";
 import ModuleHero from "@/components/ModuleHero";
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createCategory, deleteCategory } from "./actions";
+import {
+  createCategory,
+  createCategoryDocumentRequirement,
+  deleteCategory,
+  toggleCategoryDocumentRequirement,
+} from "./actions";
 import CategoryEvaluationFields from "./CategoryEvaluationFields";
 import CategoryOpenLink from "./CategoryOpenLink";
+import CategoryDocumentsCloseButton from "./CategoryDocumentsCloseButton";
 
 type CategoryFilter = "ALL" | "FOOTBALL" | "FUTSAL" | "EVALUATION";
 
@@ -75,6 +81,93 @@ function KpiIcon({ kind }: { kind: "categories" | "athletes" | "field" | "futsal
   );
 }
 
+
+const documentRequirementLibrary = [
+  {
+    key: "medical_clearance",
+    label: "Atestado médico",
+    documentCategory: "MEDICAL_CLEARANCE",
+    subject: "ATHLETE",
+    requiresExpiry: true,
+  },
+  {
+    key: "school_declaration",
+    label: "Declaração escolar",
+    documentCategory: "SCHOOL_DECLARATION",
+    subject: "ATHLETE",
+    requiresExpiry: true,
+  },
+  {
+    key: "athlete_identity",
+    label: "Documento de identidade do atleta",
+    documentCategory: "IDENTITY",
+    subject: "ATHLETE",
+    requiresExpiry: false,
+  },
+  {
+    key: "athlete_cpf",
+    label: "CPF do atleta",
+    documentCategory: "IDENTITY",
+    subject: "ATHLETE",
+    requiresExpiry: false,
+  },
+  {
+    key: "guardian_identity",
+    label: "Documento de identidade do responsável",
+    documentCategory: "IDENTITY",
+    subject: "GUARDIAN",
+    requiresExpiry: false,
+  },
+  {
+    key: "guardian_cpf",
+    label: "CPF do responsável",
+    documentCategory: "IDENTITY",
+    subject: "GUARDIAN",
+    requiresExpiry: false,
+  },
+  {
+    key: "birth_certificate",
+    label: "Certidão de nascimento",
+    documentCategory: "IDENTITY",
+    subject: "ATHLETE",
+    requiresExpiry: false,
+  },
+  {
+    key: "health_card",
+    label: "Plano de saúde / Cartão SUS",
+    documentCategory: "OTHER",
+    subject: "ATHLETE",
+    requiresExpiry: false,
+  },
+  {
+    key: "vaccination_card",
+    label: "Carteira de vacinação",
+    documentCategory: "MEDICAL_EXAM",
+    subject: "ATHLETE",
+    requiresExpiry: false,
+  },
+  {
+    key: "blood_count",
+    label: "Hemograma completo",
+    documentCategory: "MEDICAL_EXAM",
+    subject: "ATHLETE",
+    requiresExpiry: false,
+  },
+  {
+    key: "electrocardiogram",
+    label: "Eletrocardiograma",
+    documentCategory: "ELECTROCARDIOGRAM",
+    subject: "ATHLETE",
+    requiresExpiry: true,
+  },
+  {
+    key: "echocardiogram",
+    label: "Ecocardiograma",
+    documentCategory: "ECHOCARDIOGRAM",
+    subject: "ATHLETE",
+    requiresExpiry: true,
+  },
+] as const;
 export default async function CategoriesPage({
   searchParams,
 }: {
@@ -111,6 +204,13 @@ export default async function CategoriesPage({
       },
       trainingSchedules: {
         select: { id: true },
+      },
+      documentRequirements: {
+        orderBy: [
+          { active: "desc" },
+          { sortOrder: "asc" },
+          { label: "asc" },
+        ],
       },
       matches: {
         where: {
@@ -246,7 +346,7 @@ export default async function CategoriesPage({
       <details className="category-v2-create" open={!categories.length}>
         <summary>
           <div>
-            <span className="category-v2-create-icon">＋</span>
+            <span className="category-v2-create-icon">+</span>
             <span>
               <strong>Nova categoria</strong>
               <small>Cadastre uma categoria de Futebol ou Futsal</small>
@@ -365,6 +465,311 @@ export default async function CategoriesPage({
                 </div>
               ) : null}
 
+              {!isEvaluation ? (
+                <details className="category-v2-documents">
+                  <summary>
+                    <span>
+                      <strong>Documentos obrigatórios</strong>
+                      <small>
+                        {category.documentRequirements.filter(
+                          (requirement) => requirement.active,
+                        ).length} ativo(s)
+                      </small>
+                    </span>
+                    <b>Configurar</b>
+                  </summary>
+
+                  <div className="category-v2-documents-body">
+                    <div className="category-v2-document-current">
+                      <span className="page-eyebrow">
+                        CONFIGURAÇÃO ATUAL
+                      </span>
+
+                      {!category.documentRequirements.length ? (
+                        <p className="muted">
+                          Nenhum documento obrigatório configurado para esta categoria.
+                        </p>
+                      ) : (
+                        <div className="category-v2-document-list">
+                          {category.documentRequirements.map(
+                            (requirement) => (
+                              <div
+                                key={requirement.id}
+                                className={`category-v2-document-item ${
+                                  !requirement.active ? "is-off" : ""
+                                }`}
+                              >
+                                <div>
+                                  <strong>{requirement.label}</strong>
+                                  <small>
+                                    {requirement.subject === "GUARDIAN"
+                                      ? "Responsável"
+                                      : "Atleta"}
+                                    {" · "}
+                                    {requirement.requiresApproval
+                                      ? "Exige aprovação"
+                                      : "Sem aprovação"}
+                                    {" · "}
+                                    {requirement.requiresExpiry
+                                      ? "Exige validade"
+                                      : "Sem validade obrigatória"}
+                                  </small>
+
+                                  {requirement.instructions ? (
+                                    <p>{requirement.instructions}</p>
+                                  ) : null}
+                                </div>
+
+                                <form
+                                  action={
+                                    toggleCategoryDocumentRequirement
+                                  }
+                                >
+                                  <input
+                                    type="hidden"
+                                    name="requirementId"
+                                    value={requirement.id}
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="btn btn-secondary btn-small"
+                                  >
+                                    {requirement.active
+                                      ? "Desativar"
+                                      : "Ativar"}
+                                  </button>
+                                </form>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="category-v2-document-library">
+                      <span className="page-eyebrow">
+                        BIBLIOTECA 11UP
+                      </span>
+
+                      <p className="muted">
+                        Adicione somente os documentos que o clube considera
+                        obrigatórios nesta categoria.
+                      </p>
+
+                      <div className="category-v2-document-library-grid">
+                        {documentRequirementLibrary.map((item) => {
+                          const alreadyExists =
+                            category.documentRequirements.some(
+                              (requirement) =>
+                                requirement.key === item.key &&
+                                requirement.active,
+                            );
+
+                          return (
+                            <form
+                              key={item.key}
+                              action={
+                                createCategoryDocumentRequirement
+                              }
+                              className="category-v2-library-item"
+                            >
+                              <input
+                                type="hidden"
+                                name="categoryId"
+                                value={category.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="key"
+                                value={item.key}
+                              />
+                              <input
+                                type="hidden"
+                                name="label"
+                                value={item.label}
+                              />
+                              <input
+                                type="hidden"
+                                name="documentCategory"
+                                value={item.documentCategory}
+                              />
+                              <input
+                                type="hidden"
+                                name="subject"
+                                value={item.subject}
+                              />
+                              <input
+                                type="hidden"
+                                name="required"
+                                value="true"
+                              />
+                              <input
+                                type="hidden"
+                                name="requiresApproval"
+                                value="true"
+                              />
+                              <input
+                                type="hidden"
+                                name="requiresExpiry"
+                                value={String(item.requiresExpiry)}
+                              />
+
+                              <span>
+                                <strong>{item.label}</strong>
+                                <small>
+                                  {item.subject === "GUARDIAN"
+                                    ? "Do responsável"
+                                    : "Do atleta"}
+                                </small>
+                              </span>
+
+                              <button
+                                type="submit"
+                                className="btn btn-secondary btn-small"
+                                disabled={alreadyExists}
+                              >
+                                {alreadyExists
+                                  ? "Adicionado"
+                                  : "＋ Adicionar"}
+                              </button>
+                            </form>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="category-v2-document-custom">
+                      <span className="page-eyebrow">
+                        DOCUMENTO PERSONALIZADO
+                      </span>
+
+                      <h4>Adicionar outro documento obrigatório</h4>
+
+                      <form
+                        action={
+                          createCategoryDocumentRequirement
+                        }
+                        className="category-v2-document-custom-form"
+                      >
+                        <input
+                          type="hidden"
+                          name="categoryId"
+                          value={category.id}
+                        />
+
+                        <label>
+                          Nome do documento
+                          <input
+                            name="label"
+                            required
+                            placeholder="Ex.: Termo de uso de imagem"
+                          />
+                        </label>
+
+                        <label>
+                          Tipo
+                          <select
+                            name="documentCategory"
+                            defaultValue="OTHER"
+                          >
+                            <option value="IDENTITY">
+                              Identificação
+                            </option>
+                            <option value="MEDICAL_EXAM">
+                              Exame médico
+                            </option>
+                            <option value="MEDICAL_CLEARANCE">
+                              Atestado médico
+                            </option>
+                            <option value="ELECTROCARDIOGRAM">
+                              Eletrocardiograma
+                            </option>
+                            <option value="ECHOCARDIOGRAM">
+                              Ecocardiograma
+                            </option>
+                            <option value="AUTHORIZATION">
+                              Autorização
+                            </option>
+                            <option value="SPORTS_REGISTRATION">
+                              Registro esportivo
+                            </option>
+                            <option value="SCHOOL">
+                              Documento escolar
+                            </option>
+                            <option value="SCHOOL_DECLARATION">
+                              Declaração escolar
+                            </option>
+                            <option value="OTHER">
+                              Outro
+                            </option>
+                          </select>
+                        </label>
+
+                        <label>
+                          Referente a
+                          <select
+                            name="subject"
+                            defaultValue="ATHLETE"
+                          >
+                            <option value="ATHLETE">
+                              Atleta
+                            </option>
+                            <option value="GUARDIAN">
+                              Responsável
+                            </option>
+                          </select>
+                        </label>
+
+                        <label>
+                          Exige aprovação
+                          <select
+                            name="requiresApproval"
+                            defaultValue="true"
+                          >
+                            <option value="true">Sim</option>
+                            <option value="false">Não</option>
+                          </select>
+                        </label>
+
+                        <label>
+                          Exige data de validade
+                          <select
+                            name="requiresExpiry"
+                            defaultValue="false"
+                          >
+                            <option value="false">Não</option>
+                            <option value="true">Sim</option>
+                          </select>
+                        </label>
+
+                        <label className="category-v2-document-instructions">
+                          Instruções
+                          <textarea
+                            name="instructions"
+                            rows={3}
+                            placeholder="Ex.: Deve estar assinado pelo responsável legal."
+                          />
+                        </label>
+
+                        <input
+                          type="hidden"
+                          name="required"
+                          value="true"
+                        />
+
+                        <button type="submit">
+                          ＋ Adicionar documento obrigatório
+                        </button>
+                      </form>
+                    </div>
+
+                    <div className="category-v2-documents-footer">
+                      <CategoryDocumentsCloseButton />
+                    </div>
+                  </div>
+                </details>
+              ) : null}
+
               <div className="category-v2-card-actions">
                 <CategoryOpenLink href={`/categorias/${category.id}`} />
                 <Link href={`/atletas?category=${category.id}`}>
@@ -376,7 +781,7 @@ export default async function CategoriesPage({
               <details className="category-v2-manage">
                 <summary>
                    <span className="category-v2-manage-open-label">Gerenciar</span>
-                   <span className="category-v2-manage-back-label">← Voltar</span>
+                   <span className="category-v2-manage-back-label">→</span>
                  </summary>
                 <form action={deleteCategory}>
                   <input type="hidden" name="id" value={category.id} />
@@ -396,6 +801,132 @@ export default async function CategoriesPage({
         </div>
       ) : null}
       <style>{`
+        .category-v2-documents {
+          margin-top: 16px;
+          border: 1px solid var(--line);
+          border-radius: 14px;
+          background: #fff;
+          overflow: hidden;
+        }
+
+        .category-v2-documents > summary {
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 14px 16px;
+          list-style: none;
+        }
+
+        .category-v2-documents > summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .category-v2-documents > summary span {
+          display: grid;
+          gap: 3px;
+        }
+
+        .category-v2-documents > summary small {
+          color: var(--muted);
+          font-weight: 600;
+        }
+
+        .category-v2-documents > summary b {
+          font-size: 13px;
+        }
+
+        .category-v2-documents-body {
+          display: grid;
+          gap: 20px;
+          padding: 16px;
+          border-top: 1px solid var(--line);
+          background: #f8fafb;
+        }
+
+        .category-v2-document-list,
+        .category-v2-document-library-grid {
+          display: grid;
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .category-v2-document-item,
+        .category-v2-library-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 12px;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          background: #fff;
+        }
+
+        .category-v2-document-item > div,
+        .category-v2-library-item > span {
+          display: grid;
+          gap: 4px;
+        }
+
+        .category-v2-document-item small,
+        .category-v2-library-item small {
+          color: var(--muted);
+        }
+
+        .category-v2-document-item p {
+          margin: 3px 0 0;
+          font-size: 13px;
+          color: var(--muted);
+        }
+
+        .category-v2-document-item.is-off {
+          opacity: .55;
+        }
+
+        .category-v2-document-custom {
+          padding-top: 4px;
+        }
+
+        .category-v2-document-custom h4 {
+          margin: 5px 0 14px;
+        }
+
+        .category-v2-document-custom-form {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .category-v2-document-custom-form label {
+          display: grid;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .category-v2-document-instructions,
+        .category-v2-document-custom-form button {
+          grid-column: 1 / -1;
+        }
+
+        @media (max-width: 760px) {
+          .category-v2-document-custom-form {
+            grid-template-columns: 1fr;
+          }
+
+          .category-v2-document-instructions,
+          .category-v2-document-custom-form button {
+            grid-column: auto;
+          }
+
+          .category-v2-document-item,
+          .category-v2-library-item {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+        }
         .category-v2-manage-back-label { display: none; }
         .category-v2-manage[open] .category-v2-manage-open-label { display: none; }
         .category-v2-manage[open] .category-v2-manage-back-label { display: inline; }

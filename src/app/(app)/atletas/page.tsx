@@ -312,6 +312,14 @@ function ageFromYear(year: number | null) {
 
 }
 
+function categoryTabLabel(name: string) {
+   const match = name.match(/\bsub[\s-]*0?(\d{1,2})\b/i);
+
+   if (!match) return name;
+
+   return `Sub-${String(Number(match[1])).padStart(2, "0")}`;
+}
+
 
 
 function athletesUrl({
@@ -786,7 +794,25 @@ export default async function AthletesPage({
 
 
 
-   const aptCount = athletes.filter(
+   const selectedCategoryRoster = athletes.filter((athlete) => {
+
+      if (athleteFolder(athlete) !== "ELENCO") return false;
+
+      if (categoryFilter === "ALL") return true;
+
+      if (categoryFilter === "UNCATEGORIZED") return !athlete.categoryId;
+
+      return athlete.categoryId === categoryFilter;
+
+   });
+
+
+
+   const selectedCategoryActiveCount = selectedCategoryRoster.length;
+
+
+
+   const aptCount = selectedCategoryRoster.filter(
 
       (athlete) => athleteEligibility(athlete) === "APTO",
 
@@ -794,7 +820,7 @@ export default async function AthletesPage({
 
 
 
-   const unfitCount = athletes.filter(
+   const unfitCount = selectedCategoryRoster.filter(
 
       (athlete) => athleteEligibility(athlete) === "INAPTO",
 
@@ -815,6 +841,33 @@ export default async function AthletesPage({
       (category) => category.active && category.type === "STANDARD",
 
    ).length;
+
+   const allowedCategoryTabs = new Set(["Sub-06", "Sub-07", "Sub-08"]);
+
+   const rosterCategories = categories
+      .filter(
+         (category) =>
+            category.active &&
+            category.type === "STANDARD" &&
+            allowedCategoryTabs.has(categoryTabLabel(category.name)),
+      )
+      .sort((a, b) =>
+         categoryTabLabel(a.name).localeCompare(
+            categoryTabLabel(b.name),
+            "pt-BR",
+            { numeric: true },
+         ),
+      );
+
+   const categoryTabItems = rosterCategories.map((category) => ({
+      id: category.id,
+      label: categoryTabLabel(category.name),
+      count: athletes.filter(
+         (athlete) =>
+            athleteFolder(athlete) === "ELENCO" &&
+            athlete.categoryId === category.id,
+      ).length,
+   }));
 
 
 
@@ -1342,28 +1395,107 @@ export default async function AthletesPage({
 
       </nav>
 
+      {(athleteView === "ELENCO" || athleteView === "EVALUATION") ? (
+         <nav
+            className="athletes-v4-category-tabs"
+            aria-label="Categorias do elenco"
+         >
+            <Link
+               href={athletesUrl({
+                  q: filters.q || "",
+                  position: positionFilter,
+                  status: statusFilter,
+                  view: "ELENCO",
+               })}
+               className={
+                  athleteView === "ELENCO" && categoryFilter === "ALL"
+                     ? "active"
+                     : ""
+               }
+            >
+               Todos <strong>{activeCount}</strong>
+            </Link>
+
+            {categoryTabItems.map((category) => (
+               <Link
+                  key={category.id}
+                  href={athletesUrl({
+                     q: filters.q || "",
+                     category: category.id,
+                     position: positionFilter,
+                     status: statusFilter,
+                     view: "ELENCO",
+                  })}
+                  className={
+                     athleteView === "ELENCO" &&
+                     categoryFilter === category.id
+                        ? "active"
+                        : ""
+                  }
+               >
+                  {category.label} <strong>{category.count}</strong>
+               </Link>
+            ))}
+
+            <Link
+               href={athletesUrl({
+                  q: filters.q || "",
+                  position: positionFilter,
+                  view: "EVALUATION",
+               })}
+               className={
+                  athleteView === "EVALUATION"
+                     ? "active evaluation"
+                     : "evaluation"
+               }
+            >
+               Avaliação <strong>{evaluationCount}</strong>
+            </Link>
+         </nav>
+      ) : null}
+
 
 
       {athleteView === "ELENCO" ? (
 
          <nav className="athletes-v4-subfolders" aria-label="Elegibilidade do elenco">
 
-            <Link href="/atletas" className={statusFilter === "ALL" ? "active" : ""}>
-
-               Todos <strong>{activeCount}</strong>
-
+            <Link
+               href={athletesUrl({
+                  q: filters.q || "",
+                  category: categoryFilter,
+                  position: positionFilter,
+                  view: "ELENCO",
+               })}
+               className={statusFilter === "ALL" ? "active" : ""}
+            >
+               Todos <strong>{selectedCategoryActiveCount}</strong>
             </Link>
 
-            <Link href="/atletas?status=APTO" className={statusFilter === "APTO" ? "active" : ""}>
-
+            <Link
+               href={athletesUrl({
+                  q: filters.q || "",
+                  category: categoryFilter,
+                  position: positionFilter,
+                  status: "APTO",
+                  view: "ELENCO",
+               })}
+               className={statusFilter === "APTO" ? "active" : ""}
+            >
                Aptos <strong>{aptCount}</strong>
-
             </Link>
 
-            <Link href="/atletas?status=INAPTO" className={statusFilter === "INAPTO" ? "active" : ""}>
-
+            <Link
+               href={athletesUrl({
+                  q: filters.q || "",
+                  category: categoryFilter,
+                  position: positionFilter,
+                  status: "INAPTO",
+                  view: "ELENCO",
+               })}
+               className={statusFilter === "INAPTO" ? "active" : ""}
+            >
                Inaptos <strong>{unfitCount}</strong>
-
             </Link>
 
          </nav>
@@ -3098,7 +3230,8 @@ export default async function AthletesPage({
 
 
 
-            .athletes-v4-subfolders {
+            .athletes-v4-category-tabs,
+             .athletes-v4-subfolders {
 
                display: flex;
 
@@ -3121,7 +3254,8 @@ export default async function AthletesPage({
 
 
 
-            .athletes-v4-subfolders a {
+            .athletes-v4-category-tabs a,
+             .athletes-v4-subfolders a {
 
                min-height: 42px;
 
@@ -3160,7 +3294,8 @@ export default async function AthletesPage({
 
 
 
-            .athletes-v4-subfolders a strong {
+            .athletes-v4-category-tabs a strong,
+             .athletes-v4-subfolders a strong {
 
                min-width: 22px;
 
@@ -3191,7 +3326,8 @@ export default async function AthletesPage({
 
 
 
-            .athletes-v4-subfolders a.active {
+            .athletes-v4-category-tabs a.active,
+             .athletes-v4-subfolders a.active {
 
                border-color: var(--athletes-lime);
 
@@ -3208,13 +3344,41 @@ export default async function AthletesPage({
 
 
 
-            .athletes-v4-subfolders a.active strong {
+            .athletes-v4-category-tabs a.active strong,
+             .athletes-v4-subfolders a.active strong {
 
                color: #10200a;
 
                background: var(--athletes-lime);
 
             }
+
+             .athletes-v4-category-tabs {
+                padding: 6px 2px 2px;
+             }
+
+             .athletes-v4-category-tabs a {
+                min-height: 40px;
+                padding: 0 14px;
+                text-transform: none;
+             }
+
+             .athletes-v4-category-tabs a.evaluation {
+                border-style: dashed;
+             }
+
+             .athletes-v4-category-tabs a.evaluation.active {
+                border-style: solid;
+                border-color: #9fd8f7;
+                color: #165d86;
+                background: #eaf7fd;
+             }
+
+             .athletes-v4-category-tabs a.evaluation.active strong {
+                color: #165d86;
+                background: #bfe8fb;
+             }
+
 
 
 

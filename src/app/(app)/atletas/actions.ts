@@ -15,6 +15,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireClubPermission } from "@/lib/club-access";
+import {
+  closeAutomaticEligibilityIssues,
+  syncAutomaticEligibility,
+} from "@/lib/athlete-eligibility";
 import { prisma } from "@/lib/prisma";
 
 function clean(value: FormDataEntryValue | null) {
@@ -144,362 +148,6 @@ async function syncSportRegistration(
   });
 
 }
-
-type EligibilityActor = {
-  id: string;
-  name: string;
-};
-
-type AutomaticEligibilityIssue = {
-  key: string;
-  type: AthleteEligibilityIssueType;
-  scope: AthleteEligibilityScope;
-  reason: string;
-  shouldBeOpen: boolean;
-};
-
-async function setAutomaticEligibilityIssue(
-  tx: Prisma.TransactionClient,
-  input: {
-    organizationId: string;
-    athleteId: string;
-    issue: AutomaticEligibilityIssue;
-    actor: EligibilityActor;
-    effectiveAt?: Date;
-  },
-) {
-  const openIssues = await tx.athleteEligibilityIssue.findMany({
-    where: {
-      organizationId: input.organizationId,
-      athleteId: input.athleteId,
-      source: AthleteEligibilityIssueSource.AUTOMATIC,
-      key: input.issue.key,
-      resolvedAt: null,
-    },
-    orderBy: {
-      startedAt: "asc",
-    },
-  });
-
-  if (input.issue.shouldBeOpen) {
-    if (!openIssues.length) {
-      await tx.athleteEligibilityIssue.create({
-        data: {
-          organizationId: input.organizationId,
-          athleteId: input.athleteId,
-          type: input.issue.type,
-          source: AthleteEligibilityIssueSource.AUTOMATIC,
-          scope: input.issue.scope,
-          blocking: true,
-          key: input.issue.key,
-          reason: input.issue.reason,
-          startedAt: input.effectiveAt ?? new Date(),
-          createdByUserId: input.actor.id,
-          createdByNameSnapshot: input.actor.name,
-        },
-      });
-      return;
-    }
-
-    const [primary, ...duplicates] = openIssues;
-
-    if (
-      primary.reason !== input.issue.reason ||
-      primary.scope !== input.issue.scope
-    ) {
-      await tx.athleteEligibilityIssue.update({
-        where: {
-          id: primary.id,
-        },
-        data: {
-          reason: input.issue.reason,
-          scope: input.issue.scope,
-        },
-      });
-    }
-
-    if (duplicates.length) {
-      await tx.athleteEligibilityIssue.updateMany({
-        where: {
-          id: {
-            in: duplicates.map((issue) => issue.id),
-          },
-        },
-        data: {
-          resolvedAt: new Date(),
-          resolutionNotes:
-            "Pendência automática duplicada encerrada pelo sistema.",
-          resolvedByUserId: input.actor.id,
-          resolvedByNameSnapshot: input.actor.name,
-        },
-      });
-    }
-
-    return;
-  }
-
-  if (openIssues.length) {
-    await tx.athleteEligibilityIssue.updateMany({
-      where: {
-        id: {
-          in: openIssues.map((issue) => issue.id),
-        },
-      },
-      data: {
-        resolvedAt: new Date(),
-        resolutionNotes:
-          "Requisito regularizado e conferido pelo 11UP.",
-        resolvedByUserId: input.actor.id,
-        resolvedByNameSnapshot: input.actor.name,
-      },
-    });
-  }
-}
-
-async function closeAutomaticEligibilityIssues(
-  tx: Prisma.TransactionClient,
-  input: {
-    organizationId: string;
-    athleteId: string;
-    actor: EligibilityActor;
-    note: string;
-  },
-) {
-  await tx.athleteEligibilityIssue.updateMany({
-    where: {
-      organizationId: input.organizationId,
-      athleteId: input.athleteId,
-      source: AthleteEligibilityIssueSource.AUTOMATIC,
-      resolvedAt: null,
-    },
-    data: {
-      resolvedAt: new Date(),
-      resolutionNotes: input.note,
-      resolvedByUserId: input.actor.id,
-      resolvedByNameSnapshot: input.actor.name,
-    },
-  });
-}
-
-async function syncAutomaticEligibility(
-  tx: Prisma.TransactionClient,
-  input: {
-    organizationId: string;
-    athleteId: string;
-    actor: EligibilityActor;
-    effectiveAt?: Date;
-  },
-) {
-  const now = new Date();
-
-  const athlete = await tx.athlete.findFirst({
-    where: {
-      id: input.athleteId,
-      organizationId: input.organizationId,
-    },
-    select: {
-      id: true,
-      currentStatus: true,
-      documentationConfirmedAt: true,
-      memberships: {
-        where: {
-          status: "ACTIVE",
-        },
-        select: {
-          id: true,
-          sport: true,
-          category: {
-            select: {
-              id: true,
-              type: true,
-              sport: true,
-              requiresDocumentation: true,
-              requiresMedicalExam: true,
-              requiresFederationRegistration: true,
-            },
-          },
-        },
-      },
-      documents: {
-        where: {
-          deletedAt: null,
-        },
-        select: {
-          id: true,
-          category: true,
-          status: true,
-          expiresAt: true,
-          createdAt: true,
-        },
-      },
-      sportRegistrations: {
-        where: {
-          authorityType: "FEDERATION",
-          status: "ACTIVE",
-        },
-        select: {
-          sport: true,
-          status: true,
-        },
-      },
-    },
-  });
-
-  if (
-    !athlete ||
-    athlete.currentStatus !== AthleteCurrentStatus.ACTIVE
-  ) {
-    if (athlete) {
-      await closeAutomaticEligibilityIssues(tx, {
-        organizationId: input.organizationId,
-        athleteId: input.athleteId,
-        actor: input.actor,
-        note:
-          "Pendência automática encerrada porque o atleta não está no elenco ativo.",
-      });
-    }
-
-    return;
-  }
-
-  const activeStandardMemberships =
-    athlete.memberships.filter(
-      (membership) =>
-        membership.category?.type === "STANDARD",
-    );
-
-  if (!activeStandardMemberships.length) {
-    await closeAutomaticEligibilityIssues(tx, {
-      organizationId: input.organizationId,
-      athleteId: input.athleteId,
-      actor: input.actor,
-      note:
-        "Pendência automática encerrada porque o atleta não possui vínculo esportivo ativo no elenco.",
-    });
-    return;
-  }
-
-  const activeDocuments = athlete.documents.filter(
-    (document) => document.status !== "ARCHIVED",
-  );
-
-  const hasExpiredDocument = activeDocuments.some(
-    (document) =>
-      document.status === "EXPIRED" ||
-      Boolean(document.expiresAt && document.expiresAt < now),
-  );
-
-  const hasPendingOrRejectedDocument = activeDocuments.some(
-    (document) =>
-      document.status === "PENDING" ||
-      document.status === "REJECTED",
-  );
-
-  const hasDocumentAfterConfirmation =
-    athlete.documentationConfirmedAt
-      ? activeDocuments.some(
-          (document) =>
-            document.createdAt > athlete.documentationConfirmedAt!,
-        )
-      : false;
-
-  const documentationReady =
-    Boolean(athlete.documentationConfirmedAt) &&
-    activeDocuments.length > 0 &&
-    !hasExpiredDocument &&
-    !hasPendingOrRejectedDocument &&
-    !hasDocumentAfterConfirmation;
-
-  const validMedicalDocument = activeDocuments.some(
-    (document) =>
-      (document.category === "MEDICAL_EXAM" ||
-        document.category === "MEDICAL_CLEARANCE") &&
-      document.status === "APPROVED" &&
-      (!document.expiresAt || document.expiresAt >= now),
-  );
-
-  const federationSports = new Set(
-    athlete.sportRegistrations.map(
-      (registration) => registration.sport,
-    ),
-  );
-
-  const requiresDocumentation =
-    activeStandardMemberships.some(
-      (membership) =>
-        membership.category?.requiresDocumentation,
-    );
-
-  const requiresMedicalExam =
-    activeStandardMemberships.some(
-      (membership) =>
-        membership.category?.requiresMedicalExam,
-    );
-
-  const automaticIssues: AutomaticEligibilityIssue[] = [
-    {
-      key: "AUTO:DOCUMENTATION",
-      type: AthleteEligibilityIssueType.DOCUMENTATION,
-      scope: AthleteEligibilityScope.GLOBAL,
-      reason:
-        "Documentação obrigatória ainda não está completa e confirmada.",
-      shouldBeOpen:
-        requiresDocumentation && !documentationReady,
-    },
-    {
-      key: "AUTO:MEDICAL_EXAM",
-      type: AthleteEligibilityIssueType.MEDICAL_EXAM,
-      scope: AthleteEligibilityScope.GLOBAL,
-      reason:
-        "Exame ou atestado médico obrigatório ainda não foi apresentado, aprovado ou está fora da validade.",
-      shouldBeOpen:
-        requiresMedicalExam && !validMedicalDocument,
-    },
-  ];
-
-  for (const sport of ["FOOTBALL", "FUTSAL"] as const) {
-    const sportMemberships =
-      activeStandardMemberships.filter(
-        (membership) =>
-          membership.sport === sport ||
-          membership.sport === "BOTH",
-      );
-
-    const required =
-      sportMemberships.some(
-        (membership) =>
-          membership.category
-            ?.requiresFederationRegistration,
-      );
-
-    automaticIssues.push({
-      key: `AUTO:FEDERATION:${sport}`,
-      type:
-        AthleteEligibilityIssueType.FEDERATION_REGISTRATION,
-      scope:
-        sport === "FOOTBALL"
-          ? AthleteEligibilityScope.FOOTBALL
-          : AthleteEligibilityScope.FUTSAL,
-      reason:
-        sport === "FOOTBALL"
-          ? "Inscrição na federação de futebol ainda não está ativa."
-          : "Inscrição na federação de futsal ainda não está ativa.",
-      shouldBeOpen:
-        required && !federationSports.has(sport),
-    });
-  }
-
-  for (const issue of automaticIssues) {
-    await setAutomaticEligibilityIssue(tx, {
-      organizationId: input.organizationId,
-      athleteId: input.athleteId,
-      issue,
-      actor: input.actor,
-      effectiveAt: input.effectiveAt,
-    });
-  }
-}
-
 
 function categoryEvent(
   fromType: "STANDARD" | "EVALUATION" | null,
@@ -2404,7 +2052,9 @@ export async function resolveAthleteEligibilityIssue(
 export async function allowAthleteEligibilityOverride(
   formData: FormData,
 ) {
-  const user = await requireClubPermission("ORGANIZATION_MANAGE");
+  const user = await requireClubPermission(
+    "ORGANIZATION_MANAGE"
+  );
 
   const issueId = clean(formData.get("issueId"));
   const athleteId = clean(formData.get("athleteId"));
@@ -2413,23 +2063,26 @@ export async function allowAthleteEligibilityOverride(
 
   if (!issueId || !athleteId || !reason) return;
 
+  const authorizedAt = new Date();
+
   await prisma.$transaction(async (tx) => {
-    const issue = await tx.athleteEligibilityIssue.findFirst({
-      where: {
-        id: issueId,
-        athleteId,
-        organizationId: user.organizationId,
-        resolvedAt: null,
-        blocking: true,
-      },
-      select: {
-        id: true,
-        type: true,
-        source: true,
-        key: true,
-        reason: true,
-      },
-    });
+    const issue =
+      await tx.athleteEligibilityIssue.findFirst({
+        where: {
+          id: issueId,
+          athleteId,
+          organizationId: user.organizationId,
+          resolvedAt: null,
+          blocking: true,
+        },
+        select: {
+          id: true,
+          type: true,
+          source: true,
+          key: true,
+          reason: true,
+        },
+      });
 
     if (!issue) return;
 
@@ -2439,6 +2092,16 @@ export async function allowAthleteEligibilityOverride(
       },
       data: {
         blocking: false,
+
+        authorizedAt,
+        authorizedByUserId: user.id,
+        authorizedByNameSnapshot: user.name,
+        authorizationReason: reason,
+
+        authorizationRevokedAt: null,
+        authorizationRevokedByUserId: null,
+        authorizationRevokedByNameSnapshot: null,
+        authorizationRevocationReason: null,
       },
     });
 
@@ -2451,21 +2114,29 @@ export async function allowAthleteEligibilityOverride(
         entityType: "ATHLETE_ELIGIBILITY",
         entityId: issue.id,
         metadataJson: JSON.stringify({
-          event: "ATHLETE_ELIGIBILITY_OVERRIDE_ALLOWED",
+          event:
+            "ATHLETE_ELIGIBILITY_OVERRIDE_ALLOWED",
           type: issue.type,
           source: issue.source,
           key: issue.key,
           issueReason: issue.reason,
           reason,
           notes,
-          changedAt: new Date().toISOString(),
+          changedAt:
+            authorizedAt.toISOString(),
           blocking: {
             from: true,
             to: false,
           },
-          authorizedBy: {
-            userId: user.id,
-            name: user.name,
+          authorization: {
+            status: "AUTHORIZED",
+            authorizedAt:
+              authorizedAt.toISOString(),
+            reason,
+            authorizedBy: {
+              userId: user.id,
+              name: user.name,
+            },
           },
         }),
       },
@@ -2479,7 +2150,9 @@ export async function allowAthleteEligibilityOverride(
 export async function revokeAthleteEligibilityOverride(
   formData: FormData,
 ) {
-  const user = await requireClubPermission("ORGANIZATION_MANAGE");
+  const user = await requireClubPermission(
+    "ORGANIZATION_MANAGE"
+  );
 
   const issueId = clean(formData.get("issueId"));
   const athleteId = clean(formData.get("athleteId"));
@@ -2487,23 +2160,30 @@ export async function revokeAthleteEligibilityOverride(
 
   if (!issueId || !athleteId) return;
 
+  const revokedAt = new Date();
+
   await prisma.$transaction(async (tx) => {
-    const issue = await tx.athleteEligibilityIssue.findFirst({
-      where: {
-        id: issueId,
-        athleteId,
-        organizationId: user.organizationId,
-        resolvedAt: null,
-        blocking: false,
-      },
-      select: {
-        id: true,
-        type: true,
-        source: true,
-        key: true,
-        reason: true,
-      },
-    });
+    const issue =
+      await tx.athleteEligibilityIssue.findFirst({
+        where: {
+          id: issueId,
+          athleteId,
+          organizationId: user.organizationId,
+          resolvedAt: null,
+          blocking: false,
+        },
+        select: {
+          id: true,
+          type: true,
+          source: true,
+          key: true,
+          reason: true,
+          authorizedAt: true,
+          authorizedByUserId: true,
+          authorizedByNameSnapshot: true,
+          authorizationReason: true,
+        },
+      });
 
     if (!issue) return;
 
@@ -2513,6 +2193,13 @@ export async function revokeAthleteEligibilityOverride(
       },
       data: {
         blocking: true,
+
+        authorizationRevokedAt: revokedAt,
+        authorizationRevokedByUserId: user.id,
+        authorizationRevokedByNameSnapshot:
+          user.name,
+        authorizationRevocationReason:
+          reason,
       },
     });
 
@@ -2525,20 +2212,38 @@ export async function revokeAthleteEligibilityOverride(
         entityType: "ATHLETE_ELIGIBILITY",
         entityId: issue.id,
         metadataJson: JSON.stringify({
-          event: "ATHLETE_ELIGIBILITY_OVERRIDE_REVOKED",
+          event:
+            "ATHLETE_ELIGIBILITY_OVERRIDE_REVOKED",
           type: issue.type,
           source: issue.source,
           key: issue.key,
           issueReason: issue.reason,
           reason,
-          changedAt: new Date().toISOString(),
+          changedAt:
+            revokedAt.toISOString(),
           blocking: {
             from: false,
             to: true,
           },
-          revokedBy: {
-            userId: user.id,
-            name: user.name,
+          previousAuthorization: {
+            authorizedAt:
+              issue.authorizedAt?.toISOString() ??
+              null,
+            authorizedByUserId:
+              issue.authorizedByUserId,
+            authorizedByName:
+              issue.authorizedByNameSnapshot,
+            authorizationReason:
+              issue.authorizationReason,
+          },
+          revocation: {
+            revokedAt:
+              revokedAt.toISOString(),
+            reason,
+            revokedBy: {
+              userId: user.id,
+              name: user.name,
+            },
           },
         }),
       },

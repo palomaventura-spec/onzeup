@@ -1,6 +1,13 @@
 "use server";
 
-import { SportType } from "@prisma/client";
+import crypto from "node:crypto";
+
+import {
+  AthleteDocumentCategory,
+  AthleteDocumentRequirementSubject,
+  Prisma,
+  SportType,
+} from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -278,6 +285,381 @@ export async function updateCategory(
   revalidatePath("/qtr");
 
   redirect("/categorias");
+}
+
+function documentRequirementCategory(
+  value: FormDataEntryValue | null,
+): AthleteDocumentCategory | null {
+  const raw = clean(value);
+
+  return Object.values(AthleteDocumentCategory).includes(
+    raw as AthleteDocumentCategory,
+  )
+    ? (raw as AthleteDocumentCategory)
+    : null;
+}
+
+function documentRequirementSubject(
+  value: FormDataEntryValue | null,
+): AthleteDocumentRequirementSubject {
+  const raw = clean(value);
+
+  return raw === AthleteDocumentRequirementSubject.GUARDIAN
+    ? AthleteDocumentRequirementSubject.GUARDIAN
+    : AthleteDocumentRequirementSubject.ATHLETE;
+}
+
+function booleanValue(
+  value: FormDataEntryValue | null,
+  fallback = false,
+) {
+  const raw = clean(value).toLowerCase();
+
+  if (!raw) return fallback;
+
+  return raw === "true" || raw === "1" || raw === "on";
+}
+
+function requirementCount(
+  value: FormDataEntryValue | null,
+) {
+  const parsed = Number(clean(value));
+
+  if (!Number.isFinite(parsed)) return 1;
+
+  return Math.min(10, Math.max(1, Math.trunc(parsed)));
+}
+
+async function syncCategoryDocumentationRequirement(
+  tx: Prisma.TransactionClient,
+  categoryId: string,
+  organizationId: string,
+) {
+  const activeRequirements =
+    await tx.categoryDocumentRequirement.count({
+      where: {
+        categoryId,
+        organizationId,
+        active: true,
+        required: true,
+      },
+    });
+
+  await tx.category.updateMany({
+    where: {
+      id: categoryId,
+      organizationId,
+    },
+    data: {
+      requiresDocumentation: activeRequirements > 0,
+    },
+  });
+}
+
+export async function createCategoryDocumentRequirement(
+  formData: FormData,
+) {
+  const user =
+    await requireClubPermission("CATEGORIES_EDIT");
+
+  const categoryId = clean(formData.get("categoryId"));
+  const label = clean(formData.get("label"));
+  const documentCategory =
+    documentRequirementCategory(
+      formData.get("documentCategory"),
+    );
+
+  if (!categoryId || !label || !documentCategory) {
+    return;
+  }
+
+  const category = await prisma.category.findFirst({
+    where: {
+      id: categoryId,
+      organizationId: user.organizationId,
+      type: "STANDARD",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!category) return;
+
+  const requestedKey = clean(formData.get("key"))
+    .toLowerCase()
+    .replace(/[^a-z0-9_:-]/g, "");
+
+  const key =
+    requestedKey ||
+    `custom_${crypto.randomUUID().replaceAll("-", "")}`;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.categoryDocumentRequirement.upsert({
+      where: {
+        categoryId_key: {
+          categoryId: category.id,
+          key,
+        },
+      },
+      create: {
+        organizationId: user.organizationId,
+        categoryId: category.id,
+        key,
+        label: label.slice(0, 160),
+        documentCategory,
+        subject: documentRequirementSubject(
+          formData.get("subject"),
+        ),
+        minCount: requirementCount(
+          formData.get("minCount"),
+        ),
+        required: booleanValue(
+          formData.get("required"),
+          true,
+        ),
+        requiresApproval: booleanValue(
+          formData.get("requiresApproval"),
+          true,
+        ),
+        requiresExpiry: booleanValue(
+          formData.get("requiresExpiry"),
+          false,
+        ),
+        instructions:
+          nullable(formData.get("instructions")),
+        active: true,
+        sortOrder:
+          Number(clean(formData.get("sortOrder"))) || 0,
+      },
+      update: {
+        label: label.slice(0, 160),
+        documentCategory,
+        subject: documentRequirementSubject(
+          formData.get("subject"),
+        ),
+        minCount: requirementCount(
+          formData.get("minCount"),
+        ),
+        required: booleanValue(
+          formData.get("required"),
+          true,
+        ),
+        requiresApproval: booleanValue(
+          formData.get("requiresApproval"),
+          true,
+        ),
+        requiresExpiry: booleanValue(
+          formData.get("requiresExpiry"),
+          false,
+        ),
+        instructions:
+          nullable(formData.get("instructions")),
+        active: true,
+      },
+    });
+
+    await syncCategoryDocumentationRequirement(
+      tx,
+      category.id,
+      user.organizationId,
+    );
+  });
+
+  revalidatePath("/categorias");
+  revalidatePath(`/categorias/${category.id}`);
+  revalidatePath("/atletas");
+}
+
+export async function updateCategoryDocumentRequirement(
+  formData: FormData,
+) {
+  const user =
+    await requireClubPermission("CATEGORIES_EDIT");
+
+  const requirementId =
+    clean(formData.get("requirementId"));
+
+  const label = clean(formData.get("label"));
+
+  const documentCategory =
+    documentRequirementCategory(
+      formData.get("documentCategory"),
+    );
+
+  if (!requirementId || !label || !documentCategory) {
+    return;
+  }
+
+  const requirement =
+    await prisma.categoryDocumentRequirement.findFirst({
+      where: {
+        id: requirementId,
+        organizationId: user.organizationId,
+      },
+      select: {
+        id: true,
+        categoryId: true,
+      },
+    });
+
+  if (!requirement) return;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.categoryDocumentRequirement.update({
+      where: {
+        id: requirement.id,
+      },
+      data: {
+        label: label.slice(0, 160),
+        documentCategory,
+        subject: documentRequirementSubject(
+          formData.get("subject"),
+        ),
+        minCount: requirementCount(
+          formData.get("minCount"),
+        ),
+        required: booleanValue(
+          formData.get("required"),
+          true,
+        ),
+        requiresApproval: booleanValue(
+          formData.get("requiresApproval"),
+          true,
+        ),
+        requiresExpiry: booleanValue(
+          formData.get("requiresExpiry"),
+          false,
+        ),
+        instructions:
+          nullable(formData.get("instructions")),
+      },
+    });
+
+    await syncCategoryDocumentationRequirement(
+      tx,
+      requirement.categoryId,
+      user.organizationId,
+    );
+  });
+
+  revalidatePath("/categorias");
+  revalidatePath(
+    `/categorias/${requirement.categoryId}`,
+  );
+  revalidatePath("/atletas");
+}
+
+export async function toggleCategoryDocumentRequirement(
+  formData: FormData,
+) {
+  const user =
+    await requireClubPermission("CATEGORIES_EDIT");
+
+  const requirementId =
+    clean(formData.get("requirementId"));
+
+  if (!requirementId) return;
+
+  const requirement =
+    await prisma.categoryDocumentRequirement.findFirst({
+      where: {
+        id: requirementId,
+        organizationId: user.organizationId,
+      },
+      select: {
+        id: true,
+        categoryId: true,
+        active: true,
+      },
+    });
+
+  if (!requirement) return;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.categoryDocumentRequirement.update({
+      where: {
+        id: requirement.id,
+      },
+      data: {
+        active: !requirement.active,
+      },
+    });
+
+    await syncCategoryDocumentationRequirement(
+      tx,
+      requirement.categoryId,
+      user.organizationId,
+    );
+  });
+
+  revalidatePath("/categorias");
+  revalidatePath(
+    `/categorias/${requirement.categoryId}`,
+  );
+  revalidatePath("/atletas");
+}
+
+export async function deleteCategoryDocumentRequirement(
+  formData: FormData,
+) {
+  const user =
+    await requireClubPermission("CATEGORIES_EDIT");
+
+  const requirementId =
+    clean(formData.get("requirementId"));
+
+  if (!requirementId) return;
+
+  const requirement =
+    await prisma.categoryDocumentRequirement.findFirst({
+      where: {
+        id: requirementId,
+        organizationId: user.organizationId,
+      },
+      select: {
+        id: true,
+        categoryId: true,
+        _count: {
+          select: {
+            documents: true,
+          },
+        },
+      },
+    });
+
+  if (!requirement) return;
+
+  await prisma.$transaction(async (tx) => {
+    if (requirement._count.documents > 0) {
+      await tx.categoryDocumentRequirement.update({
+        where: {
+          id: requirement.id,
+        },
+        data: {
+          active: false,
+        },
+      });
+    } else {
+      await tx.categoryDocumentRequirement.delete({
+        where: {
+          id: requirement.id,
+        },
+      });
+    }
+
+    await syncCategoryDocumentationRequirement(
+      tx,
+      requirement.categoryId,
+      user.organizationId,
+    );
+  });
+
+  revalidatePath("/categorias");
+  revalidatePath(
+    `/categorias/${requirement.categoryId}`,
+  );
+  revalidatePath("/atletas");
 }
 
 export async function deleteCategory(

@@ -346,51 +346,154 @@ export async function confirmAthleteDocumentation(formData: FormData) {
   const user = await requirePrivateAthleteActionUser();
   const athleteId = clean(formData.get("athleteId"));
 
-  const athlete = await ownedAthlete(athleteId, user.organizationId);
+  const athlete = await ownedAthlete(
+    athleteId,
+    user.organizationId
+  );
+
   if (!athlete) return;
 
   const now = new Date();
 
-  const [documents, pendingRequests] = await Promise.all([
-    prisma.athleteDocument.findMany({
-      where: {
-        athleteId,
-        organizationId: user.organizationId,
-        deletedAt: null,
-        status: { not: "ARCHIVED" },
-      },
-      select: {
-        id: true,
-        status: true,
-        expiresAt: true,
-      },
-    }),
-    prisma.athleteRegistrationRequest.count({
-      where: {
-        athleteId,
-        organizationId: user.organizationId,
-        status: "PENDING",
-      },
-    }),
-  ]);
+  const [documents, pendingRequests, memberships] =
+    await Promise.all([
+      prisma.athleteDocument.findMany({
+        where: {
+          athleteId,
+          organizationId: user.organizationId,
+          deletedAt: null,
+          status: { not: "ARCHIVED" },
+        },
+        select: {
+          id: true,
+          requirementId: true,
+          status: true,
+          expiresAt: true,
+        },
+      }),
 
-  if (!documents.length || pendingRequests > 0) return;
+      prisma.athleteRegistrationRequest.count({
+        where: {
+          athleteId,
+          organizationId: user.organizationId,
+          status: "PENDING",
+        },
+      }),
 
-  const hasDocumentIssue = documents.some(
-    (document) =>
-      document.status !== "APPROVED" ||
-      Boolean(document.expiresAt && document.expiresAt < now),
-  );
+      prisma.athleteMembership.findMany({
+        where: {
+          athleteId,
+          organizationId: user.organizationId,
+          status: "ACTIVE",
+          categoryId: { not: null },
+        },
+        select: {
+          category: {
+            select: {
+              documentRequirements: {
+                where: {
+                  active: true,
+                  required: true,
+                },
+                select: {
+                  id: true,
+                  minCount: true,
+                  requiresApproval: true,
+                  requiresExpiry: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
 
-  if (hasDocumentIssue) return;
+  if (pendingRequests > 0) return;
+
+  const requiredDocuments = memberships
+    .flatMap(
+      (membership) =>
+        membership.category?.documentRequirements ?? []
+    )
+    .filter(
+      (requirement, index, items) =>
+        items.findIndex(
+          (item) => item.id === requirement.id
+        ) === index
+    );
+
+  const hasConfiguredRequirements =
+    requiredDocuments.length > 0;
+
+  let documentationReady = false;
+
+  if (hasConfiguredRequirements) {
+    documentationReady = requiredDocuments.every(
+      (requirement) => {
+        const validDocuments = documents.filter(
+          (document) => {
+            if (
+              document.requirementId !== requirement.id
+            ) {
+              return false;
+            }
+
+            const expired =
+              document.status === "EXPIRED" ||
+              Boolean(
+                document.expiresAt &&
+                  document.expiresAt < now
+              ) ||
+              Boolean(
+                requirement.requiresExpiry &&
+                  !document.expiresAt
+              );
+
+            if (
+              expired ||
+              document.status === "REJECTED"
+            ) {
+              return false;
+            }
+
+            if (requirement.requiresApproval) {
+              return document.status === "APPROVED";
+            }
+
+            return true;
+          }
+        );
+
+        return (
+          validDocuments.length >= requirement.minCount
+        );
+      }
+    );
+  } else {
+    documentationReady =
+      documents.length > 0 &&
+      documents.every(
+        (document) =>
+          document.status === "APPROVED" &&
+          !(
+            document.expiresAt &&
+            document.expiresAt < now
+          )
+      );
+  }
+
+  if (!documentationReady) return;
 
   const confirmedAt = new Date();
 
   await prisma.$transaction([
     prisma.athlete.update({
       where: { id: athleteId },
-      data: { documentationConfirmedAt: confirmedAt },
+      data: {
+        documentationConfirmedAt: confirmedAt,
+      },
     }),
+
     prisma.athleteDataAuditLog.create({
       data: {
         organizationId: user.organizationId,
@@ -400,8 +503,14 @@ export async function confirmAthleteDocumentation(formData: FormData) {
         entityType: "AthleteDocumentation",
         entityId: athleteId,
         metadataJson: JSON.stringify({
-          documentationConfirmedAt: confirmedAt.toISOString(),
+          documentationConfirmedAt:
+            confirmedAt.toISOString(),
           documentCount: documents.length,
+          requirementCount:
+            requiredDocuments.length,
+          validationMode: hasConfiguredRequirements
+            ? "CATEGORY_REQUIREMENTS"
+            : "LEGACY_DOCUMENTS",
         }),
       },
     }),

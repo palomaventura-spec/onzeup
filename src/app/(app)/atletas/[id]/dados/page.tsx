@@ -181,6 +181,46 @@ export default async function AthletePrivateDataPage({
     where: { id, organizationId: user.organizationId },
     include: {
       category: true,
+      memberships: {
+        where: {
+          status: "ACTIVE",
+          categoryId: { not: null },
+        },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          sport: true,
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              sport: true,
+              documentRequirements: {
+                where: { active: true },
+                orderBy: [
+                  { sortOrder: "asc" },
+                  { label: "asc" },
+                ],
+                select: {
+                  id: true,
+                  key: true,
+                  label: true,
+                  documentCategory: true,
+                  subject: true,
+                  minCount: true,
+                  required: true,
+                  requiresApproval: true,
+                  requiresExpiry: true,
+                  instructions: true,
+                  active: true,
+                },
+              },
+            },
+          },
+        },
+      },
       privateData: true,
       guardians: { orderBy: [{ isPrimary: "desc" }, { name: "asc" }] },
       bodyMeasurements: { orderBy: { measuredAt: "desc" } },
@@ -202,6 +242,9 @@ export default async function AthletePrivateDataPage({
           id: true,
           category: true,
           status: true,
+          requirementId: true,
+          requirementKeySnapshot: true,
+          requirementLabelSnapshot: true,
           title: true,
           originalFileName: true,
           mimeType: true,
@@ -229,9 +272,86 @@ export default async function AthletePrivateDataPage({
   const privateData = athlete.privateData;
   const now = new Date();
 
+  const activeDocumentRequirements = athlete.memberships
+    .flatMap((membership) => membership.category?.documentRequirements ?? [])
+    .filter((requirement, index, items) =>
+      items.findIndex((item) => item.id === requirement.id) === index
+    );
+
+  const requiredDocumentRequirements = activeDocumentRequirements.filter(
+    (requirement) => requirement.required
+  );
+
   const activeDocuments = athlete.documents.filter(
     (document) => document.status !== "ARCHIVED"
   );
+
+  const documentRequirementStates = requiredDocumentRequirements.map((requirement) => {
+    const requirementDocuments = activeDocuments.filter(
+      (document) => document.requirementId === requirement.id
+    );
+
+    const validDocuments = requirementDocuments.filter((document) => {
+      const expired =
+        document.status === "EXPIRED" ||
+        Boolean(document.expiresAt && document.expiresAt < now) ||
+        Boolean(requirement.requiresExpiry && !document.expiresAt);
+
+      if (expired || document.status === "REJECTED") return false;
+
+      if (requirement.requiresApproval) {
+        return document.status === "APPROVED";
+      }
+
+      return true;
+    });
+
+    const fulfilled = validDocuments.length >= requirement.minCount;
+
+    const hasExpired = requirementDocuments.some(
+      (document) =>
+        document.status === "EXPIRED" ||
+        Boolean(document.expiresAt && document.expiresAt < now) ||
+        Boolean(requirement.requiresExpiry && !document.expiresAt)
+    );
+
+    const hasPending = requirementDocuments.some(
+      (document) =>
+        document.status === "PENDING" || document.status === "REJECTED"
+    );
+
+    const status = fulfilled
+      ? "APPROVED"
+      : hasExpired
+        ? "EXPIRED"
+        : hasPending
+          ? "PENDING"
+          : "MISSING";
+
+    return {
+      ...requirement,
+      status,
+      fulfilled,
+      deliveredCount: validDocuments.length,
+      missingCount: Math.max(requirement.minCount - validDocuments.length, 0),
+    };
+  });
+
+  const missingRequiredDocuments = documentRequirementStates.filter(
+    (requirement) => requirement.status === "MISSING"
+  ).length;
+
+  const pendingRequiredDocuments = documentRequirementStates.filter(
+    (requirement) => requirement.status === "PENDING"
+  ).length;
+
+  const expiredRequiredDocuments = documentRequirementStates.filter(
+    (requirement) => requirement.status === "EXPIRED"
+  ).length;
+
+  const allRequiredDocumentsFulfilled =
+    requiredDocumentRequirements.length > 0 &&
+    documentRequirementStates.every((requirement) => requirement.fulfilled);
 
   const approvedDocuments = activeDocuments.filter(
     (document) => document.status === "APPROVED"
@@ -257,30 +377,75 @@ export default async function AthletePrivateDataPage({
 
   const documentationConfirmedAt = athlete.documentationConfirmedAt;
 
-  const hasDocumentsAfterConfirmation = documentationConfirmedAt
-    ? activeDocuments.some(
-        (document) => document.createdAt > documentationConfirmedAt
-      )
-    : false;
+  const hasConfiguredDocumentRequirements =
+    requiredDocumentRequirements.length > 0;
+
+  const requiredDocumentRequirementIds = new Set(
+    requiredDocumentRequirements.map(
+      (requirement) => requirement.id
+    )
+  );
+
+  const hasRelevantDocumentAfterConfirmation =
+    documentationConfirmedAt
+      ? activeDocuments.some(
+          (document) =>
+            Boolean(
+              document.requirementId &&
+                requiredDocumentRequirementIds.has(
+                  document.requirementId
+                )
+            ) &&
+            document.createdAt >
+              documentationConfirmedAt
+        )
+      : false;
+
+  const hasLegacyDocumentAfterConfirmation =
+    documentationConfirmedAt
+      ? activeDocuments.some(
+          (document) =>
+            document.createdAt >
+              documentationConfirmedAt
+        )
+      : false;
+
+  const hasDocumentsAfterConfirmation =
+    hasConfiguredDocumentRequirements
+      ? hasRelevantDocumentAfterConfirmation
+      : hasLegacyDocumentAfterConfirmation;
+
+  const legacyDocumentationReady =
+    activeDocuments.length > 0 &&
+    approvedDocuments === activeDocuments.length &&
+    expiredDocuments === 0;
+
+  const documentationRequirementsReady = hasConfiguredDocumentRequirements
+    ? allRequiredDocumentsFulfilled
+    : legacyDocumentationReady;
 
   const documentationInDay =
     Boolean(documentationConfirmedAt) &&
-    activeDocuments.length > 0 &&
-    pendingDocuments === 0 &&
-    rejectedDocuments === 0 &&
-    expiredDocuments === 0 &&
+    documentationRequirementsReady &&
     !hasPendingRequest &&
     !hasDocumentsAfterConfirmation;
 
   const canConfirmDocumentation =
-    activeDocuments.length > 0 &&
-    approvedDocuments === activeDocuments.length &&
-    expiredDocuments === 0 &&
+    documentationRequirementsReady &&
     !hasPendingRequest &&
     !documentationInDay;
 
-  const documentStatusLabel =
-    expiredDocuments > 0
+  const documentStatusLabel = hasConfiguredDocumentRequirements
+    ? expiredRequiredDocuments > 0
+      ? "Documento obrigatório vencido"
+      : pendingRequiredDocuments > 0
+        ? "Documentação pendente"
+        : missingRequiredDocuments > 0
+          ? "Faltam documentos obrigatórios"
+          : documentationInDay
+            ? "Documentação em dia"
+            : "Aguardando confirmação"
+    : expiredDocuments > 0
       ? "Documento vencido"
       : pendingDocuments > 0 || rejectedDocuments > 0
         ? "Aguardando conferência"
@@ -291,9 +456,17 @@ export default async function AthletePrivateDataPage({
             : documentationInDay
               ? "Documentação em dia"
               : "Aguardando confirmação";
-
-  const documentStatusDescription =
-    expiredDocuments > 0
+  const documentStatusDescription = hasConfiguredDocumentRequirements
+    ? expiredRequiredDocuments > 0
+      ? `${expiredRequiredDocuments} requisito(s) obrigatório(s) com documento vencido ou sem validade informada.`
+      : pendingRequiredDocuments > 0
+        ? `${pendingRequiredDocuments} requisito(s) obrigatório(s) aguardando aprovação ou substituição.`
+        : missingRequiredDocuments > 0
+          ? `${missingRequiredDocuments} documento(s) obrigatório(s) ainda não foram entregues.`
+          : documentationInDay
+            ? "Todos os documentos obrigatórios foram revisados e estão regulares."
+            : "Todos os documentos obrigatórios estão válidos. Confirme a conferência para marcar a documentação como em dia."
+    : expiredDocuments > 0
       ? "Há documento com validade expirada. Atualize a documentação do atleta."
       : pendingDocuments > 0 || rejectedDocuments > 0
         ? "Existem documentos que ainda precisam de revisão ou substituição."
@@ -304,7 +477,6 @@ export default async function AthletePrivateDataPage({
             : documentationInDay
               ? "A documentação foi revisada pelo gestor e está regular."
               : "Todos os documentos estão aprovados. Confirme a conferência para marcar a documentação como em dia.";
-
   return (
     <main className="athlete-documents-v4">
       <section className="athlete-documents-v4-hero">
@@ -730,6 +902,80 @@ export default async function AthletePrivateDataPage({
           <span className="badge">{expiredDocuments} vencido(s)</span>
         </div>
 
+        {hasConfiguredDocumentRequirements ? (
+          <div
+            className="card"
+            style={{ marginTop: 18, padding: 18 }}
+          >
+            <span className="page-eyebrow">DOCUMENTOS OBRIGATÓRIOS</span>
+            <h3 style={{ margin: "6px 0 14px" }}>
+              Checklist da categoria
+            </h3>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              {documentRequirementStates.map((requirement) => {
+                const statusLabel =
+                  requirement.status === "APPROVED"
+                    ? requirement.requiresApproval
+                      ? "Aprovado"
+                      : "Entregue"
+                    : requirement.status === "EXPIRED"
+                      ? "Vencido"
+                      : requirement.status === "PENDING"
+                        ? "Pendente"
+                        : "Faltando";
+
+                return (
+                  <div
+                    key={requirement.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      padding: "12px 14px",
+                      border: "1px solid #e2e8eb",
+                      borderRadius: 12,
+                      background: "#fff",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <strong style={{ display: "block" }}>
+                        {requirement.label}
+                      </strong>
+
+                      <small className="muted">
+                        {requirement.subject === "GUARDIAN"
+                          ? "Responsável"
+                          : "Atleta"}
+                        {requirement.minCount > 1
+                          ? ` · ${requirement.minCount} arquivos necessários`
+                          : ""}
+                      </small>
+
+                      {requirement.instructions ? (
+                        <p
+                          className="muted"
+                          style={{ margin: "5px 0 0" }}
+                        >
+                          {requirement.instructions}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <span
+                      className="badge"
+                      style={{ whiteSpace: "nowrap" }}
+                    >
+                      {statusLabel}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
         <AthleteDocumentInvitePanel
           athleteId={athlete.id}
           guardians={athlete.guardians.map((guardian) => ({
@@ -752,6 +998,15 @@ export default async function AthletePrivateDataPage({
             id: guardian.id,
             name: guardian.name,
           }))}
+          documentRequirements={documentRequirementStates.map((requirement) => ({
+            id: requirement.id,
+            label: requirement.label,
+            documentCategory: requirement.documentCategory,
+            subject: requirement.subject,
+            requiresExpiry: requirement.requiresExpiry,
+            instructions: requirement.instructions,
+            status: requirement.status,
+          }))}
         />
 
         <AthleteDocumentManager
@@ -763,12 +1018,21 @@ export default async function AthletePrivateDataPage({
             subjectLabel: document.guardian?.name
               ? `Responsável: ${document.guardian.name}`
               : `Atleta: ${athlete.name}`,
+            subject: document.guardian ? "GUARDIAN" : "ATHLETE",
+            requirementId: document.requirementId,
+            requirementLabelSnapshot: document.requirementLabelSnapshot,
             status: document.status,
             sizeLabel: formatFileSize(document.sizeBytes),
             createdAtLabel: dateLabel(document.createdAt),
             issuedAt: dateInput(document.issuedAt),
             expiresAt: dateInput(document.expiresAt),
             rejectionReason: document.rejectionReason,
+          }))}
+          documentRequirements={documentRequirementStates.map((requirement) => ({
+            id: requirement.id,
+            label: requirement.label,
+            subject: requirement.subject,
+            status: requirement.status,
           }))}
         />
       </section>

@@ -353,6 +353,10 @@ export default async function EditAthletePage({
             notes: true,
             startedAt: true,
             createdByNameSnapshot: true,
+            authorizedAt: true,
+            authorizedByNameSnapshot: true,
+            authorizationReason: true,
+            authorizationRevokedAt: true,
           },
         },
         evaluationProcesses: {
@@ -1180,7 +1184,10 @@ export default async function EditAthletePage({
                     >
                       {issue.blocking
                         ? "Impeditiva"
-                        : "Não impeditiva"}
+                        : issue.authorizedAt &&
+                            !issue.authorizationRevokedAt
+                          ? "Pendente autorizada"
+                          : "Não impeditiva"}
                     </span>
                   </div>
 
@@ -1198,12 +1205,58 @@ export default async function EditAthletePage({
                     </small>
                   ) : null}
 
+                  {!issue.blocking &&
+                  issue.authorizedAt &&
+                  !issue.authorizationRevokedAt ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: 12,
+                        borderRadius: 12,
+                        border:
+                          "1px solid rgba(245, 158, 11, 0.30)",
+                        background:
+                          "rgba(245, 158, 11, 0.06)",
+                      }}
+                    >
+                      <strong>
+                        Pendente autorizada pelo gestor
+                      </strong>
+
+                      <p
+                        className="muted"
+                        style={{
+                          margin: "6px 0 0",
+                        }}
+                      >
+                        {issue.authorizationReason ||
+                          "Autorização excepcional registrada."}
+                      </p>
+
+                      <small
+                        className="muted"
+                        style={{
+                          display: "block",
+                          marginTop: 6,
+                        }}
+                      >
+                        {issue.authorizedByNameSnapshot
+                          ? `Autorizada por ${issue.authorizedByNameSnapshot}`
+                          : "Autorização registrada"}
+                        {" · "}
+                        {issue.authorizedAt.toLocaleDateString(
+                          "pt-BR"
+                        )}
+                      </small>
+                    </div>
+                  ) : null}
+
                   {canManageEligibility && issue.blocking ? (
                     <details className="athlete-eligibility-management">
                       <summary>
                         {issue.scope === "GLOBAL"
-                          ? "Liberar esta pendência para Campo e Futsal"
-                          : `Liberar esta pendência apenas para ${eligibilityScopeLabel(
+                          ? "Autorizar esta pendência para Campo e Futsal"
+                          : `Autorizar esta pendência apenas para ${eligibilityScopeLabel(
                               issue.scope,
                             )}`}
                       </summary>
@@ -1224,7 +1277,7 @@ export default async function EditAthletePage({
                         />
 
                         <label style={{ gridColumn: "1 / -1" }}>
-                          Motivo da liberação
+                          Motivo da autorização
                           <textarea
                             name="reason"
                             rows={3}
@@ -1243,7 +1296,7 @@ export default async function EditAthletePage({
                         </label>
 
                         <button type="submit" className="btn">
-                          Confirmar liberação pelo gestor
+                          Autorizar pendência
                         </button>
                       </form>
                     </details>
@@ -1252,7 +1305,7 @@ export default async function EditAthletePage({
                   {canManageEligibility && !issue.blocking ? (
                     <details className="athlete-eligibility-management">
                       <summary>
-                        Tornar impeditiva novamente
+                        Revogar autorização
                       </summary>
 
                       <form
@@ -1275,7 +1328,7 @@ export default async function EditAthletePage({
                           <textarea
                             name="reason"
                             rows={2}
-                            placeholder="Opcional. Informe o motivo da revogação da liberação."
+                            placeholder="Opcional. Informe o motivo da revogação da autorização."
                           />
                         </label>
 
@@ -1283,7 +1336,7 @@ export default async function EditAthletePage({
                           type="submit"
                           className="btn-secondary"
                         >
-                          Tornar pendência impeditiva
+                          Revogar autorização
                         </button>
                       </form>
                     </details>

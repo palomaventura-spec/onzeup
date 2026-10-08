@@ -100,78 +100,349 @@ export async function GET(_request: Request, route: { params: Promise<{ document
 export async function PATCH(request: Request, route: { params: Promise<{ documentId: string }> }) {
   try {
     const auth = await context();
-    if (!auth) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
+
+    if (!auth) {
+      return NextResponse.json(
+        { error: "Acesso não autorizado." },
+        { status: 403 },
+      );
+    }
+
     const { documentId } = await route.params;
-    const document = await documentForOrganization(documentId, auth.organizationId);
-    if (!document) return NextResponse.json({ error: "Documento não encontrado." }, { status: 404 });
+
+    const document = await documentForOrganization(
+      documentId,
+      auth.organizationId,
+    );
+
+    if (!document) {
+      return NextResponse.json(
+        { error: "Documento não encontrado." },
+        { status: 404 },
+      );
+    }
 
     const body = (await request.json()) as Record<string, unknown>;
+
     const action = clean(body.action).toUpperCase();
     const issuedAt = optionalDate(body.issuedAt);
     const expiresAt = optionalDate(body.expiresAt);
     const now = new Date();
 
+    let linkedRequirement:
+      | {
+          id: string;
+          key: string;
+          label: string;
+          documentCategory: string;
+          subject: "ATHLETE" | "GUARDIAN";
+          requiresExpiry: boolean;
+          categoryId: string;
+        }
+      | null = null;
+
+    if (action === "LINK_REQUIREMENT") {
+      const requirementId = clean(body.requirementId);
+
+      if (!requirementId) {
+        return NextResponse.json(
+          { error: "Selecione o documento obrigatório." },
+          { status: 400 },
+        );
+      }
+
+      const requirement =
+        await prisma.categoryDocumentRequirement.findFirst({
+          where: {
+            id: requirementId,
+            organizationId: auth.organizationId,
+            active: true,
+          },
+          select: {
+            id: true,
+            key: true,
+            label: true,
+            documentCategory: true,
+            subject: true,
+            requiresExpiry: true,
+            categoryId: true,
+          },
+        });
+
+      if (!requirement) {
+        return NextResponse.json(
+          { error: "Requisito não encontrado." },
+          { status: 404 },
+        );
+      }
+
+      const activeMembership =
+        await prisma.athleteMembership.findFirst({
+          where: {
+            athleteId: document.athleteId,
+            organizationId: auth.organizationId,
+            categoryId: requirement.categoryId,
+            status: "ACTIVE",
+          },
+          select: { id: true },
+        });
+
+      if (!activeMembership) {
+        return NextResponse.json(
+          {
+            error:
+              "Este requisito não pertence a uma categoria ativa do atleta.",
+          },
+          { status: 400 },
+        );
+      }
+
+      if (
+        requirement.subject === "GUARDIAN" &&
+        !document.guardianId
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Este requisito é do responsável, mas o documento não está vinculado a um responsável.",
+          },
+          { status: 400 },
+        );
+      }
+
+      if (
+        requirement.subject === "ATHLETE" &&
+        document.guardianId
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Este requisito é do atleta, mas o documento está vinculado a um responsável.",
+          },
+          { status: 400 },
+        );
+      }
+
+      linkedRequirement = {
+        ...requirement,
+        documentCategory: String(
+          requirement.documentCategory,
+        ),
+      };
+    } else if (document.requirementId) {
+      const requirement =
+        await prisma.categoryDocumentRequirement.findFirst({
+          where: {
+            id: document.requirementId,
+            organizationId: auth.organizationId,
+          },
+          select: {
+            id: true,
+            key: true,
+            label: true,
+            documentCategory: true,
+            subject: true,
+            requiresExpiry: true,
+            categoryId: true,
+          },
+        });
+
+      if (requirement) {
+        linkedRequirement = {
+          ...requirement,
+          documentCategory: String(
+            requirement.documentCategory,
+          ),
+        };
+      }
+    }
+
+    const requiresExpiry =
+      linkedRequirement?.requiresExpiry ??
+      EXPIRY_REQUIRED_CATEGORIES.has(document.category);
+
     if (
       ["UPDATE_DATES", "APPROVE"].includes(action) &&
-      EXPIRY_REQUIRED_CATEGORIES.has(document.category) &&
+      requiresExpiry &&
       !expiresAt
     ) {
       return NextResponse.json(
-        { error: "Este tipo de documento exige data de validade." },
+        {
+          error:
+            "Este documento exige data de validade.",
+        },
         { status: 400 },
       );
     }
 
-    if (issuedAt && expiresAt && expiresAt < issuedAt) {
+    if (
+      issuedAt &&
+      expiresAt &&
+      expiresAt < issuedAt
+    ) {
       return NextResponse.json(
-        { error: "A validade não pode ser anterior à data de emissão." },
+        {
+          error:
+            "A validade não pode ser anterior à data de emissão.",
+        },
         { status: 400 },
       );
     }
 
     let data: Prisma.AthleteDocumentUncheckedUpdateInput;
-    let auditAction: "UPDATED" | "APPROVED" | "REJECTED";
+    let auditAction:
+      | "UPDATED"
+      | "APPROVED"
+      | "REJECTED";
 
-    if (action === "UPDATE_DATES") {
-      data = { issuedAt, expiresAt };
+    if (action === "LINK_REQUIREMENT") {
+      if (!linkedRequirement) {
+        return NextResponse.json(
+          { error: "Requisito inválido." },
+          { status: 400 },
+        );
+      }
+
+      data = {
+        requirementId: linkedRequirement.id,
+        requirementKeySnapshot:
+          linkedRequirement.key,
+        requirementLabelSnapshot:
+          linkedRequirement.label,
+        category:
+          linkedRequirement.documentCategory as Prisma.AthleteDocumentUncheckedUpdateInput["category"],
+      };
+
+      auditAction = "UPDATED";
+    } else if (action === "UPDATE_DATES") {
+      data = {
+        issuedAt,
+        expiresAt,
+      };
+
       auditAction = "UPDATED";
     } else if (action === "APPROVE") {
-      if (expiresAt && expiresAt < now) {
-        return NextResponse.json({ error: "A validade informada já venceu." }, { status: 400 });
+      if (
+        expiresAt &&
+        expiresAt < now
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "A validade informada já venceu.",
+          },
+          { status: 400 },
+        );
       }
-      data = { status: "APPROVED", issuedAt, expiresAt, reviewedAt: now, reviewedByUserId: auth.user.id, rejectionReason: null };
+
+      data = {
+        status: "APPROVED",
+        issuedAt,
+        expiresAt,
+        reviewedAt: now,
+        reviewedByUserId: auth.user.id,
+        rejectionReason: null,
+      };
+
       auditAction = "APPROVED";
     } else if (action === "REJECT") {
-      const rejectionReason = clean(body.rejectionReason);
-      if (!rejectionReason) return NextResponse.json({ error: "Informe o motivo da rejeição." }, { status: 400 });
-      data = { status: "REJECTED", issuedAt, expiresAt, reviewedAt: now, reviewedByUserId: auth.user.id, rejectionReason: rejectionReason.slice(0, 500) };
+      const rejectionReason = clean(
+        body.rejectionReason,
+      );
+
+      if (!rejectionReason) {
+        return NextResponse.json(
+          {
+            error:
+              "Informe o motivo da rejeição.",
+          },
+          { status: 400 },
+        );
+      }
+
+      data = {
+        status: "REJECTED",
+        issuedAt,
+        expiresAt,
+        reviewedAt: now,
+        reviewedByUserId: auth.user.id,
+        rejectionReason:
+          rejectionReason.slice(0, 500),
+      };
+
       auditAction = "REJECTED";
     } else if (action === "ARCHIVE") {
-      data = { status: "ARCHIVED", reviewedAt: now, reviewedByUserId: auth.user.id };
+      data = {
+        status: "ARCHIVED",
+        reviewedAt: now,
+        reviewedByUserId: auth.user.id,
+      };
+
       auditAction = "UPDATED";
     } else {
-      return NextResponse.json({ error: "Ação inválida." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Ação inválida." },
+        { status: 400 },
+      );
     }
 
     await prisma.$transaction([
-      prisma.athleteDocument.update({ where: { id: document.id }, data }),
+      prisma.athleteDocument.update({
+        where: { id: document.id },
+        data,
+      }),
+
       prisma.athleteDataAuditLog.create({
         data: {
-          organizationId: auth.organizationId,
-          athleteId: document.athleteId,
-          actorUserId: auth.user.id,
-          action: auditAction,
-          entityType: "AthleteDocument",
-          entityId: document.id,
-          metadataJson: JSON.stringify({ action, issuedAt, expiresAt }),
+          organizationId:
+            auth.organizationId,
+
+          athleteId:
+            document.athleteId,
+
+          actorUserId:
+            auth.user.id,
+
+          action:
+            auditAction,
+
+          entityType:
+            "AthleteDocument",
+
+          entityId:
+            document.id,
+
+          metadataJson: JSON.stringify({
+            action,
+            issuedAt,
+            expiresAt,
+            requirementId:
+              linkedRequirement?.id ?? null,
+            requirementKey:
+              linkedRequirement?.key ?? null,
+            requirementLabel:
+              linkedRequirement?.label ?? null,
+          }),
         },
       }),
     ]);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+    });
   } catch (error) {
-    console.error("ATHLETE_DOCUMENT_UPDATE_ERROR", error);
-    return NextResponse.json({ error: "Não foi possível atualizar o documento." }, { status: 500 });
+    console.error(
+      "ATHLETE_DOCUMENT_UPDATE_ERROR",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Não foi possível atualizar o documento.",
+      },
+      { status: 500 },
+    );
   }
 }
 
