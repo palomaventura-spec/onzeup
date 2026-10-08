@@ -8,100 +8,101 @@ datasource db {
 }
 
 model Organization {
-  id                          String                          @id @default(cuid())
-  name                        String
-  publicName                  String?
-  type                        OrganizationType
-  sport                       SportType                       @default(BOTH)
-  slug                        String                          @unique
-  description                 String?
-  logoUrl                     String?
-  coverUrl                    String?
-  accentColor                 String?                         @default("#9DDB16")
-  phone                       String?
-  whatsapp                    String?
-  email                       String?
-  instagram                   String?
-  address                     String?
-  city                        String?
-  state                       String?
-  timezone                    String                          @default("America/Sao_Paulo")
-  active                      Boolean                         @default(true)
-  showAthletesPublicly        Boolean                         @default(true)
-  showStaffPublicly           Boolean                         @default(true)
-  showTrainingsPublicly       Boolean                         @default(true)
-  showMatchesPublicly         Boolean                         @default(true)
-  customDomain                String?                         @unique
-  domainVerified              Boolean                         @default(false)
-  whatsappStatus              IntegrationStatus               @default(DISCONNECTED)
-  whatsappPhone               String?
-  paymentStatus               IntegrationStatus               @default(DISCONNECTED)
-  paymentProvider             String?
-  onboardingCompleted         Boolean                         @default(false)
-  createdAt                   DateTime                        @default(now())
-  updatedAt                   DateTime                        @updatedAt
-  panelTheme                  String                          @default("DARK")
-  pixKey                      String?
-  publicBackground            String?                         @default("#080B0C")
-  publicTheme                 String                          @default("DARK")
-  secondaryColor              String?                         @default("#FFFFFF")
-  taxId                       String?
-  coverOverlay                Int                             @default(68)
-  coverPosition               String                          @default("CENTER")
-  accessStatus                String                          @default("ACTIVE")
-  complimentaryReason         String?
-  complimentaryUntil          DateTime?
-  documentStorageLimitBytes   BigInt                          @default(1073741824)
-  documentStorageUsedBytes    BigInt                          @default(0)
-  athletes                    Athlete[]
-  athleteAuditLogs            AthleteDataAuditLog[]
-  athleteDocuments            AthleteDocument[]
+  id                           String                          @id @default(cuid())
+  name                         String
+  publicName                   String?
+  type                         OrganizationType
+  sport                        SportType                       @default(BOTH)
+  slug                         String                          @unique
+  description                  String?
+  logoUrl                      String?
+  coverUrl                     String?
+  accentColor                  String?                         @default("#9DDB16")
+  phone                        String?
+  whatsapp                     String?
+  email                        String?
+  instagram                    String?
+  address                      String?
+  city                         String?
+  state                        String?
+  timezone                     String                          @default("America/Sao_Paulo")
+  active                       Boolean                         @default(true)
+  showAthletesPublicly         Boolean                         @default(true)
+  showStaffPublicly            Boolean                         @default(true)
+  showTrainingsPublicly        Boolean                         @default(true)
+  showMatchesPublicly          Boolean                         @default(true)
+  customDomain                 String?                         @unique
+  domainVerified               Boolean                         @default(false)
+  whatsappStatus               IntegrationStatus               @default(DISCONNECTED)
+  whatsappPhone                String?
+  paymentStatus                IntegrationStatus               @default(DISCONNECTED)
+  paymentProvider              String?
+  onboardingCompleted          Boolean                         @default(false)
+  createdAt                    DateTime                        @default(now())
+  updatedAt                    DateTime                        @updatedAt
+  panelTheme                   String                          @default("DARK")
+  pixKey                       String?
+  publicBackground             String?                         @default("#080B0C")
+  publicTheme                  String                          @default("DARK")
+  secondaryColor               String?                         @default("#FFFFFF")
+  taxId                        String?
+  coverOverlay                 Int                             @default(68)
+  coverPosition                String                          @default("CENTER")
+  accessStatus                 String                          @default("ACTIVE")
+  complimentaryReason          String?
+  complimentaryUntil           DateTime?
+  documentStorageLimitBytes    BigInt                          @default(1073741824)
+  documentStorageUsedBytes     BigInt                          @default(0)
+  athletes                     Athlete[]
+  athleteAuditLogs             AthleteDataAuditLog[]
+  athleteDocuments             AthleteDocument[]
+  athleteDocumentManualIssues  AthleteDocumentManualIssue[]
   categoryDocumentRequirements CategoryDocumentRequirement[]
-  athleteRegistrationRequests AthleteRegistrationRequest[]
-  athletePreRegistrations     AthletePreRegistrationRequest[]
-  athleteSportRegistrations   AthleteSportRegistration[]
-  athleteMemberships          AthleteMembership[]
-  athleteEvaluations          AthleteEvaluation[]
+  athleteRegistrationRequests  AthleteRegistrationRequest[]
+  athletePreRegistrations      AthletePreRegistrationRequest[]
+  athleteSportRegistrations    AthleteSportRegistration[]
+  athleteMemberships           AthleteMembership[]
+  athleteEvaluations           AthleteEvaluation[]
   athleteEvaluationProcesses   AthleteEvaluationProcess[]
   athleteExitRecords           AthleteExitRecord[]
   athleteEligibilityIssues     AthleteEligibilityIssue[]
-  athletePerformanceGoals     AthletePerformanceGoal[]
-  athleteBodyMeasurements     AthleteBodyMeasurement[]
-  athleteWellbeingEntries     AthleteWellbeingEntry[]
-  athleteExternalTrainings    AthleteExternalTraining[]
-  athleteGpsRecords           AthleteGpsRecord[]
-  performanceTemplates        PerformanceTemplate[]
-  performanceReports          PerformanceReport[]
-  monthlyAthleteReports       MonthlyAthleteReport[]
-  callUps                     CallUp[]
-  categories                  Category[]
-  charges                     Charge[]
-  coachAccesses               CoachOrganizationAccess[]
-  matches                     Match[]
-  matchAthleteStats           MatchAthleteStat[]
-  matchEvents                 MatchEvent[]
-  matchStaffAssignments       MatchStaffAssignment[]
-  payments                    Payment[]
-  qtrs                        Qtr[]
-  qtrSettings                 QtrSettings?
-  staffMembers                StaffMember[]
-  staffCategoryPermissions    StaffCategoryPermission[]
-  subscription                Subscription?
-  trainingSchedules           TrainingSchedule[]
-  trainingSessions            TrainingSession[]
-  trainingAttendances         TrainingAttendance[]
-  trainingAuditLogs           TrainingAuditLog[]
-  athleteHistoryEntries       AthleteHistoryEntry[]
-  userPermissionOverrides     ClubUserPermissionOverride[]
-  users                       User[]
-  competitions                Competition[]
-  linkedCompetitionTeams      CompetitionTeam[]               @relation("LinkedCompetitionOrganization")
-  competitionCallUpRules      CompetitionCallUpRule[]
-  formationTemplates          FormationTemplate[]
-  AdminSupportSession         AdminSupportSession[]
+  athletePerformanceGoals      AthletePerformanceGoal[]
+  athleteBodyMeasurements      AthleteBodyMeasurement[]
+  athleteWellbeingEntries      AthleteWellbeingEntry[]
+  athleteExternalTrainings     AthleteExternalTraining[]
+  athleteGpsRecords            AthleteGpsRecord[]
+  performanceTemplates         PerformanceTemplate[]
+  performanceReports           PerformanceReport[]
+  monthlyAthleteReports        MonthlyAthleteReport[]
+  callUps                      CallUp[]
+  categories                   Category[]
+  charges                      Charge[]
+  coachAccesses                CoachOrganizationAccess[]
+  matches                      Match[]
+  matchAthleteStats            MatchAthleteStat[]
+  matchEvents                  MatchEvent[]
+  matchStaffAssignments        MatchStaffAssignment[]
+  payments                     Payment[]
+  qtrs                         Qtr[]
+  qtrSettings                  QtrSettings?
+  staffMembers                 StaffMember[]
+  staffCategoryPermissions     StaffCategoryPermission[]
+  subscription                 Subscription?
+  trainingSchedules            TrainingSchedule[]
+  trainingSessions             TrainingSession[]
+  trainingAttendances          TrainingAttendance[]
+  trainingAuditLogs            TrainingAuditLog[]
+  athleteHistoryEntries        AthleteHistoryEntry[]
+  userPermissionOverrides      ClubUserPermissionOverride[]
+  users                        User[]
+  competitions                 Competition[]
+  linkedCompetitionTeams       CompetitionTeam[]               @relation("LinkedCompetitionOrganization")
+  competitionCallUpRules       CompetitionCallUpRule[]
+  formationTemplates           FormationTemplate[]
+  AdminSupportSession          AdminSupportSession[]
 
-  athleteGrowthProfiles          AthleteGrowthProfile[]
-  athleteBoneAgeAssessments     AthleteBoneAgeAssessment[]
+  athleteGrowthProfiles     AthleteGrowthProfile[]
+  athleteBoneAgeAssessments AthleteBoneAgeAssessment[]
 }
 
 model Competition {
@@ -364,60 +365,62 @@ enum CompetitionTeamStatus {
 }
 
 model User {
-  id                            String                       @id @default(cuid())
-  name                          String
-  email                         String                       @unique
-  passwordHash                  String
-  role                          UserRole                     @default(COORDINATOR)
-  clubRole                      ClubRole?
-  active                        Boolean                      @default(true)
-  organizationId                String?
-  createdAt                     DateTime                     @default(now())
-  updatedAt                     DateTime                     @updatedAt
-  accountStatus                 String                       @default("ACTIVE")
-  emailVerifiedAt               DateTime?
-  coachProfile                  CoachProfile?
-  clubInvites                   ClubUserInvite[]
-  emailVerificationTokens       EmailVerificationToken[]
-  athleteEvaluations            AthleteEvaluation[]          @relation("AthleteEvaluationAuthor")
-  evaluationProcessesCreated     AthleteEvaluationProcess[]    @relation("AthleteEvaluationProcessCreator")
-  evaluationProcessesDecided     AthleteEvaluationProcess[]    @relation("AthleteEvaluationProcessDecider")
-  athleteExitRecordsRecorded     AthleteExitRecord[]             @relation("AthleteExitRecordRecorder")
-  athleteEligibilityIssuesCreated AthleteEligibilityIssue[]       @relation("AthleteEligibilityIssueCreator")
-  athleteEligibilityIssuesResolved AthleteEligibilityIssue[]      @relation("AthleteEligibilityIssueResolver")
-  athleteEligibilityIssuesAuthorized AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueAuthorizer")
-  athleteEligibilityIssuesAuthorizationRevoked AthleteEligibilityIssue[] @relation("AthleteEligibilityIssueAuthorizationRevoker")
-  athletePerformanceGoals       AthletePerformanceGoal[]     @relation("AthletePerformanceGoalAuthor")
-  performanceReports            PerformanceReport[]          @relation("PerformanceReportAuthor")
-  monthlyReportsCreated         MonthlyAthleteReport[]       @relation("MonthlyAthleteReportCreator")
-  monthlyReportsReviewed        MonthlyAthleteReport[]       @relation("MonthlyAthleteReportReviewer")
-  monthlyReportsApproved        MonthlyAthleteReport[]       @relation("MonthlyAthleteReportApprover")
-  monthlyReportsSent            MonthlyAthleteReport[]       @relation("MonthlyAthleteReportSender")
-  permissionOverrides           ClubUserPermissionOverride[]
-  createdRegistrationRequests   AthleteRegistrationRequest[] @relation("AthleteRegistrationRequestCreator")
-  reviewedRegistrationRequests  AthleteRegistrationRequest[] @relation("AthleteRegistrationRequestReviewer")
-  uploadedAthleteDocuments      AthleteDocument[]            @relation("AthleteDocumentUploader")
-  reviewedAthleteDocuments      AthleteDocument[]            @relation("AthleteDocumentReviewer")
-  athleteDataAuditLogs          AthleteDataAuditLog[]        @relation("AthleteDataAuditActor")
-  recordedMatchAthleteStats     MatchAthleteStat[]           @relation("MatchAthleteStatRecorder")
-  recordedTrainingSessions      TrainingSession[]            @relation("TrainingSessionRecorder")
-  recordedTrainingAttendances   TrainingAttendance[]         @relation("TrainingAttendanceRecorder")
-  trainingAuditLogs             TrainingAuditLog[]           @relation("TrainingAuditActor")
-  athleteHistoryEntriesAuthored AthleteHistoryEntry[]        @relation("AthleteHistoryEntryAuthor")
-  athleteHistoryEntriesResolved AthleteHistoryEntry[]        @relation("AthleteHistoryEntryResolver")
-  staffMember                   StaffMember?                 @relation("StaffMemberUser")
-  recordedBodyMeasurements      AthleteBodyMeasurement[]     @relation("AthleteBodyMeasurementRecorder")
-  recordedWellbeingEntries      AthleteWellbeingEntry[]      @relation("AthleteWellbeingEntryRecorder")
-  recordedExternalTrainings     AthleteExternalTraining[]    @relation("AthleteExternalTrainingRecorder")
-  recordedGpsRecords            AthleteGpsRecord[]           @relation("AthleteGpsRecordRecorder")
-  guardianProfile               GuardianProfile?
-  payments                      Payment[]
-  sessions                      Session[]
-  organization                  Organization?                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  AdminSupportSession           AdminSupportSession[]
+  id                                           String                       @id @default(cuid())
+  name                                         String
+  email                                        String                       @unique
+  passwordHash                                 String
+  role                                         UserRole                     @default(COORDINATOR)
+  clubRole                                     ClubRole?
+  active                                       Boolean                      @default(true)
+  organizationId                               String?
+  createdAt                                    DateTime                     @default(now())
+  updatedAt                                    DateTime                     @updatedAt
+  accountStatus                                String                       @default("ACTIVE")
+  emailVerifiedAt                              DateTime?
+  coachProfile                                 CoachProfile?
+  clubInvites                                  ClubUserInvite[]
+  emailVerificationTokens                      EmailVerificationToken[]
+  athleteEvaluations                           AthleteEvaluation[]          @relation("AthleteEvaluationAuthor")
+  evaluationProcessesCreated                   AthleteEvaluationProcess[]   @relation("AthleteEvaluationProcessCreator")
+  evaluationProcessesDecided                   AthleteEvaluationProcess[]   @relation("AthleteEvaluationProcessDecider")
+  athleteExitRecordsRecorded                   AthleteExitRecord[]          @relation("AthleteExitRecordRecorder")
+  athleteEligibilityIssuesCreated              AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueCreator")
+  athleteEligibilityIssuesResolved             AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueResolver")
+  athleteEligibilityIssuesAuthorized           AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueAuthorizer")
+  athleteEligibilityIssuesAuthorizationRevoked AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueAuthorizationRevoker")
+  athletePerformanceGoals                      AthletePerformanceGoal[]     @relation("AthletePerformanceGoalAuthor")
+  performanceReports                           PerformanceReport[]          @relation("PerformanceReportAuthor")
+  monthlyReportsCreated                        MonthlyAthleteReport[]       @relation("MonthlyAthleteReportCreator")
+  monthlyReportsReviewed                       MonthlyAthleteReport[]       @relation("MonthlyAthleteReportReviewer")
+  monthlyReportsApproved                       MonthlyAthleteReport[]       @relation("MonthlyAthleteReportApprover")
+  monthlyReportsSent                           MonthlyAthleteReport[]       @relation("MonthlyAthleteReportSender")
+  permissionOverrides                          ClubUserPermissionOverride[]
+  createdRegistrationRequests                  AthleteRegistrationRequest[] @relation("AthleteRegistrationRequestCreator")
+  reviewedRegistrationRequests                 AthleteRegistrationRequest[] @relation("AthleteRegistrationRequestReviewer")
+  uploadedAthleteDocuments                     AthleteDocument[]            @relation("AthleteDocumentUploader")
+  documentManualIssuesCreated                  AthleteDocumentManualIssue[] @relation("AthleteDocumentManualIssueCreator")
+  documentManualIssuesResolved                 AthleteDocumentManualIssue[] @relation("AthleteDocumentManualIssueResolver")
+  reviewedAthleteDocuments                     AthleteDocument[]            @relation("AthleteDocumentReviewer")
+  athleteDataAuditLogs                         AthleteDataAuditLog[]        @relation("AthleteDataAuditActor")
+  recordedMatchAthleteStats                    MatchAthleteStat[]           @relation("MatchAthleteStatRecorder")
+  recordedTrainingSessions                     TrainingSession[]            @relation("TrainingSessionRecorder")
+  recordedTrainingAttendances                  TrainingAttendance[]         @relation("TrainingAttendanceRecorder")
+  trainingAuditLogs                            TrainingAuditLog[]           @relation("TrainingAuditActor")
+  athleteHistoryEntriesAuthored                AthleteHistoryEntry[]        @relation("AthleteHistoryEntryAuthor")
+  athleteHistoryEntriesResolved                AthleteHistoryEntry[]        @relation("AthleteHistoryEntryResolver")
+  staffMember                                  StaffMember?                 @relation("StaffMemberUser")
+  recordedBodyMeasurements                     AthleteBodyMeasurement[]     @relation("AthleteBodyMeasurementRecorder")
+  recordedWellbeingEntries                     AthleteWellbeingEntry[]      @relation("AthleteWellbeingEntryRecorder")
+  recordedExternalTrainings                    AthleteExternalTraining[]    @relation("AthleteExternalTrainingRecorder")
+  recordedGpsRecords                           AthleteGpsRecord[]           @relation("AthleteGpsRecordRecorder")
+  guardianProfile                              GuardianProfile?
+  payments                                     Payment[]
+  sessions                                     Session[]
+  organization                                 Organization?                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  AdminSupportSession                          AdminSupportSession[]
 
-  createdGrowthProfiles          AthleteGrowthProfile[]       @relation("AthleteGrowthProfileCreator")
-  recordedBoneAgeAssessments     AthleteBoneAgeAssessment[]   @relation("AthleteBoneAgeRecorder")
+  createdGrowthProfiles      AthleteGrowthProfile[]     @relation("AthleteGrowthProfileCreator")
+  recordedBoneAgeAssessments AthleteBoneAgeAssessment[] @relation("AthleteBoneAgeRecorder")
 
   @@index([organizationId])
 }
@@ -447,41 +450,41 @@ model Session {
 }
 
 model Category {
-  id                       String                          @id @default(cuid())
-  name                     String
-  birthYear                Int?
-  description              String?
-  accentColor              String                          @default("#9DDB16")
-  type                     CategoryType                    @default(STANDARD)
-  sport                    SportType                       @default(BOTH)
-  active                   Boolean                         @default(true)
-  requiresDocumentation    Boolean                         @default(true)
-  requiresMedicalExam      Boolean                         @default(false)
-  requiresFederationRegistration Boolean                  @default(false)
-  organizationId           String
-  createdAt                DateTime                        @default(now())
-  updatedAt                DateTime                        @updatedAt
-  athletes                 Athlete[]
-  athletePreRegistrations  AthletePreRegistrationRequest[]
-  athleteMemberships       AthleteMembership[]
-  athleteEvaluations       AthleteEvaluation[]
-  athletePerformanceGoals  AthletePerformanceGoal[]
-  monthlyAthleteReports    MonthlyAthleteReport[]
-  organization             Organization                    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  coachAccesses            CoachOrganizationAccess[]
-  matches                  Match[]
-  staffMembers             StaffMember[]
-  staffCategoryPermissions StaffCategoryPermission[]
-  trainingSchedules        TrainingSchedule[]
-  trainingSessions         TrainingSession[]
-  competitionCallUpRules   CompetitionCallUpRule[]
-  documentRequirements CategoryDocumentRequirement[]
+  id                             String                          @id @default(cuid())
+  name                           String
+  birthYear                      Int?
+  description                    String?
+  accentColor                    String                          @default("#9DDB16")
+  type                           CategoryType                    @default(STANDARD)
+  sport                          SportType                       @default(BOTH)
+  active                         Boolean                         @default(true)
+  requiresDocumentation          Boolean                         @default(true)
+  requiresMedicalExam            Boolean                         @default(false)
+  requiresFederationRegistration Boolean                         @default(false)
+  organizationId                 String
+  createdAt                      DateTime                        @default(now())
+  updatedAt                      DateTime                        @updatedAt
+  athletes                       Athlete[]
+  athletePreRegistrations        AthletePreRegistrationRequest[]
+  athleteMemberships             AthleteMembership[]
+  athleteEvaluations             AthleteEvaluation[]
+  athletePerformanceGoals        AthletePerformanceGoal[]
+  monthlyAthleteReports          MonthlyAthleteReport[]
+  organization                   Organization                    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coachAccesses                  CoachOrganizationAccess[]
+  matches                        Match[]
+  staffMembers                   StaffMember[]
+  staffCategoryPermissions       StaffCategoryPermission[]
+  trainingSchedules              TrainingSchedule[]
+  trainingSessions               TrainingSession[]
+  competitionCallUpRules         CompetitionCallUpRule[]
+  documentRequirements           CategoryDocumentRequirement[]
 
-  evaluationTargets              CategoryEvaluationTarget[]  @relation("EvaluationCategoryTargets")
-  targetedByEvaluations          CategoryEvaluationTarget[]  @relation("EvaluationTargetCategories")
-  evaluationTargetAthletes       Athlete[]                   @relation("AthleteEvaluationTargetCategory")
-  evaluationProcessesAsSource    AthleteEvaluationProcess[]  @relation("AthleteEvaluationProcessEvaluationCategory")
-  evaluationProcessesAsTarget    AthleteEvaluationProcess[]  @relation("AthleteEvaluationProcessTargetCategory")
+  evaluationTargets           CategoryEvaluationTarget[] @relation("EvaluationCategoryTargets")
+  targetedByEvaluations       CategoryEvaluationTarget[] @relation("EvaluationTargetCategories")
+  evaluationTargetAthletes    Athlete[]                  @relation("AthleteEvaluationTargetCategory")
+  evaluationProcessesAsSource AthleteEvaluationProcess[] @relation("AthleteEvaluationProcessEvaluationCategory")
+  evaluationProcessesAsTarget AthleteEvaluationProcess[] @relation("AthleteEvaluationProcessTargetCategory")
 
   @@unique([organizationId, name, sport, type])
   @@index([organizationId])
@@ -579,14 +582,15 @@ model Athlete {
   privateData                AthletePrivateData?
   guardians                  AthleteGuardian[]
   documents                  AthleteDocument[]
+  documentManualIssues       AthleteDocumentManualIssue[]
   registrationRequests       AthleteRegistrationRequest[]
   sportRegistrations         AthleteSportRegistration[]
   dataAuditLogs              AthleteDataAuditLog[]
   historyEntries             AthleteHistoryEntry[]
   competitionEntries         CompetitionAthlete[]         @relation("CompetitionAthleteSource")
 
-  growthProfile                AthleteGrowthProfile?
-  boneAgeAssessments           AthleteBoneAgeAssessment[]
+  growthProfile      AthleteGrowthProfile?
+  boneAgeAssessments AthleteBoneAgeAssessment[]
 
   @@index([organizationId])
   @@index([organizationId, currentStatus])
@@ -741,42 +745,42 @@ model AthleteRegistrationRequest {
 }
 
 model AthleteDocument {
-  id                    String                      @id @default(cuid())
-  organizationId        String
-  athleteId             String
-  guardianId            String?
-  registrationRequestId String?
-  uploadedByUserId      String?
-  reviewedByUserId      String?
-  category              AthleteDocumentCategory
-  requestItemKey        String?
-  requirementId String?
-  requirementKeySnapshot String?
+  id                       String                       @id @default(cuid())
+  organizationId           String
+  athleteId                String
+  guardianId               String?
+  registrationRequestId    String?
+  uploadedByUserId         String?
+  reviewedByUserId         String?
+  category                 AthleteDocumentCategory
+  requestItemKey           String?
+  requirementId            String?
+  requirementKeySnapshot   String?
   requirementLabelSnapshot String?
-  status                AthleteDocumentStatus       @default(PENDING)
-  title                 String
-  storageProvider       String                      @default("VERCEL_BLOB_PRIVATE")
-  storageKey            String                      @unique
-  originalFileName      String
-  mimeType              String
-  sizeBytes             Int
-  checksumSha256        String?
-  issuedAt              DateTime?
-  expiresAt             DateTime?
-  reviewedAt            DateTime?
-  rejectionReason       String?
-  deletedAt             DateTime?
-  createdAt             DateTime                    @default(now())
-  updatedAt             DateTime                    @updatedAt
-  organization          Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  athlete               Athlete                     @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  guardian              AthleteGuardian?            @relation(fields: [guardianId], references: [id], onDelete: SetNull)
-  registrationRequest   AthleteRegistrationRequest? @relation(fields: [registrationRequestId], references: [id], onDelete: SetNull)
-  uploadedBy            User?                       @relation("AthleteDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
-  reviewedBy            User?                       @relation("AthleteDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  requirement CategoryDocumentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  status                   AthleteDocumentStatus        @default(PENDING)
+  title                    String
+  storageProvider          String                       @default("VERCEL_BLOB_PRIVATE")
+  storageKey               String                       @unique
+  originalFileName         String
+  mimeType                 String
+  sizeBytes                Int
+  checksumSha256           String?
+  issuedAt                 DateTime?
+  expiresAt                DateTime?
+  reviewedAt               DateTime?
+  rejectionReason          String?
+  deletedAt                DateTime?
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
+  organization             Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete                  Athlete                      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  guardian                 AthleteGuardian?             @relation(fields: [guardianId], references: [id], onDelete: SetNull)
+  registrationRequest      AthleteRegistrationRequest?  @relation(fields: [registrationRequestId], references: [id], onDelete: SetNull)
+  uploadedBy               User?                        @relation("AthleteDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  reviewedBy               User?                        @relation("AthleteDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  requirement              CategoryDocumentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
 
-  growthBoneAgeAssessments    AthleteBoneAgeAssessment[]  @relation("AthleteGrowthBoneAgeDocument")
+  growthBoneAgeAssessments AthleteBoneAgeAssessment[] @relation("AthleteGrowthBoneAgeDocument")
 
   @@index([organizationId, athleteId, category])
   @@index([guardianId, category])
@@ -788,33 +792,33 @@ model AthleteDocument {
   @@index([athleteId, requirementId, status])
 }
 
-
 model CategoryDocumentRequirement {
-  id                  String                             @id @default(cuid())
-  organizationId      String
-  categoryId          String
-  key                 String
-  label               String
-  documentCategory    AthleteDocumentCategory
-  subject             AthleteDocumentRequirementSubject @default(ATHLETE)
-  minCount            Int                                @default(1)
-  required            Boolean                            @default(true)
-  requiresApproval    Boolean                            @default(true)
-  requiresExpiry      Boolean                            @default(false)
-  instructions        String?
-  active              Boolean                            @default(true)
-  sortOrder           Int                                @default(0)
-  createdAt           DateTime                           @default(now())
-  updatedAt           DateTime                           @updatedAt
+  id               String                            @id @default(cuid())
+  organizationId   String
+  categoryId       String
+  key              String
+  label            String
+  documentCategory AthleteDocumentCategory
+  subject          AthleteDocumentRequirementSubject @default(ATHLETE)
+  minCount         Int                               @default(1)
+  required         Boolean                           @default(true)
+  requiresApproval Boolean                           @default(true)
+  requiresExpiry   Boolean                           @default(false)
+  instructions     String?
+  active           Boolean                           @default(true)
+  sortOrder        Int                               @default(0)
+  createdAt        DateTime                          @default(now())
+  updatedAt        DateTime                          @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  category     Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category     Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   documents    AthleteDocument[]
 
   @@unique([categoryId, key])
   @@index([organizationId, active])
   @@index([categoryId, active, sortOrder])
 }
+
 model AthleteDataAuditLog {
   id             String                 @id @default(cuid())
   organizationId String
@@ -939,26 +943,26 @@ model TrainingSession {
 }
 
 model TrainingAttendance {
-  id               String                   @id @default(cuid())
-  organizationId   String
-  sessionId        String
-  athleteId        String
-  recordedByUserId String?
+  id                  String                    @id @default(cuid())
+  organizationId      String
+  sessionId           String
+  athleteId           String
+  recordedByUserId    String?
   evaluationProcessId String?
-  status           TrainingAttendanceStatus @default(PENDING)
-  arrivedAt        DateTime?
-  leftAt           DateTime?
-  minutesPresent   Int?
-  justification    String?
-  notes            String?
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  session          TrainingSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  athlete          Athlete                  @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  recordedBy       User?                    @relation("TrainingAttendanceRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
-  evaluationProcess AthleteEvaluationProcess? @relation(fields: [evaluationProcessId], references: [id], onDelete: SetNull)
-  auditLogs        TrainingAuditLog[]
+  status              TrainingAttendanceStatus  @default(PENDING)
+  arrivedAt           DateTime?
+  leftAt              DateTime?
+  minutesPresent      Int?
+  justification       String?
+  notes               String?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  organization        Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  session             TrainingSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  athlete             Athlete                   @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  recordedBy          User?                     @relation("TrainingAttendanceRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  evaluationProcess   AthleteEvaluationProcess? @relation(fields: [evaluationProcessId], references: [id], onDelete: SetNull)
+  auditLogs           TrainingAuditLog[]
 
   @@unique([sessionId, athleteId])
   @@index([organizationId, athleteId])
@@ -1015,12 +1019,12 @@ model AthleteEvaluationProcess {
   createdAt                      DateTime                          @default(now())
   updatedAt                      DateTime                          @updatedAt
 
-  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  athlete            Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  evaluationCategory Category?    @relation("AthleteEvaluationProcessEvaluationCategory", fields: [evaluationCategoryId], references: [id], onDelete: SetNull)
-  targetCategory     Category?    @relation("AthleteEvaluationProcessTargetCategory", fields: [targetCategoryId], references: [id], onDelete: SetNull)
-  createdBy          User?        @relation("AthleteEvaluationProcessCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  decidedBy          User?        @relation("AthleteEvaluationProcessDecider", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  organization       Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete            Athlete              @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  evaluationCategory Category?            @relation("AthleteEvaluationProcessEvaluationCategory", fields: [evaluationCategoryId], references: [id], onDelete: SetNull)
+  targetCategory     Category?            @relation("AthleteEvaluationProcessTargetCategory", fields: [targetCategoryId], references: [id], onDelete: SetNull)
+  createdBy          User?                @relation("AthleteEvaluationProcessCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  decidedBy          User?                @relation("AthleteEvaluationProcessDecider", fields: [decidedByUserId], references: [id], onDelete: SetNull)
   attendances        TrainingAttendance[]
   evaluations        AthleteEvaluation[]
 
@@ -1031,7 +1035,6 @@ model AthleteEvaluationProcess {
   @@index([createdByUserId])
   @@index([decidedByUserId])
 }
-
 
 model AthleteExitRecord {
   id                           String            @id @default(cuid())
@@ -1062,19 +1065,19 @@ model AthleteExitRecord {
 }
 
 model AthleteEligibilityIssue {
-  id                     String                        @id @default(cuid())
-  organizationId         String
-  athleteId              String
-  type                   AthleteEligibilityIssueType
-  source                 AthleteEligibilityIssueSource @default(MANUAL)
-  scope                  AthleteEligibilityScope       @default(GLOBAL)
-  blocking               Boolean                       @default(true)
-  key                    String?
-  reason                 String
-  notes                  String?
-  sourceReferenceType    String?
-  sourceReferenceId      String?
-  startedAt              DateTime                      @default(now())
+  id                                 String                        @id @default(cuid())
+  organizationId                     String
+  athleteId                          String
+  type                               AthleteEligibilityIssueType
+  source                             AthleteEligibilityIssueSource @default(MANUAL)
+  scope                              AthleteEligibilityScope       @default(GLOBAL)
+  blocking                           Boolean                       @default(true)
+  key                                String?
+  reason                             String
+  notes                              String?
+  sourceReferenceType                String?
+  sourceReferenceId                  String?
+  startedAt                          DateTime                      @default(now())
   resolvedAt                         DateTime?
   resolutionNotes                    String?
   createdByUserId                    String?
@@ -1090,14 +1093,14 @@ model AthleteEligibilityIssue {
   authorizationRevocationReason      String?
   authorizationRevokedByNameSnapshot String?
   createdAt                          DateTime                      @default(now())
-  updatedAt              DateTime                      @updatedAt
+  updatedAt                          DateTime                      @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  athlete      Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  createdBy              User? @relation("AthleteEligibilityIssueCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  resolvedBy             User? @relation("AthleteEligibilityIssueResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
-  authorizedBy           User? @relation("AthleteEligibilityIssueAuthorizer", fields: [authorizedByUserId], references: [id], onDelete: SetNull)
-  authorizationRevokedBy User? @relation("AthleteEligibilityIssueAuthorizationRevoker", fields: [authorizationRevokedByUserId], references: [id], onDelete: SetNull)
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete                Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  createdBy              User?        @relation("AthleteEligibilityIssueCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  resolvedBy             User?        @relation("AthleteEligibilityIssueResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  authorizedBy           User?        @relation("AthleteEligibilityIssueAuthorizer", fields: [authorizedByUserId], references: [id], onDelete: SetNull)
+  authorizationRevokedBy User?        @relation("AthleteEligibilityIssueAuthorizationRevoker", fields: [authorizationRevokedByUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, resolvedAt])
   @@index([athleteId, blocking, resolvedAt])
@@ -1112,39 +1115,39 @@ model AthleteEligibilityIssue {
 }
 
 model AthleteEvaluation {
-  id                String                   @id @default(cuid())
-  organizationId    String
-  athleteId         String
-  categoryId        String?
-  evaluatorUserId   String?
+  id                  String                    @id @default(cuid())
+  organizationId      String
+  athleteId           String
+  categoryId          String?
+  evaluatorUserId     String?
   evaluationProcessId String?
-  templateId        String?
-  title             String?
-  periodStart       DateTime
-  periodEnd         DateTime
-  evaluatedAt       DateTime                 @default(now())
-  season            String?
-  sport             SportType                @default(BOTH)
-  athleteRole       PerformanceAthleteRole   @default(LINE_PLAYER)
-  positionSnapshot  String?
-  status            AthleteEvaluationStatus  @default(DRAFT)
-  strengths         String?
-  developmentPoints String?
-  nextGoals         String?
-  internalNotes     String?
-  summary           String?
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
-  organization      Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  athlete           Athlete                  @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  category          Category?                @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  evaluator         User?                    @relation("AthleteEvaluationAuthor", fields: [evaluatorUserId], references: [id], onDelete: SetNull)
-  evaluationProcess AthleteEvaluationProcess? @relation(fields: [evaluationProcessId], references: [id], onDelete: SetNull)
-  template          PerformanceTemplate?     @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  trainingSessionId String?
-  trainingSession   TrainingSession?         @relation(fields: [trainingSessionId], references: [id], onDelete: SetNull)
-  scores            AthleteEvaluationScore[]
-  reports           PerformanceReport[]
+  templateId          String?
+  title               String?
+  periodStart         DateTime
+  periodEnd           DateTime
+  evaluatedAt         DateTime                  @default(now())
+  season              String?
+  sport               SportType                 @default(BOTH)
+  athleteRole         PerformanceAthleteRole    @default(LINE_PLAYER)
+  positionSnapshot    String?
+  status              AthleteEvaluationStatus   @default(DRAFT)
+  strengths           String?
+  developmentPoints   String?
+  nextGoals           String?
+  internalNotes       String?
+  summary             String?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  organization        Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete             Athlete                   @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  category            Category?                 @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  evaluator           User?                     @relation("AthleteEvaluationAuthor", fields: [evaluatorUserId], references: [id], onDelete: SetNull)
+  evaluationProcess   AthleteEvaluationProcess? @relation(fields: [evaluationProcessId], references: [id], onDelete: SetNull)
+  template            PerformanceTemplate?      @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  trainingSessionId   String?
+  trainingSession     TrainingSession?          @relation(fields: [trainingSessionId], references: [id], onDelete: SetNull)
+  scores              AthleteEvaluationScore[]
+  reports             PerformanceReport[]
 
   @@index([organizationId, athleteId, evaluatedAt])
   @@index([trainingSessionId])
@@ -1256,19 +1259,19 @@ model AthletePerformanceGoal {
 }
 
 model AthleteGrowthProfile {
-  id                    String              @id @default(cuid())
-  organizationId        String
-  athleteId             String              @unique
-  createdByUserId       String?
-  referenceSex          GrowthReferenceSex?
-  motherHeightCm        Decimal?            @db.Decimal(6, 2)
-  fatherHeightCm        Decimal?            @db.Decimal(6, 2)
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  id              String              @id @default(cuid())
+  organizationId  String
+  athleteId       String              @unique
+  createdByUserId String?
+  referenceSex    GrowthReferenceSex?
+  motherHeightCm  Decimal?            @db.Decimal(6, 2)
+  fatherHeightCm  Decimal?            @db.Decimal(6, 2)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  athlete         Athlete          @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  createdBy       User?            @relation("AthleteGrowthProfileCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete      Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("AthleteGrowthProfileCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([createdByUserId])
@@ -1318,7 +1321,7 @@ model AthleteBodyMeasurement {
   athlete          Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
   recordedBy       User?        @relation("AthleteBodyMeasurementRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
 
-  sittingHeightCm  Decimal?                @db.Decimal(6, 2)
+  sittingHeightCm   Decimal?                @db.Decimal(6, 2)
   measurementSource GrowthMeasurementSource @default(CLUB)
 
   @@index([organizationId, athleteId, measuredAt])
@@ -2172,7 +2175,6 @@ enum AthleteEvaluationProcessEntryMode {
   RETROACTIVE
 }
 
-
 enum AthleteCurrentStatus {
   ACTIVE
   EVALUATION
@@ -2422,11 +2424,11 @@ enum AthleteRegistrationRequestStatus {
   REVOKED
 }
 
-
 enum AthleteDocumentRequirementSubject {
   ATHLETE
   GUARDIAN
 }
+
 enum AthleteDocumentCategory {
   IDENTITY
   MEDICAL_EXAM
@@ -2555,4 +2557,41 @@ model AdminSupportSession {
   @@index([adminUserId, startedAt])
   @@index([organizationId, startedAt])
   @@index([endedAt])
+}
+
+enum AthleteDocumentManualIssueStatus {
+  OPEN
+  RESOLVED
+}
+
+model AthleteDocumentManualIssue {
+  id             String @id @default(cuid())
+  organizationId String
+  athleteId      String
+
+  title    String
+  notes    String?
+  blocking Boolean                          @default(false)
+  status   AthleteDocumentManualIssueStatus @default(OPEN)
+
+  createdByUserId       String?
+  createdByNameSnapshot String?
+  createdAt             DateTime @default(now())
+
+  resolvedAt             DateTime?
+  resolvedByUserId       String?
+  resolvedByNameSnapshot String?
+  resolutionNotes        String?
+
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete      Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  createdBy  User? @relation("AthleteDocumentManualIssueCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  resolvedBy User? @relation("AthleteDocumentManualIssueResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, athleteId, status])
+  @@index([athleteId, blocking, status])
+  @@index([createdAt])
 }

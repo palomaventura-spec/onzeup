@@ -15,8 +15,11 @@ import AthleteDocumentManager from "./AthleteDocumentManager";
 import {
   confirmAthleteDocumentation,
   createBodyMeasurement,
+  createManualDocumentIssue,
   deleteAthleteGuardian,
   deleteBodyMeasurement,
+  reopenManualDocumentIssue,
+  resolveManualDocumentIssue,
   saveAthleteGuardian,
   saveAthletePrivateData,
 } from "./actions";
@@ -256,6 +259,21 @@ export default async function AthletePrivateDataPage({
           guardian: { select: { name: true } },
         },
       },
+      documentManualIssues: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          notes: true,
+          blocking: true,
+          status: true,
+          createdByNameSnapshot: true,
+          createdAt: true,
+          resolvedAt: true,
+          resolvedByNameSnapshot: true,
+          resolutionNotes: true,
+        },
+      },
     },
   });
 
@@ -445,6 +463,9 @@ export default async function AthletePrivateDataPage({
   const canConfirmDocumentation =
     documentationRequirementsReady &&
     !hasPendingRequest &&
+    !athlete.documentManualIssues.some(
+      (issue) => issue.status === "OPEN" && issue.blocking
+    ) &&
     !documentationInDay;
 
   const documentStatusLabel = hasConfiguredDocumentRequirements
@@ -489,6 +510,18 @@ export default async function AthletePrivateDataPage({
             : documentationInDay
               ? "A documentação foi revisada pelo gestor e está regular."
               : "Todos os documentos estão aprovados. Confirme a conferência para marcar a documentação como em dia.";
+  const openManualDocumentIssues = athlete.documentManualIssues.filter(
+    (issue) => issue.status === "OPEN"
+  );
+
+  const resolvedManualDocumentIssues = athlete.documentManualIssues.filter(
+    (issue) => issue.status === "RESOLVED"
+  );
+
+  const blockingManualDocumentIssues = openManualDocumentIssues.filter(
+    (issue) => issue.blocking
+  ).length;
+
   return (
     <main className="athlete-documents-v4">
       <section className="athlete-documents-v4-hero">
@@ -912,6 +945,286 @@ export default async function AthletePrivateDataPage({
           <span className="badge">{athlete.documents.length} arquivo(s)</span>
           <span className="badge">{pendingDocuments} pendente(s)</span>
           <span className="badge">{expiredDocuments} vencido(s)</span>
+        </div>
+
+        <div
+          className="card"
+          style={{ marginTop: 18, padding: 18 }}
+        >
+          <span className="page-eyebrow">
+            PENDÊNCIAS DOCUMENTAIS
+          </span>
+
+          <h3 style={{ margin: "6px 0 8px" }}>
+            Pendências individuais
+          </h3>
+
+          <p className="muted" style={{ marginTop: 0 }}>
+            Registre documentos ou informações que estejam faltando para este atleta,
+            mesmo quando não fizerem parte do checklist padrão da categoria.
+          </p>
+
+          <div className="actions" style={{ marginBottom: 16 }}>
+            <span className="badge">
+              {openManualDocumentIssues.length} aberta(s)
+            </span>
+
+            <span className="badge">
+              {blockingManualDocumentIssues} impeditiva(s)
+            </span>
+          </div>
+
+          <details
+            style={{
+              border: "1px solid #e2e8eb",
+              borderRadius: 12,
+              padding: 14,
+              background: "#fff",
+              marginBottom: 16,
+            }}
+          >
+            <summary
+              style={{
+                cursor: "pointer",
+                fontWeight: 800,
+              }}
+            >
+              + Adicionar pendência documental
+            </summary>
+
+            <form
+              action={createManualDocumentIssue}
+              style={{
+                display: "grid",
+                gap: 12,
+                marginTop: 16,
+              }}
+            >
+              <input
+                type="hidden"
+                name="athleteId"
+                value={athlete.id}
+              />
+
+              <label>
+                Documento ou pendência
+
+                <input
+                  type="text"
+                  name="title"
+                  required
+                  placeholder="Ex.: Identidade da mãe"
+                />
+              </label>
+
+              <label>
+                Observação
+
+                <textarea
+                  name="notes"
+                  rows={3}
+                  placeholder="Observação opcional"
+                />
+              </label>
+
+              <label>
+                Tipo de pendência
+
+                <select
+                  name="blocking"
+                  defaultValue="false"
+                >
+                  <option value="false">
+                    Informativa — não impede o atleta
+                  </option>
+
+                  <option value="true">
+                    Impeditiva — deixa o atleta inapto enquanto estiver aberta
+                  </option>
+                </select>
+              </label>
+
+              <div>
+                <button type="submit">
+                  Adicionar pendência
+                </button>
+              </div>
+            </form>
+          </details>
+
+          {openManualDocumentIssues.length > 0 ? (
+            <div style={{ display: "grid", gap: 10 }}>
+              {openManualDocumentIssues.map((issue) => (
+                <div
+                  key={issue.id}
+                  style={{
+                    padding: 14,
+                    border: issue.blocking
+                      ? "1px solid rgba(239, 68, 68, 0.30)"
+                      : "1px solid #e2e8eb",
+                    borderRadius: 12,
+                    background: issue.blocking
+                      ? "rgba(239, 68, 68, 0.05)"
+                      : "#fff",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      <strong style={{ display: "block" }}>
+                        {issue.title}
+                      </strong>
+
+                      <small className="muted">
+                        {issue.blocking
+                          ? "Impeditiva"
+                          : "Informativa"}
+                        {" · "}
+                        Registrada em {dateLabel(issue.createdAt)}
+                        {issue.createdByNameSnapshot
+                          ? ` por ${issue.createdByNameSnapshot}`
+                          : ""}
+                      </small>
+                    </div>
+
+                    <span className="badge">
+                      Aberta
+                    </span>
+                  </div>
+
+                  {issue.notes ? (
+                    <p className="muted" style={{ marginBottom: 10 }}>
+                      {issue.notes}
+                    </p>
+                  ) : null}
+
+                  <form
+                    action={resolveManualDocumentIssue}
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "flex-end",
+                      flexWrap: "wrap",
+                      marginTop: 12,
+                    }}
+                  >
+                    <input
+                      type="hidden"
+                      name="athleteId"
+                      value={athlete.id}
+                    />
+
+                    <input
+                      type="hidden"
+                      name="issueId"
+                      value={issue.id}
+                    />
+
+                    <label style={{ flex: "1 1 260px", margin: 0 }}>
+                      Observação da resolução
+
+                      <input
+                        type="text"
+                        name="resolutionNotes"
+                        placeholder="Opcional"
+                      />
+                    </label>
+
+                    <button type="submit">
+                      Resolver
+                    </button>
+                  </form>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">
+              Nenhuma pendência documental manual aberta.
+            </p>
+          )}
+
+          {resolvedManualDocumentIssues.length > 0 ? (
+            <details style={{ marginTop: 16 }}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  fontWeight: 800,
+                }}
+              >
+                Histórico de resolvidas ({resolvedManualDocumentIssues.length})
+              </summary>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 10,
+                  marginTop: 12,
+                }}
+              >
+                {resolvedManualDocumentIssues.map((issue) => (
+                  <div
+                    key={issue.id}
+                    style={{
+                      padding: 14,
+                      border: "1px solid #e2e8eb",
+                      borderRadius: 12,
+                      background: "#fff",
+                    }}
+                  >
+                    <strong style={{ display: "block" }}>
+                      {issue.title}
+                    </strong>
+
+                    <small className="muted">
+                      Resolvida
+                      {issue.resolvedAt
+                        ? ` em ${dateLabel(issue.resolvedAt)}`
+                        : ""}
+                      {issue.resolvedByNameSnapshot
+                        ? ` por ${issue.resolvedByNameSnapshot}`
+                        : ""}
+                    </small>
+
+                    {issue.resolutionNotes ? (
+                      <p className="muted">
+                        {issue.resolutionNotes}
+                      </p>
+                    ) : null}
+
+                    <form
+                      action={reopenManualDocumentIssue}
+                      style={{ marginTop: 10 }}
+                    >
+                      <input
+                        type="hidden"
+                        name="athleteId"
+                        value={athlete.id}
+                      />
+
+                      <input
+                        type="hidden"
+                        name="issueId"
+                        value={issue.id}
+                      />
+
+                      <button
+                        type="submit"
+                        className="btn btn-secondary"
+                      >
+                        Reabrir
+                      </button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
         </div>
 
         {hasConfiguredDocumentRequirements ? (

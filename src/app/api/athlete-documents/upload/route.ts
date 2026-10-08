@@ -59,10 +59,14 @@ function optionalDate(value: FormDataEntryValue | null) {
 
 function validSignature(buffer: Buffer, mimeType: string) {
   if (mimeType === "application/pdf") {
-    return (
-      buffer.length >= 5 &&
-      buffer.subarray(0, 5).toString("ascii") === "%PDF-"
+    const headerWindow = buffer.subarray(
+      0,
+      Math.min(buffer.length, 1024)
     );
+
+    return headerWindow.indexOf(
+      Buffer.from("%PDF-", "ascii")
+    ) >= 0;
   }
 
   if (mimeType === "image/jpeg") {

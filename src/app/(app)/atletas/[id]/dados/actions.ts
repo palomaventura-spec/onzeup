@@ -410,6 +410,18 @@ export async function confirmAthleteDocumentation(formData: FormData) {
 
   if (pendingRequests > 0) return;
 
+  const blockingManualDocumentIssues =
+    await prisma.athleteDocumentManualIssue.count({
+      where: {
+        athleteId,
+        organizationId: user.organizationId,
+        status: "OPEN",
+        blocking: true,
+      },
+    });
+
+  if (blockingManualDocumentIssues > 0) return;
+
   const requiredDocuments = memberships
     .flatMap(
       (membership) =>
@@ -515,6 +527,261 @@ export async function confirmAthleteDocumentation(formData: FormData) {
       },
     }),
   ]);
+
+  refresh(athleteId);
+}
+
+export async function createManualDocumentIssue(formData: FormData) {
+  const user = await requirePrivateAthleteActionUser();
+
+  const athleteId = clean(formData.get("athleteId"));
+  const title = clean(formData.get("title"));
+  const notes = nullable(formData.get("notes"));
+  const blocking = clean(formData.get("blocking")) === "true";
+
+  if (!athleteId || !title) return;
+
+  const athlete = await ownedAthlete(
+    athleteId,
+    user.organizationId
+  );
+
+  if (!athlete) return;
+
+  const issue = await prisma.$transaction(async (tx) => {
+    const created =
+      await tx.athleteDocumentManualIssue.create({
+        data: {
+          organizationId: user.organizationId,
+          athleteId,
+          title,
+          notes,
+          blocking,
+          status: "OPEN",
+          createdByUserId: user.id,
+          createdByNameSnapshot: user.name,
+        },
+      });
+
+    if (blocking) {
+      await tx.athleteEligibilityIssue.create({
+        data: {
+          organizationId: user.organizationId,
+          athleteId,
+          type: "DOCUMENTATION",
+          source: "MANUAL",
+          scope: "GLOBAL",
+          blocking: true,
+          key: `MANUAL:DOCUMENT:${created.id}`,
+          reason: `Pendência documental: ${title}`,
+          notes,
+          sourceReferenceType:
+            "AthleteDocumentManualIssue",
+          sourceReferenceId: created.id,
+          createdByUserId: user.id,
+          createdByNameSnapshot: user.name,
+        },
+      });
+    }
+
+    return created;
+  });
+
+  await audit({
+    organizationId: user.organizationId,
+    athleteId,
+    actorUserId: user.id,
+    action: "CREATED",
+    entityType: "AthleteDocumentManualIssue",
+    entityId: issue.id,
+    fields: [
+      "title",
+      "notes",
+      "blocking",
+      "status",
+    ],
+  });
+
+  refresh(athleteId);
+}
+
+export async function resolveManualDocumentIssue(
+  formData: FormData
+) {
+  const user = await requirePrivateAthleteActionUser();
+
+  const athleteId = clean(formData.get("athleteId"));
+  const issueId = clean(formData.get("issueId"));
+  const resolutionNotes = nullable(
+    formData.get("resolutionNotes")
+  );
+
+  if (!athleteId || !issueId) return;
+
+  const athlete = await ownedAthlete(
+    athleteId,
+    user.organizationId
+  );
+
+  if (!athlete) return;
+
+  const issue =
+    await prisma.athleteDocumentManualIssue.findFirst({
+      where: {
+        id: issueId,
+        athleteId,
+        organizationId: user.organizationId,
+      },
+    });
+
+  if (!issue || issue.status === "RESOLVED") return;
+
+  const now = new Date();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.athleteDocumentManualIssue.update({
+      where: {
+        id: issue.id,
+      },
+      data: {
+        status: "RESOLVED",
+        resolvedAt: now,
+        resolvedByUserId: user.id,
+        resolvedByNameSnapshot: user.name,
+        resolutionNotes,
+      },
+    });
+
+    await tx.athleteEligibilityIssue.updateMany({
+      where: {
+        organizationId: user.organizationId,
+        athleteId,
+        source: "MANUAL",
+        sourceReferenceType:
+          "AthleteDocumentManualIssue",
+        sourceReferenceId: issue.id,
+        resolvedAt: null,
+      },
+      data: {
+        resolvedAt: now,
+        resolutionNotes:
+          resolutionNotes ??
+          "Pendência documental manual resolvida.",
+        resolvedByUserId: user.id,
+        resolvedByNameSnapshot: user.name,
+      },
+    });
+  });
+
+  await audit({
+    organizationId: user.organizationId,
+    athleteId,
+    actorUserId: user.id,
+    action: "UPDATED",
+    entityType: "AthleteDocumentManualIssue",
+    entityId: issue.id,
+    fields: [
+      "status",
+      "resolvedAt",
+      "resolutionNotes",
+    ],
+  });
+
+  refresh(athleteId);
+}
+
+export async function reopenManualDocumentIssue(
+  formData: FormData
+) {
+  const user = await requirePrivateAthleteActionUser();
+
+  const athleteId = clean(formData.get("athleteId"));
+  const issueId = clean(formData.get("issueId"));
+
+  if (!athleteId || !issueId) return;
+
+  const athlete = await ownedAthlete(
+    athleteId,
+    user.organizationId
+  );
+
+  if (!athlete) return;
+
+  const issue =
+    await prisma.athleteDocumentManualIssue.findFirst({
+      where: {
+        id: issueId,
+        athleteId,
+        organizationId: user.organizationId,
+      },
+    });
+
+  if (!issue || issue.status === "OPEN") return;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.athleteDocumentManualIssue.update({
+      where: {
+        id: issue.id,
+      },
+      data: {
+        status: "OPEN",
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByNameSnapshot: null,
+        resolutionNotes: null,
+      },
+    });
+
+    if (issue.blocking) {
+      const openEligibilityIssue =
+        await tx.athleteEligibilityIssue.findFirst({
+          where: {
+            organizationId: user.organizationId,
+            athleteId,
+            source: "MANUAL",
+            sourceReferenceType:
+              "AthleteDocumentManualIssue",
+            sourceReferenceId: issue.id,
+            resolvedAt: null,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      if (!openEligibilityIssue) {
+        await tx.athleteEligibilityIssue.create({
+          data: {
+            organizationId: user.organizationId,
+            athleteId,
+            type: "DOCUMENTATION",
+            source: "MANUAL",
+            scope: "GLOBAL",
+            blocking: true,
+            key: `MANUAL:DOCUMENT:${issue.id}`,
+            reason:
+              `Pendência documental: ${issue.title}`,
+            notes: issue.notes,
+            sourceReferenceType:
+              "AthleteDocumentManualIssue",
+            sourceReferenceId: issue.id,
+            createdByUserId: user.id,
+            createdByNameSnapshot: user.name,
+          },
+        });
+      }
+    }
+  });
+
+  await audit({
+    organizationId: user.organizationId,
+    athleteId,
+    actorUserId: user.id,
+    action: "UPDATED",
+    entityType: "AthleteDocumentManualIssue",
+    entityId: issue.id,
+    fields: ["status"],
+  });
 
   refresh(athleteId);
 }
