@@ -545,15 +545,17 @@ export default function AthleteDocumentManager({
                         requirementSelections[document.id] ??
                         ""
                       }
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const value =
+                          event.currentTarget.value;
+
                         setRequirementSelections(
                           (current) => ({
                             ...current,
-                            [document.id]:
-                              event.currentTarget.value,
+                            [document.id]: value,
                           })
-                        )
-                      }
+                        );
+                      }}
                     >
                       <option value="">
                         Selecione
