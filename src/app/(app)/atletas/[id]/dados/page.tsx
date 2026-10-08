@@ -1034,6 +1034,10 @@ export default async function AthletePrivateDataPage({
             subject: requirement.subject,
             status: requirement.status,
           }))}
+          guardians={athlete.guardians.map((guardian) => ({
+            id: guardian.id,
+            name: guardian.name,
+          }))}
         />
       </section>
 

@@ -20,6 +20,11 @@ type DocumentItem = {
   rejectionReason: string | null;
 };
 
+type GuardianOption = {
+  id: string;
+  name: string;
+};
+
 type DocumentRequirementOption = {
   id: string;
   label: string;
@@ -38,9 +43,11 @@ const statusLabels: Record<string, string> = {
 export default function AthleteDocumentManager({
   documents,
   documentRequirements,
+  guardians,
 }: {
   documents: DocumentItem[];
   documentRequirements: DocumentRequirementOption[];
+  guardians: GuardianOption[];
 }) {
   const router = useRouter();
 
@@ -71,6 +78,10 @@ export default function AthleteDocumentManager({
 
   const [linkingDocumentId, setLinkingDocumentId] =
     useState<string | null>(null);
+
+  const [guardianSelections, setGuardianSelections] = useState<
+    Record<string, string>
+  >({});
 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -166,6 +177,8 @@ export default function AthleteDocumentManager({
           body: JSON.stringify({
             action: "LINK_REQUIREMENT",
             requirementId,
+            guardianId:
+              guardianSelections[documentId] ?? "",
           }),
         }
       );
@@ -446,6 +459,7 @@ export default function AthleteDocumentManager({
             <div
               style={{
                 marginTop: 16,
+                display: documentRequirements.length > 0 ? "block" : "none",
                 padding: 12,
                 border: document.requirementId
                   ? "1px solid rgba(34, 197, 94, 0.24)"
@@ -561,13 +575,7 @@ export default function AthleteDocumentManager({
                         Selecione
                       </option>
 
-                      {documentRequirements
-                        .filter(
-                          (requirement) =>
-                            requirement.subject ===
-                            document.subject
-                        )
-                        .map((requirement) => (
+                      {documentRequirements.map((requirement) => (
                           <option
                             key={requirement.id}
                             value={requirement.id}
@@ -588,13 +596,67 @@ export default function AthleteDocumentManager({
                     </select>
                   </label>
 
+                  {documentRequirements.find(
+                    (requirement) =>
+                      requirement.id ===
+                      requirementSelections[document.id]
+                  )?.subject === "GUARDIAN" ? (
+                    <label
+                      style={{
+                        flex: "1 1 240px",
+                        margin: 0,
+                      }}
+                    >
+                      Responsável
+
+                      <select
+                        value={
+                          guardianSelections[document.id] ??
+                          ""
+                        }
+                        onChange={(event) => {
+                          const value =
+                            event.currentTarget.value;
+
+                          setGuardianSelections(
+                            (current) => ({
+                              ...current,
+                              [document.id]: value,
+                            })
+                          );
+                        }}
+                      >
+                        <option value="">
+                          Selecione o responsável
+                        </option>
+
+                        {guardians.map((guardian) => (
+                          <option
+                            key={guardian.id}
+                            value={guardian.id}
+                          >
+                            {guardian.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+
                   <button
                     type="button"
                     disabled={
                       isBusy ||
                       !requirementSelections[
                         document.id
-                      ]
+                      ] ||
+                      (
+                        documentRequirements.find(
+                          (requirement) =>
+                            requirement.id ===
+                            requirementSelections[document.id]
+                        )?.subject === "GUARDIAN" &&
+                        !guardianSelections[document.id]
+                      )
                     }
                     onClick={() =>
                       linkRequirement(document.id)
