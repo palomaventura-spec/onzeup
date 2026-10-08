@@ -1382,7 +1382,7 @@ export default async function AthletesPage({
 
          <Link href="/atletas?view=RELEASED" className={athleteView === "RELEASED" ? "active" : ""}>
 
-            Dispensados <strong>{releasedCount}</strong>
+            Liberados <strong>{releasedCount}</strong>
 
          </Link>
 
@@ -1786,7 +1786,7 @@ export default async function AthletesPage({
 
                               : athleteView === "RELEASED"
 
-                                 ? "ATLETAS DISPENSADOS"
+                                 ? "ATLETAS LIBERADOS"
 
                                  : athleteView === "WITHDRAWN"
 
@@ -1808,7 +1808,7 @@ export default async function AthletesPage({
 
                         : athleteView === "RELEASED"
 
-                           ? "Atletas dispensados"
+                           ? "Atletas liberados"
 
                            : athleteView === "WITHDRAWN"
 
@@ -2096,7 +2096,7 @@ export default async function AthletesPage({
 
                                  : athlete.currentStatus === "RELEASED"
 
-                                    ? "Dispensado"
+                                    ? "Liberado"
 
                                     : "Ativo";
 

@@ -1386,6 +1386,69 @@ export async function approveEvaluationAthlete(
 
     if (!targetCategory) return;
 
+    const evaluationMembership =
+      await tx.athleteMembership.findFirst({
+        where: {
+          athleteId: athlete.id,
+          organizationId: user.organizationId,
+          status: "ACTIVE",
+          categoryId: athlete.category.id,
+          sport: athlete.category.sport,
+        },
+        orderBy: {
+          startedAt: "desc",
+        },
+        select: {
+          id: true,
+          sport: true,
+          categoryId: true,
+          startedAt: true,
+        },
+      });
+
+    const existingTargetMembership =
+      await tx.athleteMembership.findFirst({
+        where: {
+          athleteId: athlete.id,
+          organizationId: user.organizationId,
+          status: "ACTIVE",
+          categoryId: targetCategory.id,
+          sport: targetCategory.sport,
+        },
+        select: {
+          id: true,
+        },
+      });    const effectiveDecidedAt =
+      evaluationMembership?.startedAt &&
+      decidedAt.getTime() < evaluationMembership.startedAt.getTime()
+        ? evaluationMembership.startedAt
+        : decidedAt;
+
+    if (evaluationMembership) {await tx.athleteMembership.update({
+        where: {
+          id: evaluationMembership.id,
+        },
+        data: {
+          status: "RELEASED",
+          endedAt: effectiveDecidedAt,
+        },
+      });
+    }
+
+    if (!existingTargetMembership) {
+      await tx.athleteMembership.create({
+        data: {
+          athleteId: athlete.id,
+          organizationId: user.organizationId,
+          categoryId: targetCategory.id,
+          sport: targetCategory.sport,
+          season: processSeason(effectiveDecidedAt),
+          status: "ACTIVE",
+          verified: true,
+          startedAt: effectiveDecidedAt,
+        },
+      });
+    }
     const process =
       await finalizeCurrentEvaluationProcess(tx, {
         organizationId: user.organizationId,
@@ -1394,7 +1457,7 @@ export async function approveEvaluationAthlete(
         userId: user.id,
         userName: user.name,
         status: AthleteEvaluationProcessStatus.APPROVED,
-        decidedAt,
+        decidedAt: effectiveDecidedAt,
         notes,
         targetCategory,
       });
@@ -1418,7 +1481,7 @@ export async function approveEvaluationAthlete(
         id: user.id,
         name: user.name,
       },
-      effectiveAt: decidedAt,
+      effectiveAt: effectiveDecidedAt,
     });
 
     await tx.athleteDataAuditLog.create({
@@ -1432,7 +1495,7 @@ export async function approveEvaluationAthlete(
         metadataJson: JSON.stringify({
           event: "EVALUATION_APPROVED",
           evaluationProcessId: process.id,
-          decidedAt: decidedAt.toISOString(),
+          decidedAt: effectiveDecidedAt.toISOString(),
           fromCategory: {
             id: athlete.category.id,
             name: athlete.category.name,
@@ -1523,7 +1586,7 @@ async function finishEvaluationWithoutApproval(
       return;
     }
 
-    const process =
+        const process =
       await finalizeCurrentEvaluationProcess(tx, {
         organizationId: user.organizationId,
         athleteId: athlete.id,

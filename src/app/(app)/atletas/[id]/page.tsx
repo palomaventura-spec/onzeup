@@ -80,7 +80,7 @@ function currentStatusLabel(value: string) {
     case "REJECTED":
       return "Reprovado";
     case "RELEASED":
-      return "Dispensado";
+      return "Liberado";
     default:
       return value;
   }
@@ -143,7 +143,7 @@ function evaluationProcessLabel(value: string) {
     case "REJECTED":
       return "Reprovado";
     case "RELEASED":
-      return "Dispensado";
+      return "Liberado";
     case "WITHDRAWN":
       return "Desistiu";
     default:
@@ -195,7 +195,7 @@ function sportLabel(value: string) {
 function exitOriginLabel(value: string) {
   switch (value) {
     case "CLUB":
-      return "Dispensa pelo clube";
+      return "Liberação pelo clube";
     case "FAMILY":
       return "Saída solicitada pela família/atleta";
     default:
@@ -646,7 +646,7 @@ export default async function EditAthletePage({
               : isRejected
                 ? "ATLETA REPROVADO"
                 : isReleased
-                  ? "ATLETA DISPENSADO"
+                  ? "ATLETA LIBERADO"
                   : "PERFIL DO ATLETA"}
           </span>
 
@@ -720,7 +720,7 @@ export default async function EditAthletePage({
                 : isRejected
                   ? "Atleta reprovado"
                   : isReleased
-                    ? "Atleta dispensado"
+                    ? "Atleta liberado"
                     : "Editar atleta"
               : athlete.nickname ||
                 athlete.name}
@@ -729,7 +729,7 @@ export default async function EditAthletePage({
           <p className="muted">
             {canEdit
               ? isEvaluation
-                ? "Registre a decisão do processo abaixo. Aprovação, reprovação, dispensa e desistência preservam todo o histórico do atleta."
+                ? "Registre a decisão do processo abaixo. Aprovação, reprovação, liberação e desistência preservam todo o histórico do atleta."
                 : isRejected
                   ? "O atleta permanece com todo o histórico preservado. Uma nova passagem deve começar por uma categoria de avaliação."
                   : isReleased
@@ -789,7 +789,7 @@ export default async function EditAthletePage({
 
                   <div className="athlete-sport-membership-badges">
                     <span>
-                      {active ? "Ativo" : "Dispensado"}
+                      {active ? "Ativo" : "Liberado"}
                     </span>
 
                     {eligibility ? (
@@ -894,7 +894,7 @@ export default async function EditAthletePage({
           <span className="page-eyebrow">
             SITUAÇÃO ATUAL
           </span>
-          <h2>Atleta dispensado</h2>
+          <h2>Atleta liberado</h2>
           <p className="muted">
             O atleta não integra mais o elenco atual. O registro de saída e
             todo o histórico anterior permanecem preservados.
@@ -1030,7 +1030,7 @@ export default async function EditAthletePage({
                   Selecione
                 </option>
                 <option value="CLUB">
-                  Dispensa pelo clube
+                  Liberação pelo clube
                 </option>
                 <option value="FAMILY">
                   Saída solicitada pela família/atleta
@@ -1603,7 +1603,7 @@ export default async function EditAthletePage({
                 fontWeight: 800,
               }}
             >
-              Dispensar atleta
+              Liberar atleta
             </summary>
 
             <form
@@ -1618,7 +1618,7 @@ export default async function EditAthletePage({
               />
 
               <label>
-                Data da dispensa
+                Data da liberação
                 <input
                   type="date"
                   name="decisionDate"
@@ -1628,12 +1628,12 @@ export default async function EditAthletePage({
               </label>
 
               <label style={{ gridColumn: "1 / -1" }}>
-                Motivo da dispensa
+                Motivo da liberação
                 <textarea
                   name="reason"
                   rows={4}
                   required
-                  placeholder="Informe o motivo da dispensa."
+                  placeholder="Informe o motivo da liberação."
                 />
               </label>
 
@@ -1641,7 +1641,7 @@ export default async function EditAthletePage({
                 type="submit"
                 className="btn-secondary"
               >
-                Confirmar dispensa
+                Confirmar liberação
               </button>
             </form>
           </details>
@@ -1868,7 +1868,7 @@ export default async function EditAthletePage({
                   Reprovado
                 </option>
                 <option value="RELEASED">
-                  Dispensado
+                  Liberado
                 </option>
                 <option value="WITHDRAWN">
                   Desistiu
@@ -2015,7 +2015,7 @@ export default async function EditAthletePage({
                 >
                   Enquanto o processo estiver aberto, a categoria
                   é controlada pelas ações de Aprovar, Reprovar,
-                  Dispensar ou Desistência acima.
+                  Liberar ou registrar Desistência acima.
                 </p>
               </>
             ) : athlete.currentStatus === "ACTIVE" ? (
@@ -2291,7 +2291,7 @@ export default async function EditAthletePage({
               </strong>
               <small>
                 O status esportivo é definido pelos fluxos de elenco,
-                avaliação, reprovação e dispensa.
+                avaliação, reprovação e liberação.
               </small>
             </div>
 
