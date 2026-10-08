@@ -7,6 +7,7 @@ type DocumentItem = {
   id: string;
   title: string;
   originalFileName: string;
+  category: string;
   categoryLabel: string;
   subjectLabel: string;
   subject: "ATHLETE" | "GUARDIAN";
@@ -28,6 +29,7 @@ type GuardianOption = {
 type DocumentRequirementOption = {
   id: string;
   label: string;
+  documentCategory: string;
   subject: "ATHLETE" | "GUARDIAN";
   status: string;
 };
@@ -459,7 +461,14 @@ export default function AthleteDocumentManager({
             <div
               style={{
                 marginTop: 16,
-                display: documentRequirements.length > 0 ? "block" : "none",
+                display:
+                  document.requirementId ||
+                  documentRequirements.some(
+                    (requirement) =>
+                      requirement.documentCategory === document.category
+                  )
+                    ? "block"
+                    : "none",
                 padding: 12,
                 border: document.requirementId
                   ? "1px solid rgba(34, 197, 94, 0.24)"
@@ -575,7 +584,12 @@ export default function AthleteDocumentManager({
                         Selecione
                       </option>
 
-                      {documentRequirements.map((requirement) => (
+                      {documentRequirements
+                        .filter(
+                          (requirement) =>
+                            requirement.documentCategory === document.category
+                        )
+                        .map((requirement) => (
                           <option
                             key={requirement.id}
                             value={requirement.id}

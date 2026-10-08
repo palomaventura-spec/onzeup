@@ -353,6 +353,18 @@ export default async function AthletePrivateDataPage({
     requiredDocumentRequirements.length > 0 &&
     documentRequirementStates.every((requirement) => requirement.fulfilled);
 
+  const missingRequiredDocumentLabels = documentRequirementStates
+    .filter((requirement) => requirement.status === "MISSING")
+    .map((requirement) => requirement.label);
+
+  const pendingRequiredDocumentLabels = documentRequirementStates
+    .filter((requirement) => requirement.status === "PENDING")
+    .map((requirement) => requirement.label);
+
+  const expiredRequiredDocumentLabels = documentRequirementStates
+    .filter((requirement) => requirement.status === "EXPIRED")
+    .map((requirement) => requirement.label);
+
   const approvedDocuments = activeDocuments.filter(
     (document) => document.status === "APPROVED"
   ).length;
@@ -458,11 +470,11 @@ export default async function AthletePrivateDataPage({
               : "Aguardando confirmação";
   const documentStatusDescription = hasConfiguredDocumentRequirements
     ? expiredRequiredDocuments > 0
-      ? `${expiredRequiredDocuments} requisito(s) obrigatório(s) com documento vencido ou sem validade informada.`
+      ? `Vencidos ou sem validade: ${expiredRequiredDocumentLabels.join(", ")}.`
       : pendingRequiredDocuments > 0
-        ? `${pendingRequiredDocuments} requisito(s) obrigatório(s) aguardando aprovação ou substituição.`
+        ? `Pendentes de aprovação ou substituição: ${pendingRequiredDocumentLabels.join(", ")}.`
         : missingRequiredDocuments > 0
-          ? `${missingRequiredDocuments} documento(s) obrigatório(s) ainda não foram entregues.`
+          ? `Faltando: ${missingRequiredDocumentLabels.join(", ")}.`
           : documentationInDay
             ? "Todos os documentos obrigatórios foram revisados e estão regulares."
             : "Todos os documentos obrigatórios estão válidos. Confirme a conferência para marcar a documentação como em dia."
@@ -1014,6 +1026,7 @@ export default async function AthletePrivateDataPage({
             id: document.id,
             title: document.title,
             originalFileName: document.originalFileName,
+            category: document.category,
             categoryLabel: documentCategoryLabels[document.category],
             subjectLabel: document.guardian?.name
               ? `Responsável: ${document.guardian.name}`
@@ -1031,6 +1044,7 @@ export default async function AthletePrivateDataPage({
           documentRequirements={documentRequirementStates.map((requirement) => ({
             id: requirement.id,
             label: requirement.label,
+            documentCategory: requirement.documentCategory,
             subject: requirement.subject,
             status: requirement.status,
           }))}
