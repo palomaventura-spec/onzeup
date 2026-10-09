@@ -844,6 +844,18 @@ const positions = [
 
 
 
+   const hasFootballCategory = categories.some(
+      (category) =>
+         category.active &&
+         (category.sport === "FOOTBALL" || category.sport === "BOTH"),
+   );
+
+   const hasFutsalCategory = categories.some(
+      (category) =>
+         category.active &&
+         (category.sport === "FUTSAL" || category.sport === "BOTH"),
+   );
+
    const activeFootballAthleteIds = new Set(
       athletes
          .filter((athlete) => athleteFolder(athlete) === "ELENCO")
@@ -871,15 +883,28 @@ const positions = [
    );
 
    const navigationCategories = categories
-      .filter(
-         (category) =>
-            category.active &&
-            category.type === "STANDARD",
-      )
+      .filter((category) => {
+         if (!category.active) return false;
+
+         if (category.type === "STANDARD") {
+            return true;
+         }
+
+         if (category.type === "EVALUATION") {
+            return athletes.some(
+               (athlete) =>
+                  athleteFolder(athlete) === "EVALUATION" &&
+                  athlete.categoryId === category.id,
+            );
+         }
+
+         return false;
+      })
       .map((category) => ({
          id: category.id,
          name: category.name,
          sport: category.sport,
+         type: category.type,
          athleteCount: athletes.filter((athlete) =>
             athlete.memberships.some(
                (membership) =>
@@ -1489,6 +1514,8 @@ const positions = [
                   gap: 12,
                }}
             >
+               {hasFootballCategory ? (
+
                <Link
                   href="/atletas?sport=FOOTBALL"
                   style={{
@@ -1532,6 +1559,11 @@ const positions = [
                   </strong>
                </Link>
 
+               ) : null}
+
+               {hasFutsalCategory ? (
+
+
                <Link
                   href="/atletas?sport=FUTSAL"
                   style={{
@@ -1574,6 +1606,9 @@ const positions = [
                      {activeFutsalAthleteIds.size}
                   </strong>
                </Link>
+
+
+               ) : null}
             </div>
          </div>
 
@@ -1641,6 +1676,9 @@ const positions = [
                               : category.sport === "FUTSAL"
                                  ? "Futsal"
                                  : "Futebol + Futsal"}
+                           {category.type === "EVALUATION"
+                              ? " · Avaliação"
+                              : ""}
                         </small>
                      </div>
 
