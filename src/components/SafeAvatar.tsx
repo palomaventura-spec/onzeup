@@ -25,7 +25,12 @@ function normaliseUrl(value?: string | null) {
 
   // Files created only in local development (/uploads/...) do not exist after
   // deployment. They fall back to initials instead of showing a broken image.
-  if (url.startsWith("/uploads/")) return null;
+  if (
+    url.startsWith("/uploads/") &&
+    process.env.NODE_ENV === "production"
+  ) {
+    return null;
+  }
 
   return url;
 }

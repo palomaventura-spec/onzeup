@@ -42,7 +42,14 @@ function resolveBack(pathname: string, homeHref: string): NavigationTarget | nul
 
   if (module === "atletas") {
     if (!id) return home;
-    if (id === "pre-cadastros") return { href: "/atletas", label: "Atletas" };
+
+    if (id === "pre-cadastros") {
+      return { href: "/atletas", label: "Atletas" };
+    }
+
+    if (id === "categoria") {
+      return { href: "/atletas", label: "Atletas" };
+    }
 
     const athletePage = { href: `/atletas/${id}`, label: "Ficha do atleta" };
     if (!section) return { href: "/atletas", label: "Atletas" };

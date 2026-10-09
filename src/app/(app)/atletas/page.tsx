@@ -19,18 +19,15 @@ import { prisma } from "@/lib/prisma";
 
 import AthleteCreateForm from "./AthleteCreateForm";
 import AthleteCreateDialog from "./AthleteCreateDialog";
-
-import AthletePreRegistrationPanel from "./AthletePreRegistrationPanel";
-
-
-
 type AthleteFilters = {
 
    q?: string;
 
    category?: string;
+   sport?: string;
 
-   position?: string;
+   
+position?: string;
 
    status?: string;
 
@@ -327,6 +324,7 @@ function athletesUrl({
    q,
 
    category,
+   sport,
 
    position,
 
@@ -341,8 +339,10 @@ function athletesUrl({
    q?: string;
 
    category?: string;
+   sport?: string;
 
-   position?: string;
+   
+position?: string;
 
    status?: string;
 
@@ -359,6 +359,7 @@ function athletesUrl({
    if (q) query.set("q", q);
 
    if (category && category !== "ALL") query.set("category", category);
+   if (sport && sport !== "ALL") query.set("sport", sport);
 
    if (position && position !== "ALL") query.set("position", position);
 
@@ -406,6 +407,12 @@ export default async function AthletesPage({
 
    const categoryFilter = filters.category || "ALL";
 
+   const sportFilter = ["FOOTBALL", "FUTSAL"].includes(
+      filters.sport || "",
+   )
+      ? filters.sport!
+      : "ALL";
+
    const positionFilter = filters.position || "ALL";
 
 
@@ -452,7 +459,7 @@ export default async function AthletesPage({
 
 
 
-   const [athletes, categories, preRegistrations] = await Promise.all([
+   const [athletes, categories] = await Promise.all([
 
       prisma.athlete.findMany({
 
@@ -465,6 +472,17 @@ export default async function AthletesPage({
          include: {
 
             category: true,
+
+            memberships: {
+               where: {
+                  status: "ACTIVE",
+               },
+               select: {
+                  id: true,
+                  sport: true,
+                  categoryId: true,
+               },
+            },
 
             callUps: {
 
@@ -513,6 +531,7 @@ export default async function AthletesPage({
                   expiresAt: true,
 
                   category: true,
+
 
                   createdAt: true,
 
@@ -665,64 +684,18 @@ export default async function AthletesPage({
             evaluationTargets: {
                include: {
                   targetCategory: true,
+
                },
             },
          },
 
 
-      }),
-
-            prisma.athletePreRegistrationRequest.findMany({
-
-         where: {
-
-            organizationId: user.organizationId,
-
-         },
-
-         include: {
-
-            category: {
-
-               select: {
-
-                  name: true,
-
-                  sport: true,
-
-               },
-
-            },
-
-         },
-
-         orderBy: {
-
-            createdAt: "desc",
-
-         },
-
-         take: 12,
-
-      }),
+      })
 
 
 
    ]);
-
-  const preRegistrationItems = preRegistrations.map((item) => ({
-    id: item.id,
-    recipientName: item.recipientName,
-    recipientPhone: item.recipientPhone,
-    recipientEmail: item.recipientEmail,
-    status: item.status,
-    expiresAt: item.expiresAt.toISOString(),
-    createdAt: item.createdAt.toISOString(),
-    categoryName: item.category?.name ?? null,
-    categorySport: item.category?.sport ?? null,
-  }));
-
-  const positions = [
+const positions = [
 
       ...new Set(
 
@@ -871,6 +844,60 @@ export default async function AthletesPage({
 
 
 
+   const activeFootballAthleteIds = new Set(
+      athletes
+         .filter((athlete) => athleteFolder(athlete) === "ELENCO")
+         .filter((athlete) =>
+            athlete.memberships.some(
+               (membership) =>
+                  membership.sport === "FOOTBALL" ||
+                  membership.sport === "BOTH",
+            ),
+         )
+         .map((athlete) => athlete.id),
+   );
+
+   const activeFutsalAthleteIds = new Set(
+      athletes
+         .filter((athlete) => athleteFolder(athlete) === "ELENCO")
+         .filter((athlete) =>
+            athlete.memberships.some(
+               (membership) =>
+                  membership.sport === "FUTSAL" ||
+                  membership.sport === "BOTH",
+            ),
+         )
+         .map((athlete) => athlete.id),
+   );
+
+   const navigationCategories = categories
+      .filter(
+         (category) =>
+            category.active &&
+            category.type === "STANDARD",
+      )
+      .map((category) => ({
+         id: category.id,
+         name: category.name,
+         sport: category.sport,
+         athleteCount: athletes.filter((athlete) =>
+            athlete.memberships.some(
+               (membership) =>
+                  membership.categoryId === category.id,
+            ),
+         ).length,
+      }))
+      .sort((a, b) => {
+         const nameCompare = a.name.localeCompare(
+            b.name,
+            "pt-BR",
+            { numeric: true },
+         );
+
+         if (nameCompare !== 0) return nameCompare;
+
+         return a.sport.localeCompare(b.sport);
+      });
    const rejectedCount = athletes.filter(
 
       (athlete) => athleteFolder(athlete) === "REJECTED",
@@ -1057,6 +1084,12 @@ export default async function AthletesPage({
 
                : athlete.categoryId === categoryFilter)) &&
 
+         (sportFilter === "ALL" ||
+            athlete.memberships.some(
+               (membership) =>
+                  membership.sport === sportFilter ||
+                  membership.sport === "BOTH",
+            )) &&
          (positionFilter === "ALL" ||
 
             athlete.position === positionFilter) &&
@@ -1103,6 +1136,14 @@ export default async function AthletesPage({
 
 
 
+   const showAthleteList = Boolean(
+      filters.view ||
+      query ||
+      categoryFilter !== "ALL" ||
+      sportFilter !== "ALL" ||
+      positionFilter !== "ALL" ||
+      statusFilter !== "ALL"
+   );
    const hasFilters = Boolean(
 
       query ||
@@ -1110,6 +1151,7 @@ export default async function AthletesPage({
          athleteView !== "ELENCO" ||
 
          categoryFilter !== "ALL" ||
+         sportFilter !== "ALL" ||
 
          positionFilter !== "ALL" ||
 
@@ -1124,6 +1166,7 @@ export default async function AthletesPage({
       q: filters.q || "",
 
       category: categoryFilter,
+      sport: sportFilter,
 
       position: positionFilter,
 
@@ -1202,6 +1245,30 @@ export default async function AthletesPage({
 
 
             <div className="athletes-v4-hero-actions">
+                {canEdit ? (
+                  <Link
+                    href="/atletas/pre-cadastros"
+                    style={{
+                      minHeight: 46,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      padding: "0 18px",
+                      borderRadius: 13,
+                      border: "1px solid rgba(255,255,255,.24)",
+                      background: "rgba(255,255,255,.10)",
+                      color: "#ffffff",
+                      textDecoration: "none",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <Icon name="file" size={17} />
+                    Cadastro digital
+                  </Link>
+                ) : null}
 
                {canEdit ? (
 
@@ -1339,22 +1406,7 @@ export default async function AthletesPage({
             </article>
 
          </section>
-
-
-
-         {canEdit ? (
-        <AthletePreRegistrationPanel
-          categories={categories.map((category) => ({
-            id: category.id,
-            name: category.name,
-            type: category.type,
-            sport: category.sport,
-          }))}
-          invitations={preRegistrationItems}
-        />
-      ) : null}
-
-      <nav
+<nav
 
          className="athletes-v4-folders"
 
@@ -1362,7 +1414,7 @@ export default async function AthletesPage({
 
       >
 
-         <Link href="/atletas" className={athleteView === "ELENCO" ? "active" : ""}>
+         <Link href="/atletas?view=ELENCO" className={filters.view === "ELENCO" ? "active" : ""}>
 
             Elenco <strong>{activeCount}</strong>
 
@@ -1395,112 +1447,215 @@ export default async function AthletesPage({
 
       </nav>
 
-      {(athleteView === "ELENCO" || athleteView === "EVALUATION") ? (
-         <nav
-            className="athletes-v4-category-tabs"
-            aria-label="Categorias do elenco"
-         >
-            <Link
-               href={athletesUrl({
-                  q: filters.q || "",
-                  position: positionFilter,
-                  status: statusFilter,
-                  view: "ELENCO",
-               })}
-               className={
-                  athleteView === "ELENCO" && categoryFilter === "ALL"
-                     ? "active"
-                     : ""
-               }
+      <section
+         className="athletes-v4-navigation-sections"
+         style={{
+            display: "grid",
+            gap: 18,
+            marginTop: 18,
+            marginBottom: 18,
+         }}
+      >
+         <div>
+            <div
+               style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  marginBottom: 10,
+               }}
             >
-               Todos <strong>{activeCount}</strong>
-            </Link>
+               <div>
+                  <span className="athletes-v4-eyebrow">
+                     MODALIDADES
+                  </span>
+                  <h2
+                     style={{
+                        margin: "3px 0 0",
+                        fontSize: 18,
+                     }}
+                  >
+                     Gestão por modalidade
+                  </h2>
+               </div>
+            </div>
 
-            {categoryTabItems.map((category) => (
+            <div
+               style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                     "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: 12,
+               }}
+            >
                <Link
-                  key={category.id}
-                  href={athletesUrl({
-                     q: filters.q || "",
-                     category: category.id,
-                     position: positionFilter,
-                     status: statusFilter,
-                     view: "ELENCO",
-                  })}
-                  className={
-                     athleteView === "ELENCO" &&
-                     categoryFilter === category.id
-                        ? "active"
-                        : ""
-                  }
+                  href="/atletas?sport=FOOTBALL"
+                  style={{
+                     textDecoration: "none",
+                     color: "inherit",
+                     background: "#ffffff",
+                     border: "1px solid #e4e9e5",
+                     borderRadius: 16,
+                     padding: 18,
+                     display: "flex",
+                     justifyContent: "space-between",
+                     alignItems: "center",
+                     gap: 12,
+                  }}
                >
-                  {category.label} <strong>{category.count}</strong>
+                  <div>
+                     <strong
+                        style={{
+                           display: "block",
+                           fontSize: 17,
+                        }}
+                     >
+                        Futebol
+                     </strong>
+
+                     <small
+                        style={{
+                           color: "#6f786f",
+                        }}
+                     >
+                        Atletas de campo
+                     </small>
+                  </div>
+
+                  <strong
+                     style={{
+                        fontSize: 22,
+                     }}
+                  >
+                     {activeFootballAthleteIds.size}
+                  </strong>
                </Link>
-            ))}
 
-            <Link
-               href={athletesUrl({
-                  q: filters.q || "",
-                  position: positionFilter,
-                  view: "EVALUATION",
-               })}
-               className={
-                  athleteView === "EVALUATION"
-                     ? "active evaluation"
-                     : "evaluation"
-               }
+               <Link
+                  href="/atletas?sport=FUTSAL"
+                  style={{
+                     textDecoration: "none",
+                     color: "inherit",
+                     background: "#ffffff",
+                     border: "1px solid #e4e9e5",
+                     borderRadius: 16,
+                     padding: 18,
+                     display: "flex",
+                     justifyContent: "space-between",
+                     alignItems: "center",
+                     gap: 12,
+                  }}
+               >
+                  <div>
+                     <strong
+                        style={{
+                           display: "block",
+                           fontSize: 17,
+                        }}
+                     >
+                        Futsal
+                     </strong>
+
+                     <small
+                        style={{
+                           color: "#6f786f",
+                        }}
+                     >
+                        Atletas de futsal
+                     </small>
+                  </div>
+
+                  <strong
+                     style={{
+                        fontSize: 22,
+                     }}
+                  >
+                     {activeFutsalAthleteIds.size}
+                  </strong>
+               </Link>
+            </div>
+         </div>
+
+         <div>
+            <div
+               style={{
+                  marginBottom: 10,
+               }}
             >
-               Avaliação <strong>{evaluationCount}</strong>
-            </Link>
-         </nav>
-      ) : null}
+               <span className="athletes-v4-eyebrow">
+                  CATEGORIAS
+               </span>
 
+               <h2
+                  style={{
+                     margin: "3px 0 0",
+                     fontSize: 18,
+                  }}
+               >
+                  Elenco por categoria
+               </h2>
+            </div>
 
-
-      {athleteView === "ELENCO" ? (
-
-         <nav className="athletes-v4-subfolders" aria-label="Elegibilidade do elenco">
-
-            <Link
-               href={athletesUrl({
-                  q: filters.q || "",
-                  category: categoryFilter,
-                  position: positionFilter,
-                  view: "ELENCO",
-               })}
-               className={statusFilter === "ALL" ? "active" : ""}
+            <div
+               style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                     "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: 10,
+               }}
             >
-               Todos <strong>{selectedCategoryActiveCount}</strong>
-            </Link>
+               {navigationCategories.map((category) => (
+                  <Link
+                     key={category.id}
+                     href={`/atletas/categoria/${category.id}`}
+                     style={{
+                        textDecoration: "none",
+                        color: "inherit",
+                        background: "#ffffff",
+                        border: "1px solid #e4e9e5",
+                        borderRadius: 14,
+                        padding: "14px 16px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 10,
+                     }}
+                  >
+                     <div>
+                        <strong
+                           style={{
+                              display: "block",
+                           }}
+                        >
+                           {category.name}
+                        </strong>
 
-            <Link
-               href={athletesUrl({
-                  q: filters.q || "",
-                  category: categoryFilter,
-                  position: positionFilter,
-                  status: "APTO",
-                  view: "ELENCO",
-               })}
-               className={statusFilter === "APTO" ? "active" : ""}
-            >
-               Aptos <strong>{aptCount}</strong>
-            </Link>
+                        <small
+                           style={{
+                              color: "#6f786f",
+                           }}
+                        >
+                           {category.sport === "FOOTBALL"
+                              ? "Futebol"
+                              : category.sport === "FUTSAL"
+                                 ? "Futsal"
+                                 : "Futebol + Futsal"}
+                        </small>
+                     </div>
 
-            <Link
-               href={athletesUrl({
-                  q: filters.q || "",
-                  category: categoryFilter,
-                  position: positionFilter,
-                  status: "INAPTO",
-                  view: "ELENCO",
-               })}
-               className={statusFilter === "INAPTO" ? "active" : ""}
-            >
-               Inaptos <strong>{unfitCount}</strong>
-            </Link>
+                     <strong>
+                        {category.athleteCount}
+                     </strong>
+                  </Link>
+               ))}
+            </div>
+         </div>
+      </section>
 
-         </nav>
 
-      ) : null}
+
+
 
 
 
@@ -1519,10 +1674,8 @@ export default async function AthletesPage({
                   <h2>Localizar atleta</h2>
 
                   <p>
-
                      Busque por nome e refine por categoria, posição
-
-                     ou status.
+                     e elegibilidade.
 
                   </p>
 
@@ -1609,10 +1762,14 @@ export default async function AthletesPage({
                         >
 
                            {category.type === "EVALUATION"
-
                               ? `Avaliação · ${category.name}`
-
-                              : category.name}
+                              : `${category.name} · ${
+                                   category.sport === "FOOTBALL"
+                                      ? "Futebol"
+                                      : category.sport === "FUTSAL"
+                                        ? "Futsal"
+                                        : "Futebol + Futsal"
+                                }`}
 
                         </option>
 
@@ -1628,6 +1785,21 @@ export default async function AthletesPage({
 
                   </select>
 
+               </label>
+
+
+
+               <label>
+                  <span>Modalidade</span>
+
+                  <select
+                     name="sport"
+                     defaultValue={sportFilter}
+                  >
+                     <option value="ALL">Todas</option>
+                     <option value="FOOTBALL">Futebol</option>
+                     <option value="FUTSAL">Futsal</option>
+                  </select>
                </label>
 
 
@@ -1764,7 +1936,12 @@ export default async function AthletesPage({
 
 
 
-         <section className="athletes-v4-roster">
+         <section
+            className="athletes-v4-roster"
+            style={{
+               display: showAthleteList ? undefined : "none",
+            }}
+         >
 
             <header className="athletes-v4-roster-head">
 
