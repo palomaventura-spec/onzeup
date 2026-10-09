@@ -46,6 +46,10 @@ export default function AthletePreRegistrationPanel({
   categories,
   invitations,
 }: Props) {
+  const [entryType, setEntryType] = useState<
+    "STANDARD" | "EVALUATION"
+  >("STANDARD");
+
   const [sport, setSport] = useState("ALL");
   const [categoryId, setCategoryId] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -61,15 +65,19 @@ export default function AthletePreRegistrationPanel({
     () =>
       categories.filter(
         (category) =>
-          category.type === "STANDARD" &&
+          category.type === entryType &&
           (sport === "ALL" || category.sport === sport),
       ),
-    [categories, sport],
+    [categories, entryType, sport],
   );
 
   async function handleGenerate() {
     setMessage("");
     setGeneratedLink("");
+    if (!categoryId) {
+      setMessage("Selecione a categoria do atleta.");
+      return;
+    }
 
     if (!recipientName.trim()) {
       setMessage("Informe o nome do responsável.");
@@ -146,8 +154,32 @@ export default function AthletePreRegistrationPanel({
       </header>
 
       <div className="athletes-v4-filter-form">
-        <label>
-          <span>Modalidade</span>
+          <label>
+            <span>Tipo de entrada</span>
+
+            <select
+              value={entryType}
+              onChange={(event) => {
+                setEntryType(
+                  event.target.value as
+                    | "STANDARD"
+                    | "EVALUATION",
+                );
+                setCategoryId("");
+              }}
+            >
+              <option value="STANDARD">
+                Entrada direta
+              </option>
+
+              <option value="EVALUATION">
+                Em avaliação
+              </option>
+            </select>
+          </label>
+
+          <label>
+            <span>Modalidade</span>
 
           <select
             value={sport}
@@ -171,7 +203,7 @@ export default function AthletePreRegistrationPanel({
               setCategoryId(event.target.value)
             }
           >
-            <option value="">Definir depois</option>
+            <option value="">Selecione a categoria</option>
 
             {filteredCategories.map((category) => (
               <option

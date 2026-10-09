@@ -61,7 +61,20 @@ type PreRegistrationPayload = {
     relation?: string | null;
     phone?: string | null;
     email?: string | null;
+    cpf?: string | null;
+    rg?: string | null;
+    rgIssuer?: string | null;
     accepted?: boolean;
+  };
+
+  guardian2?: {
+    name?: string | null;
+    relation?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    cpf?: string | null;
+    rg?: string | null;
+    rgIssuer?: string | null;
   };
 };
 
@@ -192,6 +205,7 @@ export async function approveAthletePreRegistration(
   const family = payload.family || {};
   const health = payload.health || {};
   const guardian = payload.guardian || {};
+  const guardian2 = payload.guardian2 || {};
 
   const athleteName =
     athleteData.name?.trim();
@@ -228,6 +242,35 @@ export async function approveAthletePreRegistration(
 
   const relation =
     guardianRelation(guardian.relation);
+const guardianCpf =
+    guardian.cpf?.trim() || null;
+
+  const guardianRg =
+    guardian.rg?.trim() || null;
+
+  const guardianRgIssuer =
+    guardian.rgIssuer?.trim() || null;
+  const guardian2Name =
+    guardian2.name?.trim() || null;
+
+  const guardian2Phone =
+    guardian2.phone?.trim() || null;
+
+  const guardian2Email =
+    guardian2.email?.trim() || null;
+
+  const guardian2Cpf =
+    guardian2.cpf?.trim() || null;
+
+  const guardian2Rg =
+    guardian2.rg?.trim() || null;
+
+  const guardian2RgIssuer =
+    guardian2.rgIssuer?.trim() || null;
+
+  const guardian2Relation =
+    guardianRelation(guardian2.relation);
+
   const approvedAt = new Date();
 
   const createdAthlete =
@@ -410,6 +453,15 @@ export async function approveAthletePreRegistration(
             name: guardianName,
             email: guardianEmail,
             phone: guardianPhone,
+
+            cpfEncrypted:
+              encryptPrivateData(guardianCpf),
+
+            rgEncrypted:
+              encryptPrivateData(guardianRg),
+
+            rgIssuerEncrypted:
+              encryptPrivateData(guardianRgIssuer),
             address:
               family.address?.trim() ||
               null,
@@ -417,6 +469,31 @@ export async function approveAthletePreRegistration(
           },
         });
       }
+        if (guardian2Name) {
+          await tx.athleteGuardian.create({
+            data: {
+              athleteId: athlete.id,
+              relation: guardian2Relation,
+              name: guardian2Name,
+              email: guardian2Email,
+              phone: guardian2Phone,
+
+              cpfEncrypted:
+                encryptPrivateData(guardian2Cpf),
+
+              rgEncrypted:
+                encryptPrivateData(guardian2Rg),
+
+              rgIssuerEncrypted:
+                encryptPrivateData(guardian2RgIssuer),
+
+              address:
+                family.address?.trim() || null,
+
+              isPrimary: false,
+            },
+          });
+        }
 
       /*
        * Vincula o pré-cadastro ao atleta definitivo.

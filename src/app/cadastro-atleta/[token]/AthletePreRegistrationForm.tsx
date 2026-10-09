@@ -21,6 +21,8 @@ export default function AthletePreRegistrationForm({
   const router = useRouter();
 
   const [sending, setSending] = useState(false);
+  const [showSecondGuardian, setShowSecondGuardian] =
+    useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -236,6 +238,10 @@ export default function AthletePreRegistrationForm({
             form.get("guardianName") || "",
           ).trim(),
 
+          relation: String(
+            form.get("guardianRelation") || "",
+          ).trim(),
+
           phone: String(
             form.get("guardianPhone") || "",
           ).trim(),
@@ -243,9 +249,50 @@ export default function AthletePreRegistrationForm({
           email: String(
             form.get("guardianEmail") || "",
           ).trim(),
+          cpf: String(
+            form.get("guardianCpf") || "",
+          ).trim(),
+
+          rg: String(
+            form.get("guardianRg") || "",
+          ).trim(),
+
+          rgIssuer: String(
+            form.get("guardianRgIssuer") || "",
+          ).trim(),
 
           accepted:
             form.get("guardianAccepted") === "on",
+        },
+
+        guardian2: {
+          name: String(
+            form.get("guardian2Name") || "",
+          ).trim(),
+
+          relation: String(
+            form.get("guardian2Relation") || "",
+          ).trim(),
+
+          cpf: String(
+            form.get("guardian2Cpf") || "",
+          ).trim(),
+
+          rg: String(
+            form.get("guardian2Rg") || "",
+          ).trim(),
+
+          rgIssuer: String(
+            form.get("guardian2RgIssuer") || "",
+          ).trim(),
+
+          phone: String(
+            form.get("guardian2Phone") || "",
+          ).trim(),
+
+          email: String(
+            form.get("guardian2Email") || "",
+          ).trim(),
         },
       };
 
@@ -273,6 +320,33 @@ export default function AthletePreRegistrationForm({
       ) {
         throw new Error(
           "Informe WhatsApp ou e-mail do responsável.",
+        );
+      }
+
+      const secondGuardianHasData =
+        Boolean(payload.guardian2?.name) ||
+        Boolean(payload.guardian2?.cpf) ||
+        Boolean(payload.guardian2?.rg) ||
+        Boolean(payload.guardian2?.rgIssuer) ||
+        Boolean(payload.guardian2?.phone) ||
+        Boolean(payload.guardian2?.email);
+
+      if (
+        secondGuardianHasData &&
+        !payload.guardian2?.name
+      ) {
+        throw new Error(
+          "Informe o nome do segundo responsável.",
+        );
+      }
+
+      if (
+        payload.guardian2?.name &&
+        !payload.guardian2.phone &&
+        !payload.guardian2.email
+      ) {
+        throw new Error(
+          "Informe WhatsApp ou e-mail do segundo responsável.",
         );
       }
 
@@ -746,6 +820,48 @@ export default function AthletePreRegistrationForm({
               defaultValue={recipientName}
             />
           </label>
+          <label>
+            Relação com o atleta *
+            <select
+              name="guardianRelation"
+              defaultValue="LEGAL_GUARDIAN"
+              required
+            >
+              <option value="MOTHER">Mãe</option>
+              <option value="FATHER">Pai</option>
+              <option value="LEGAL_GUARDIAN">
+                Responsável legal
+              </option>
+              <option value="OTHER">Outro</option>
+            </select>
+          </label>
+
+          <label>
+            CPF do responsável
+            <input
+              name="guardianCpf"
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="000.000.000-00"
+            />
+          </label>
+
+          <label>
+            RG do responsável
+            <input
+              name="guardianRg"
+              autoComplete="off"
+            />
+          </label>
+
+          <label>
+            Órgão emissor do RG
+            <input
+              name="guardianRgIssuer"
+              placeholder="Ex.: DETRAN-RJ"
+              autoComplete="off"
+            />
+          </label>
 
           <label>
             WhatsApp
@@ -766,6 +882,108 @@ export default function AthletePreRegistrationForm({
           </label>
         </div>
 
+        <div style={{ marginTop: 22 }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() =>
+              setShowSecondGuardian((current) => !current)
+            }
+          >
+            {showSecondGuardian
+              ? "Remover segundo responsável"
+              : "+ Adicionar outro responsável"}
+          </button>
+        </div>
+
+        {showSecondGuardian ? (
+          <div
+            style={{
+              marginTop: 20,
+              paddingTop: 20,
+              borderTop: "1px solid var(--line)",
+            }}
+          >
+            <h3>Outro responsável</h3>
+
+            <p className="help">
+              Preenchimento opcional. Este responsável ficará
+              vinculado ao atleta como responsável adicional.
+            </p>
+
+            <div
+              className="form-grid"
+              style={{ marginTop: 18 }}
+            >
+              <label>
+                Nome completo *
+                <input
+                  name="guardian2Name"
+                  required={showSecondGuardian}
+                />
+              </label>
+
+              <label>
+                Relação com o atleta *
+                <select
+                  name="guardian2Relation"
+                  defaultValue="FATHER"
+                  required={showSecondGuardian}
+                >
+                  <option value="MOTHER">Mãe</option>
+                  <option value="FATHER">Pai</option>
+                  <option value="LEGAL_GUARDIAN">
+                    Responsável legal
+                  </option>
+                  <option value="OTHER">Outro</option>
+                </select>
+              </label>
+
+              <label>
+                CPF
+                <input
+                  name="guardian2Cpf"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="000.000.000-00"
+                />
+              </label>
+
+              <label>
+                RG
+                <input
+                  name="guardian2Rg"
+                  autoComplete="off"
+                />
+              </label>
+
+              <label>
+                Órgão emissor do RG
+                <input
+                  name="guardian2RgIssuer"
+                  placeholder="Ex.: DETRAN-RJ"
+                  autoComplete="off"
+                />
+              </label>
+
+              <label>
+                WhatsApp
+                <input
+                  type="tel"
+                  name="guardian2Phone"
+                />
+              </label>
+
+              <label>
+                E-mail
+                <input
+                  type="email"
+                  name="guardian2Email"
+                />
+              </label>
+            </div>
+          </div>
+        ) : null}
         <label
           style={{
             display: "flex",

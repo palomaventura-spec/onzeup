@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     >;
 
     const categoryId =
-      clean(body.categoryId) || null;
+      clean(body.categoryId);
 
     const recipientName =
       clean(body.recipientName) || null;
@@ -61,20 +61,20 @@ export async function POST(request: Request) {
     );
 
     if (
-      !recipientName ||
-      (!recipientEmail && !recipientPhone)
-    ) {
+        !categoryId ||
+        !recipientName ||
+        (!recipientEmail && !recipientPhone)
+      ) {
       return NextResponse.json(
         {
           error:
-            "Informe o responsável e pelo menos WhatsApp ou e-mail.",
+            "Selecione a categoria e informe o responsável com pelo menos WhatsApp ou e-mail.",
         },
         { status: 400 },
       );
     }
 
-    if (categoryId) {
-      const category =
+          const category =
         await prisma.category.findFirst({
           where: {
             id: categoryId,
@@ -93,9 +93,8 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-    }
 
-    const rawToken = crypto
+      const rawToken = crypto
       .randomBytes(32)
       .toString("base64url");
 
