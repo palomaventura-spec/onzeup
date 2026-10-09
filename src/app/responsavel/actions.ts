@@ -148,7 +148,12 @@ export async function linkMatchingClubAthletes(formData: FormData) {
 
   const player = await prisma.playerProfile.findFirst({
     where: { id: playerId, guardianId: guardian.id },
-    select: { id: true, name: true, nickname: true },
+    select: {
+      id: true,
+      name: true,
+      nickname: true,
+      birthYear: true,
+    },
   });
 
   if (!player) redirect("/responsavel?linkStatus=erro");
@@ -162,6 +167,7 @@ export async function linkMatchingClubAthletes(formData: FormData) {
       id: true,
       name: true,
       nickname: true,
+      birthYear: true,
       organizationId: true,
     },
   });
@@ -182,12 +188,25 @@ export async function linkMatchingClubAthletes(formData: FormData) {
   const playerName = normalize(player.name);
   const playerNickname = normalize(player.nickname);
 
-  const samePerson = (athlete: { name: string; nickname: string | null }) => {
+  const samePerson = (athlete: {
+    name: string;
+    nickname: string | null;
+    birthYear: number | null;
+  }) => {
     const athleteName = normalize(athlete.name);
     const athleteNickname = normalize(athlete.nickname);
 
-    if (playerName && athleteName && playerName === athleteName) return true;
-    if (playerNickname && athleteNickname && playerNickname === athleteNickname) return true;
+    if (playerName && athleteName && playerName === athleteName) {
+      return true;
+    }
+
+    if (
+      playerNickname &&
+      athleteNickname &&
+      playerNickname === athleteNickname
+    ) {
+      return true;
+    }
 
     const playerTokens = playerName.split(" ").filter(Boolean);
     const athleteTokens = athleteName.split(" ").filter(Boolean);
@@ -196,9 +215,37 @@ export async function linkMatchingClubAthletes(formData: FormData) {
       playerTokens.length >= 2 &&
       athleteTokens.length >= 2 &&
       playerTokens[0] === athleteTokens[0] &&
-      playerTokens[playerTokens.length - 1] === athleteTokens[athleteTokens.length - 1]
+      playerTokens[playerTokens.length - 1] ===
+        athleteTokens[athleteTokens.length - 1]
     ) {
       return true;
+    }
+
+    const sameBirthYear =
+      player.birthYear !== null &&
+      athlete.birthYear !== null &&
+      player.birthYear === athlete.birthYear;
+
+    if (sameBirthYear) {
+      const shorterTokens =
+        playerTokens.length <= athleteTokens.length
+          ? playerTokens
+          : athleteTokens;
+
+      const longerTokens =
+        playerTokens.length <= athleteTokens.length
+          ? athleteTokens
+          : playerTokens;
+
+      const allShorterTokensPresent =
+        shorterTokens.length >= 2 &&
+        shorterTokens.every((token) =>
+          longerTokens.includes(token),
+        );
+
+      if (allShorterTokensPresent) {
+        return true;
+      }
     }
 
     return false;
