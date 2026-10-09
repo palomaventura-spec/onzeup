@@ -1165,6 +1165,74 @@ export async function updateAthlete(formData: FormData) {
           current.category?.type === "EVALUATION" &&
           category?.type === "STANDARD"
         ) {
+          const decidedAt = new Date();
+
+          const evaluationMembership =
+            await tx.athleteMembership.findFirst({
+              where: {
+                athleteId: current.id,
+                organizationId: user.organizationId,
+                status: "ACTIVE",
+                categoryId: current.category.id,
+                sport: current.category.sport,
+              },
+              orderBy: {
+                startedAt: "desc",
+              },
+              select: {
+                id: true,
+                startedAt: true,
+              },
+            });
+
+          const existingTargetMembership =
+            await tx.athleteMembership.findFirst({
+              where: {
+                athleteId: current.id,
+                organizationId: user.organizationId,
+                status: "ACTIVE",
+                categoryId: category.id,
+                sport: category.sport,
+              },
+              select: {
+                id: true,
+              },
+            });
+
+          const effectiveDecidedAt =
+            evaluationMembership?.startedAt &&
+            decidedAt.getTime() <
+              evaluationMembership.startedAt.getTime()
+              ? evaluationMembership.startedAt
+              : decidedAt;
+
+          if (evaluationMembership) {
+            await tx.athleteMembership.update({
+              where: {
+                id: evaluationMembership.id,
+              },
+              data: {
+                status: "RELEASED",
+                endedAt: effectiveDecidedAt,
+              },
+            });
+          }
+
+          if (!existingTargetMembership) {
+            await tx.athleteMembership.create({
+              data: {
+                athleteId: current.id,
+                organizationId: user.organizationId,
+                categoryId: category.id,
+                sport: category.sport,
+                season: processSeason(effectiveDecidedAt),
+                status: "ACTIVE",
+                verified: true,
+                startedAt: effectiveDecidedAt,
+              },
+            });
+          }
+
           await finalizeCurrentEvaluationProcess(tx, {
             organizationId: user.organizationId,
             athleteId: current.id,
@@ -1172,7 +1240,7 @@ export async function updateAthlete(formData: FormData) {
             userId: user.id,
             userName: user.name,
             status: AthleteEvaluationProcessStatus.APPROVED,
-            decidedAt: new Date(),
+            decidedAt: effectiveDecidedAt,
             targetCategory: {
               id: category.id,
               name: category.name,
@@ -1613,6 +1681,19 @@ async function finishEvaluationWithoutApproval(
         evaluationTargetCategoryId: null,
         currentStatus,
         active: false,
+      },
+    });
+
+    await tx.athleteMembership.updateMany({
+      where: {
+        athleteId: athlete.id,
+        organizationId: user.organizationId,
+        categoryId: athlete.category.id,
+        status: "ACTIVE",
+      },
+      data: {
+        status: "RELEASED",
+        endedAt: decidedAt,
       },
     });
 
