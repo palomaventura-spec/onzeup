@@ -8,6 +8,7 @@ import SafeAvatar from "@/components/SafeAvatar";
 import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
+import { safeDecryptPrivateData } from "@/lib/private-data-crypto";
 
 import {
   allowAthleteEligibilityOverride,
@@ -20,6 +21,11 @@ import {
   updateAthlete,
   withdrawEvaluationAthlete,
 } from "../actions";
+import {
+  deleteAthleteGuardian,
+  saveAthleteGuardian,
+  saveAthletePrivateData,
+} from "./dados/actions";
 
 type EligibilityAuditMetadata = {
   event?: string;
@@ -252,6 +258,28 @@ function dominantFootLabel(value: string | null) {
   }
 }
 
+function athletePrivateDateInput(
+  value: Date | null | undefined,
+) {
+  return value
+    ? value.toISOString().slice(0, 10)
+    : "";
+}
+
+function athleteGuardianRelationLabel(
+  value: string,
+) {
+  switch (value) {
+    case "MOTHER":
+      return "Mãe";
+    case "FATHER":
+      return "Pai";
+    case "LEGAL_GUARDIAN":
+      return "Responsável legal";
+    default:
+      return "Outro";
+  }
+}
 export default async function EditAthletePage({
   params,
 }: {
@@ -412,7 +440,25 @@ export default async function EditAthletePage({
     notFound();
   }
 
-  const [categoryHistory, eligibilityAuditHistory] =
+    const privateSummary =
+    canEdit && user.role !== "SUPER_ADMIN"
+      ? await prisma.athlete.findFirst({
+          where: {
+            id: athlete.id,
+            organizationId: user.organizationId,
+          },
+          include: {
+            privateData: true,
+            guardians: {
+              orderBy: [
+                { isPrimary: "desc" },
+                { name: "asc" },
+              ],
+            },
+          },
+        })
+      : null;
+const [categoryHistory, eligibilityAuditHistory] =
     await Promise.all([
       prisma.athleteDataAuditLog.findMany({
         where: {
@@ -617,6 +663,12 @@ export default async function EditAthletePage({
         : "APTO"
       : null;
 
+  const activeCategoryCount = new Set(
+    activeSportMemberships
+      .map((membership) => membership.categoryId)
+      .filter(Boolean),
+  ).size;
+
   return (
     <main className="athlete-profile-page athlete-edit-page-v3">
       <section
@@ -711,36 +763,218 @@ export default async function EditAthletePage({
         </Link>
       </nav>
 
-      <div className="page-head athlete-v3-page-head">
-        <div>
-          <h1>
-            {canEdit
-              ? isEvaluation
-                ? "Avaliação e transferência"
-                : isRejected
-                  ? "Atleta reprovado"
-                  : isReleased
-                    ? "Atleta liberado"
-                    : "Editar atleta"
-              : athlete.nickname ||
-                athlete.name}
-          </h1>
+      <section
+        className="athlete-profile-summary-v4"
+        aria-label="Resumo do atleta"
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: 12,
+          marginBottom: 20,
+        }}
+      >
+        <article
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e4e9e6",
+            borderRadius: 18,
+            padding: "18px 20px",
+            boxShadow: "0 8px 24px rgba(18, 40, 32, .04)",
+          }}
+        >
+          <small
+            style={{
+              display: "block",
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: ".08em",
+              color: "#6c766f",
+              marginBottom: 7,
+            }}
+          >
+            MODALIDADES ATIVAS
+          </small>
 
-          <p className="muted">
-            {canEdit
-              ? isEvaluation
-                ? "Registre a decisão do processo abaixo. Aprovação, reprovação, liberação e desistência preservam todo o histórico do atleta."
-                : isRejected
-                  ? "O atleta permanece com todo o histórico preservado. Uma nova passagem deve começar por uma categoria de avaliação."
-                  : isReleased
-                    ? "A saída permanece registrada com origem, data, motivo e responsável. O histórico do atleta continua preservado."
-                    : "Dados esportivos públicos e dados privados do responsável ficam separados."
-              : "Visualização dos dados esportivos do atleta."}
-          </p>
-        </div>
+          <strong
+            style={{
+              display: "block",
+              fontSize: 28,
+              lineHeight: 1,
+              color: "#17251e",
+            }}
+          >
+            {activeSportMemberships.length}
+          </strong>
 
+          <span
+            style={{
+              display: "block",
+              marginTop: 7,
+              color: "#738078",
+              fontSize: 13,
+            }}
+          >
+            {activeFootballMembership && activeFutsalMembership
+              ? "Futebol + Futsal"
+              : activeFootballMembership
+                ? "Futebol"
+                : activeFutsalMembership
+                  ? "Futsal"
+                  : "Nenhuma ativa"}
+          </span>
+        </article>
 
-      </div>
+        <article
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e4e9e6",
+            borderRadius: 18,
+            padding: "18px 20px",
+            boxShadow: "0 8px 24px rgba(18, 40, 32, .04)",
+          }}
+        >
+          <small
+            style={{
+              display: "block",
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: ".08em",
+              color: "#6c766f",
+              marginBottom: 7,
+            }}
+          >
+            CATEGORIAS ATIVAS
+          </small>
+
+          <strong
+            style={{
+              display: "block",
+              fontSize: 28,
+              lineHeight: 1,
+              color: "#17251e",
+            }}
+          >
+            {activeCategoryCount}
+          </strong>
+
+          <span
+            style={{
+              display: "block",
+              marginTop: 7,
+              color: "#738078",
+              fontSize: 13,
+            }}
+          >
+            vínculo(s) esportivo(s)
+          </span>
+        </article>
+
+        <article
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e4e9e6",
+            borderRadius: 18,
+            padding: "18px 20px",
+            boxShadow: "0 8px 24px rgba(18, 40, 32, .04)",
+          }}
+        >
+          <small
+            style={{
+              display: "block",
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: ".08em",
+              color: "#6c766f",
+              marginBottom: 7,
+            }}
+          >
+            ELEGIBILIDADE
+          </small>
+
+          <strong
+            style={{
+              display: "block",
+              fontSize: 22,
+              lineHeight: 1,
+              color:
+                eligibilityStatus === "INAPTO"
+                  ? "#a06000"
+                  : eligibilityStatus === "APTO"
+                    ? "#557900"
+                    : "#657168",
+            }}
+          >
+            {eligibilityStatus === "INAPTO"
+              ? "Inapto"
+              : eligibilityStatus === "APTO"
+                ? "Apto"
+                : "—"}
+          </strong>
+
+          <span
+            style={{
+              display: "block",
+              marginTop: 7,
+              color: "#738078",
+              fontSize: 13,
+            }}
+          >
+            {blockingEligibilityIssues.length
+              ? `${blockingEligibilityIssues.length} ${
+                  blockingEligibilityIssues.length === 1
+                    ? "pendência impeditiva"
+                    : "pendências impeditivas"
+                }`
+              : "Sem pendências impeditivas"}
+          </span>
+        </article>
+
+        <article
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e4e9e6",
+            borderRadius: 18,
+            padding: "18px 20px",
+            boxShadow: "0 8px 24px rgba(18, 40, 32, .04)",
+          }}
+        >
+          <small
+            style={{
+              display: "block",
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: ".08em",
+              color: "#6c766f",
+              marginBottom: 7,
+            }}
+          >
+            REGISTROS ESPORTIVOS
+          </small>
+
+          <strong
+            style={{
+              display: "block",
+              fontSize: 28,
+              lineHeight: 1,
+              color: "#17251e",
+            }}
+          >
+            {athlete.sportRegistrations.length}
+          </strong>
+
+          <span
+            style={{
+              display: "block",
+              marginTop: 7,
+              color: "#738078",
+              fontSize: 13,
+            }}
+          >
+            Federação / CBF
+          </span>
+        </article>
+      </section>
 
       {athlete.memberships.length ? (
         <section
@@ -827,6 +1061,189 @@ export default async function EditAthletePage({
         </section>
       ) : null}
 
+      <section className="athlete-profile-info-grid">
+        <details className="athlete-info-details">
+          <summary>
+            <div>
+              <span className="page-eyebrow">
+                DADOS PESSOAIS
+              </span>
+
+              <strong>Informações do atleta</strong>
+
+              <small>
+                {athlete.nickname || athlete.name}
+                {" · "}
+                {athlete.birthYear || "Ano não informado"}
+              </small>
+            </div>
+
+            <span className="athlete-info-open">
+              Ver dados ↓
+            </span>
+          </summary>
+
+          <div className="athlete-info-content">
+            <div className="athlete-info-field">
+              <span>Nome completo</span>
+              <strong>{athlete.name}</strong>
+            </div>
+
+            <div className="athlete-info-field">
+              <span>Nome esportivo</span>
+              <strong>
+                {athlete.nickname || "Não informado"}
+              </strong>
+            </div>
+
+            <div className="athlete-info-field">
+              <span>Nascimento</span>
+              <strong>
+                {privateSummary?.privateData?.birthDate
+                  ? privateSummary.privateData.birthDate.toLocaleDateString(
+                      "pt-BR",
+                    )
+                  : athlete.birthYear
+                    ? String(athlete.birthYear)
+                    : "Não informado"}
+              </strong>
+            </div>
+
+            <div className="athlete-info-field">
+              <span>Número</span>
+              <strong>
+                {athlete.jerseyNumber ?? "Não informado"}
+              </strong>
+            </div>
+
+            <div className="athlete-info-field">
+              <span>Posição</span>
+              <strong>
+                {athlete.position || "Não informada"}
+              </strong>
+            </div>
+
+            <div className="athlete-info-field">
+              <span>Pé dominante</span>
+              <strong>
+                {dominantFootLabel(athlete.dominantFoot)}
+              </strong>
+            </div>
+          </div>
+        </details>
+
+        {privateSummary ? (
+          <details className="athlete-info-details">
+            <summary>
+              <div>
+                <span className="page-eyebrow">
+                  RESPONSÁVEIS
+                </span>
+
+                <strong>Contatos do atleta</strong>
+
+                <small>
+                  {privateSummary.guardians.length
+                    ? `${privateSummary.guardians.length} responsável(is)`
+                    : athlete.guardianName
+                      ? "1 responsável"
+                      : "Nenhum responsável"}
+                </small>
+              </div>
+
+              <span className="athlete-info-open">
+                Ver responsáveis ↓
+              </span>
+            </summary>
+
+            <div className="athlete-guardian-list">
+              {privateSummary.guardians.length ? (
+                privateSummary.guardians.map((guardian) => (
+                  <article
+                    key={guardian.id}
+                    className="athlete-guardian-summary"
+                  >
+                    <div className="athlete-guardian-head">
+                      <strong>{guardian.name}</strong>
+
+                      {guardian.isPrimary ? (
+                        <span>Principal</span>
+                      ) : null}
+                    </div>
+
+                    <div className="athlete-info-content">
+                      <div className="athlete-info-field">
+                        <span>Parentesco</span>
+                        <strong>
+                          {guardian.relation === "MOTHER"
+                            ? "Mãe"
+                            : guardian.relation === "FATHER"
+                              ? "Pai"
+                              : guardian.relation ===
+                                  "LEGAL_GUARDIAN"
+                                ? "Responsável legal"
+                                : "Outro"}
+                        </strong>
+                      </div>
+
+                      <div className="athlete-info-field">
+                        <span>WhatsApp / telefone</span>
+                        <strong>
+                          {guardian.phone || "Não informado"}
+                        </strong>
+                      </div>
+
+                      <div className="athlete-info-field">
+                        <span>E-mail</span>
+                        <strong>
+                          {guardian.email || "Não informado"}
+                        </strong>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              ) : athlete.guardianName ? (
+                <article className="athlete-guardian-summary">
+                  <div className="athlete-guardian-head">
+                    <strong>{athlete.guardianName}</strong>
+                    <span>Principal</span>
+                  </div>
+
+                  <div className="athlete-info-content">
+                    <div className="athlete-info-field">
+                      <span>Parentesco</span>
+                      <strong>
+                        {athlete.guardianRelation ||
+                          "Não informado"}
+                      </strong>
+                    </div>
+
+                    <div className="athlete-info-field">
+                      <span>WhatsApp / telefone</span>
+                      <strong>
+                        {athlete.guardianPhone ||
+                          "Não informado"}
+                      </strong>
+                    </div>
+
+                    <div className="athlete-info-field">
+                      <span>E-mail</span>
+                      <strong>
+                        {athlete.guardianEmail ||
+                          "Não informado"}
+                      </strong>
+                    </div>
+                  </div>
+                </article>
+              ) : (
+                <p className="muted">
+                  Nenhum responsável cadastrado.
+                </p>
+              )}
+            </div>
+          </details>
+        ) : null}
+      </section>
       {isRejected ? (
         <section
           className="card athlete-current-state-card rejected"
@@ -1361,15 +1778,54 @@ export default async function EditAthletePage({
       ) : null}
 
       {eligibilityOverrideHistory.length ? (
-        <section
+        <details
           className="card athlete-eligibility-history"
           style={{ marginBottom: 18 }}
         >
-          <span className="page-eyebrow">
-            HISTÓRICO DE ELEGIBILIDADE
-          </span>
-          <h2>Liberações excepcionais</h2>
-          <p className="muted">
+          <summary
+            style={{
+              cursor: "pointer",
+              listStyle: "none",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 20,
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <span className="page-eyebrow">
+                  HISTÓRICO DE ELEGIBILIDADE
+                </span>
+
+                <h2 style={{ marginBottom: 6 }}>
+                  Liberações excepcionais
+                </h2>
+
+                <p className="muted" style={{ margin: 0 }}>
+                  {eligibilityOverrideHistory.length} registro(s) de decisão
+                </p>
+              </div>
+
+              <strong
+                style={{
+                  fontSize: 13,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Ver histórico ↓
+              </strong>
+            </div>
+          </summary>
+
+          <p
+            className="muted"
+            style={{ marginTop: 20 }}
+          >
             Registro das decisões do Gestor que alteraram uma pendência
             entre impeditiva e não impeditiva.
           </p>
@@ -1426,7 +1882,7 @@ export default async function EditAthletePage({
               );
             })}
           </div>
-        </section>
+        </details>
       ) : null}
 
       {isEvaluation && canEdit ? (
@@ -1905,17 +2361,54 @@ export default async function EditAthletePage({
       ) : null}
 
       {categoryHistory.length ? (
-        <section
-          className="card"
+        <details
+          className="card athlete-category-history"
           style={{ marginBottom: 18 }}
         >
-          <span className="page-eyebrow">
-            HISTÓRICO DE CATEGORIA
-          </span>
+          <summary
+            style={{
+              cursor: "pointer",
+              listStyle: "none",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 20,
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <span className="page-eyebrow">
+                  HISTÓRICO DE CATEGORIA
+                </span>
 
-          <h2>Movimentações do atleta</h2>
+                <h2 style={{ marginBottom: 6 }}>
+                  Movimentações do atleta
+                </h2>
 
-          <div className="stack">
+                <p className="muted" style={{ margin: 0 }}>
+                  {categoryHistory.length} movimentação(ões) registrada(s)
+                </p>
+              </div>
+
+              <strong
+                style={{
+                  fontSize: 13,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Ver histórico ↓
+              </strong>
+            </div>
+          </summary>
+
+          <div
+            className="stack"
+            style={{ marginTop: 20 }}
+          >
             {categoryHistory.map((item) => {
               const metadata =
                 parseCategoryAuditMetadata(
@@ -1954,14 +2447,62 @@ export default async function EditAthletePage({
               );
             })}
           </div>
-        </section>
+        </details>
       ) : null}
 
       {canEdit ? (
-        <section className="card">
+        <details
+          className="card athlete-edit-details"
+          style={{ marginBottom: 18 }}
+        >
+          <summary
+            style={{
+              cursor: "pointer",
+              listStyle: "none",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 20,
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <span className="page-eyebrow">
+                  DADOS DO ATLETA
+                </span>
+
+                <h2 style={{ marginBottom: 6 }}>
+                  Editar dados do atleta
+                </h2>
+
+                <p className="muted" style={{ margin: 0 }}>
+                  {athlete.nickname || athlete.name}
+                  {" · "}
+                  {athlete.birthYear || "Ano não informado"}
+                  {" · "}
+                  {athlete.position || "Posição não informada"}
+                </p>
+              </div>
+
+              <strong
+                style={{
+                  fontSize: 13,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Abrir edição ↓
+              </strong>
+            </div>
+          </summary>
+
           <form
             className="form"
             action={updateAthlete}
+            style={{ marginTop: 22 }}
           >
             <input
               type="hidden"
@@ -2301,54 +2842,818 @@ export default async function EditAthletePage({
                 width: "100%",
               }}
             />
+            <input
+              type="hidden"
+              name="guardianName"
+              value={athlete.guardianName ?? ""}
+            />
+            <input
+              type="hidden"
+              name="guardianRelation"
+              value={athlete.guardianRelation ?? ""}
+            />
+            <input
+              type="hidden"
+              name="guardianPhone"
+              value={athlete.guardianPhone ?? ""}
+            />
+            <input
+              type="hidden"
+              name="guardianEmail"
+              value={athlete.guardianEmail ?? ""}
+            />
 
-            <h3>Responsável — privado</h3>
-
-            <label>
-              Nome do responsável
-              <input
-                name="guardianName"
-                defaultValue={
-                  athlete.guardianName ?? ""
-                }
-              />
-            </label>
-
-            <label>
-              Parentesco / relação
-              <input
-                name="guardianRelation"
-                defaultValue={
-                  athlete.guardianRelation ?? ""
-                }
-                placeholder="Ex.: Mãe, Pai, Avó, Tutor"
-              />
-            </label>
-
-            <label>
-              WhatsApp / telefone
-              <input
-                name="guardianPhone"
-                defaultValue={
-                  athlete.guardianPhone ?? ""
-                }
-              />
-            </label>
-
-            <label>
-              E-mail
-              <input
-                name="guardianEmail"
-                type="email"
-                defaultValue={
-                  athlete.guardianEmail ?? ""
-                }
-              />
-            </label>
 
             <AthleteSaveButton />
           </form>
-        </section>
+          {privateSummary ? (
+            <>
+              <div
+                style={{
+                  marginTop: 26,
+                  paddingTop: 24,
+                  borderTop: "1px solid #e5eaed",
+                }}
+              >
+                <span className="page-eyebrow">
+                  DADOS PESSOAIS
+                </span>
+
+                <h2 style={{ marginBottom: 6 }}>
+                  Identificação do atleta
+                </h2>
+
+                <p className="muted" style={{ marginTop: 0 }}>
+                  CPF, RG e informações médicas são armazenados de forma criptografada.
+                </p>
+
+                <form
+                  action={saveAthletePrivateData}
+                  className="form"
+                  style={{
+                    width: "100%",
+                    maxWidth: "none",
+                    marginTop: 18,
+                    gridTemplateColumns: "1fr",
+                  }}
+                >
+                  <input
+                    type="hidden"
+                    name="athleteId"
+                    value={athlete.id}
+                  />
+
+                  <div className="form-grid-2">
+                    <label>
+                      Data de nascimento
+                      <input
+                        type="date"
+                        name="birthDate"
+                        defaultValue={athletePrivateDateInput(
+                          privateSummary.privateData?.birthDate,
+                        )}
+                      />
+                    </label>
+
+                    <label>
+                      Nacionalidade
+                      <input
+                        name="nationality"
+                        defaultValue={
+                          privateSummary.privateData?.nationality || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Naturalidade
+                      <input
+                        name="naturality"
+                        defaultValue={
+                          privateSummary.privateData?.naturality || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      E-mail do atleta
+                      <input
+                        type="email"
+                        name="email"
+                        defaultValue={
+                          privateSummary.privateData?.email || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      CPF
+                      <input
+                        name="cpf"
+                        autoComplete="off"
+                        defaultValue={
+                          safeDecryptPrivateData(
+                            privateSummary.privateData?.cpfEncrypted,
+                          ) || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      RG / documento de identificação
+                      <input
+                        name="rg"
+                        autoComplete="off"
+                        defaultValue={
+                          safeDecryptPrivateData(
+                            privateSummary.privateData?.rgEncrypted,
+                          ) || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Órgão emissor
+                      <input
+                        name="rgIssuer"
+                        defaultValue={
+                          safeDecryptPrivateData(
+                            privateSummary.privateData?.rgIssuerEncrypted,
+                          ) || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Instagram
+                      <input
+                        name="instagram"
+                        defaultValue={
+                          privateSummary.privateData?.instagram || ""
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="form-divider">
+                    <span>SAÚDE E EMERGÊNCIA</span>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <label>
+                      Tipo sanguíneo
+                      <input
+                        name="bloodType"
+                        placeholder="Ex.: O+"
+                        defaultValue={
+                          safeDecryptPrivateData(
+                            privateSummary.privateData
+                              ?.bloodTypeEncrypted,
+                          ) || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Plano de saúde
+                      <input
+                        name="healthPlan"
+                        defaultValue={
+                          safeDecryptPrivateData(
+                            privateSummary.privateData
+                              ?.healthPlanEncrypted,
+                          ) || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Número da carteirinha
+                      <input
+                        name="healthPlanNumber"
+                        defaultValue={
+                          safeDecryptPrivateData(
+                            privateSummary.privateData
+                              ?.healthPlanNumberEncrypted,
+                          ) || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Contato de emergência
+                      <input
+                        name="emergencyContactName"
+                        defaultValue={
+                          safeDecryptPrivateData(
+                            privateSummary.privateData
+                              ?.emergencyContactNameEncrypted,
+                          ) || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Telefone de emergência
+                      <input
+                        name="emergencyContactPhone"
+                        defaultValue={
+                          safeDecryptPrivateData(
+                            privateSummary.privateData
+                              ?.emergencyContactPhoneEncrypted,
+                          ) || ""
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Relação com o atleta
+                      <input
+                        name="emergencyContactRelation"
+                        placeholder="Ex.: Mãe, pai, avó"
+                        defaultValue={
+                          safeDecryptPrivateData(
+                            privateSummary.privateData
+                              ?.emergencyContactRelationEncrypted,
+                          ) || ""
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <label>
+                    Alergias
+                    <textarea
+                      name="allergies"
+                      rows={3}
+                      defaultValue={
+                        safeDecryptPrivateData(
+                          privateSummary.privateData
+                            ?.allergiesEncrypted,
+                        ) || ""
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Medicamentos em uso
+                    <textarea
+                      name="medications"
+                      rows={3}
+                      defaultValue={
+                        safeDecryptPrivateData(
+                          privateSummary.privateData
+                            ?.medicationsEncrypted,
+                        ) || ""
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Condições de saúde
+                    <textarea
+                      name="healthConditions"
+                      rows={3}
+                      defaultValue={
+                        safeDecryptPrivateData(
+                          privateSummary.privateData
+                            ?.healthConditionsEncrypted,
+                        ) || ""
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Restrições e recomendações médicas
+                    <textarea
+                      name="medicalRestrictions"
+                      rows={3}
+                      defaultValue={
+                        safeDecryptPrivateData(
+                          privateSummary.privateData
+                            ?.medicalRestrictionsEncrypted,
+                        ) || ""
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Observações médicas adicionais
+                    <textarea
+                      name="medicalNotes"
+                      rows={4}
+                      defaultValue={
+                        safeDecryptPrivateData(
+                          privateSummary.privateData
+                            ?.medicalNotesEncrypted,
+                        ) || ""
+                      }
+                    />
+                  </label>
+
+                  <button type="submit">
+                    Salvar dados privados e médicos
+                  </button>
+                </form>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 28,
+                  paddingTop: 24,
+                  borderTop: "1px solid #e5eaed",
+                }}
+              >
+                <span className="page-eyebrow">
+                  RESPONSÁVEIS
+                </span>
+
+                <h2 style={{ marginBottom: 6 }}>
+                  Família e responsáveis legais
+                </h2>
+
+                <p className="muted" style={{ marginTop: 0 }}>
+                  Consulte, edite ou adicione os responsáveis vinculados ao atleta.
+                </p>
+
+                <div
+                  className="stack"
+                  style={{ marginTop: 16 }}
+                >
+                  {privateSummary.guardians.map(
+                    (guardian) => (
+                      <details
+                        key={guardian.id}
+                        style={{
+                          border:
+                            "1px solid var(--athlete-v3-line)",
+                          borderRadius: 12,
+                          padding: 15,
+                          background: "#fbfcfc",
+                        }}
+                      >
+                        <summary
+                          style={{
+                            cursor: "pointer",
+                            fontWeight: 800,
+                          }}
+                        >
+                          {guardian.name}
+                          {" · "}
+                          {athleteGuardianRelationLabel(
+                            guardian.relation,
+                          )}
+                          {guardian.isPrimary
+                            ? " · Principal"
+                            : ""}
+                        </summary>
+
+                        <form
+                          action={saveAthleteGuardian}
+                          className="form"
+                          style={{
+                            width: "100%",
+                            maxWidth: "none",
+                            marginTop: 18,
+                            gridTemplateColumns: "1fr",
+                          }}
+                        >
+                          <input
+                            type="hidden"
+                            name="athleteId"
+                            value={athlete.id}
+                          />
+
+                          <input
+                            type="hidden"
+                            name="guardianId"
+                            value={guardian.id}
+                          />
+
+                          <div className="form-grid-2">
+                            <label>
+                              Nome completo
+                              <input
+                                name="name"
+                                required
+                                defaultValue={guardian.name}
+                              />
+                            </label>
+
+                            <label>
+                              Relação
+                              <select
+                                name="relation"
+                                defaultValue={guardian.relation}
+                              >
+                                <option value="MOTHER">
+                                  Mãe
+                                </option>
+                                <option value="FATHER">
+                                  Pai
+                                </option>
+                                <option value="LEGAL_GUARDIAN">
+                                  Responsável legal
+                                </option>
+                                <option value="OTHER">
+                                  Outro
+                                </option>
+                              </select>
+                            </label>
+
+                            <label>
+                              CPF
+                              <input
+                                name="cpf"
+                                defaultValue={
+                                  safeDecryptPrivateData(
+                                    guardian.cpfEncrypted,
+                                  ) || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              RG
+                              <input
+                                name="rg"
+                                defaultValue={
+                                  safeDecryptPrivateData(
+                                    guardian.rgEncrypted,
+                                  ) || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Órgão emissor
+                              <input
+                                name="rgIssuer"
+                                defaultValue={
+                                  safeDecryptPrivateData(
+                                    guardian.rgIssuerEncrypted,
+                                  ) || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Telefone
+                              <input
+                                name="phone"
+                                defaultValue={
+                                  guardian.phone || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              E-mail
+                              <input
+                                type="email"
+                                name="email"
+                                defaultValue={
+                                  guardian.email || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Profissão
+                              <input
+                                name="profession"
+                                defaultValue={
+                                  guardian.profession || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Nacionalidade
+                              <input
+                                name="nationality"
+                                defaultValue={
+                                  guardian.nationality || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Naturalidade
+                              <input
+                                name="naturality"
+                                defaultValue={
+                                  guardian.naturality || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Estado civil
+                              <input
+                                name="maritalStatus"
+                                defaultValue={
+                                  guardian.maritalStatus || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              CEP
+                              <input
+                                name="postalCode"
+                                defaultValue={
+                                  guardian.postalCode || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Endereço
+                              <input
+                                name="address"
+                                defaultValue={
+                                  guardian.address || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Bairro
+                              <input
+                                name="neighborhood"
+                                defaultValue={
+                                  guardian.neighborhood || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Cidade
+                              <input
+                                name="city"
+                                defaultValue={
+                                  guardian.city || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Instagram
+                              <input
+                                name="instagram"
+                                defaultValue={
+                                  guardian.instagram || ""
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Responsável principal
+                              <select
+                                name="isPrimary"
+                                defaultValue={String(
+                                  guardian.isPrimary,
+                                )}
+                              >
+                                <option value="false">
+                                  Não
+                                </option>
+                                <option value="true">
+                                  Sim
+                                </option>
+                              </select>
+                            </label>
+
+                            <label>
+                              Autorizado a buscar o atleta
+                              <select
+                                name="authorizedForPickup"
+                                defaultValue={String(
+                                  guardian.authorizedForPickup,
+                                )}
+                              >
+                                <option value="false">
+                                  Não
+                                </option>
+                                <option value="true">
+                                  Sim
+                                </option>
+                              </select>
+                            </label>
+                          </div>
+
+                          <button type="submit">
+                            Salvar responsável
+                          </button>
+                        </form>
+
+                        <form
+                          action={deleteAthleteGuardian}
+                          style={{ marginTop: 10 }}
+                        >
+                          <input
+                            type="hidden"
+                            name="athleteId"
+                            value={athlete.id}
+                          />
+
+                          <input
+                            type="hidden"
+                            name="guardianId"
+                            value={guardian.id}
+                          />
+
+                          <button
+                            className="btn btn-secondary"
+                            type="submit"
+                          >
+                            Excluir responsável
+                          </button>
+                        </form>
+                      </details>
+                    ),
+                  )}
+                </div>
+
+                <details
+                  style={{
+                    border:
+                      "1px solid var(--athlete-v3-line)",
+                    borderRadius: 12,
+                    padding: 15,
+                    marginTop: 16,
+                    background: "#fbfcfc",
+                  }}
+                >
+                  <summary
+                    style={{
+                      cursor: "pointer",
+                      fontWeight: 800,
+                    }}
+                  >
+                    + Adicionar responsável
+                  </summary>
+
+                  <form
+                    action={saveAthleteGuardian}
+                    className="form"
+                    style={{
+                      width: "100%",
+                      maxWidth: "none",
+                      marginTop: 18,
+                            gridTemplateColumns: "1fr",
+                    }}
+                  >
+                    <input
+                      type="hidden"
+                      name="athleteId"
+                      value={athlete.id}
+                    />
+
+                    <div className="form-grid-2">
+                      <label>
+                        Nome completo
+                        <input
+                          name="name"
+                          required
+                        />
+                      </label>
+
+                      <label>
+                        Relação
+                        <select
+                          name="relation"
+                          defaultValue="MOTHER"
+                        >
+                          <option value="MOTHER">
+                            Mãe
+                          </option>
+                          <option value="FATHER">
+                            Pai
+                          </option>
+                          <option value="LEGAL_GUARDIAN">
+                            Responsável legal
+                          </option>
+                          <option value="OTHER">
+                            Outro
+                          </option>
+                        </select>
+                      </label>
+
+                      <label>
+                        CPF
+                        <input name="cpf" />
+                      </label>
+
+                      <label>
+                        RG
+                        <input name="rg" />
+                      </label>
+
+                      <label>
+                        Órgão emissor
+                        <input name="rgIssuer" />
+                      </label>
+
+                      <label>
+                        Telefone
+                        <input name="phone" />
+                      </label>
+
+                      <label>
+                        E-mail
+                        <input
+                          type="email"
+                          name="email"
+                        />
+                      </label>
+
+                      <label>
+                        Profissão
+                        <input name="profession" />
+                      </label>
+
+                      <label>
+                        Nacionalidade
+                        <input name="nationality" />
+                      </label>
+
+                      <label>
+                        Naturalidade
+                        <input name="naturality" />
+                      </label>
+
+                      <label>
+                        Estado civil
+                        <input name="maritalStatus" />
+                      </label>
+
+                      <label>
+                        CEP
+                        <input name="postalCode" />
+                      </label>
+
+                      <label>
+                        Endereço
+                        <input name="address" />
+                      </label>
+
+                      <label>
+                        Bairro
+                        <input name="neighborhood" />
+                      </label>
+
+                      <label>
+                        Cidade
+                        <input name="city" />
+                      </label>
+
+                      <label>
+                        Instagram
+                        <input name="instagram" />
+                      </label>
+
+                      <label>
+                        Responsável principal
+                        <select
+                          name="isPrimary"
+                          defaultValue="false"
+                        >
+                          <option value="false">
+                            Não
+                          </option>
+                          <option value="true">
+                            Sim
+                          </option>
+                        </select>
+                      </label>
+
+                      <label>
+                        Autorizado a buscar o atleta
+                        <select
+                          name="authorizedForPickup"
+                          defaultValue="false"
+                        >
+                          <option value="false">
+                            Não
+                          </option>
+                          <option value="true">
+                            Sim
+                          </option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <button type="submit">
+                      Cadastrar responsável
+                    </button>
+                  </form>
+                </details>
+              </div>
+            </>
+          ) : null}
+        </details>
       ) : (
         <section className="card">
           <span className="page-eyebrow">
@@ -2776,31 +4081,42 @@ export default async function EditAthletePage({
         }
 
 
+        .athlete-sport-memberships {
+          padding: 18px 20px !important;
+        }
+
         .athlete-sport-memberships h2 {
           margin: 0;
           color: var(--athlete-v3-ink);
-          font-size: 22px;
+          font-size: 18px;
           letter-spacing: -.03em;
         }
 
         .athlete-sport-memberships > .muted {
-          margin: 5px 0 12px;
-          font-size: 12px;
+          margin: 3px 0 10px;
+          font-size: 11px;
         }
 
         .athlete-sport-membership-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px;
+          gap: 8px;
+          max-width: 900px;
         }
 
         .athlete-sport-membership {
           display: grid;
-          gap: 10px;
-          padding: 14px;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 6px 12px;
+          padding: 11px 13px;
           border: 1px solid #e5eaed;
-          border-radius: 14px;
+          border-radius: 12px;
           background: #fbfcfc;
+        }
+
+        .athlete-sport-membership > small {
+          grid-column: 1 / -1;
         }
 
         .athlete-sport-membership.released {
@@ -3176,6 +4492,149 @@ export default async function EditAthletePage({
           font-size: 11px;
         }
 
+        .athlete-profile-info-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .athlete-info-details {
+          min-width: 0;
+          overflow: hidden;
+          border: 1px solid var(--athlete-v3-line);
+          border-radius: 16px;
+          background: #fff;
+          box-shadow: 0 8px 24px rgba(8,26,38,.035);
+        }
+
+        .athlete-info-details > summary {
+          min-height: 78px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 15px 18px;
+          cursor: pointer;
+          list-style: none;
+        }
+
+        .athlete-info-details > summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .athlete-info-details > summary > div {
+          min-width: 0;
+          display: grid;
+          gap: 4px;
+        }
+
+        .athlete-info-details > summary strong {
+          color: var(--athlete-v3-ink);
+          font-size: 16px;
+          letter-spacing: -.02em;
+        }
+
+        .athlete-info-details > summary small {
+          overflow: hidden;
+          color: var(--athlete-v3-muted);
+          font-size: 10px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .athlete-info-open {
+          flex: 0 0 auto;
+          color: #536570;
+          font-size: 10px;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+
+        .athlete-info-details[open] > summary {
+          border-bottom: 1px solid #edf1f3;
+        }
+
+        .athlete-info-content {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          padding: 14px 16px 16px;
+        }
+
+        .athlete-info-field {
+          min-width: 0;
+          display: grid;
+          gap: 4px;
+          padding: 10px 11px;
+          border: 1px solid #edf1f3;
+          border-radius: 11px;
+          background: #fbfcfc;
+        }
+
+        .athlete-info-field > span {
+          color: var(--athlete-v3-muted);
+          font-size: 8px;
+          font-weight: 900;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+        }
+
+        .athlete-info-field > strong {
+          overflow-wrap: anywhere;
+          color: var(--athlete-v3-ink);
+          font-size: 12px;
+          line-height: 1.4;
+        }
+
+        .athlete-guardian-list {
+          display: grid;
+          gap: 10px;
+          padding: 14px 16px 16px;
+        }
+
+        .athlete-guardian-summary {
+          overflow: hidden;
+          border: 1px solid #e5eaed;
+          border-radius: 12px;
+          background: #fbfcfc;
+        }
+
+        .athlete-guardian-summary .athlete-info-content {
+          padding: 8px 10px 10px;
+        }
+
+        .athlete-guardian-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 11px 12px 3px;
+        }
+
+        .athlete-guardian-head > strong {
+          color: var(--athlete-v3-ink);
+          font-size: 13px;
+        }
+
+        .athlete-guardian-head > span {
+          padding: 4px 7px;
+          border-radius: 999px;
+          color: #477100;
+          background: var(--athlete-v3-lime-soft);
+          font-size: 8px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+
+        @media (max-width: 760px) {
+          .athlete-profile-info-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .athlete-info-content {
+            grid-template-columns: 1fr;
+          }
+        }
         @media (max-width: 980px) {
           .athlete-edit-page-v3 {
             padding: 24px;

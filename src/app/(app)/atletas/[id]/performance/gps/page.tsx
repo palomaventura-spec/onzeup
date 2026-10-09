@@ -345,6 +345,10 @@ export default async function AthleteGpsPerformancePage({
             href: `/atletas/${athlete.id}/performance/avaliacoes`,
           },
           {
+            label: "Crescimento",
+            href: `/atletas/${athlete.id}/performance/crescimento`,
+          },
+          {
             label: "Relatórios",
             href: `/atletas/${athlete.id}/performance/relatorios`,
           },

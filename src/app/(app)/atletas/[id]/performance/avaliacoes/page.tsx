@@ -206,6 +206,10 @@ export default async function AthleteEvaluationsPage({
             active: true,
           },
           {
+            label: "Crescimento",
+            href: `/atletas/${athlete.id}/performance/crescimento`,
+          },
+          {
             label: "Relatórios",
             href: `/atletas/${athlete.id}/performance/relatorios`,
           },

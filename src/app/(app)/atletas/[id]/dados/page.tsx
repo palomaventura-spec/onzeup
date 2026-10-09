@@ -4,8 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import SafeAvatar from "@/components/SafeAvatar";
 
 import { requireClubPermission } from "@/lib/club-access";
-import { getEffectiveClubRole } from "@/lib/club-permissions";
-import { safeDecryptPrivateData } from "@/lib/private-data-crypto";
 import { prisma } from "@/lib/prisma";
 
 import AthleteDocumentUploadForm from "./AthleteDocumentUploadForm";
@@ -14,14 +12,9 @@ import AthleteDocumentManager from "./AthleteDocumentManager";
 
 import {
   confirmAthleteDocumentation,
-  createBodyMeasurement,
   createManualDocumentIssue,
-  deleteAthleteGuardian,
-  deleteBodyMeasurement,
   reopenManualDocumentIssue,
   resolveManualDocumentIssue,
-  saveAthleteGuardian,
-  saveAthletePrivateData,
 } from "./actions";
 
 function dateInput(value: Date | null | undefined) {
@@ -32,16 +25,7 @@ function dateLabel(value: Date) {
   return value.toLocaleDateString("pt-BR");
 }
 
-function decimal(value: { toString(): string } | null | undefined) {
-  return value?.toString() || "";
-}
 
-const relationLabels = {
-  FATHER: "Pai",
-  MOTHER: "Mãe",
-  LEGAL_GUARDIAN: "Responsável legal",
-  OTHER: "Outro",
-} as const;
 
 const documentCategoryLabels = {
   IDENTITY: "Identificação",
@@ -224,9 +208,7 @@ export default async function AthletePrivateDataPage({
           },
         },
       },
-      privateData: true,
       guardians: { orderBy: [{ isPrimary: "desc" }, { name: "asc" }] },
-      bodyMeasurements: { orderBy: { measuredAt: "desc" } },
       registrationRequests: {
         orderBy: { createdAt: "desc" },
         take: 20,
@@ -278,16 +260,6 @@ export default async function AthletePrivateDataPage({
   });
 
   if (!athlete) notFound();
-
-  const internalDossiers = getEffectiveClubRole(user) === "MANAGER"
-    ? await prisma.performanceReport.findMany({
-        where: { organizationId: user.organizationId, athleteId: athlete.id,
-          reportType: "CONSOLIDATED" },
-        orderBy: { createdAt: "desc" },
-        select: { id: true, title: true, snapshot: true, createdAt: true },
-      })
-    : [];
-  const privateData = athlete.privateData;
   const now = new Date();
 
   const activeDocumentRequirements = athlete.memberships
@@ -643,250 +615,7 @@ export default async function AthletePrivateDataPage({
             <span>precisam de atualização</span>
           </div>
         </article>
-
-        <article>
-          <span className="athlete-documents-v4-kpi-icon measurement">
-            <Icon name="measurement" />
-          </span>
-          <div>
-            <small>MEDIÇÕES</small>
-            <strong>{athlete.bodyMeasurements.length}</strong>
-            <span>registro(s) corporal(is)</span>
-          </div>
-        </article>
       </section>
-
-      <section className="card">
-        <span className="page-eyebrow">DADOS PESSOAIS</span>
-        <h2>Identificação do atleta</h2>
-        <p className="muted">
-          CPF, RG e informações médicas são armazenados de forma criptografada.
-        </p>
-
-        <form
-          action={saveAthletePrivateData}
-          className="form"
-          style={{ width: "100%", maxWidth: "none", marginTop: 18 }}
-        >
-          <input type="hidden" name="athleteId" value={athlete.id} />
-
-          <div className="form-grid-2">
-            <label>
-              Data de nascimento
-              <input type="date" name="birthDate" defaultValue={dateInput(privateData?.birthDate)} />
-            </label>
-            <label>
-              Nacionalidade
-              <input name="nationality" defaultValue={privateData?.nationality || ""} />
-            </label>
-            <label>
-              Naturalidade
-              <input name="naturality" defaultValue={privateData?.naturality || ""} />
-            </label>
-            <label>
-              E-mail do atleta
-              <input type="email" name="email" defaultValue={privateData?.email || ""} />
-            </label>
-            <label>
-              CPF
-              <input name="cpf" defaultValue={safeDecryptPrivateData(privateData?.cpfEncrypted) || ""} autoComplete="off" />
-            </label>
-            <label>
-              RG / documento de identificação
-              <input name="rg" defaultValue={safeDecryptPrivateData(privateData?.rgEncrypted) || ""} autoComplete="off" />
-            </label>
-            <label>
-              Órgão emissor
-              <input name="rgIssuer" defaultValue={safeDecryptPrivateData(privateData?.rgIssuerEncrypted) || ""} />
-            </label>
-            <label>
-              Instagram
-              <input name="instagram" defaultValue={privateData?.instagram || ""} />
-            </label>
-          </div>
-
-          <div className="form-divider"><span>SAÚDE E EMERGÊNCIA</span></div>
-
-          <div className="form-grid-2">
-            <label>
-              Tipo sanguíneo
-              <input name="bloodType" placeholder="Ex.: O+" defaultValue={safeDecryptPrivateData(privateData?.bloodTypeEncrypted) || ""} />
-            </label>
-            <label>
-              Plano de saúde
-              <input name="healthPlan" defaultValue={safeDecryptPrivateData(privateData?.healthPlanEncrypted) || ""} />
-            </label>
-            <label>
-              Número da carteirinha
-              <input name="healthPlanNumber" defaultValue={safeDecryptPrivateData(privateData?.healthPlanNumberEncrypted) || ""} />
-            </label>
-            <label>
-              Contato de emergência
-              <input name="emergencyContactName" defaultValue={safeDecryptPrivateData(privateData?.emergencyContactNameEncrypted) || ""} />
-            </label>
-            <label>
-              Telefone de emergência
-              <input name="emergencyContactPhone" defaultValue={safeDecryptPrivateData(privateData?.emergencyContactPhoneEncrypted) || ""} />
-            </label>
-            <label>
-              Relação com o atleta
-              <input name="emergencyContactRelation" placeholder="Ex.: Mãe, pai, avó" defaultValue={safeDecryptPrivateData(privateData?.emergencyContactRelationEncrypted) || ""} />
-            </label>
-          </div>
-
-          <label>
-            Alergias
-            <textarea name="allergies" rows={3} defaultValue={safeDecryptPrivateData(privateData?.allergiesEncrypted) || ""} />
-          </label>
-          <label>
-            Medicamentos em uso
-            <textarea name="medications" rows={3} defaultValue={safeDecryptPrivateData(privateData?.medicationsEncrypted) || ""} />
-          </label>
-          <label>
-            Condições de saúde
-            <textarea name="healthConditions" rows={3} defaultValue={safeDecryptPrivateData(privateData?.healthConditionsEncrypted) || ""} />
-          </label>
-          <label>
-            Restrições e recomendações médicas
-            <textarea name="medicalRestrictions" rows={3} defaultValue={safeDecryptPrivateData(privateData?.medicalRestrictionsEncrypted) || ""} />
-          </label>
-          <label>
-            Observações médicas adicionais
-            <textarea name="medicalNotes" rows={4} defaultValue={safeDecryptPrivateData(privateData?.medicalNotesEncrypted) || ""} />
-          </label>
-
-          <button type="submit">Salvar dados privados e médicos</button>
-        </form>
-      </section>
-
-      <section className="card" style={{ marginTop: 18 }}>
-        <span className="page-eyebrow">RESPONSÁVEIS</span>
-        <h2>Família e responsáveis legais</h2>
-
-        <div className="stack" style={{ marginTop: 16 }}>
-          {athlete.guardians.map((guardian) => (
-            <details key={guardian.id} style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 15 }}>
-              <summary style={{ cursor: "pointer", fontWeight: 800 }}>
-                {guardian.name} • {relationLabels[guardian.relation]}
-                {guardian.isPrimary ? " • Principal" : ""}
-              </summary>
-              <form action={saveAthleteGuardian} className="form" style={{ width: "100%", maxWidth: "none", marginTop: 18 }}>
-                <input type="hidden" name="athleteId" value={athlete.id} />
-                <input type="hidden" name="guardianId" value={guardian.id} />
-                <div className="form-grid-2">
-                  <label>Nome completo<input name="name" required defaultValue={guardian.name} /></label>
-                  <label>Relação<select name="relation" defaultValue={guardian.relation}><option value="MOTHER">Mãe</option><option value="FATHER">Pai</option><option value="LEGAL_GUARDIAN">Responsável legal</option><option value="OTHER">Outro</option></select></label>
-                  <label>CPF<input name="cpf" defaultValue={safeDecryptPrivateData(guardian.cpfEncrypted) || ""} /></label>
-                  <label>RG<input name="rg" defaultValue={safeDecryptPrivateData(guardian.rgEncrypted) || ""} /></label>
-                  <label>Órgão emissor<input name="rgIssuer" defaultValue={safeDecryptPrivateData(guardian.rgIssuerEncrypted) || ""} /></label>
-                  <label>Telefone<input name="phone" defaultValue={guardian.phone || ""} /></label>
-                  <label>E-mail<input type="email" name="email" defaultValue={guardian.email || ""} /></label>
-                  <label>Profissão<input name="profession" defaultValue={guardian.profession || ""} /></label>
-                  <label>Nacionalidade<input name="nationality" defaultValue={guardian.nationality || ""} /></label>
-                  <label>Naturalidade<input name="naturality" defaultValue={guardian.naturality || ""} /></label>
-                  <label>Estado civil<input name="maritalStatus" defaultValue={guardian.maritalStatus || ""} /></label>
-                  <label>CEP<input name="postalCode" defaultValue={guardian.postalCode || ""} /></label>
-                  <label>Endereço<input name="address" defaultValue={guardian.address || ""} /></label>
-                  <label>Bairro<input name="neighborhood" defaultValue={guardian.neighborhood || ""} /></label>
-                  <label>Cidade<input name="city" defaultValue={guardian.city || ""} /></label>
-                  <label>Instagram<input name="instagram" defaultValue={guardian.instagram || ""} /></label>
-                  <label>Responsável principal<select name="isPrimary" defaultValue={String(guardian.isPrimary)}><option value="false">Não</option><option value="true">Sim</option></select></label>
-                  <label>Autorizado a buscar o atleta<select name="authorizedForPickup" defaultValue={String(guardian.authorizedForPickup)}><option value="false">Não</option><option value="true">Sim</option></select></label>
-                </div>
-                <button type="submit">Salvar responsável</button>
-              </form>
-              <form action={deleteAthleteGuardian} style={{ marginTop: 10 }}>
-                <input type="hidden" name="athleteId" value={athlete.id} />
-                <input type="hidden" name="guardianId" value={guardian.id} />
-                <button className="btn btn-secondary" type="submit">Excluir responsável</button>
-              </form>
-            </details>
-          ))}
-        </div>
-
-        <details style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 15, marginTop: 16 }}>
-          <summary style={{ cursor: "pointer", fontWeight: 800 }}>Adicionar responsável</summary>
-          <form action={saveAthleteGuardian} className="form" style={{ width: "100%", maxWidth: "none", marginTop: 18 }}>
-            <input type="hidden" name="athleteId" value={athlete.id} />
-            <div className="form-grid-2">
-              <label>Nome completo<input name="name" required /></label>
-              <label>Relação<select name="relation" defaultValue="MOTHER"><option value="MOTHER">Mãe</option><option value="FATHER">Pai</option><option value="LEGAL_GUARDIAN">Responsável legal</option><option value="OTHER">Outro</option></select></label>
-              <label>CPF<input name="cpf" /></label><label>RG<input name="rg" /></label>
-              <label>Órgão emissor<input name="rgIssuer" /></label><label>Telefone<input name="phone" /></label>
-              <label>E-mail<input type="email" name="email" /></label><label>Profissão<input name="profession" /></label>
-              <label>Nacionalidade<input name="nationality" /></label><label>Naturalidade<input name="naturality" /></label>
-              <label>Estado civil<input name="maritalStatus" /></label><label>CEP<input name="postalCode" /></label>
-              <label>Endereço<input name="address" /></label><label>Bairro<input name="neighborhood" /></label>
-              <label>Cidade<input name="city" /></label><label>Instagram<input name="instagram" /></label>
-              <label>Responsável principal<select name="isPrimary" defaultValue="false"><option value="false">Não</option><option value="true">Sim</option></select></label>
-              <label>Autorizado a buscar o atleta<select name="authorizedForPickup" defaultValue="false"><option value="false">Não</option><option value="true">Sim</option></select></label>
-            </div>
-            <button type="submit">Cadastrar responsável</button>
-          </form>
-        </details>
-      </section>
-
-      <section className="card" style={{ marginTop: 18 }}>
-        <span className="page-eyebrow">MEDIÇÕES FÍSICAS</span>
-        <h2>Histórico corporal</h2>
-        <form action={createBodyMeasurement} className="form" style={{ width: "100%", maxWidth: "none", marginTop: 18 }}>
-          <input type="hidden" name="athleteId" value={athlete.id} />
-          <div className="form-grid-2">
-            <label>Data da medição<input type="date" name="measuredAt" defaultValue={dateInput(new Date())} /></label>
-            <label>Altura (cm)<input type="number" min="0" step="0.01" name="heightCm" /></label>
-            <label>Peso (kg)<input type="number" min="0" step="0.01" name="weightKg" /></label>
-            <label>Envergadura (cm)<input type="number" min="0" step="0.01" name="wingspanCm" /></label>
-            <label>Gordura corporal (%)<input type="number" min="0" step="0.01" name="bodyFatPercent" /></label>
-            <label>Massa muscular (kg)<input type="number" min="0" step="0.01" name="muscleMassKg" /></label>
-          </div>
-          <label>Observações<textarea name="notes" rows={3} /></label>
-          <button type="submit">Registrar medição e calcular IMC</button>
-        </form>
-
-        {athlete.bodyMeasurements.length ? (
-          <div className="table-wrap" style={{ marginTop: 20 }}>
-            <table className="table">
-              <thead><tr><th>Data</th><th>Altura</th><th>Peso</th><th>IMC</th><th>Envergadura</th><th>Gordura</th><th>Massa muscular</th><th>Ação</th></tr></thead>
-              <tbody>
-                {athlete.bodyMeasurements.map((item) => (
-                  <tr key={item.id}>
-                    <td>{dateLabel(item.measuredAt)}</td>
-                    <td>{decimal(item.heightCm) || "—"} {item.heightCm ? "cm" : ""}</td>
-                    <td>{decimal(item.weightKg) || "—"} {item.weightKg ? "kg" : ""}</td>
-                    <td><strong>{decimal(item.bmi) || "—"}</strong></td>
-                    <td>{decimal(item.wingspanCm) || "—"}</td>
-                    <td>{decimal(item.bodyFatPercent) || "—"}{item.bodyFatPercent ? "%" : ""}</td>
-                    <td>{decimal(item.muscleMassKg) || "—"}</td>
-                    <td><form action={deleteBodyMeasurement}><input type="hidden" name="athleteId" value={athlete.id} /><input type="hidden" name="measurementId" value={item.id} /><button className="btn btn-secondary" type="submit">Excluir</button></form></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : <p className="muted" style={{ marginTop: 18 }}>Nenhuma medição registrada.</p>}
-      </section>
-
-      {getEffectiveClubRole(user) === "MANAGER" ? (
-        <section className="card" style={{ marginTop: 18 }}>
-          <span className="page-eyebrow">PRONTUÁRIOS ARQUIVADOS</span>
-          <h2>Histórico do prontuário esportivo</h2>
-          <p className="muted">As versões geradas ficam disponíveis para consulta e nova impressão. Os anexos originais continuam na central privada abaixo.</p>
-          {internalDossiers.length ? <div className="table-wrap" style={{ marginTop: 16 }}>
-            <table className="table"><thead><tr><th>Data</th><th>Versão</th><th>Prontuário</th><th>Acesso</th></tr></thead><tbody>
-            {internalDossiers.map((item) => {
-              const kind = item.snapshot && typeof item.snapshot === "object" && !Array.isArray(item.snapshot) && "documentKind" in item.snapshot
-                ? item.snapshot.documentKind : null;
-              return <tr key={item.id}><td>{dateLabel(item.createdAt)}</td>
-                <td>{kind === "INTERNAL_DOSSIER" ? "Interno" : "Compartilhável"}</td>
-                <td>{item.title}</td>
-                <td><Link href={`/performance-report/${item.id}`} target="_blank" rel="noopener noreferrer">Abrir prontuário ↗</Link></td>
-              </tr>;
-            })}
-            </tbody></table>
-          </div> : <p className="muted">Nenhum prontuário gerado ainda.</p>}
-          <Link className="btn btn-secondary" href={`/atletas/${athlete.id}/performance/relatorios`} style={{ marginTop: 12 }}>Gerar prontuário</Link>
-        </section>
-      ) : null}
 
       <section
         id="documentos"
