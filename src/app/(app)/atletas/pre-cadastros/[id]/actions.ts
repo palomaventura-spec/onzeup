@@ -144,6 +144,31 @@ export async function approveAthletePreRegistration(
         id: true,
         organizationId: true,
         categoryId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            sport: true,
+            evaluationTargets: {
+              where: {
+                targetCategory: {
+                  active: true,
+                  type: "STANDARD",
+                },
+              },
+              select: {
+                targetCategory: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+              take: 1,
+            },
+          },
+        },
         status: true,
         payloadEncrypted: true,
         recipientName: true,
@@ -203,6 +228,7 @@ export async function approveAthletePreRegistration(
 
   const relation =
     guardianRelation(guardian.relation);
+  const approvedAt = new Date();
 
   const createdAthlete =
     await prisma.$transaction(async (tx) => {
@@ -257,9 +283,20 @@ export async function approveAthletePreRegistration(
 
           birthYear,
 
-          active: true,
+            active: true,
 
-          guardianName,
+            currentStatus:
+              registration.category?.type === "EVALUATION"
+                ? "EVALUATION"
+                : "ACTIVE",
+
+            evaluationTargetCategoryId:
+              registration.category?.type === "EVALUATION"
+                ? registration.category.evaluationTargets[0]
+                    ?.targetCategory.id ?? null
+                : null,
+
+            guardianName,
           guardianPhone,
           guardianEmail,
           guardianRelation: relation,
@@ -312,8 +349,61 @@ export async function approveAthletePreRegistration(
       /*
        * Responsável principal.
        */
-      if (guardianName) {
-        await tx.athleteGuardian.create({
+        if (registration.category) {
+          await tx.athleteMembership.create({
+            data: {
+              athleteId: athlete.id,
+              organizationId: user.organizationId,
+              categoryId: registration.category.id,
+              sport: registration.category.sport,
+              season: String(approvedAt.getUTCFullYear()),
+              status: "ACTIVE",
+              verified: true,
+              startedAt: approvedAt,
+            },
+          });
+
+          if (registration.category.type === "EVALUATION") {
+            const targetCategory =
+              registration.category.evaluationTargets[0]
+                ?.targetCategory ?? null;
+
+            await tx.athleteEvaluationProcess.create({
+              data: {
+                organizationId: user.organizationId,
+                athleteId: athlete.id,
+
+                evaluationCategoryId:
+                  registration.category.id,
+
+                targetCategoryId:
+                  targetCategory?.id ?? null,
+
+                createdByUserId: user.id,
+                sport: registration.category.sport,
+
+                status: "IN_EVALUATION",
+                entryMode: "CURRENT",
+                startedAt: approvedAt,
+
+                evaluationCategoryNameSnapshot:
+                  registration.category.name,
+
+                targetCategoryNameSnapshot:
+                  targetCategory?.name ?? null,
+
+                seasonSnapshot:
+                  String(approvedAt.getUTCFullYear()),
+
+                createdByNameSnapshot:
+                  user.name,
+              },
+            });
+          }
+        }
+
+        if (guardianName) {
+          await tx.athleteGuardian.create({
           data: {
             athleteId: athlete.id,
             relation,
