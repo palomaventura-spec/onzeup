@@ -1,27 +1,27 @@
-import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+﻿import Link from "next/link";
+
 
 export default async function PlayerLanding() {
-  const gustavo = await prisma.playerProfile.findUnique({ where: { slug: "gustavo-aguiar" } });
+
 
   const model = {
-    name: gustavo?.name || "Gustavo Aguiar",
-    nickname: gustavo?.nickname || "G9",
-    photoUrl: gustavo?.photoUrl || "/marketing/gustavo-onze-player.jpg",
-    coverUrl: gustavo?.coverUrl || gustavo?.photoUrl || "/marketing/gustavo-onze-player.jpg",
-    position: gustavo?.position || "Atacante",
-    secondaryPosition: gustavo?.secondaryPosition || "Pivô",
-    currentClub: gustavo?.currentClub || "Botafogo",
-    matches: gustavo?.matches ?? 69,
-    goals: gustavo?.goals ?? 135,
-    titles: gustavo?.titles ?? 3,
+    name: "Gustavo Aguiar",
+    nickname: "G9",
+    photoUrl: "/marketing/gustavo-onze-player.jpg",
+    coverUrl: "/marketing/gustavo-onze-player.jpg",
+    position: "Atacante",
+    secondaryPosition: "Pivô",
+    currentClub: "Botafogo",
+    matches: 69,
+    goals: 135,
+    titles: 3,
   };
 
   return (
     <main className="product-landing player-product-landing">
       <header className="product-landing-nav">
         <Link href="/" className="player-brand">11<span>UP</span> <b>PLAYER</b></Link>
-        <nav><a href="#modelo">Modelo Premium</a><a href="#como-funciona">Como funciona</a><a href="#planos">Free x Premium</a><Link href="/players">Explorar atletas</Link><Link href="/login">Entrar</Link><Link className="btn" href="/cadastro">Criar perfil grátis</Link></nav>
+        <nav><a href="#modelo">Modelo Premium</a><a href="#como-funciona">Como funciona</a><a href="#planos">Simples x Premium</a><Link href="/players">Explorar atletas</Link><Link href="/login">Entrar</Link><Link className="btn" href="/cadastro">Conhecer os planos</Link></nav>
       </header>
 
       <section className="product-landing-hero player-landing-with-model">
@@ -29,8 +29,8 @@ export default async function PlayerLanding() {
           <span className="page-eyebrow">11UP PLAYER</span>
           <h1>A trajetória do atleta merece ser vista.</h1>
           <p>Reúna perfil, números, trajetória, vídeos e conquistas em uma identidade esportiva profissional e compartilhável.</p>
-          <div className="product-landing-actions"><Link className="btn" href="/cadastro">Criar 11UP Player grátis</Link><a className="players-secondary-cta" href="https://players.onzeup.com.br/gustavo-aguiar">Ver modelo Premium →</a></div>
-          <small>Com clube ou sem clube. Comece grátis e evolua para Premium quando quiser.</small>
+          <div className="product-landing-actions"><Link className="btn" href="/cadastro">Começar teste de 7 dias</Link><a className="players-secondary-cta" href="https://players.onzeup.com.br/gustavo-aguiar">Ver modelo Premium →</a></div>
+          <small>Com clube ou sem clube. Escolha seu plano e experimente por 7 dias.</small>
         </div>
 
         <a id="modelo" className="gustavo-official-showcase" href="https://players.onzeup.com.br/gustavo-aguiar">
@@ -45,7 +45,7 @@ export default async function PlayerLanding() {
 
       <section className="player-model-proof">
         <div><span className="page-eyebrow">VEJA NA PRÁTICA</span><h2>O Premium não é uma ficha. É o site esportivo do atleta.</h2><p>O perfil do Gustavo é o nosso modelo oficial para mostrar como fotos, estatísticas, carreira e vídeos podem formar uma apresentação esportiva completa.</p></div>
-        <div className="player-model-proof-actions"><a className="btn" href="https://players.onzeup.com.br/gustavo-aguiar">Abrir Gustavo G9 Premium ↗</a><a className="players-secondary-cta" href="https://players.onzeup.com.br/gustavo-aguiar-free">Comparar com Free ↗</a></div>
+        <div className="player-model-proof-actions"><a className="btn" href="https://players.onzeup.com.br/gustavo-aguiar">Abrir Gustavo G9 Premium ↗</a><a className="players-secondary-cta" href="https://players.onzeup.com.br/gustavo-aguiar-free">Comparar com versão básica ↗</a></div>
       </section>
 
       <section className="player-independence-section">
@@ -54,7 +54,7 @@ export default async function PlayerLanding() {
           <article><span>SEM CLUBE</span><h3>Comece de onde você está.</h3><p>Crie o perfil, organize vídeos, números e trajetória agora. Quando houver um novo clube, ele poderá ser acrescentado ao histórico do atleta.</p></article>
           <article><span>JÁ JOGA POR UM CLUBE 11UP?</span><h3>Use o mesmo e-mail do responsável.</h3><p>Se a equipe já cadastrou o atleta no 11UP Club, crie a conta do responsável com o mesmo e-mail informado ao clube. Assim o sistema pode localizar o cadastro.</p><small>O e-mail apenas encontra possíveis correspondências. A família solicita e o clube confirma o vínculo antes de ele ficar ativo.</small></article>
         </div>
-        <Link className="btn" href="/cadastro">Criar 11UP Player grátis →</Link>
+        <Link className="btn" href="/cadastro">Começar teste de 7 dias →</Link>
       </section>
 
       <section className="product-benefit-section" id="como-funciona">
@@ -63,8 +63,8 @@ export default async function PlayerLanding() {
       </section>
 
       <section className="player-plan-landing" id="planos">
-        <div><span className="page-eyebrow">11UP PLAYER FREE</span><h2>Comece sem pagar.</h2><ul><li>Perfil público do atleta</li><li>Foto e dados esportivos</li><li>Estatísticas básicas</li><li>Trajetória</li><li>1 vídeo do YouTube</li><li>Presença no catálogo</li></ul><a className="players-secondary-cta" href="https://players.onzeup.com.br/gustavo-aguiar-free">Ver modelo Free →</a></div>
-        <div className="premium"><span className="page-eyebrow">11UP PLAYER PREMIUM</span><h2>Um site esportivo completo.</h2><ul><li>Visual Premium personalizado</li><li>Vários vídeos</li><li>Galeria e conquistas</li><li>Estatísticas completas</li><li>Trajetória mais detalhada</li><li>Links sociais e site externo</li></ul><strong>R$ 29,90/mês</strong><a className="btn" href="https://players.onzeup.com.br/gustavo-aguiar">Ver modelo Premium →</a></div>
+        <div><span className="page-eyebrow">11UP PLAYER SIMPLES</span><h2>Seu perfil esportivo por R$ 19,90/mês.</h2><ul><li>Perfil público do atleta</li><li>Foto e dados esportivos</li><li>Estatísticas básicas</li><li>Trajetória</li><li>1 vídeo do YouTube</li><li>Presença no catálogo</li></ul><a className="players-secondary-cta" href="https://players.onzeup.com.br/gustavo-aguiar-free">Ver demonstração básica →</a></div>
+        <div className="premium"><span className="page-eyebrow">11UP PLAYER PREMIUM</span><h2>Um site esportivo completo.</h2><ul><li>Visual Premium personalizado</li><li>Vários vídeos</li><li>Galeria e conquistas</li><li>Estatísticas completas</li><li>Trajetória mais detalhada</li><li>Links sociais e site externo</li></ul><strong>R$ 69,90/mês</strong><a className="btn" href="https://players.onzeup.com.br/gustavo-aguiar">Ver modelo Premium →</a></div>
       </section>
 
       <section className="onze-testimonials">
@@ -83,8 +83,13 @@ export default async function PlayerLanding() {
         <div className="club-faq"><article><h3>O atleta precisa estar em um clube?</h3><p>Não. Qualquer atleta pode criar seu perfil, inclusive quem está sem clube no momento.</p></article><article><h3>Já estou cadastrado por um clube 11UP. O que faço?</h3><p>Crie a conta do responsável com o mesmo e-mail informado ao clube. Depois use “Buscar vínculos com clubes” e aguarde a confirmação da equipe.</p></article><article><h3>Posso ter mais de um clube?</h3><p>Sim. O mesmo Player pode ter vínculos com equipes e modalidades diferentes sem misturar os dados internos dos clubes.</p></article><article><h3>Se eu trocar de clube, perco o perfil?</h3><p>Não. O Player pertence ao atleta e acompanha sua trajetória.</p></article></div>
       </section>
 
-      <section className="player-test-landing"><span className="page-eyebrow">COMECE AGORA</span><h2>Crie um Player e veja como funciona na prática.</h2><p>Comece no plano Free, publique o perfil e, se o atleta já estiver cadastrado por um clube 11UP, teste também a busca e solicitação de vínculo.</p><div className="product-landing-actions"><Link className="btn" href="/cadastro">Criar Player grátis</Link><Link className="players-secondary-cta" href="/login">Já tenho conta →</Link></div></section>
+      <section className="player-test-landing"><span className="page-eyebrow">COMECE AGORA</span><h2>Crie um Player e veja como funciona na prática.</h2><p>Conheça o Player Simples, publique seu perfil durante o período de teste e, se o atleta já estiver cadastrado por um clube 11UP, teste também a busca e solicitação de vínculo.</p><div className="product-landing-actions"><Link className="btn" href="/cadastro">Começar teste de 7 dias</Link><Link className="players-secondary-cta" href="/login">Já tenho conta →</Link></div></section>
       <section className="product-directory-cta"><span className="page-eyebrow">11UP PLAYERS</span><h2>Descubra atletas cadastrados.</h2><p>Explore perfis públicos por nome, clube, categoria e posição.</p><Link className="btn" href="/players">Explorar atletas →</Link></section>
     </main>
   );
 }
+
+
+
+
+

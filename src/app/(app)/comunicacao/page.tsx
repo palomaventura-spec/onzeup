@@ -1,8 +1,11 @@
 import Link from "next/link";
 import ModuleHero from "@/components/ModuleHero";
 import WhatsAppAction from "@/components/WhatsAppAction";
+import CommunicationComposer from "./CommunicationComposer";
+import TrainingCommunicationShortcut from "./TrainingCommunicationShortcut";
 import { prisma } from "@/lib/prisma";
-import { requireOrganizationUser } from "@/lib/auth";
+import { requireClubPermission } from "@/lib/club-access";
+import { hasClubPermission } from "@/lib/club-permissions";
 
 function fmt(date: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -18,11 +21,21 @@ function money(cents: number) {
 }
 
 export default async function CommunicationPage() {
-  const user = await requireOrganizationUser();
+  const user = await requireClubPermission("COMMUNICATION_VIEW");
+  const canManageCommunication = hasClubPermission(
+    user,
+    "COMMUNICATION_MANAGE",
+  );
   const orgName = user.organization?.publicName || user.organization?.name || "11UP";
   const now = new Date();
 
-  const [matches, charges, qtr, trainings] = await Promise.all([
+  const [
+    matches,
+    charges,
+    qtr,
+    trainings,
+    categories,
+  ] = await Promise.all([
     prisma.match.findMany({
       where: { organizationId: user.organizationId, status: "SCHEDULED", startsAt: { gte: now } },
       include: {
@@ -58,6 +71,22 @@ export default async function CommunicationPage() {
       orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
       take: 6,
     }),
+    prisma.category.findMany({
+      where: {
+        organizationId: user.organizationId,
+        active: true,
+      },
+      orderBy: [
+        { sport: "asc" },
+        { name: "asc" },
+      ],
+      select: {
+        id: true,
+        name: true,
+        sport: true,
+      },
+    }),
+
   ]);
 
   return (
@@ -72,6 +101,11 @@ export default async function CommunicationPage() {
         }
       />
 
+      {canManageCommunication ? (
+        <CommunicationComposer
+          categories={categories}
+        />
+      ) : null}
       <div className="communication-grid">
         <section className="card">
           <div className="section-title-row">
@@ -142,7 +176,20 @@ ${orgName}`;
                       <strong>{weekday} • {training.startTime}–{training.endTime}</strong>
                       <span>{training.location || "Local a definir"}</span>
                     </div>
+
+                    {canManageCommunication ? (
+                      <TrainingCommunicationShortcut
+                        categoryId={training.category.id}
+                        categoryName={training.category.name}
+                        weekday={weekday}
+                        startTime={training.startTime}
+                        endTime={training.endTime}
+                        location={training.location}
+                        notes={training.notes}
+                      />
+                    ) : null}
                   </div>
+
                   <div className="comm-recipient-list">
                     {training.category.athletes.slice(0, 8).map((athlete) => {
                       const message = `⚽ TREINO — ${training.category.name}\n\nOlá! Passando para lembrar o treino de ${athlete.nickname || athlete.name}.\n\n📅 ${weekday}\n⏰ ${training.startTime} às ${training.endTime}\n📍 ${training.location || "Local a definir"}${training.notes ? `\n📝 ${training.notes}` : ""}\n\n${orgName}`;

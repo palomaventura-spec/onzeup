@@ -32,15 +32,37 @@ export function hasEffectivePlayerPremium(
     plan?: string | null;
     planStatus?: string | null;
     premiumUntil?: Date | null;
+    trialEndsAt?: Date | null;
     isComplimentary?: boolean | null;
     complimentaryUntil?: Date | null;
+    complimentaryPlan?: string | null;
   },
   now = new Date()
 ) {
-  if (hasValidComplimentaryAccess(input, now)) return true;
+  if (hasValidComplimentaryAccess(input, now)) {
+    const complimentaryPlan = String(input.complimentaryPlan || "PREMIUM").toUpperCase();
 
-  if (String(input.planStatus || "").toUpperCase() === "CANCELLED") {
+    return complimentaryPlan === "PREMIUM";
+  }
+
+  if (input.isComplimentary && String(input.complimentaryPlan || "").toUpperCase() === "SIMPLE") {
     return false;
+  }
+
+  const status = String(input.planStatus || "").toUpperCase();
+
+  if (
+    status === "CANCELLED" ||
+    status === "TRIAL_EXPIRED"
+  ) {
+    return false;
+  }
+
+  if (status === "TRIAL") {
+    return Boolean(
+      input.trialEndsAt &&
+      input.trialEndsAt >= now
+    );
   }
 
   if (String(input.plan || "").toUpperCase() !== "PREMIUM") {
@@ -98,6 +120,39 @@ export function hasEffectiveClubElite(
   return false;
 }
 
+export async function reconcileExpiredPlayerTrials(filter?: {
+  guardianId?: string;
+  slug?: string;
+}) {
+  const now = new Date();
+
+  await prisma.playerProfile.updateMany({
+    where: {
+      ...(filter?.guardianId ? { guardianId: filter.guardianId } : {}),
+      ...(filter?.slug ? { slug: filter.slug } : {}),
+      planStatus: "TRIAL",
+      trialEndsAt: {
+        lt: now,
+      },
+      OR: [
+        {
+          isComplimentary: false,
+        },
+        {
+          isComplimentary: true,
+          complimentaryUntil: {
+            lt: now,
+          },
+        },
+      ],
+    },
+    data: {
+      planStatus: "TRIAL_EXPIRED",
+      isPublic: false,
+      directoryVisible: false,
+    },
+  });
+}
 export async function reconcileExpiredPlayerPremiums(filter?: {
   guardianId?: string;
   slug?: string;

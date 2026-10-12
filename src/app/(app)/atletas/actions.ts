@@ -1978,6 +1978,23 @@ export async function releaseAthlete(
         },
       });
 
+      await tx.playerAthleteLink.updateMany({
+        where: {
+          athleteId: athlete.id,
+          active: true,
+        },
+        data: {
+          active: false,
+          unlinkedAt: occurredAt,
+          unlinkedByUserId: user.id,
+          unlinkedByNameSnapshot: user.name,
+          unlinkReason:
+            origin === AthleteExitOrigin.FAMILY
+              ? "Desvinculado automaticamente após saída definitiva solicitada pela família/atleta."
+              : "Desvinculado automaticamente após liberação definitiva pelo clube.",
+        },
+      });
+
       await closeAutomaticEligibilityIssues(tx, {
         organizationId: user.organizationId,
         athleteId: athlete.id,

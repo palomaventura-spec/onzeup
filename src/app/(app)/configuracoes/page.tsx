@@ -1,7 +1,4 @@
-import ModuleHero from "@/components/ModuleHero";
-
 import { requireOrganizationUser } from "@/lib/auth";
-
 import { updateAccountProfile } from "./actions";
 
 function roleLabel(role: string, clubRole: string | null) {
@@ -24,49 +21,38 @@ export default async function Settings() {
 
   return (
     <main className="account-settings-page">
-      <ModuleHero
-        eyebrow="CONTA E PERFIL"
-        title="Dados da conta"
-        description={
+      <header className="account-settings-hero">
+        <div className="account-settings-hero-intro">
+          <span className="account-settings-hero-eyebrow">CONTA E PERFIL</span>
+          <h1>Dados da conta</h1>
           <p>
-            Gerencie as informações pessoais do titular e os dados
-            utilizados para acessar o 11UP.
+            Gerencie as informações pessoais do titular e os dados utilizados
+            para acessar o 11UP.
           </p>
-        }
-        aside={
-          <div className="account-settings-hero-status">
-            <small>CONTA ATIVA</small>
-            <strong>{user.name}</strong>
-            <span>{organizationName}</span>
-          </div>
-        }
-      />
+        </div>
+        <div className="account-settings-hero-status">
+          <small>CONTA ATIVA</small>
+          <strong>{user.name}</strong>
+          <span>{organizationName}</span>
+        </div>
+      </header>
 
       <section className="account-settings-grid">
         <article className="card account-settings-profile">
           <div className="account-settings-section-head">
             <div>
-              <span className="page-eyebrow">
-                PERFIL DO TITULAR
-              </span>
-
+              <span className="page-eyebrow">PERFIL DO TITULAR</span>
               <h2>Informações pessoais</h2>
-
               <p className="muted">
-                Estes dados pertencem ao usuário responsável pelo
-                acesso à conta.
+                Estes dados pertencem ao usuário responsável pelo acesso à conta.
               </p>
             </div>
-
             <span className="account-settings-role">
               {roleLabel(user.role, user.clubRole)}
             </span>
           </div>
 
-          <form
-            className="form account-settings-form"
-            action={updateAccountProfile}
-          >
+          <form className="form account-settings-form" action={updateAccountProfile}>
             <label>
               Nome completo
               <input
@@ -76,7 +62,6 @@ export default async function Settings() {
                 autoComplete="name"
               />
             </label>
-
             <label>
               E-mail de acesso
               <input
@@ -87,7 +72,6 @@ export default async function Settings() {
                 autoComplete="email"
               />
             </label>
-
             <div className="account-settings-readonly">
               <span>Organização vinculada</span>
               <strong>{organizationName}</strong>
@@ -96,18 +80,13 @@ export default async function Settings() {
                 Configurações da organização.
               </small>
             </div>
-
             <div className="account-settings-readonly">
               <span>Perfil de acesso</span>
-              <strong>
-                {roleLabel(user.role, user.clubRole)}
-              </strong>
+              <strong>{roleLabel(user.role, user.clubRole)}</strong>
               <small>
-                Permissões e acessos da equipe são gerenciados
-                separadamente.
+                Permissões e acessos da equipe são gerenciados separadamente.
               </small>
             </div>
-
             <div className="account-settings-actions">
               <button className="btn" type="submit">
                 Salvar alterações
@@ -118,58 +97,38 @@ export default async function Settings() {
 
         <aside className="account-settings-side">
           <article className="card account-settings-security">
-            <span className="page-eyebrow">
-              SEGURANÇA
-            </span>
-
+            <span className="page-eyebrow">SEGURANÇA</span>
             <h2>Acesso à conta</h2>
-
             <p className="muted">
               Mantenha suas credenciais atualizadas e protegidas.
             </p>
-
             <div className="account-settings-security-item">
               <div>
                 <strong>E-mail verificado</strong>
                 <span>
-                  {user.emailVerifiedAt
-                    ? "E-mail confirmado"
-                    : "Confirmação pendente"}
+                  {user.emailVerifiedAt ? "E-mail confirmado" : "Confirmação pendente"}
                 </span>
               </div>
-
-              <b>
-                {user.emailVerifiedAt ? "✓" : "!"}
-              </b>
+              <b>{user.emailVerifiedAt ? "✓" : "!"}</b>
             </div>
-
             <div className="account-settings-security-item">
               <div>
                 <strong>Status da conta</strong>
-                <span>
-                  {user.active
-                    ? "Conta ativa"
-                    : "Conta inativa"}
-                </span>
+                <span>{user.active ? "Conta ativa" : "Conta inativa"}</span>
               </div>
-
               <b>{user.active ? "✓" : "!"}</b>
             </div>
-
             <p className="help" style={{ marginTop: 18 }}>
-              A alteração de senha e autenticação em duas etapas
-              serão concentradas nesta área.
+              A alteração de senha e autenticação em duas etapas serão
+              concentradas nesta área.
             </p>
           </article>
-
           <article className="account-settings-note">
             <span>11UP</span>
-
             <h3>Preferências do sistema ficam separadas.</h3>
-
             <p>
-              Tema, aparência, plano, cobrança e configurações do
-              clube não fazem parte dos dados pessoais desta conta.
+              Tema, aparência, plano, cobrança e configurações do clube não
+              fazem parte dos dados pessoais desta conta.
             </p>
           </article>
         </aside>

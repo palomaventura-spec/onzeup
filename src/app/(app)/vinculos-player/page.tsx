@@ -2,7 +2,7 @@ import Link from "next/link";
 import ModuleHero from "@/components/ModuleHero";
 import { prisma } from "@/lib/prisma";
 import { requireOrganizationUser } from "@/lib/auth";
-import { approvePlayerLink, rejectPlayerLink } from "./actions";
+import { approvePlayerLink, rejectPlayerLink, unlinkPlayerLink } from "./actions";
 
 export default async function PlayerLinksPage() {
   const user = await requireOrganizationUser();
@@ -21,9 +21,17 @@ export default async function PlayerLinksPage() {
     },
     orderBy: [{ verified: "asc" }, { createdAt: "desc" }],
   });
+  const pending = links.filter(
+    (link) => link.active && !link.verified,
+  );
 
-  const pending = links.filter((link) => !link.verified);
-  const verified = links.filter((link) => link.verified);
+  const verified = links.filter(
+    (link) => link.active && link.verified,
+  );
+
+  const unlinked = links.filter(
+    (link) => !link.active,
+  );
 
   return (
     <>
@@ -97,10 +105,28 @@ export default async function PlayerLinksPage() {
               <div>
                 <strong>{link.athlete.nickname || link.athlete.name}</strong>
                 <span>{link.athlete.category?.name || "Sem categoria"}</span>
+              </div>              <div className="actions">
+                <Link
+                  target="_blank"
+                  href={`/player/${link.player.slug}`}
+                >
+                  Abrir 11UP Player ↗
+                </Link>
+
+                <form action={unlinkPlayerLink}>
+                  <input
+                    type="hidden"
+                    name="id"
+                    value={link.id}
+                  />
+                  <button
+                    type="submit"
+                    className="btn-danger"
+                  >
+                    Desvincular
+                  </button>
+                </form>
               </div>
-              <Link target="_blank" href={`/player/${link.player.slug}`}>
-                Abrir 11UP Player ↗
-              </Link>
             </article>
           ))}
           {!verified.length ? <div className="empty compact-empty">Nenhum vínculo verificado ainda.</div> : null}

@@ -54,6 +54,7 @@ model Organization {
   documentStorageLimitBytes    BigInt                          @default(1073741824)
   documentStorageUsedBytes     BigInt                          @default(0)
   athletes                     Athlete[]
+  partnershipActivationIntents PlayerPartnershipActivationIntent[]
   athleteAuditLogs             AthleteDataAuditLog[]
   athleteDocuments             AthleteDocument[]
   athleteDocumentManualIssues  AthleteDocumentManualIssue[]
@@ -95,6 +96,7 @@ model Organization {
   athleteHistoryEntries        AthleteHistoryEntry[]
   userPermissionOverrides      ClubUserPermissionOverride[]
   users                        User[]
+  clubCommunications           ClubCommunication[]
   competitions                 Competition[]
   linkedCompetitionTeams       CompetitionTeam[]               @relation("LinkedCompetitionOrganization")
   competitionCallUpRules       CompetitionCallUpRule[]
@@ -414,6 +416,7 @@ model User {
   recordedExternalTrainings                    AthleteExternalTraining[]    @relation("AthleteExternalTrainingRecorder")
   recordedGpsRecords                           AthleteGpsRecord[]           @relation("AthleteGpsRecordRecorder")
   guardianProfile                              GuardianProfile?
+  authoredClubCommunications                   ClubCommunication[]          @relation("ClubCommunicationAuthor")
   payments                                     Payment[]
   sessions                                     Session[]
   organization                                 Organization?                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -479,6 +482,7 @@ model Category {
   trainingSessions               TrainingSession[]
   competitionCallUpRules         CompetitionCallUpRule[]
   documentRequirements           CategoryDocumentRequirement[]
+  clubCommunications             ClubCommunication[]
 
   evaluationTargets           CategoryEvaluationTarget[] @relation("EvaluationCategoryTargets")
   targetedByEvaluations       CategoryEvaluationTarget[] @relation("EvaluationTargetCategories")
@@ -565,6 +569,9 @@ model Athlete {
   callUps                    CallUp[]
   charges                    Charge[]
   playerLinks                PlayerAthleteLink[]
+  partnershipActivationIntents PlayerPartnershipActivationIntent[]
+  communicationRecipients    ClubCommunicationRecipient[]
+  targetedCommunications     ClubCommunication[]          @relation("ClubCommunicationTargetAthlete")
   evaluations                AthleteEvaluation[]
   evaluationProcesses        AthleteEvaluationProcess[]
   exitRecords                AthleteExitRecord[]
@@ -1785,8 +1792,31 @@ model GuardianProfile {
   referredByCoach   CoachProfile?   @relation("CoachReferrals", fields: [referredByCoachId], references: [id])
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   players           PlayerProfile[]
+  billingProfile    PlayerBillingProfile?
 }
 
+model PlayerBillingProfile {
+  id              String          @id @default(cuid())
+  guardianId      String          @unique
+  billingName     String?
+  billingEmail    String?
+  billingPhone    String?
+  taxId           String?
+  postalCode      String?
+  address         String?
+  addressNumber   String?
+  complement      String?
+  neighborhood    String?
+  city            String?
+  state           String?
+  asaasCustomerId String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  guardian GuardianProfile @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  @@index([asaasCustomerId])
+}
 model PlayerProfile {
   id                  String              @id @default(cuid())
   slug                String              @unique
@@ -1820,6 +1850,7 @@ model PlayerProfile {
   categoryLabel       String?
   complimentaryReason String?
   complimentaryUntil  DateTime?
+  complimentaryPlan   String?
   directoryVisible    Boolean             @default(false)
   isComplimentary     Boolean             @default(false)
   jerseyNumber        Int?
@@ -1827,26 +1858,57 @@ model PlayerProfile {
   plan                String              @default("FREE")
   planStatus          String              @default("ACTIVE")
   premiumUntil        DateTime?
+  trialStartedAt      DateTime?
+  trialEndsAt         DateTime?
+  subscriptionStartedAt DateTime?
+  currentPeriodEndsAt DateTime?
+  asaasSubscriptionId String?
   websiteUrl          String?
   featuredUntil       DateTime?
   isFeatured          Boolean             @default(false)
   payments            Payment[]
   athleteLinks        PlayerAthleteLink[]
+  communicationRecipients ClubCommunicationRecipient[]
   guardian            GuardianProfile     @relation(fields: [guardianId], references: [id], onDelete: Cascade)
 
   @@index([guardianId])
 }
 
+model PlayerPartnershipActivationIntent {
+  id               String   @id @default(cuid())
+  tokenHash        String   @unique
+  organizationId   String
+  athleteId        String
+  expiresAt        DateTime
+  consumedAt       DateTime?
+  consumedByUserId String?
+  createdAt        DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete      Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, expiresAt])
+  @@index([athleteId, expiresAt])
+  @@index([consumedAt, expiresAt])
+}
+
 model PlayerAthleteLink {
-  id        String        @id @default(cuid())
-  playerId  String
-  athleteId String
-  verified  Boolean       @default(false)
-  createdAt DateTime      @default(now())
-  athlete   Athlete       @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  player    PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  id                     String        @id @default(cuid())
+  playerId               String
+  athleteId              String
+  verified               Boolean       @default(false)
+  active                 Boolean       @default(true)
+  unlinkedAt             DateTime?
+  unlinkedByUserId       String?
+  unlinkedByNameSnapshot String?
+  unlinkReason           String?
+  createdAt              DateTime      @default(now())
+  athlete                Athlete       @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  player                 PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, athleteId])
+  @@index([athleteId, active, verified])
+  @@index([playerId, active, verified])
 }
 
 model Qtr {
@@ -2147,6 +2209,7 @@ enum PaymentStatus {
 }
 
 enum PaymentProduct {
+  PLAYER_SIMPLE_MONTHLY
   PLAYER_PREMIUM_MONTHLY
   PLAYER_FEATURED_ANNUAL
   CLUB_ESSENTIAL_MONTHLY
@@ -2386,6 +2449,58 @@ enum GrowthBoneAgeMethod {
   GREULICH_PYLE
   TANNER_WHITEHOUSE
   OTHER
+}
+
+enum ClubCommunicationAudienceType {
+  ATHLETE
+  CATEGORY
+  MODALITY
+  ALL
+}
+
+model ClubCommunication {
+  id              String                        @id @default(cuid())
+  organizationId  String
+  authorUserId    String?
+  title           String
+  body            String
+  audienceType    ClubCommunicationAudienceType
+  sport           SportType?
+  categoryId      String?
+  targetAthleteId String?
+  sentAt          DateTime                      @default(now())
+  createdAt       DateTime                      @default(now())
+  updatedAt       DateTime                      @updatedAt
+
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author        User?        @relation("ClubCommunicationAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+  category      Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  targetAthlete Athlete?     @relation("ClubCommunicationTargetAthlete", fields: [targetAthleteId], references: [id], onDelete: SetNull)
+
+  recipients ClubCommunicationRecipient[]
+
+  @@index([organizationId, sentAt])
+  @@index([organizationId, audienceType, sentAt])
+  @@index([categoryId, sentAt])
+  @@index([targetAthleteId, sentAt])
+}
+
+model ClubCommunicationRecipient {
+  id              String   @id @default(cuid())
+  communicationId String
+  athleteId       String
+  playerId        String
+  readAt          DateTime?
+  createdAt       DateTime @default(now())
+
+  communication ClubCommunication @relation(fields: [communicationId], references: [id], onDelete: Cascade)
+  athlete       Athlete           @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  player        PlayerProfile     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([communicationId, athleteId, playerId])
+  @@index([communicationId, readAt])
+  @@index([playerId, readAt, createdAt])
+  @@index([athleteId, createdAt])
 }
 
 enum ClubPermissionCode {

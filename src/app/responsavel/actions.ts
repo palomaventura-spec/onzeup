@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { hasEffectivePlayerPremium, reconcileExpiredPlayerPremiums } from "@/lib/billing-entitlements";
+import { PLAYER_TRIAL_DAYS } from "@/lib/player-plans";
 
 const clean = (value: FormDataEntryValue | null) => String(value ?? "").trim();
 
@@ -27,15 +28,40 @@ async function guardianForUser(userId: string) {
 
 export async function saveGuardianProfile(formData: FormData) {
   const user = await requireUser();
+
   if (user.role !== "GUARDIAN") return;
 
   const guardian = await guardianForUser(user.id);
-  await prisma.guardianProfile.update({
-    where: { id: guardian.id },
-    data: { phone: clean(formData.get("phone")) || null },
-  });
+
+  const name = clean(formData.get("name"));
+  const phone = clean(formData.get("phone"));
+
+  if (!name) return;
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        name,
+      },
+    }),
+
+    prisma.guardianProfile.update({
+      where: {
+        id: guardian.id,
+      },
+      data: {
+        phone: phone || null,
+      },
+    }),
+  ]);
 
   revalidatePath("/responsavel");
+  revalidatePath("/responsavel/dados");
+  revalidatePath("/responsavel/comunicacao");
+  revalidatePath("/responsavel/pagina");
 }
 
 export async function savePlayer(formData: FormData) {
@@ -63,10 +89,10 @@ export async function savePlayer(formData: FormData) {
   const currentPlayer = id
     ? await prisma.playerProfile.findFirst({
         where: { id, guardianId: guardian.id },
-        select: { plan: true, planStatus: true, premiumUntil: true, isComplimentary: true, complimentaryUntil: true, template: true },
+        select: { plan: true, planStatus: true, premiumUntil: true, trialEndsAt: true, isComplimentary: true, complimentaryUntil: true, complimentaryPlan: true, template: true },
       })
     : null;
-  const effectivePremium = currentPlayer ? hasEffectivePlayerPremium(currentPlayer) : false;
+  const effectivePremium = currentPlayer ? hasEffectivePlayerPremium(currentPlayer) : true;
   const effectivePlan = effectivePremium ? "PREMIUM" : "FREE";
 
   const data = {
@@ -112,12 +138,28 @@ export async function savePlayer(formData: FormData) {
       data,
     });
   } else {
+    const trialStartedAt = new Date();
+    const trialEndsAt = new Date(trialStartedAt);
+
+    trialEndsAt.setDate(
+      trialEndsAt.getDate() + PLAYER_TRIAL_DAYS
+    );
+
     await prisma.playerProfile.create({
-      data: { ...data, guardianId: guardian.id },
+      data: {
+        ...data,
+        guardianId: guardian.id,
+        plan: "PREMIUM",
+        planStatus: "TRIAL",
+        trialStartedAt,
+        trialEndsAt,
+        premiumUntil: null,
+      },
     });
   }
 
   revalidatePath("/responsavel");
+  revalidatePath("/responsavel/comunicacao");
   revalidatePath(`/player/${slug}`);
   revalidatePath(`/${slug}`);
   revalidatePath("/players");
@@ -135,6 +177,7 @@ export async function deletePlayer(formData: FormData) {
   });
 
   revalidatePath("/responsavel");
+  revalidatePath("/responsavel/comunicacao");
 }
 
 
@@ -143,37 +186,31 @@ export async function linkMatchingClubAthletes(formData: FormData) {
   if (user.role !== "GUARDIAN") return;
 
   const guardian = await guardianForUser(user.id);
+
   const playerId = clean(formData.get("playerId"));
-  if (!playerId) redirect("/responsavel?linkStatus=erro");
+  const athleteFullName = clean(formData.get("athleteFullName"));
+  const birthDateRaw = clean(formData.get("birthDate"));
+  const guardianName = clean(formData.get("guardianName"));
+
+  if (!playerId || !athleteFullName || !birthDateRaw) {
+    redirect(
+      `/responsavel/dados?player=${playerId || ""}&linkStatus=dados-incompletos`,
+    );
+  }
 
   const player = await prisma.playerProfile.findFirst({
-    where: { id: playerId, guardianId: guardian.id },
-    select: {
-      id: true,
-      name: true,
-      nickname: true,
-      birthYear: true,
-    },
-  });
-
-  if (!player) redirect("/responsavel?linkStatus=erro");
-
-  const candidates = await prisma.athlete.findMany({
     where: {
-      guardianEmail: { equals: user.email, mode: "insensitive" },
-      active: true,
+      id: playerId,
+      guardianId: guardian.id,
     },
     select: {
       id: true,
       name: true,
-      nickname: true,
-      birthYear: true,
-      organizationId: true,
     },
   });
 
-  if (!candidates.length) {
-    redirect(`/responsavel?player=${player.id}&linkStatus=nenhum-cadastro`);
+  if (!player) {
+    redirect("/responsavel?linkStatus=erro");
   }
 
   const normalize = (value: string | null | undefined) =>
@@ -185,76 +222,84 @@ export async function linkMatchingClubAthletes(formData: FormData) {
       .replace(/\s+/g, " ")
       .trim();
 
-  const playerName = normalize(player.name);
-  const playerNickname = normalize(player.nickname);
+  const requestedName = normalize(athleteFullName);
+  const requestedGuardianName = normalize(guardianName);
 
-  const samePerson = (athlete: {
-    name: string;
-    nickname: string | null;
-    birthYear: number | null;
-  }) => {
+  const parts = birthDateRaw.split("-").map(Number);
+
+  if (
+    parts.length !== 3 ||
+    parts.some((part) => !Number.isInteger(part))
+  ) {
+    redirect(
+      `/responsavel/dados?player=${player.id}&linkStatus=dados-incompletos`,
+    );
+  }
+
+  const [year, month, day] = parts;
+
+  const birthStart = new Date(
+    Date.UTC(year, month - 1, day, 0, 0, 0, 0),
+  );
+
+  const birthEnd = new Date(
+    Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0),
+  );
+
+  const candidates = await prisma.athlete.findMany({
+    where: {
+      active: true,
+      privateData: {
+        is: {
+          birthDate: {
+            gte: birthStart,
+            lt: birthEnd,
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      guardianName: true,
+      organizationId: true,
+      guardians: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  const matches = candidates.filter((athlete) => {
     const athleteName = normalize(athlete.name);
-    const athleteNickname = normalize(athlete.nickname);
 
-    if (playerName && athleteName && playerName === athleteName) {
-      return true;
+    if (!requestedName || athleteName !== requestedName) {
+      return false;
     }
+
+    const clubGuardianNames = [
+      athlete.guardianName,
+      ...athlete.guardians.map((item) => item.name),
+    ]
+      .map(normalize)
+      .filter(Boolean);
 
     if (
-      playerNickname &&
-      athleteNickname &&
-      playerNickname === athleteNickname
+      requestedGuardianName &&
+      clubGuardianNames.length > 0 &&
+      !clubGuardianNames.includes(requestedGuardianName)
     ) {
-      return true;
+      return false;
     }
 
-    const playerTokens = playerName.split(" ").filter(Boolean);
-    const athleteTokens = athleteName.split(" ").filter(Boolean);
-
-    if (
-      playerTokens.length >= 2 &&
-      athleteTokens.length >= 2 &&
-      playerTokens[0] === athleteTokens[0] &&
-      playerTokens[playerTokens.length - 1] ===
-        athleteTokens[athleteTokens.length - 1]
-    ) {
-      return true;
-    }
-
-    const sameBirthYear =
-      player.birthYear !== null &&
-      athlete.birthYear !== null &&
-      player.birthYear === athlete.birthYear;
-
-    if (sameBirthYear) {
-      const shorterTokens =
-        playerTokens.length <= athleteTokens.length
-          ? playerTokens
-          : athleteTokens;
-
-      const longerTokens =
-        playerTokens.length <= athleteTokens.length
-          ? athleteTokens
-          : playerTokens;
-
-      const allShorterTokensPresent =
-        shorterTokens.length >= 2 &&
-        shorterTokens.every((token) =>
-          longerTokens.includes(token),
-        );
-
-      if (allShorterTokensPresent) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  const matches = candidates.filter(samePerson);
+    return true;
+  });
 
   if (!matches.length) {
-    redirect(`/responsavel?player=${player.id}&linkStatus=sem-correspondencia`);
+    redirect(
+      `/responsavel/dados?player=${player.id}&linkStatus=sem-correspondencia`,
+    );
   }
 
   let created = 0;
@@ -267,10 +312,32 @@ export async function linkMatchingClubAthletes(formData: FormData) {
           athleteId: athlete.id,
         },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        active: true,
+      },
     });
 
-    if (existing) continue;
+    if (existing) {
+      if (existing.active) continue;
+
+      await prisma.playerAthleteLink.update({
+        where: {
+          id: existing.id,
+        },
+        data: {
+          active: true,
+          verified: false,
+          unlinkedAt: null,
+          unlinkedByUserId: null,
+          unlinkedByNameSnapshot: null,
+          unlinkReason: null,
+        },
+      });
+
+      created += 1;
+      continue;
+    }
 
     await prisma.playerAthleteLink.create({
       data: {
@@ -284,15 +351,19 @@ export async function linkMatchingClubAthletes(formData: FormData) {
   }
 
   revalidatePath("/responsavel");
+  revalidatePath("/responsavel/comunicacao");
   revalidatePath("/vinculos-player");
 
   if (!created) {
-    redirect(`/responsavel?player=${player.id}&linkStatus=ja-solicitado`);
+    redirect(
+      `/responsavel/dados?player=${player.id}&linkStatus=ja-solicitado`,
+    );
   }
 
-  redirect(`/responsavel?player=${player.id}&linkStatus=solicitado&count=${created}`);
+  redirect(
+    `/responsavel/dados?player=${player.id}&linkStatus=solicitado&count=${created}`,
+  );
 }
-
 
 export async function respondToPlayerCallUp(formData: FormData) {
   const user = await requireUser();
@@ -311,6 +382,7 @@ export async function respondToPlayerCallUp(formData: FormData) {
         playerLinks: {
           some: {
             verified: true,
+            active: true,
             player: { guardianId: guardian.id },
           },
         },
@@ -330,4 +402,196 @@ export async function respondToPlayerCallUp(formData: FormData) {
   });
 
   revalidatePath("/responsavel");
+  revalidatePath("/responsavel/comunicacao");
+}
+export async function markPlayerCommunicationRead(
+  formData: FormData,
+) {
+  const user = await requireUser();
+
+  if (user.role !== "GUARDIAN") return;
+
+  const guardian = await guardianForUser(user.id);
+  const recipientId = clean(formData.get("recipientId"));
+
+  if (!recipientId) return;
+
+  const recipient =
+    await prisma.clubCommunicationRecipient.findFirst({
+      where: {
+        id: recipientId,
+        player: {
+          guardianId: guardian.id,
+        },
+      },
+      select: {
+        id: true,
+        readAt: true,
+      },
+    });
+
+  if (!recipient || recipient.readAt) return;
+
+  await prisma.clubCommunicationRecipient.update({
+    where: {
+      id: recipient.id,
+    },
+    data: {
+      readAt: new Date(),
+    },
+  });
+
+  revalidatePath("/responsavel");
+  revalidatePath("/responsavel/comunicacao");
+}
+export async function savePlayerData(formData: FormData) {
+  const user = await requireUser();
+
+  if (user.role !== "GUARDIAN") return;
+
+  const guardian = await guardianForUser(user.id);
+
+  const id = clean(formData.get("id"));
+  const name = clean(formData.get("name"));
+
+  if (!id || !name) return;
+
+  const player = await prisma.playerProfile.findFirst({
+    where: {
+      id,
+      guardianId: guardian.id,
+    },
+    select: {
+      id: true,
+      slug: true,
+    },
+  });
+
+  if (!player) return;
+
+  await prisma.playerProfile.update({
+    where: {
+      id: player.id,
+    },
+    data: {
+      name,
+      birthYear:
+        Number(clean(formData.get("birthYear"))) || null,
+      nationality:
+        clean(formData.get("nationality")) || null,
+      position:
+        clean(formData.get("position")) || null,
+      secondaryPosition:
+        clean(formData.get("secondaryPosition")) || null,
+      height:
+        clean(formData.get("height")) || null,
+      weight:
+        clean(formData.get("weight")) || null,
+      dominantFoot:
+        clean(formData.get("dominantFoot")) || null,
+      currentClub:
+        clean(formData.get("currentClub")) || null,
+      modality:
+        clean(formData.get("modality")) || null,
+      categoryLabel:
+        clean(formData.get("categoryLabel")) || null,
+      jerseyNumber:
+        Number(clean(formData.get("jerseyNumber"))) || null,
+    },
+  });
+
+  revalidatePath("/responsavel");
+  revalidatePath("/responsavel/dados");
+  revalidatePath("/responsavel/pagina");
+  revalidatePath(`/player/${player.slug}`);
+  revalidatePath(`/${player.slug}`);
+  revalidatePath("/players");
+}
+
+export async function savePlayerBillingProfile(formData: FormData) {
+  const user = await requireUser();
+
+  if (user.role !== "GUARDIAN") return;
+
+  const guardian = await guardianForUser(user.id);
+
+  const playerId = clean(formData.get("playerId"));
+
+  const billingName =
+    clean(formData.get("billingName")) || user.name;
+
+  const billingEmail =
+    clean(formData.get("billingEmail")) || user.email;
+
+  const billingPhone =
+    clean(formData.get("billingPhone")) || null;
+
+  const taxId =
+    clean(formData.get("taxId"))
+      .replace(/\D/g, "") || null;
+
+  const postalCode =
+    clean(formData.get("postalCode"))
+      .replace(/\D/g, "") || null;
+
+  const address =
+    clean(formData.get("address")) || null;
+
+  const addressNumber =
+    clean(formData.get("addressNumber")) || null;
+
+  const complement =
+    clean(formData.get("complement")) || null;
+
+  const neighborhood =
+    clean(formData.get("neighborhood")) || null;
+
+  const city =
+    clean(formData.get("city")) || null;
+
+  const state =
+    clean(formData.get("state"))
+      .toUpperCase()
+      .slice(0, 2) || null;
+
+  await prisma.playerBillingProfile.upsert({
+    where: {
+      guardianId: guardian.id,
+    },
+    create: {
+      guardianId: guardian.id,
+      billingName,
+      billingEmail,
+      billingPhone,
+      taxId,
+      postalCode,
+      address,
+      addressNumber,
+      complement,
+      neighborhood,
+      city,
+      state,
+    },
+    update: {
+      billingName,
+      billingEmail,
+      billingPhone,
+      taxId,
+      postalCode,
+      address,
+      addressNumber,
+      complement,
+      neighborhood,
+      city,
+      state,
+    },
+  });
+
+  revalidatePath("/responsavel/assinatura");
+
+  if (playerId) {
+    revalidatePath(
+      `/responsavel/assinatura?player=${playerId}`
+    );
+  }
 }

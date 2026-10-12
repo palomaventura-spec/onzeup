@@ -1,5 +1,8 @@
 "use server";
 
+import {
+  PLAYER_PREMIUM_MONTHLY_CENTS,
+} from "@/lib/player-plans";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -87,7 +90,7 @@ async function createPlayerPremium(
       userId: user.id,
       playerId,
       product: "PLAYER_PREMIUM_MONTHLY",
-      amountCents: 2990,
+      amountCents: PLAYER_PREMIUM_MONTHLY_CENTS,
       method: "ASAAS",
       pixTxid: `ASAAS${Date.now()}${Math.random()
         .toString(36)
