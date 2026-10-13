@@ -220,25 +220,6 @@ function wrapCategoryText(
   return lines;
 }
 
-function chunks<T>(
-  values: T[],
-  size: number,
-) {
-  const result: T[][] = [];
-
-  for (
-    let index = 0;
-    index < values.length;
-    index += size
-  ) {
-    result.push(
-      values.slice(index, index + size),
-    );
-  }
-
-  return result;
-}
-
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
@@ -416,11 +397,93 @@ export async function GET(request: Request) {
     ];
 
     const margin = 28;
-    const rowsPerPage = 4;
-    const rowGroups = chunks(
-      rows,
-      rowsPerPage,
-    );
+    // Layout A4 paisagem: normalmente ate 8 categorias por pagina.
+    // Se houver varias atividades na mesma celula, usamos linhas mais
+    // altas e uma nova pagina, evitando sobreposicao de informacoes.
+    const maxRowsPerPage = 8;
+    const tableTopY = pageSize[1] - 124;
+    const headerHeight = 30;
+    const tableBottomY = 47; // 15pt acima da linha do rodape
+    const availableRowsHeight =
+      tableTopY - headerHeight - tableBottomY;
+    const categoryWidth = 140;
+
+    function categoryNameLayout(row: QtrRow) {
+      const maxLines = row.birthYear ? 3 : 4;
+      let fontSize = 10;
+      let lines = wrapCategoryText(
+        row.category || "Categoria",
+        categoryWidth - 16,
+        bold,
+        fontSize,
+      );
+
+      while (lines.length > maxLines && fontSize > 7) {
+        fontSize -= 0.5;
+        lines = wrapCategoryText(
+          row.category || "Categoria",
+          categoryWidth - 16,
+          bold,
+          fontSize,
+        );
+      }
+      return { lines, fontSize };
+    }
+
+    function requiredRowHeight(row: QtrRow) {
+      const { lines, fontSize } = categoryNameLayout(row);
+      const nameHeight =
+        12 + lines.length * (fontSize + 1.5) + (row.birthYear ? 13 : 0);
+      const maxEventsPerDay = DAYS.reduce((max, [key]) => {
+        const events = row[key as DayKey];
+        return Math.max(
+          max,
+          Array.isArray(events)
+            ? events.filter((event) => event.hidden !== true).length
+            : 0,
+        );
+      }, 0);
+      const eventHeight =
+        maxEventsPerDay <= 1
+          ? 48
+          : 6 + maxEventsPerDay * 32 + (maxEventsPerDay - 1) * 3;
+      return Math.max(48, Math.ceil(nameHeight), eventHeight);
+    }
+
+    type PdfRowGroup = { pageRows: QtrRow[]; rowHeights: number[] };
+    const rowGroups: PdfRowGroup[] = [];
+    let pendingRows: QtrRow[] = [];
+    let pendingHeights: number[] = [];
+    let pendingTotal = 0;
+
+    function finishPage() {
+      if (!pendingRows.length) return;
+      const free = Math.max(0, availableRowsHeight - pendingTotal);
+      const extraPerRow = free / pendingRows.length;
+      // Nao aumentar indefinidamente as linhas quando ha poucas categorias.
+      const rowHeights = pendingHeights.map((minimum) =>
+        minimum + Math.max(0, Math.min(extraPerRow, 64 - minimum)),
+      );
+      rowGroups.push({ pageRows: pendingRows, rowHeights });
+      pendingRows = [];
+      pendingHeights = [];
+      pendingTotal = 0;
+    }
+
+    for (const row of rows) {
+      const needed = requiredRowHeight(row);
+      if (
+        pendingRows.length &&
+        (pendingRows.length >= maxRowsPerPage ||
+          pendingTotal + needed > availableRowsHeight)
+      ) {
+        finishPage();
+      }
+      pendingRows.push(row);
+      pendingHeights.push(needed);
+      pendingTotal += needed;
+    }
+    finishPage();
 
     const black = rgb(
       16 / 255,
@@ -459,7 +522,7 @@ export async function GET(request: Request) {
             : `Todas as categorias (${rows.length})`;
 
     rowGroups.forEach(
-      (pageRows, pageIndex) => {
+      ({ pageRows, rowHeights }, pageIndex) => {
         const page = pdf.addPage(pageSize);
 
         const width = page.getWidth();
@@ -532,10 +595,7 @@ export async function GET(request: Request) {
         });
 
         const tableX = margin;
-        const tableTop = height - 135;
-
-        // Mais espaço para os nomes completos das categorias.
-        const categoryWidth = 140;
+        const tableTop = tableTopY;
 
         const dayWidth =
           (width -
@@ -543,8 +603,6 @@ export async function GET(request: Request) {
             categoryWidth) /
           7;
 
-        const headerHeight = 42;
-        const rowHeight = 88;
 
         page.drawText("CATEGORIA", {
           x: tableX + 5,
@@ -605,12 +663,10 @@ export async function GET(request: Request) {
           },
         );
 
+        let rowTop = tableTop - headerHeight;
         pageRows.forEach(
           (row, rowIndex) => {
-            const rowTop =
-              tableTop -
-              headerHeight -
-              rowHeight * rowIndex;
+            const rowHeight = rowHeights[rowIndex];
 
             const categoryColor =
               categoryColorByName.get(
@@ -632,34 +688,14 @@ export async function GET(request: Request) {
               ),
             });
 
-            // Nome completo, em até 4-5 linhas conforme exista ano-base.
-            // Reduz a fonte apenas para categorias excepcionalmente longas.
-            const maximumCategoryLines = row.birthYear ? 4 : 5;
-            let categoryFontSize = 11;
-            let categoryLines = wrapCategoryText(
-              row.category || "Categoria",
-              categoryWidth - 16,
-              bold,
-              categoryFontSize,
-            );
-
-            while (
-              categoryLines.length > maximumCategoryLines &&
-              categoryFontSize > 7
-            ) {
-              categoryFontSize -= 0.5;
-              categoryLines = wrapCategoryText(
-                row.category || "Categoria",
-                categoryWidth - 16,
-                bold,
-                categoryFontSize,
-              );
-            }
-
+            // Nome completo em linhas, sem sobrepor o ano-base.
+            const { lines: categoryLines, fontSize: categoryFontSize } =
+              categoryNameLayout(row);
+            const categoryLineHeight = categoryFontSize + 1.5;
             categoryLines.forEach((part, partIndex) => {
               page.drawText(part, {
                 x: tableX + 8,
-                y: rowTop - 20 - partIndex * (categoryFontSize + 2),
+                y: rowTop - 14 - partIndex * categoryLineHeight,
                 size: categoryFontSize,
                 font: bold,
                 color: black,
@@ -669,8 +705,8 @@ export async function GET(request: Request) {
             if (row.birthYear) {
               page.drawText(`Ano-base: ${row.birthYear}`, {
                 x: tableX + 8,
-                y: rowTop - 75,
-                size: 8.5,
+                y: rowTop - rowHeight + 9,
+                size: 7.5,
                 font: bold,
                 color: muted,
               });
@@ -741,16 +777,10 @@ export async function GET(request: Request) {
                   return;
                 }
 
-                const gap = 4;
+                const gap = events.length > 1 ? 2 : 0;
 
                 const cardHeight =
-                  (rowHeight -
-                    8 -
-                    gap *
-                      Math.max(
-                        0,
-                        events.length - 1,
-                      )) /
+                  (rowHeight - 6 - gap * Math.max(0, events.length - 1)) /
                   events.length;
 
                 events.forEach(
@@ -781,17 +811,13 @@ export async function GET(request: Request) {
                       readablePdfTextColor(activityHex);
 
                     const cardY =
-                      cellY +
-                      rowHeight -
-                      4 -
-                      cardHeight -
-                      eventIndex *
-                        (cardHeight + gap);
+                      cellY + rowHeight - 3 - cardHeight -
+                      eventIndex * (cardHeight + gap);
 
                     page.drawRectangle({
-                      x: cellX + 4,
+                      x: cellX + 3,
                       y: cardY,
-                      width: dayWidth - 8,
+                      width: dayWidth - 6,
                       height: cardHeight,
                       color: fill,
                     });
@@ -800,8 +826,8 @@ export async function GET(request: Request) {
                       event.title ||
                       typeLabel(event.type);
 
-                    const titleSize = 11;
-                    const detailSize = 9;
+                    const titleSize = cardHeight < 34 ? 8 : 9;
+                    const detailSize = cardHeight < 34 ? 7 : 7.5;
 
                     const details: string[] =
                       [];
@@ -834,41 +860,19 @@ export async function GET(request: Request) {
                       );
                     }
 
-                    const maxDetails =
-                      cardHeight < 35
-                        ? 1
-                        : cardHeight < 48
-                          ? 2
-                          : 3;
+                    const lineHeight = cardHeight < 34 ? 8 : 9;
+                    const maxDetails = Math.min(
+                      details.length,
+                      Math.max(0, Math.floor((cardHeight - 12) / lineHeight)),
+                    );
+                    const visibleDetails = details.slice(0, maxDetails);
 
-                    const visibleDetails =
-                      details.slice(
-                        0,
-                        maxDetails,
-                      );
-
-                    const lineHeight = 11;
-
-                    const totalHeight =
-                      lineHeight *
-                      (1 +
-                        visibleDetails.length);
-
-                    let textY =
-                      cardY +
-                      cardHeight / 2 +
-                      totalHeight / 2 -
-                      10;
-
+                    // Titulos e horarios compactos, sem ultrapassar as celulas.
+                    let textY = cardY + cardHeight - 10;
                     page.drawText(
-                      fitText(
-                        title,
-                        dayWidth - 18,
-                        bold,
-                        titleSize,
-                      ),
+                      fitText(title, dayWidth - 14, bold, titleSize),
                       {
-                        x: cellX + 9,
+                        x: cellX + 7,
                         y: textY,
                         size: titleSize,
                         font: bold,
@@ -876,33 +880,24 @@ export async function GET(request: Request) {
                       },
                     );
 
-                    textY -= lineHeight;
-
-                    visibleDetails.forEach(
-                      (detail) => {
-                        page.drawText(
-                          fitText(
-                            detail,
-                            dayWidth - 18,
-                            regular,
-                            detailSize,
-                          ),
-                          {
-                            x: cellX + 9,
-                            y: textY,
-                            size: detailSize,
-                            font: regular,
-                            color: eventTextColor,
-                          },
-                        );
-
-                        textY -= lineHeight;
-                      },
-                    );
+                    visibleDetails.forEach((detail) => {
+                      textY -= lineHeight;
+                      page.drawText(
+                        fitText(detail, dayWidth - 14, regular, detailSize),
+                        {
+                          x: cellX + 7,
+                          y: textY,
+                          size: detailSize,
+                          font: regular,
+                          color: eventTextColor,
+                        },
+                      );
+                    });
                   },
                 );
               },
             );
+            rowTop -= rowHeight;
           },
         );
 
