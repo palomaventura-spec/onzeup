@@ -174,6 +174,52 @@ function fitText(
   return `${result}…`;
 }
 
+/**
+ * Distribui os nomes das categorias por linhas, evitando cortes com reticências.
+ * Apenas apresentação: não modifica categorias nem os eventos do QTS.
+ */
+function wrapCategoryText(
+  text: string,
+  maxWidth: number,
+  font: { widthOfTextAtSize(text: string, size: number): number },
+  size: number,
+): string[] {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      current = candidate;
+      continue;
+    }
+
+    if (current) {
+      lines.push(current);
+      current = "";
+    }
+
+    // Também suporta palavras isoladas mais largas que a coluna.
+    let segment = "";
+    for (const letter of word) {
+      if (
+        segment &&
+        font.widthOfTextAtSize(segment + letter, size) > maxWidth
+      ) {
+        lines.push(segment);
+        segment = letter;
+      } else {
+        segment += letter;
+      }
+    }
+    current = segment;
+  }
+
+  if (current) lines.push(current);
+  return lines;
+}
+
 function chunks<T>(
   values: T[],
   size: number,
@@ -399,14 +445,18 @@ export async function GET(request: Request) {
       organization?.name ||
       "11UP Club";
 
+    // Não repetir uma lista longa de nomes no subtítulo do relatório.
+    // As categorias selecionadas já aparecem completas na tabela.
     const selectionLabel =
-      validCustomSelection.length
-        ? validCustomSelection.join(", ")
-        : categoryParam &&
-            categoryParam !== "__all__" &&
-            categoryParam !== "__custom__"
-          ? categoryParam
-          : "Todas as categorias";
+      validCustomSelection.length > 1
+        ? `${validCustomSelection.length} categorias selecionadas`
+        : validCustomSelection.length === 1
+          ? validCustomSelection[0]
+          : categoryParam &&
+              categoryParam !== "__all__" &&
+              categoryParam !== "__custom__"
+            ? categoryParam
+            : `Todas as categorias (${rows.length})`;
 
     rowGroups.forEach(
       (pageRows, pageIndex) => {
@@ -415,10 +465,10 @@ export async function GET(request: Request) {
         const width = page.getWidth();
         const height = page.getHeight();
 
-        page.drawText(clubName, {
+        page.drawText(fitText(clubName, 500, bold, 18), {
           x: margin,
           y: height - 44,
-          size: 20,
+          size: 18,
           font: bold,
           color: black,
         });
@@ -484,7 +534,8 @@ export async function GET(request: Request) {
         const tableX = margin;
         const tableTop = height - 135;
 
-        const categoryWidth = 105;
+        // Mais espaço para os nomes completos das categorias.
+        const categoryWidth = 140;
 
         const dayWidth =
           (width -
@@ -581,34 +632,48 @@ export async function GET(request: Request) {
               ),
             });
 
-            page.drawText(
-              fitText(
-                row.category ||
-                  "Categoria",
-                categoryWidth - 18,
-                bold,
-                12,
-              ),
-              {
-                x: tableX + 8,
-                y: rowTop - 31,
-                size: 12,
-                font: bold,
-                color: black,
-              },
+            // Nome completo, em até 4-5 linhas conforme exista ano-base.
+            // Reduz a fonte apenas para categorias excepcionalmente longas.
+            const maximumCategoryLines = row.birthYear ? 4 : 5;
+            let categoryFontSize = 11;
+            let categoryLines = wrapCategoryText(
+              row.category || "Categoria",
+              categoryWidth - 16,
+              bold,
+              categoryFontSize,
             );
 
-            if (row.birthYear) {
-              page.drawText(
-                `Ano-base: ${row.birthYear}`,
-                {
-                  x: tableX + 8,
-                  y: rowTop - 50,
-                  size: 9.5,
-                  font: bold,
-                  color: muted,
-                },
+            while (
+              categoryLines.length > maximumCategoryLines &&
+              categoryFontSize > 7
+            ) {
+              categoryFontSize -= 0.5;
+              categoryLines = wrapCategoryText(
+                row.category || "Categoria",
+                categoryWidth - 16,
+                bold,
+                categoryFontSize,
               );
+            }
+
+            categoryLines.forEach((part, partIndex) => {
+              page.drawText(part, {
+                x: tableX + 8,
+                y: rowTop - 20 - partIndex * (categoryFontSize + 2),
+                size: categoryFontSize,
+                font: bold,
+                color: black,
+              });
+            });
+
+            if (row.birthYear) {
+              page.drawText(`Ano-base: ${row.birthYear}`, {
+                x: tableX + 8,
+                y: rowTop - 75,
+                size: 8.5,
+                font: bold,
+                color: muted,
+              });
             }
 
             DAYS.forEach(
