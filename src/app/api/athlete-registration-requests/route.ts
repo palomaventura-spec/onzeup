@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { encryptPrivateData } from "@/lib/private-data-crypto";
 import { prisma } from "@/lib/prisma";
+import { sendTransactionalEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,10 +31,17 @@ type RequestedItem = {
   label: string;
   category: Category;
   subject: "ATHLETE" | "GUARDIAN";
+  requirementId?: string;
 };
 
 function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function escapeHtml(input: string) {
+  return input.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[char] || char);
 }
 
 function tokenHash(token: string) {
@@ -61,6 +69,8 @@ export async function POST(request: Request) {
     const recipientEmail = clean(body.recipientEmail) || null;
     const recipientPhone = clean(body.recipientPhone) || null;
     const validityDays = Math.min(30, Math.max(1, Number(body.validityDays) || 7));
+    const sendEmail = body.sendEmail === true;
+    const sendPlayer = body.sendPlayer === true;
     const requestedItems: RequestedItem[] = Array.isArray(body.requestedItems)
       ? body.requestedItems.flatMap((item) => {
           if (!item || typeof item !== "object") return [];
@@ -69,8 +79,9 @@ export async function POST(request: Request) {
           const label = clean(candidate.label).slice(0, 140);
           const categoryInput = clean(candidate.category);
           const subject = clean(candidate.subject).toUpperCase();
+          const requirementId = clean(candidate.requirementId) || undefined;
           if (!/^[a-z0-9_-]+$/i.test(key) || !label || !CATEGORIES.includes(categoryInput as Category) || !["ATHLETE", "GUARDIAN"].includes(subject)) return [];
-          return [{ key, label, category: categoryInput as Category, subject: subject as "ATHLETE" | "GUARDIAN" }];
+          return [{ key, label, category: categoryInput as Category, subject: subject as "ATHLETE" | "GUARDIAN", requirementId }];
         }).filter((item, index, all) => all.findIndex((other) => other.key === item.key) === index).slice(0, 30)
       : [];
 
@@ -96,15 +107,56 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Atleta não encontrado." }, { status: 404 });
     }
 
+    let guardianEmail: string | null = null;
     if (guardianId) {
       const guardian = await prisma.athleteGuardian.findFirst({
         where: { id: guardianId, athleteId },
-        select: { id: true },
+        select: { id: true, email: true },
       });
       if (!guardian) {
         return NextResponse.json({ error: "Responsável não encontrado." }, { status: 404 });
       }
+      guardianEmail = guardian.email;
     }
+
+    // Requisitos devem pertencer à organização e a uma categoria ativa do atleta.
+    const declaredIds = [...new Set(requestedItems.map((item) => item.requirementId).filter((id): id is string => Boolean(id)))];
+    if (declaredIds.length) {
+      const valid = await prisma.categoryDocumentRequirement.findMany({
+        where: {
+          id: { in: declaredIds },
+          organizationId: context.organizationId,
+          active: true,
+          category: {
+            athleteMemberships: {
+              some: { athleteId, organizationId: context.organizationId, status: "ACTIVE" },
+            },
+          },
+        },
+        select: { id: true, documentCategory: true, subject: true },
+      });
+      const validMap = new Map(valid.map((item) => [item.id, item]));
+      for (const item of requestedItems) {
+        if (!item.requirementId) continue;
+        const requirement = validMap.get(item.requirementId);
+        if (!requirement || requirement.documentCategory !== item.category || requirement.subject !== item.subject) {
+          return NextResponse.json({ error: "Um dos documentos solicitados não corresponde aos requisitos ativos do atleta." }, { status: 400 });
+        }
+      }
+    }
+
+    // Comunicar somente o responsável do Player que corresponda ao destinatário.
+    const deliveryEmail = (recipientEmail || guardianEmail || "").trim().toLowerCase();
+    const playerLinks = sendPlayer && deliveryEmail
+      ? await prisma.playerAthleteLink.findMany({
+          where: {
+            athleteId, verified: true, active: true,
+            player: { guardian: { user: { email: { equals: deliveryEmail, mode: "insensitive" } } } },
+          },
+          select: { playerId: true },
+        })
+      : [];
+    const playerIds = [...new Set(playerLinks.map((item) => item.playerId))];
 
     const rawToken = crypto.randomBytes(32).toString("base64url");
     const expiresAt = new Date();
@@ -124,10 +176,35 @@ export async function POST(request: Request) {
           payloadEncrypted: encryptPrivateData(JSON.stringify({
             guardianId,
             requestedItems,
+            // Token acessível somente à rota privada do Player, após autenticação.
+            ...(playerIds.length ? { playerAccessToken: rawToken } : {}),
           })),
         },
         select: { id: true, expiresAt: true },
       });
+
+      if (playerIds.length) {
+        const communication = await transaction.clubCommunication.create({
+          data: {
+            organizationId: context.organizationId,
+            authorUserId: context.user.id,
+            title: "Documentos pendentes — envio solicitado",
+            body: [
+              "O clube solicitou a atualização da documentação do atleta.",
+              "", "Documentos solicitados:",
+              ...requestedItems.map((item) => `• ${item.label}`),
+              "", "Use o botão Enviar documentos neste comunicado.",
+              `[DOCUMENT_REQUEST:${created.id}]`,
+            ].join("\n"),
+            audienceType: "ATHLETE",
+            targetAthleteId: athleteId,
+            recipients: {
+              create: playerIds.map((playerId) => ({ athleteId, playerId })),
+            },
+          },
+        });
+        void communication;
+      }
 
       await transaction.athleteDataAuditLog.create({
         data: {
@@ -149,10 +226,43 @@ export async function POST(request: Request) {
     });
 
     const origin = new URL(request.url).origin;
+    const link = `${origin}/envio-documentos/${rawToken}`;
+    let emailStatus: "not_requested" | "sent" | "failed" = "not_requested";
+
+    if (sendEmail) {
+      if (!deliveryEmail) {
+        emailStatus = "failed";
+      } else {
+        const list = requestedItems.map((item) => `<li>${escapeHtml(item.label)}</li>`).join("");
+        const result = await sendTransactionalEmail({
+          to: deliveryEmail,
+          subject: "11UP Club — Documentos pendentes",
+          html: `<p>Olá, ${escapeHtml(recipientName)}!</p><p>O clube solicitou os documentos abaixo para atualização do cadastro esportivo.</p><ul>${list}</ul><p><a href="${escapeHtml(link)}">Enviar documentos em ambiente seguro</a></p><p>O link é individual, não deve ser compartilhado e expira em ${validityDays} dia(s).</p><p>Se você não reconhece esta solicitação, entre em contato com o clube.</p>`,
+        });
+        emailStatus = result.ok ? "sent" : "failed";
+      }
+    }
+
+    if (sendEmail) {
+      await prisma.athleteDataAuditLog.create({
+        data: {
+          organizationId: context.organizationId,
+          athleteId,
+          actorUserId: context.user.id,
+          action: "UPDATED",
+          entityType: "AthleteRegistrationRequest",
+          entityId: registrationRequest.id,
+          metadataJson: JSON.stringify({ notificationChannel: "EMAIL", notificationResult: emailStatus }),
+        },
+      }).catch((error) => console.error("DOCUMENT_NOTIFICATION_AUDIT_ERROR", error));
+    }
+
     return NextResponse.json({
       id: registrationRequest.id,
       expiresAt: registrationRequest.expiresAt,
-      link: `${origin}/envio-documentos/${rawToken}`,
+      link,
+      emailStatus,
+      playerStatus: sendPlayer ? (playerIds.length ? "sent" : "not_linked") : "not_requested",
     });
   } catch (error) {
     console.error("REGISTRATION_REQUEST_CREATE_ERROR", error);

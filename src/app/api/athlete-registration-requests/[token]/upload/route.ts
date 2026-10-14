@@ -31,7 +31,7 @@ const EXPIRY_REQUIRED_CATEGORIES = new Set<Category>([
   "ECHOCARDIOGRAM",
   "SCHOOL_DECLARATION",
 ]);
-type RequestedItem = { key: string; label: string; category: Category; subject: "ATHLETE" | "GUARDIAN" };
+type RequestedItem = { key: string; label: string; category: Category; subject: "ATHLETE" | "GUARDIAN"; requirementId?: string };
 
 function hash(value: string | Buffer) {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -139,6 +139,34 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     if (!requestedItem) {
       return NextResponse.json({ error: "Documento não solicitado pelo clube." }, { status: 400 });
     }
+    // Vincula automaticamente o arquivo ao requisito documental do atleta.
+    // Links antigos sem requirementId continuam aceitos sem alterar seu fluxo.
+    let requirement: { id: string; key: string; label: string; requiresExpiry: boolean } | null = null;
+    if (requestedItem.requirementId) {
+      const found = await prisma.categoryDocumentRequirement.findFirst({
+        where: {
+          id: requestedItem.requirementId,
+          organizationId: invitation.organizationId,
+          active: true,
+          documentCategory: requestedItem.category,
+          subject: requestedItem.subject,
+          category: {
+            athleteMemberships: {
+              some: { athleteId: invitation.athleteId, organizationId: invitation.organizationId, status: "ACTIVE" },
+            },
+          },
+        },
+        select: { id: true, key: true, label: true, requiresExpiry: true },
+      });
+      if (!found) {
+        return NextResponse.json({ error: "Este documento não corresponde mais a um requisito ativo. Solicite um novo link ao clube." }, { status: 400 });
+      }
+      requirement = found;
+      if (found.requiresExpiry && !expiresAt) {
+        return NextResponse.json({ error: "Informe a validade exigida para este documento obrigatório." }, { status: 400 });
+      }
+    }
+
     if (!title) return NextResponse.json({ error: "Informe o título do documento." }, { status: 400 });
     if (!ALLOWED_TYPES.includes(file.type as (typeof ALLOWED_TYPES)[number])) {
       return NextResponse.json({ error: "Use um arquivo PDF, JPG ou PNG." }, { status: 400 });
@@ -173,6 +201,9 @@ export async function POST(request: Request, context: { params: Promise<{ token:
           registrationRequestId: invitation.id,
           category: requestedItem.category,
           requestItemKey: requestedItem.key,
+          requirementId: requirement?.id ?? null,
+          requirementKeySnapshot: requirement?.key ?? null,
+          requirementLabelSnapshot: requirement?.label ?? null,
           status: "PENDING",
           title,
           storageProvider: "VERCEL_BLOB_PRIVATE",

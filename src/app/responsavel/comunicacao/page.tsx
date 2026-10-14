@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PlayerCommunicationBody from "@/components/PlayerCommunicationBody";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -273,14 +274,7 @@ export default async function PlayerCommunicationPage({
                             {recipient.communication.title}
                           </h3>
 
-                          <p
-                            style={{
-                              whiteSpace: "pre-line",
-                              margin: 0,
-                            }}
-                          >
-                            {recipient.communication.body}
-                          </p>
+                          <PlayerCommunicationBody body={recipient.communication.body} />
                         </div>
 
                         {!recipient.readAt ? (

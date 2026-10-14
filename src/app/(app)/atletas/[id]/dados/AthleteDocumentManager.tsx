@@ -89,6 +89,11 @@ export default function AthleteDocumentManager({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
+  // Aprovados e arquivados abrem compactos; suas ações continuam acessíveis.
+  const [expandedDocuments, setExpandedDocuments] = useState<
+    Record<string, boolean>
+  >({});
+
   async function update(
     documentId: string,
     action: string,
@@ -267,191 +272,14 @@ export default function AthleteDocumentManager({
     }
   }
 
-  if (!documents.length) {
+  // Mantém os mesmos campos e ações existentes (sem alteração no backend).
+  function renderDocumentDetails(
+    document: DocumentItem,
+    isApproved: boolean,
+    isBusy: boolean
+  ) {
     return (
-      <p
-        className="muted"
-        style={{
-          marginTop: 18,
-        }}
-      >
-        Nenhum documento ou exame anexado.
-      </p>
-    );
-  }
-
-  return (
-    <div
-      className="stack"
-      style={{
-        marginTop: 22,
-      }}
-    >
-      {message ? (
-        <div
-          className="form-success"
-          role="status"
-          style={{
-            padding: 14,
-            borderRadius: 10,
-            fontWeight: 700,
-          }}
-        >
-          ✓ {message}
-        </div>
-      ) : null}
-
-      {error ? (
-        <p
-          className="form-error"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      {documents.map((document) => {
-        const isApproved =
-          document.status === "APPROVED";
-
-        const isBusy =
-          busy === document.id;
-
-        return (
-          <article
-            key={document.id}
-            style={{
-              border: isApproved
-                ? "1px solid rgba(34, 197, 94, 0.28)"
-                : "1px solid var(--line)",
-              borderRadius: 16,
-              padding: 18,
-              background: "#fff",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                gap: 14,
-                flexWrap: "wrap",
-              }}
-            >
-              <div
-                style={{
-                  minWidth: 0,
-                  flex: 1,
-                }}
-              >
-                <strong
-                  style={{
-                    display: "block",
-                    fontSize: 18,
-                    marginBottom: 8,
-                  }}
-                >
-                  {document.title}
-                </strong>
-
-                <a
-                  href={`/api/athlete-documents/${document.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Abrir arquivo anexado"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 9,
-                    maxWidth: "100%",
-                    padding: "9px 12px",
-                    borderRadius: 10,
-                    border:
-                      "1px solid rgba(7, 19, 29, 0.12)",
-                    background: "#f5f8f9",
-                    color: "#07131d",
-                    fontWeight: 700,
-                    textDecoration: "none",
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      fontSize: 18,
-                      lineHeight: 1,
-                    }}
-                  >
-                    📎
-                  </span>
-
-                  <span
-                    style={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {document.originalFileName}
-                  </span>
-
-                  <span
-                    style={{
-                      flexShrink: 0,
-                      color: "#70808b",
-                      fontWeight: 600,
-                    }}
-                  >
-                    · {document.sizeLabel}
-                  </span>
-
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      flexShrink: 0,
-                    }}
-                  >
-                    ↗
-                  </span>
-                </a>
-
-                <span
-                  className="help"
-                  style={{
-                    display: "block",
-                    marginTop: 8,
-                  }}
-                >
-                  {document.subjectLabel}
-                  {" • "}
-                  {document.categoryLabel}
-                  {" • "}
-                  Enviado em {document.createdAtLabel}
-                </span>
-              </div>
-
-              <span
-                className="badge"
-                style={{
-                  minWidth: 100,
-                  justifyContent: "center",
-                  ...(isApproved
-                    ? {
-                        border:
-                          "1px solid rgba(34, 197, 94, 0.35)",
-                        background:
-                          "rgba(34, 197, 94, 0.09)",
-                        color: "#16733b",
-                        fontWeight: 800,
-                      }
-                    : {}),
-                }}
-              >
-                {isApproved ? "✓ " : ""}
-                {statusLabels[document.status] ||
-                  document.status}
-              </span>
-            </div>
-
+      <>
             {document.rejectionReason ? (
               <p className="form-error">
                 Motivo: {document.rejectionReason}
@@ -616,9 +444,347 @@ export default function AthleteDocumentManager({
                 Excluir
               </button>
             </div>
-          </article>
-        );
-      })}
+      </>
+    );
+  }
+
+  const activeDocuments = documents.filter(
+    (document) => document.status !== "ARCHIVED"
+  );
+  const archivedDocuments = documents.filter(
+    (document) => document.status === "ARCHIVED"
+  );
+
+  function renderDocument(document: DocumentItem) {
+    const isApproved = document.status === "APPROVED";
+    const isArchived = document.status === "ARCHIVED";
+    const compact = isApproved || isArchived;
+    const expanded = expandedDocuments[document.id] === true;
+    const isBusy = busy === document.id;
+
+    return (
+      <article
+        key={document.id}
+        style={{
+          border: isApproved
+            ? "1px solid rgba(34, 197, 94, 0.28)"
+            : "1px solid var(--line)",
+          borderRadius: 14,
+          padding: compact ? 12 : 18,
+          background: isArchived ? "#f9fafb" : "#fff",
+          minWidth: 0,
+        }}
+      >
+        {compact ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ flex: "1 1 300px", minWidth: 0 }}>
+              <strong
+                style={{
+                  display: "block",
+                  fontSize: 14,
+                  marginBottom: 6,
+                  color: "#07131d",
+                }}
+              >
+                {document.title}
+              </strong>
+              <a
+                href={`/api/athlete-documents/${document.id}`}
+                target="_blank"
+                rel="noreferrer"
+                title="Abrir arquivo anexado"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  padding: "6px 9px",
+                  border: "1px solid rgba(7, 19, 29, 0.12)",
+                  borderRadius: 8,
+                  background: "#f5f8f9",
+                  color: "#07131d",
+                  fontWeight: 650,
+                  textDecoration: "none",
+                  fontSize: 12,
+                }}
+              >
+                <span aria-hidden="true">📎</span>
+                <span
+                  style={{
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {document.originalFileName}
+                </span>
+                <span style={{ flexShrink: 0, color: "#70808b" }}>
+                  · {document.sizeLabel} ↗
+                </span>
+              </a>
+              <span
+                className="help"
+                style={{ display: "block", marginTop: 5, fontSize: 11 }}
+              >
+                {document.subjectLabel} • {document.categoryLabel}
+                {" • "}Enviado em {document.createdAtLabel}
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
+              <span
+                className="badge"
+                style={{
+                  minWidth: 88,
+                  justifyContent: "center",
+                  ...(isApproved
+                    ? {
+                        border: "1px solid rgba(34, 197, 94, 0.35)",
+                        background: "rgba(34, 197, 94, 0.09)",
+                        color: "#16733b",
+                        fontWeight: 800,
+                      }
+                    : {}),
+                }}
+              >
+                {isApproved ? "✓ " : ""}
+                {statusLabels[document.status] || document.status}
+              </span>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={isBusy}
+                aria-expanded={expanded}
+                aria-controls={`document-details-${document.id}`}
+                onClick={() =>
+                  setExpandedDocuments((current) => ({
+                    ...current,
+                    [document.id]: !current[document.id],
+                  }))
+                }
+                style={{ fontSize: 12, padding: "7px 11px" }}
+              >
+                {expanded ? "Ocultar detalhes ▲" : "Detalhes ▼"}
+              </button>
+            </div>
+          </div>
+        ) : (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: 14,
+                flexWrap: "wrap",
+              }}
+            >
+              <div
+                style={{
+                  minWidth: 0,
+                  flex: 1,
+                }}
+              >
+                <strong
+                  style={{
+                    display: "block",
+                    fontSize: 18,
+                    marginBottom: 8,
+                  }}
+                >
+                  {document.title}
+                </strong>
+
+                <a
+                  href={`/api/athlete-documents/${document.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Abrir arquivo anexado"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 9,
+                    maxWidth: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 10,
+                    border:
+                      "1px solid rgba(7, 19, 29, 0.12)",
+                    background: "#f5f8f9",
+                    color: "#07131d",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      fontSize: 18,
+                      lineHeight: 1,
+                    }}
+                  >
+                    📎
+                  </span>
+
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {document.originalFileName}
+                  </span>
+
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      color: "#70808b",
+                      fontWeight: 600,
+                    }}
+                  >
+                    · {document.sizeLabel}
+                  </span>
+
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      flexShrink: 0,
+                    }}
+                  >
+                    ↗
+                  </span>
+                </a>
+
+                <span
+                  className="help"
+                  style={{
+                    display: "block",
+                    marginTop: 8,
+                  }}
+                >
+                  {document.subjectLabel}
+                  {" • "}
+                  {document.categoryLabel}
+                  {" • "}
+                  Enviado em {document.createdAtLabel}
+                </span>
+              </div>
+
+              <span
+                className="badge"
+                style={{
+                  minWidth: 100,
+                  justifyContent: "center",
+                  ...(isApproved
+                    ? {
+                        border:
+                          "1px solid rgba(34, 197, 94, 0.35)",
+                        background:
+                          "rgba(34, 197, 94, 0.09)",
+                        color: "#16733b",
+                        fontWeight: 800,
+                      }
+                    : {}),
+                }}
+              >
+                {isApproved ? "✓ " : ""}
+                {statusLabels[document.status] ||
+                  document.status}
+              </span>
+            </div>
+
+        )}
+        <div
+          id={`document-details-${document.id}`}
+          hidden={compact && !expanded}
+          style={compact && expanded ? { marginTop: 12 } : undefined}
+        >
+          {(!compact || expanded) &&
+            renderDocumentDetails(document, isApproved, isBusy)}
+        </div>
+      </article>
+    );
+  }
+
+  if (!documents.length) {
+    return (
+      <p
+        className="muted"
+        style={{
+          marginTop: 18,
+        }}
+      >
+        Nenhum documento ou exame anexado.
+      </p>
+    );
+  }
+
+  return (
+    <div
+      className="stack"
+      style={{
+        marginTop: 22,
+      }}
+    >
+      {message ? (
+        <div
+          className="form-success"
+          role="status"
+          style={{
+            padding: 14,
+            borderRadius: 10,
+            fontWeight: 700,
+          }}
+        >
+          ✓ {message}
+        </div>
+      ) : null}
+
+      {error ? (
+        <p
+          className="form-error"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      {activeDocuments.map(renderDocument)}
+
+      {archivedDocuments.length > 0 ? (
+        <details
+          style={{
+            border: "1px solid var(--line)",
+            borderRadius: 14,
+            background: "#f9fafb",
+            padding: 12,
+          }}
+        >
+          <summary
+            style={{ cursor: "pointer", fontWeight: 750, color: "#34434c" }}
+          >
+            📁 Documentos arquivados ({archivedDocuments.length})
+          </summary>
+          <div className="stack" style={{ marginTop: 12 }}>
+            {archivedDocuments.map(renderDocument)}
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

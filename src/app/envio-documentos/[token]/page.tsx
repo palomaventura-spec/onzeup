@@ -89,11 +89,24 @@ export default async function FamilyDocumentSubmissionPage({
             O envio de documentos de {athleteName} foi finalizado e
             enviado para conferência de {organizationName}.
           </p>
-          <p>
-            <strong>
-              Este link não aceita novos arquivos.
-            </strong>
-          </p>
+         <p>
+  <strong>
+    Este link não aceita novos arquivos.
+  </strong>
+</p>
+
+<a
+  href="/responsavel"
+  className="btn"
+  style={{
+    display: "inline-flex",
+    marginTop: 18,
+    padding: "12px 22px",
+    textDecoration: "none",
+  }}
+>
+  ← Voltar ao Player
+</a>
         </section>
       </main>
     );

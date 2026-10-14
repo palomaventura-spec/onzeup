@@ -7,6 +7,7 @@ import { requireClubPermission } from "@/lib/club-access";
 import { prisma } from "@/lib/prisma";
 
 import AthleteDocumentUploadForm from "./AthleteDocumentUploadForm";
+import AthleteDocumentBatchUpload from "./AthleteDocumentBatchUpload";
 import AthleteDocumentInvitePanel from "./AthleteDocumentInvitePanel";
 import AthleteDocumentManager from "./AthleteDocumentManager";
 
@@ -1032,6 +1033,22 @@ export default async function AthletePrivateDataPage({
 
         <AthleteDocumentInvitePanel
           athleteId={athlete.id}
+          requiredDocuments={documentRequirementStates.map((requirement) => ({
+            id: requirement.id,
+            key: requirement.key,
+            label: requirement.label,
+            category: requirement.documentCategory,
+            subject: requirement.subject,
+            status: requirement.status,
+            missingCount: requirement.missingCount,
+            shouldRequest: !requirement.fulfilled && (
+              requirement.status === "MISSING" ||
+              requirement.status === "EXPIRED" ||
+              (requirement.status === "PENDING" &&
+                activeDocuments.some((document) => document.requirementId === requirement.id && document.status === "REJECTED") &&
+                !activeDocuments.some((document) => document.requirementId === requirement.id && document.status === "PENDING"))
+            ),
+          }))}
           guardians={athlete.guardians.map((guardian) => ({
             id: guardian.id,
             name: guardian.name,
@@ -1046,6 +1063,24 @@ export default async function AthletePrivateDataPage({
         />
 
         <AthleteDocumentUploadForm
+          athleteId={athlete.id}
+          athleteName={athlete.name}
+          guardians={athlete.guardians.map((guardian) => ({
+            id: guardian.id,
+            name: guardian.name,
+          }))}
+          documentRequirements={documentRequirementStates.map((requirement) => ({
+            id: requirement.id,
+            label: requirement.label,
+            documentCategory: requirement.documentCategory,
+            subject: requirement.subject,
+            requiresExpiry: requirement.requiresExpiry,
+            instructions: requirement.instructions,
+            status: requirement.status,
+          }))}
+        />
+
+        <AthleteDocumentBatchUpload
           athleteId={athlete.id}
           athleteName={athlete.name}
           guardians={athlete.guardians.map((guardian) => ({

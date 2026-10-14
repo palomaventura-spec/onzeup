@@ -12,7 +12,17 @@ type Invitation = {
   createdAt: string;
 };
 
-type RequestedItem = { key: string; label: string; category: string; subject: "ATHLETE" | "GUARDIAN" };
+type RequestedItem = { key: string; label: string; category: string; subject: "ATHLETE" | "GUARDIAN"; requirementId?: string };
+type RequiredDocument = {
+  id: string;
+  key: string;
+  label: string;
+  category: string;
+  subject: "ATHLETE" | "GUARDIAN";
+  status: string;
+  shouldRequest: boolean;
+  missingCount: number;
+};
 
 const presetItems = [
   ["medical_clearance", "Atestado médico para futebol competitivo / alto rendimento", "MEDICAL_CLEARANCE", "ATHLETE"],
@@ -51,10 +61,12 @@ export default function AthleteDocumentInvitePanel({
   athleteId,
   guardians,
   invitations,
+  requiredDocuments,
 }: {
   athleteId: string;
   guardians: Guardian[];
   invitations: Invitation[];
+  requiredDocuments: RequiredDocument[];
 }) {
   const router = useRouter();
   const [sending, setSending] = useState(false);
@@ -66,6 +78,13 @@ export default function AthleteDocumentInvitePanel({
   const [recipientName, setRecipientName] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
+  const [selectedRequirements, setSelectedRequirements] = useState<string[]>(() =>
+    requiredDocuments.filter((item) => item.shouldRequest).map((item) => item.id),
+  );
+  const [sendEmail, setSendEmail] = useState(false);
+  const [sendPlayer, setSendPlayer] = useState(false);
+  const [sentLabels, setSentLabels] = useState<string[]>([]);
+  const [channelResults, setChannelResults] = useState("");
 
   async function createInvitation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,12 +92,28 @@ export default function AthleteDocumentInvitePanel({
     setGeneratedLink("");
     setMessage("");
     setError("");
+    setChannelResults("");
+    setSentLabels([]);
 
     const form = new FormData(event.currentTarget);
     const selectedKeys = new Set(form.getAll("presetItems").map(String));
-    const requestedItems: RequestedItem[] = presetItems
-      .filter(([key]) => selectedKeys.has(key))
-      .map(([key, label, category, subject]) => ({ key, label, category, subject }));
+    const automaticItems: RequestedItem[] = requiredDocuments
+      .filter((item) => selectedRequirements.includes(item.id))
+      .flatMap((item) =>
+        Array.from({ length: Math.min(10, Math.max(1, item.missingCount)) }, (_, index) => ({
+          key: `req_${item.id}_${index + 1}`,
+          label: item.missingCount > 1 ? `${item.label} — arquivo ${index + 1}` : item.label,
+          category: item.category,
+          subject: item.subject,
+          requirementId: item.id,
+        })),
+      );
+    const requestedItems: RequestedItem[] = [
+      ...automaticItems,
+      ...presetItems
+        .filter(([key]) => selectedKeys.has(key) && !automaticItems.some((item) => item.label === presetItems.find(([k]) => k === key)?.[1]))
+        .map(([key, label, category, subject]) => ({ key, label, category, subject })),
+    ];
 
     customItems.forEach((item, index) => {
       const normalized = item.label.trim();
@@ -90,6 +125,16 @@ export default function AthleteDocumentInvitePanel({
       });
     });
 
+    if (!requestedItems.length) {
+      setError("Selecione pelo menos um documento para solicitar.");
+      setSending(false);
+      return;
+    }
+    if (sendEmail && !recipientEmail.trim()) {
+      setError("Informe o e-mail do responsável para ativar o envio pelo Resend.");
+      setSending(false);
+      return;
+    }
     try {
       const response = await fetch("/api/athlete-registration-requests", {
         method: "POST",
@@ -102,13 +147,26 @@ export default function AthleteDocumentInvitePanel({
           recipientPhone: form.get("recipientPhone"),
           validityDays: form.get("validityDays"),
           requestedItems,
+          sendEmail,
+          sendPlayer,
         }),
       });
-      const result = (await response.json()) as { error?: string; link?: string };
+      const result = (await response.json()) as {
+        error?: string;
+        link?: string;
+        emailStatus?: "not_requested" | "sent" | "failed";
+        playerStatus?: "not_requested" | "sent" | "not_linked";
+      };
       if (!response.ok || !result.link) throw new Error(result.error || "Falha ao gerar o link.");
 
       setGeneratedLink(result.link);
-      setMessage("Link criado. Copie agora: por segurança ele não será exibido novamente.");
+      setSentLabels(requestedItems.map((item) => item.label));
+      const statuses = [
+        sendEmail ? (result.emailStatus === "sent" ? "E-mail enviado pelo Resend." : "O e-mail não foi enviado; use o link ou tente novamente após conferir o Resend.") : "",
+        sendPlayer ? (result.playerStatus === "sent" ? "Aviso publicado na Comunicação do Player vinculado." : "Nenhum Player ativo e verificado foi encontrado para este e-mail.") : "",
+      ].filter(Boolean);
+      setChannelResults(statuses.join(" "));
+      setMessage("Link seguro criado. Copie ou abra o WhatsApp agora; por segurança ele não será exibido novamente.");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Falha ao gerar o link.");
@@ -120,6 +178,18 @@ export default function AthleteDocumentInvitePanel({
   async function copyLink() {
     await navigator.clipboard.writeText(generatedLink);
     setMessage("Link copiado. Agora você pode enviá-lo à família.");
+  }
+
+  function sendWhatsApp() {
+    if (!generatedLink) return;
+    let phone = recipientPhone.replace(/\D/g, "");
+    if (phone.length === 10 || phone.length === 11) phone = `55${phone}`;
+    const list = sentLabels.map((item) => `- ${item}`).join("\n");
+    const text = `Olá, ${recipientName}! O clube solicitou os seguintes documentos:\n${list}\n\nEnvie os arquivos pelo link seguro do 11UP:\n${generatedLink}\n\nNão compartilhe este link com terceiros.`;
+    const url = phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   async function revoke(requestId: string) {
@@ -141,7 +211,7 @@ export default function AthleteDocumentInvitePanel({
   return (
     <div style={{ marginTop: 18 }}>
       <details style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 15 }}>
-        <summary style={{ cursor: "pointer", fontWeight: 800 }}>Solicitar documentos por link</summary>
+        <summary style={{ cursor: "pointer", fontWeight: 800 }}>Solicitar documentos pendentes por link, e-mail ou Player</summary>
         <form onSubmit={createInvitation} className="form" style={{ width: "100%", maxWidth: "none", marginTop: 18 }}>
           <div className="form-grid-2">
             <label>
@@ -177,8 +247,27 @@ export default function AthleteDocumentInvitePanel({
             </label>
           </div>
 
+          {requiredDocuments.length > 0 ? (
+            <fieldset style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 15 }}>
+              <legend style={{ fontWeight: 800 }}>Documentos obrigatórios da categoria</legend>
+              <p className="muted" style={{ marginTop: 0 }}>Os documentos que faltam ou precisam ser substituídos já vêm selecionados. Arquivos aguardando aprovação não são solicitados novamente por padrão.</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
+                {requiredDocuments.map((item) => (
+                  <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="checkbox" style={{ width: "auto" }}
+                      checked={selectedRequirements.includes(item.id)}
+                      onChange={(event) => setSelectedRequirements((current) =>
+                        event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id))}
+                    />
+                    <span>{item.label}<small className="help" style={{ display: "block" }}>{item.status === "APPROVED" ? "Já regularizado" : item.status === "MISSING" ? "Faltando" : item.status === "EXPIRED" ? "Vencido" : "Pendente de revisão"}</small></span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
+
           <fieldset style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 15 }}>
-            <legend style={{ fontWeight: 800 }}>Documentos solicitados</legend>
+            <legend style={{ fontWeight: 800 }}>Documentos adicionais (opcional)</legend>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
               {presetItems.map(([value, label, , subject]) => (
                 <label key={value} style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -215,12 +304,29 @@ export default function AthleteDocumentInvitePanel({
             </button>
           </fieldset>
 
+          <fieldset style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 15 }}>
+            <legend style={{ fontWeight: 800 }}>Como deseja notificar o responsável?</legend>
+            <div style={{ display: "grid", gap: 10 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="checkbox" style={{ width: "auto" }} checked={sendEmail} onChange={(event) => setSendEmail(event.target.checked)} />
+                Enviar e-mail ao responsável
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="checkbox" style={{ width: "auto" }} checked={sendPlayer} onChange={(event) => setSendPlayer(event.target.checked)} />
+                Publicar na Comunicação do Player vinculado (somente se o e-mail corresponder a um vínculo verificado)
+              </label>
+              <small className="muted">WhatsApp: o botão para abrir a mensagem pronta será disponibilizado após gerar o link. O envio é confirmado no WhatsApp.</small>
+            </div>
+          </fieldset>
+
           {message ? <p className="form-success">{message}</p> : null}
+          {channelResults ? <p className="muted" role="status">{channelResults}</p> : null}
           {error ? <p className="form-error">{error}</p> : null}
           {generatedLink ? (
             <div className="actions">
               <input readOnly value={generatedLink} aria-label="Link gerado" style={{ flex: 1 }} />
               <button type="button" onClick={copyLink}>Copiar link</button>
+              <button type="button" className="btn btn-secondary" onClick={sendWhatsApp}>Abrir WhatsApp com mensagem pronta</button>
             </div>
           ) : null}
           <button type="submit" disabled={sending}>{sending ? "Gerando..." : "Gerar link seguro"}</button>
