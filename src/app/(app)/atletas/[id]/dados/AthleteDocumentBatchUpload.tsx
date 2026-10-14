@@ -226,6 +226,9 @@ export default function AthleteDocumentBatchUpload({
       }
     }
 
+    // Após concluir o lote, retire da tela apenas os arquivos já enviados.
+    // Os que falharam permanecem disponíveis para correção e nova tentativa.
+    setItems((current) => current.filter((entry) => entry.status !== "SUCCESS"));
     setProgress("");
     setMessage(`${sent} arquivo(s) enviado(s) com sucesso${failed ? `; ${failed} não enviado(s). Confira os motivos abaixo e tente novamente.` : ". Os documentos aguardam a conferência do gestor."}`);
     setSending(false);
