@@ -1,7 +1,9 @@
 import { del, get } from "@vercel/blob";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
+import { syncAutomaticEligibility } from "@/lib/athlete-eligibility";
 import { getCurrentUser } from "@/lib/auth";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
@@ -386,13 +388,13 @@ export async function PATCH(request: Request, route: { params: Promise<{ documen
       );
     }
 
-    await prisma.$transaction([
-      prisma.athleteDocument.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.athleteDocument.update({
         where: { id: document.id },
         data,
-      }),
+      });
 
-      prisma.athleteDataAuditLog.create({
+      await tx.athleteDataAuditLog.create({
         data: {
           organizationId:
             auth.organizationId,
@@ -424,8 +426,18 @@ export async function PATCH(request: Request, route: { params: Promise<{ documen
               linkedRequirement?.label ?? null,
           }),
         },
-      }),
-    ]);
+      });
+
+      await syncAutomaticEligibility(tx, {
+        organizationId: auth.organizationId,
+        athleteId: document.athleteId,
+        actor: { id: auth.user.id, name: auth.user.name },
+      });
+    });
+
+    revalidatePath(`/atletas/${document.athleteId}`);
+    revalidatePath(`/atletas/${document.athleteId}/dados`);
+    revalidatePath("/atletas");
 
     return NextResponse.json({
       ok: true,
@@ -458,13 +470,18 @@ export async function DELETE(_request: Request, route: { params: Promise<{ docum
     if (!token) return NextResponse.json({ error: "Armazenamento indisponível." }, { status: 503 });
     await del(document.storageKey, { token });
 
-    await prisma.$transaction([
-      prisma.athleteDocument.update({ where: { id: document.id }, data: { deletedAt: new Date() } }),
-      prisma.organization.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.athleteDocument.update({
+        where: { id: document.id },
+        data: { deletedAt: new Date() },
+      });
+
+      await tx.organization.update({
         where: { id: auth.organizationId },
         data: { documentStorageUsedBytes: { decrement: BigInt(document.sizeBytes) } },
-      }),
-      prisma.athleteDataAuditLog.create({
+      });
+
+      await tx.athleteDataAuditLog.create({
         data: {
           organizationId: auth.organizationId,
           athleteId: document.athleteId,
@@ -474,8 +491,20 @@ export async function DELETE(_request: Request, route: { params: Promise<{ docum
           entityId: document.id,
           metadataJson: JSON.stringify({ sizeBytes: document.sizeBytes, category: document.category }),
         },
-      }),
-    ]);
+      });
+
+      // Excluir pode reabrir um requisito obrigatorio e tornar o atleta inapto.
+      // Recalcular dentro da mesma transacao, sem criar excecoes manuais.
+      await syncAutomaticEligibility(tx, {
+        organizationId: auth.organizationId,
+        athleteId: document.athleteId,
+        actor: { id: auth.user.id, name: auth.user.name },
+      });
+    });
+
+    revalidatePath(`/atletas/${document.athleteId}`);
+    revalidatePath(`/atletas/${document.athleteId}/dados`);
+    revalidatePath('/atletas');
 
     return NextResponse.json({ ok: true });
   } catch (error) {

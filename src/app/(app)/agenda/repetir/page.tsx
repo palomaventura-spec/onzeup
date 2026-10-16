@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 
 import { requireClubPermission } from "@/lib/club-access";
@@ -1088,7 +1089,7 @@ export default async function RepeatAgendaPage({
               Cancelar
             </Link>
 
-            <button
+            <PendingSubmitButton pendingText="Salvando…"
               type="submit"
               className="repeat-v4-confirm"
               disabled={
@@ -1097,7 +1098,7 @@ export default async function RepeatAgendaPage({
               }
             >
               ↻ Confirmar repetição
-            </button>
+            </PendingSubmitButton>
           </footer>
         </form>
       ) : (

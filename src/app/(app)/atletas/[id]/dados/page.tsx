@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -12,7 +13,6 @@ import AthleteDocumentInvitePanel from "./AthleteDocumentInvitePanel";
 import AthleteDocumentManager from "./AthleteDocumentManager";
 
 import {
-  confirmAthleteDocumentation,
   createManualDocumentIssue,
   reopenManualDocumentIssue,
   resolveManualDocumentIssue,
@@ -290,11 +290,7 @@ export default async function AthletePrivateDataPage({
 
       if (expired || document.status === "REJECTED") return false;
 
-      if (requirement.requiresApproval) {
-        return document.status === "APPROVED";
-      }
-
-      return true;
+      return document.status === "APPROVED";
     });
 
     const fulfilled = validDocuments.length >= requirement.minCount;
@@ -378,45 +374,8 @@ export default async function AthletePrivateDataPage({
     (request) => request.status === "PENDING"
   );
 
-  const documentationConfirmedAt = athlete.documentationConfirmedAt;
-
   const hasConfiguredDocumentRequirements =
     requiredDocumentRequirements.length > 0;
-
-  const requiredDocumentRequirementIds = new Set(
-    requiredDocumentRequirements.map(
-      (requirement) => requirement.id
-    )
-  );
-
-  const hasRelevantDocumentAfterConfirmation =
-    documentationConfirmedAt
-      ? activeDocuments.some(
-          (document) =>
-            Boolean(
-              document.requirementId &&
-                requiredDocumentRequirementIds.has(
-                  document.requirementId
-                )
-            ) &&
-            document.createdAt >
-              documentationConfirmedAt
-        )
-      : false;
-
-  const hasLegacyDocumentAfterConfirmation =
-    documentationConfirmedAt
-      ? activeDocuments.some(
-          (document) =>
-            document.createdAt >
-              documentationConfirmedAt
-        )
-      : false;
-
-  const hasDocumentsAfterConfirmation =
-    hasConfiguredDocumentRequirements
-      ? hasRelevantDocumentAfterConfirmation
-      : hasLegacyDocumentAfterConfirmation;
 
   const legacyDocumentationReady =
     activeDocuments.length > 0 &&
@@ -428,18 +387,10 @@ export default async function AthletePrivateDataPage({
     : legacyDocumentationReady;
 
   const documentationInDay =
-    Boolean(documentationConfirmedAt) &&
     documentationRequirementsReady &&
-    !hasPendingRequest &&
-    !hasDocumentsAfterConfirmation;
-
-  const canConfirmDocumentation =
-    documentationRequirementsReady &&
-    !hasPendingRequest &&
     !athlete.documentManualIssues.some(
-      (issue) => issue.status === "OPEN" && issue.blocking
-    ) &&
-    !documentationInDay;
+      (issue) => issue.status === "OPEN" && issue.blocking,
+    );
 
   const documentStatusLabel = hasConfiguredDocumentRequirements
     ? expiredRequiredDocuments > 0
@@ -450,7 +401,7 @@ export default async function AthletePrivateDataPage({
           ? "Faltam documentos obrigatórios"
           : documentationInDay
             ? "Documentação em dia"
-            : "Aguardando confirmação"
+            : "Pendência documental impeditiva"
     : expiredDocuments > 0
       ? "Documento vencido"
       : pendingDocuments > 0 || rejectedDocuments > 0
@@ -461,7 +412,7 @@ export default async function AthletePrivateDataPage({
             ? "Faltam documentos"
             : documentationInDay
               ? "Documentação em dia"
-              : "Aguardando confirmação";
+              : "Pendência documental impeditiva";
   const documentStatusDescription = hasConfiguredDocumentRequirements
     ? expiredRequiredDocuments > 0
       ? `Vencidos ou sem validade: ${expiredRequiredDocumentLabels.join(", ")}.`
@@ -471,7 +422,7 @@ export default async function AthletePrivateDataPage({
           ? `Faltando: ${missingRequiredDocumentLabels.join(", ")}.`
           : documentationInDay
             ? "Todos os documentos obrigatórios foram revisados e estão regulares."
-            : "Todos os documentos obrigatórios estão válidos. Confirme a conferência para marcar a documentação como em dia."
+            : "Resolva as pendências documentais impeditivas, se houver."
     : expiredDocuments > 0
       ? "Há documento com validade expirada. Atualize a documentação do atleta."
       : pendingDocuments > 0 || rejectedDocuments > 0
@@ -482,7 +433,7 @@ export default async function AthletePrivateDataPage({
             ? "Nenhum documento ativo foi cadastrado. Solicite os documentos ao responsável."
             : documentationInDay
               ? "A documentação foi revisada pelo gestor e está regular."
-              : "Todos os documentos estão aprovados. Confirme a conferência para marcar a documentação como em dia.";
+              : "Resolva as pendências documentais impeditivas, se houver.";
   const openManualDocumentIssues = athlete.documentManualIssues.filter(
     (issue) => issue.status === "OPEN"
   );
@@ -607,6 +558,16 @@ export default async function AthletePrivateDataPage({
         </article>
 
         <article>
+          <span className="athlete-documents-v4-kpi-icon missing">
+            <Icon name="document" />
+          </span>
+          <div>
+            <small>FALTANTES</small>
+            <strong>{missingRequiredDocuments}</strong>
+            <span>obrigatorio(s) nao entregue(s)</span>
+          </div>
+        </article>
+        <article>
           <span className="athlete-documents-v4-kpi-icon expired">
             <Icon name="expired" />
           </span>
@@ -659,17 +620,6 @@ export default async function AthletePrivateDataPage({
             {documentStatusDescription}
           </p>
 
-          {canConfirmDocumentation ? (
-            <form
-              action={confirmAthleteDocumentation}
-              style={{ marginTop: 14 }}
-            >
-              <input type="hidden" name="athleteId" value={athlete.id} />
-              <button type="submit">
-                Confirmar documentação em dia
-              </button>
-            </form>
-          ) : null}
         </div>
         <div className="actions" style={{ marginTop: 14 }}>
           <span className="badge">{athlete.documents.length} arquivo(s)</span>
@@ -775,9 +725,9 @@ export default async function AthletePrivateDataPage({
               </label>
 
               <div>
-                <button type="submit">
+                <PendingSubmitButton pendingText="Processando…" type="submit">
                   Adicionar pendência
-                </button>
+                </PendingSubmitButton>
               </div>
             </form>
           </details>
@@ -866,9 +816,9 @@ export default async function AthletePrivateDataPage({
                       />
                     </label>
 
-                    <button type="submit">
+                    <PendingSubmitButton pendingText="Confirmando…" type="submit">
                       Resolver
-                    </button>
+                    </PendingSubmitButton>
                   </form>
                 </div>
               ))}
@@ -943,12 +893,12 @@ export default async function AthletePrivateDataPage({
                         value={issue.id}
                       />
 
-                      <button
+                      <PendingSubmitButton pendingText="Processando…"
                         type="submit"
                         className="btn btn-secondary"
                       >
                         Reabrir
-                      </button>
+                      </PendingSubmitButton>
                     </form>
                   </div>
                 ))}
@@ -1336,6 +1286,10 @@ export default async function AthletePrivateDataPage({
           background: #fff3d2;
         }
 
+        .athlete-documents-v4-kpi-icon.missing {
+          color: #bd5d19;
+          background: #fff0de;
+        }
         .athlete-documents-v4-kpi-icon.expired {
           color: #c74747;
           background: #fde8e8;

@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/auth";
@@ -174,7 +175,7 @@ export default async function AdminCoachesPage({ searchParams }: PageProps) {
                             {isInactive ? (
                               <form action={reactivateCoach}>
                                 <input type="hidden" name="coachId" value={coach.id} />
-                                <button className="btn-secondary btn-small" type="submit">Reativar</button>
+                                <PendingSubmitButton pendingText="Atualizando…" className="btn-secondary btn-small" type="submit">Reativar</PendingSubmitButton>
                               </form>
                             ) : null}
                             <form action={deleteInactiveCoach}>

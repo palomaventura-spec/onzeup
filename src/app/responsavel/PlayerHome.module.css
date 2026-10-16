@@ -1,0 +1,513 @@
+/* Layout exclusivo da página inicial do Player. Não altera outras telas. */
+.portal {
+  min-height: 100vh;
+  background: #070b10;
+  color: #f7f9fb;
+}
+
+.topNav {
+  min-height: 68px;
+}
+
+.topNavRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.navNotice,
+.logoutButton {
+  min-width: 40px;
+  min-height: 40px;
+  border: 1px solid #2b3a44;
+  border-radius: 11px;
+  background: #121d26;
+  color: #f2f6fa;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  padding: 0 13px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.navNotice:hover,
+.logoutButton:hover {
+  border-color: #9ddb16;
+  background: #1a2933;
+}
+
+.navCount {
+  min-width: 18px;
+  min-height: 18px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: #9ddb16;
+  color: #101909;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.userName {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.container {
+  width: min(1100px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 36px 0 72px;
+}
+
+.intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.eyebrow {
+  color: #a5df27;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin: 0 0 8px;
+}
+
+.intro h1 {
+  color: #fff;
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  margin: 0 0 9px;
+}
+
+.subtitle {
+  margin: 0;
+  color: #aab8c5;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.addPlayer,
+.primaryButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  min-height: 43px;
+  padding: 10px 16px;
+  border-radius: 11px;
+  border: 1px solid #3a4b55;
+  color: #f7f9fb;
+  background: #17222c;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.addPlayer:hover {
+  background: #233341;
+  border-color: #9ddb16;
+}
+
+.playerSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px;
+  border: 1px solid #263440;
+  border-radius: 17px;
+  background: linear-gradient(112deg, #141f28 0%, #0e171e 100%);
+}
+
+.playerIdentity {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+}
+
+.avatar {
+  flex: none;
+  width: 66px;
+  height: 66px;
+  border-radius: 15px;
+  background: #263944;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar span {
+  font-size: 19px;
+  font-weight: 900;
+  color: #a5df27;
+}
+
+.playerDetails {
+  min-width: 0;
+}
+
+.playerDetails h2 {
+  font-size: clamp(19px, 2.1vw, 25px);
+  line-height: 1.22;
+  margin: 0 0 9px;
+  overflow-wrap: anywhere;
+}
+
+.playerMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.planPill,
+.linkPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border-radius: 7px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.planPill {
+  background: rgba(157, 219, 22, 0.13);
+  color: #b6ec50;
+}
+
+.linkPill {
+  background: #22313c;
+  color: #c9d4db;
+}
+
+.publicPageLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #edf3f8;
+  border: 1px solid #3a4b55;
+  border-radius: 10px;
+  padding: 10px 13px;
+  background: #182630;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.publicPageLink:hover {
+  border-color: #9ddb16;
+}
+
+.switcherSection {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 15px;
+  margin: 18px 0 2px;
+}
+
+.switcherLabel {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  color: #b5c1cb;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.switcherList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.switcherItem {
+  display: inline-block;
+  padding: 8px 12px;
+  border: 1px solid #2d3d49;
+  border-radius: 9px;
+  background: #121c24;
+  color: #c1ced7;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.switcherItem:hover {
+  border-color: #8dac4a;
+}
+
+.switcherActive {
+  border-color: #9ddb16;
+  background: #243219;
+  color: #d4ffa1;
+}
+
+.actionsSection {
+  margin-top: 28px;
+}
+
+.actionsHeading {
+  margin-bottom: 15px;
+}
+
+.actionsHeading h2 {
+  font-size: 21px;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+}
+
+.actionsHeading p {
+  margin: 0;
+  color: #9cadb9;
+  font-size: 14px;
+}
+
+.actionsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.actionCard {
+  display: flex;
+  flex-direction: column;
+  gap: 19px;
+  min-height: 203px;
+  min-width: 0;
+  padding: 19px;
+  border: 1px solid #273640;
+  border-radius: 16px;
+  background: #111a21;
+  color: inherit;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.actionCard:hover {
+  border-color: #9ddb16;
+  background: #18252c;
+  transform: translateY(-2px);
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iconBox {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(157, 219, 22, 0.11);
+  color: #b7e955;
+}
+
+.cardArrow {
+  color: #a1b3be;
+}
+
+.actionCopy h3 {
+  color: #fff;
+  font-size: 17px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin: 0 0 7px;
+}
+
+.actionCopy p {
+  margin: 0;
+  color: #a4b3be;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.cardFooter {
+  display: block;
+  margin-top: auto;
+  border-top: 1px solid #2b3942;
+  padding-top: 12px;
+  color: #b8e964;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.footerAttention {
+  color: #fff3ac;
+}
+
+.emptyState {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 38px 30px;
+  border: 1px solid #2d3a43;
+  background: #111a21;
+  border-radius: 18px;
+  text-align: center;
+}
+
+.emptyIcon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(157, 219, 22, 0.12);
+  color: #b7e955;
+}
+
+.emptyState h2 {
+  margin: 0 0 9px;
+  font-size: 23px;
+}
+
+.emptyState p {
+  color: #acb9c4;
+  line-height: 1.6;
+  margin: 0 auto 22px;
+  max-width: 460px;
+}
+
+.primaryButton {
+  background: #9ddb16;
+  color: #0a1404;
+  border-color: #9ddb16;
+}
+
+.primaryButton:hover {
+  background: #b1eb35;
+}
+
+.navNotice:focus-visible,
+.logoutButton:focus-visible,
+.addPlayer:focus-visible,
+.publicPageLink:focus-visible,
+.switcherItem:focus-visible,
+.actionCard:focus-visible,
+.primaryButton:focus-visible {
+  outline: 3px solid #c9fa6d;
+  outline-offset: 3px;
+}
+
+@media (max-width: 850px) {
+  .actionsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .topNav {
+    min-height: 64px;
+    padding: 0 15px;
+  }
+
+  .topNavRight {
+    gap: 8px;
+  }
+
+  .userName {
+    display: none;
+  }
+
+  .container {
+    width: min(100% - 28px, 1100px);
+    padding-top: 24px;
+  }
+
+  .intro {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 17px;
+  }
+
+  .addPlayer {
+    width: 100%;
+  }
+
+  .playerSummary {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 17px;
+    gap: 15px;
+  }
+
+  .playerIdentity {
+    align-items: flex-start;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .avatar {
+    width: 55px;
+    height: 55px;
+    border-radius: 12px;
+  }
+
+  .publicPageLink {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .switcherList {
+    width: 100%;
+  }
+
+  .actionsSection {
+    margin-top: 23px;
+  }
+
+  .actionsGrid {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+
+  .actionCard {
+    min-height: 0;
+    padding: 17px;
+    gap: 13px;
+  }
+
+  .actionCopy h3 {
+    font-size: 17px;
+  }
+
+  .emptyState {
+    padding: 29px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actionCard {
+    transition: none;
+  }
+
+  .actionCard:hover {
+    transform: none;
+  }
+}

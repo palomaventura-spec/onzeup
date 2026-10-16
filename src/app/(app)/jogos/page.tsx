@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import {
   MatchStatus,
@@ -1117,12 +1118,12 @@ export default async function MatchesPage({
                   </div>
                 </details>
 
-                <button
+                <PendingSubmitButton pendingText="Cadastrando…"
                   className="matches-v12-create-submit"
                   type="submit"
                 >
                   Cadastrar jogo
-                </button>
+                </PendingSubmitButton>
               </form>
             )}
           </div>

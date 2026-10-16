@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import { requireOrganizationUser } from "@/lib/auth";
 import { updateAccountProfile } from "./actions";
 
@@ -88,9 +89,9 @@ export default async function Settings() {
               </small>
             </div>
             <div className="account-settings-actions">
-              <button className="btn" type="submit">
+              <PendingSubmitButton pendingText="Salvando…" className="btn" type="submit">
                 Salvar alterações
-              </button>
+              </PendingSubmitButton>
             </div>
           </form>
         </article>

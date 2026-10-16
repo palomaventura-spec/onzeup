@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 
 export default async function AccessBlocked({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
@@ -20,7 +21,7 @@ export default async function AccessBlocked({ searchParams }: { searchParams: Pr
         <h1>Acesso indisponível</h1>
         <p>{text}</p>
         <p className="muted">Se o pagamento já foi realizado, aguarde a confirmação automática do Asaas e tente novamente.</p>
-        <form action="/api/auth/logout" method="post"><button className="btn">Sair</button></form>
+        <form action="/api/auth/logout" method="post"><PendingSubmitButton pendingText="Saindo…" className="btn">Sair</PendingSubmitButton></form>
         <Link href="/">Voltar ao site</Link>
       </section>
     </main>

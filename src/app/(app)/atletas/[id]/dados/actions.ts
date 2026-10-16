@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { syncAutomaticEligibility } from "@/lib/athlete-eligibility";
 import { requireClubPermission } from "@/lib/club-access";
 import { encryptPrivateData } from "@/lib/private-data-crypto";
 import { prisma } from "@/lib/prisma";
@@ -498,15 +499,15 @@ export async function confirmAthleteDocumentation(formData: FormData) {
 
   const confirmedAt = new Date();
 
-  await prisma.$transaction([
-    prisma.athlete.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.athlete.update({
       where: { id: athleteId },
       data: {
         documentationConfirmedAt: confirmedAt,
       },
-    }),
+    });
 
-    prisma.athleteDataAuditLog.create({
+    await tx.athleteDataAuditLog.create({
       data: {
         organizationId: user.organizationId,
         athleteId,
@@ -525,8 +526,34 @@ export async function confirmAthleteDocumentation(formData: FormData) {
             : "LEGACY_DOCUMENTS",
         }),
       },
-    }),
-  ]);
+    });
+
+    // Reavaliar na mesma transacao: sem pendencia automatica desatualizada.
+    await syncAutomaticEligibility(tx, {
+      organizationId: user.organizationId,
+      athleteId,
+      actor: { id: user.id, name: user.name },
+    });
+  });
+
+  refresh(athleteId);
+}
+
+// Para fichas que ja estavam confirmadas antes desta correcao.
+// Recalcula somente os impeditivos AUTOMATICOS, sem autorizar excecoes.
+export async function recheckAthleteEligibility(formData: FormData) {
+  const user = await requirePrivateAthleteActionUser();
+  const athleteId = clean(formData.get("athleteId"));
+
+  if (!await ownedAthlete(athleteId, user.organizationId)) return;
+
+  await prisma.$transaction(async (tx) => {
+    await syncAutomaticEligibility(tx, {
+      organizationId: user.organizationId,
+      athleteId,
+      actor: { id: user.id, name: user.name },
+    });
+  });
 
   refresh(athleteId);
 }

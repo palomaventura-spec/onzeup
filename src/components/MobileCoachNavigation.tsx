@@ -1,5 +1,6 @@
 "use client";
 
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./MobileCoachNavigation.module.css";
@@ -158,14 +159,14 @@ export default function MobileCoachNavigation() {
           action="/api/auth/logout"
           method="post"
         >
-          <button
+          <PendingSubmitButton pendingText="Saindo…"
             type="submit"
             className={styles.item}
             aria-label="Sair da conta"
           >
             <LogoutIcon />
             <span>Sair</span>
-          </button>
+          </PendingSubmitButton>
         </form>
       </div>
     </nav>

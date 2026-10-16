@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 ﻿import Image from "next/image";
 import Link from "next/link";
 
@@ -465,7 +466,7 @@ export default function NewCompetitionPage() {
               Cancelar
             </Link>
 
-            <button
+            <PendingSubmitButton pendingText="Cadastrando…"
               type="submit"
               className="od-action-primary"
               style={{
@@ -476,7 +477,7 @@ export default function NewCompetitionPage() {
               }}
             >
               Criar competição
-            </button>
+            </PendingSubmitButton>
           </div>
         </section>
       </form>

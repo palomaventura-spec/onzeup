@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import PlayerPublicActions from "@/components/PlayerPublicActions";
+import { reconcileExpiredSimplePlayerCourtesies } from "@/lib/player-simple-courtesy";
 import { reconcileExpiredPlayerPremiums } from "@/lib/billing-entitlements";
 
 function lines(value?: string | null) {
@@ -17,6 +18,7 @@ function career(value?: string | null) {
 
 export default async function PlayerPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  await reconcileExpiredSimplePlayerCourtesies({ slug });
   await reconcileExpiredPlayerPremiums({ slug });
   const player = await prisma.playerProfile.findFirst({
     where: { slug, isPublic: true },

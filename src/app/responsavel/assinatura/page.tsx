@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 
 import DemoBanner from "@/components/DemoBanner";
+import { reconcileExpiredSimplePlayerCourtesies } from "@/lib/player-simple-courtesy";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
 
 import {
@@ -60,6 +61,7 @@ export default async function PlayerSubscriptionPage({
     });
 
   if (guardianBase) {
+    await reconcileExpiredSimplePlayerCourtesies({ guardianId: guardianBase.id });
     await reconcileExpiredPlayerTrials({
       guardianId: guardianBase.id,
     });
@@ -196,12 +198,12 @@ export default async function PlayerSubscriptionPage({
             action="/api/auth/logout"
             method="post"
           >
-            <button
+            <PendingSubmitButton pendingText="Saindo…"
               className="btn-secondary btn-small"
               type="submit"
             >
               Sair
-            </button>
+            </PendingSubmitButton>
           </form>
         </div>
       </header>

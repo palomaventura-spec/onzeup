@@ -1,5 +1,6 @@
 "use client";
 
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -186,7 +187,7 @@ export default function MobileOrganizerNavigation({
               action="/api/auth/logout"
               method="post"
             >
-              <button type="submit">Sair da conta</button>
+              <PendingSubmitButton pendingText="Saindo…" type="submit">Sair da conta</PendingSubmitButton>
             </form>
           </section>
         </div>

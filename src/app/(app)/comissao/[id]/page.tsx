@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import ImageUpload from "@/components/ImageUpload";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -173,7 +174,7 @@ export default async function EditStaffPage({
               <span>Permitir gerenciar convocações desta categoria</span>
             </label>
           </fieldset>
-          <button type="submit">Salvar perfil profissional</button>
+          <PendingSubmitButton pendingText="Salvando…" type="submit">Salvar perfil profissional</PendingSubmitButton>
         </form>
       </section>
     </>

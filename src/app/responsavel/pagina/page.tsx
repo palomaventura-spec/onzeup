@@ -172,7 +172,7 @@ export default async function GuardianPortal({
           ) : null}
           <span>{user.name}</span>
           <form action="/api/auth/logout" method="post">
-            <button className="btn-secondary btn-small" type="submit">Sair</button>
+            <PendingSubmitButton pendingText="Saindo…" className="btn-secondary btn-small" type="submit">Sair</PendingSubmitButton>
           </form>
         </div>
       </header>
@@ -215,7 +215,7 @@ export default async function GuardianPortal({
               <strong>Contato da família</strong>
               <form action={saveGuardianProfile}>
                 <input name="phone" defaultValue={guardian?.phone || ""} placeholder="WhatsApp do responsável" />
-                <button className="btn-secondary btn-small">Salvar contato</button>
+                <PendingSubmitButton pendingText="Salvando…" className="btn-secondary btn-small">Salvar contato</PendingSubmitButton>
               </form>
             </div>
           </aside>
@@ -255,7 +255,7 @@ export default async function GuardianPortal({
                 <form action={createPlayerPremiumAsaas}>
                   <input type="hidden" name="playerId" value={selected.id} />
                   <strong>R$ 69,90/mês</strong>
-                  <button className="btn">Assinar com cartao</button></form><form action={createPlayerPremiumPixAsaas}><input type="hidden" name="playerId" value={selected.id} /><button className="btn-secondary">Pagar mensalidade via Pix</button>
+                  <PendingSubmitButton pendingText="Processando pagamento…" className="btn">Assinar com cartao</PendingSubmitButton></form><form action={createPlayerPremiumPixAsaas}><input type="hidden" name="playerId" value={selected.id} /><PendingSubmitButton pendingText="Processando pagamento…" className="btn-secondary">Pagar mensalidade via Pix</PendingSubmitButton>
                 </form>
               </section>
             ) : null}

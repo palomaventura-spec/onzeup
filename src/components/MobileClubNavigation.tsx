@@ -1,5 +1,6 @@
 "use client";
 
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -376,9 +377,9 @@ export default function MobileClubNavigation({
               action="/api/auth/logout"
               method="post"
             >
-              <button type="submit">
+              <PendingSubmitButton pendingText="Saindo…" type="submit">
                 Sair da conta
-              </button>
+              </PendingSubmitButton>
             </form>
           </section>
         </div>

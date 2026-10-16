@@ -90,12 +90,12 @@ export default async function PlayerCommunicationPage({
           <span>{user.name}</span>
 
           <form action="/api/auth/logout" method="post">
-            <button
+            <PendingSubmitButton pendingText="Saindo…"
               className="btn-secondary btn-small"
               type="submit"
             >
               Sair
-            </button>
+            </PendingSubmitButton>
           </form>
         </div>
       </header>

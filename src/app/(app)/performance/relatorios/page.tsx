@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import {
   ClubPermissionCode,
@@ -1136,12 +1137,12 @@ export default async function MonthlyReportsPage({
                               name="sport"
                               value={selectedSport}
                             />
-                            <button
+                            <PendingSubmitButton pendingText="Gerando…"
                               className="reports-v6-primary"
                               type="submit"
                             >
                               Gerar
-                            </button>
+                            </PendingSubmitButton>
                           </form>
                         ) : (
                           <>
@@ -1187,12 +1188,12 @@ export default async function MonthlyReportsPage({
                                     name="sport"
                                     value={selectedSport}
                                   />
-                                  <button
+                                  <PendingSubmitButton pendingText="Salvando…"
                                     className="reports-v6-secondary"
                                     type="submit"
                                   >
                                     Atualizar
-                                  </button>
+                                  </PendingSubmitButton>
                                 </form>
 
                                 <form
@@ -1215,12 +1216,12 @@ export default async function MonthlyReportsPage({
                                     name="sport"
                                     value={selectedSport}
                                   />
-                                  <button
+                                  <PendingSubmitButton pendingText="Processando…"
                                     className="reports-v6-primary"
                                     type="submit"
                                   >
                                     Revisão
-                                  </button>
+                                  </PendingSubmitButton>
                                 </form>
                               </>
                             ) : report.status ===
@@ -1245,12 +1246,12 @@ export default async function MonthlyReportsPage({
                                   name="sport"
                                   value={selectedSport}
                                 />
-                                <button
+                                <PendingSubmitButton pendingText="Aprovando…"
                                   className="reports-v6-primary"
                                   type="submit"
                                 >
                                   Aprovar
-                                </button>
+                                </PendingSubmitButton>
                               </form>
                             ) : report.status ===
                               MonthlyAthleteReportStatus.APPROVED ? (
@@ -1274,12 +1275,12 @@ export default async function MonthlyReportsPage({
                                   name="sport"
                                   value={selectedSport}
                                 />
-                                <button
+                                <PendingSubmitButton pendingText="Processando…"
                                   className="reports-v6-primary"
                                   type="submit"
                                 >
                                   Marcar enviado
-                                </button>
+                                </PendingSubmitButton>
                               </form>
                             ) : null}
                           </>

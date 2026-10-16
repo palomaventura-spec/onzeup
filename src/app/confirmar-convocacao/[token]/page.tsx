@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -105,12 +106,12 @@ export default async function PublicCallUpResponsePage({
               />
             </label>
             <div className="actions">
-              <button className="btn" name="status" value="CONFIRMED">
+              <PendingSubmitButton pendingText="Confirmando…" className="btn" name="status" value="CONFIRMED">
                 Confirmar presença
-              </button>
-              <button className="btn btn-danger" name="status" value="DECLINED">
+              </PendingSubmitButton>
+              <PendingSubmitButton pendingText="Processando…" className="btn btn-danger" name="status" value="DECLINED">
                 Informar ausência
-              </button>
+              </PendingSubmitButton>
             </div>
           </form>
         ) : (

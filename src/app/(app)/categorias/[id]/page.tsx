@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
@@ -438,9 +439,9 @@ export default async function CategoryHubPage({
             </select>
           </label>
 
-          <button type="submit">
+          <PendingSubmitButton pendingText="Salvando…" type="submit">
             Salvar alterações
-          </button>
+          </PendingSubmitButton>
         </form>
       </section>
     </>

@@ -1,5 +1,6 @@
 "use client";
 
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import { useMemo, useState } from "react";
 
 type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
@@ -1093,9 +1094,9 @@ export default function QtrEditor({
 
         <div className="qtr-bottom-actions">
           {canEdit ? (
-            <button type="submit">
+            <PendingSubmitButton pendingText="Salvando…" type="submit">
               Salvar alterações
-            </button>
+            </PendingSubmitButton>
           ) : null}
 
           <button
@@ -1303,9 +1304,9 @@ export default function QtrEditor({
               ) : null}
 
               <div className="actions">
-                <button type="submit">
+                <PendingSubmitButton pendingText="Salvando…" type="submit">
                   Salvar atividade
-                </button>
+                </PendingSubmitButton>
 
                 {editing.eventIndex !==
                 null ? (

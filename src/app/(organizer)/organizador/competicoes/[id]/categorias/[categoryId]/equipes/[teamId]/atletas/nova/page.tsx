@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import ImageUpload from "@/components/ImageUpload";
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -655,7 +656,7 @@ export default async function NewCompetitionAthletePage({
                 Cancelar
               </Link>
 
-              <button
+              <PendingSubmitButton pendingText="Cadastrando…"
                 type="submit"
                 className="od-action-primary"
                 style={{
@@ -666,7 +667,7 @@ export default async function NewCompetitionAthletePage({
                 }}
               >
                 Criar atleta
-              </button>
+              </PendingSubmitButton>
             </div>
           </section>
         </form>

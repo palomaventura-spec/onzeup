@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -8,6 +9,7 @@ export default async function LoginPage({
     verificacao?: string;
     senha?: string;
     erro?: string;
+    next?: string;
   }>;
 }) {
   const q = await searchParams;
@@ -21,6 +23,9 @@ export default async function LoginPage({
           method="post"
           autoComplete="on"
         >
+          {q.next ? (
+            <input type="hidden" name="next" value={q.next} />
+          ) : null}
           <Link
             href="/"
             className="login-brand-link"
@@ -136,12 +141,12 @@ export default async function LoginPage({
             </span>
           </label>
 
-          <button
+          <PendingSubmitButton pendingText="Entrando…"
             className="btn"
             type="submit"
           >
             Entrar
-          </button>
+          </PendingSubmitButton>
 
           <div className="login-commercial-links">
             <Link href="/esqueci-senha">
@@ -158,7 +163,13 @@ export default async function LoginPage({
               11UP Club — criar conta →
             </Link>
 
-            <Link href="/cadastro">
+            <Link
+              href={
+                q.next
+                  ? `/cadastro?next=${encodeURIComponent(q.next)}`
+                  : "/cadastro"
+              }
+            >
               11UP Player — criar grátis →
             </Link>
 

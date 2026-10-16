@@ -2,13 +2,39 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashEmailVerificationToken } from "@/lib/email-verification";
 
+function safeInternalDestination(value: string) {
+  if (!value) return "";
+  if (!value.startsWith("/") || value.startsWith("//")) return "";
+  if (value.includes("\\") || /[\r\n]/.test(value)) return "";
+
+  try {
+    const parsed = new URL(value, "https://www.onzeup.com.br");
+
+    if (parsed.origin !== "https://www.onzeup.com.br") {
+      return "";
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "";
+  }
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const raw = String(url.searchParams.get("token") || "");
 
+  const next = safeInternalDestination(
+    String(url.searchParams.get("next") || ""),
+  );
+
+  const nextQuery = next
+    ? `&next=${encodeURIComponent(next)}`
+    : "";
+
   if (!raw) {
     return NextResponse.redirect(
-      new URL("/login?verificacao=token-invalido", req.url),
+      new URL(`/login?verificacao=token-invalido${nextQuery}`, req.url),
       303
     );
   }
@@ -31,7 +57,7 @@ export async function GET(req: Request) {
 
   if (!record || record.usedAt || record.expiresAt <= new Date()) {
     return NextResponse.redirect(
-      new URL("/login?verificacao=token-expirado", req.url),
+      new URL(`/login?verificacao=token-expirado${nextQuery}`, req.url),
       303
     );
   }
@@ -47,7 +73,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.redirect(
-      new URL("/login?verificacao=token-invalido", req.url),
+      new URL(`/login?verificacao=token-invalido${nextQuery}`, req.url),
       303
     );
   }
@@ -76,7 +102,7 @@ export async function GET(req: Request) {
   ]);
 
   return NextResponse.redirect(
-    new URL("/login?verificacao=ok", req.url),
+    new URL(`/login?verificacao=ok${nextQuery}`, req.url),
     303
   );
 }

@@ -27,7 +27,17 @@ export async function POST(req: Request) {
   const adminOnly = String(form.get("adminOnly") || "") === "1";
   const remember = String(form.get("remember") || "") === "1";
 
-  const failureUrl = adminOnly ? "/admin/login?erro=1" : "/login?erro=1";
+  const safeRequestedNext = adminOnly
+    ? ""
+    : safeInternalDestination(requestedNext, "");
+
+  const nextQuery = safeRequestedNext
+    ? `&next=${encodeURIComponent(safeRequestedNext)}`
+    : "";
+
+  const failureUrl = adminOnly
+    ? "/admin/login?erro=1"
+    : `/login?erro=1${nextQuery}`;
 
   // Bootstrap do Super Admin pelas variáveis de ambiente.
   // Mantido para compatibilidade operacional, sem senha padrão em código.
@@ -83,7 +93,10 @@ export async function POST(req: Request) {
 
   if (!user.active) {
     if (!adminOnly && user.accountStatus === "PENDING_VERIFICATION") {
-      return NextResponse.redirect(new URL("/login?erro=confirme-email", req.url), 303);
+      return NextResponse.redirect(
+        new URL(`/login?erro=confirme-email${nextQuery}`, req.url),
+        303,
+      );
     }
     return NextResponse.redirect(new URL(failureUrl, req.url), 303);
   }

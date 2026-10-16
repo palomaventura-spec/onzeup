@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -1484,12 +1485,12 @@ const [categoryHistory, eligibilityAuditHistory] =
               />
             </label>
 
-            <button
+            <PendingSubmitButton pendingText="Confirmando…"
               type="submit"
               className="btn-secondary"
             >
               Confirmar saída do elenco
-            </button>
+            </PendingSubmitButton>
           </form>
         </details>
       ) : null}
@@ -1712,9 +1713,9 @@ const [categoryHistory, eligibilityAuditHistory] =
                           />
                         </label>
 
-                        <button type="submit" className="btn">
+                        <PendingSubmitButton pendingText="Confirmando…" type="submit" className="btn">
                           Autorizar pendência
-                        </button>
+                        </PendingSubmitButton>
                       </form>
                     </details>
                   ) : null}
@@ -1749,12 +1750,12 @@ const [categoryHistory, eligibilityAuditHistory] =
                           />
                         </label>
 
-                        <button
+                        <PendingSubmitButton pendingText="Cancelando…"
                           type="submit"
                           className="btn-secondary"
                         >
                           Revogar autorização
-                        </button>
+                        </PendingSubmitButton>
                       </form>
                     </details>
                   ) : null}
@@ -1972,12 +1973,12 @@ const [categoryHistory, eligibilityAuditHistory] =
                 />
               </label>
 
-              <button
+              <PendingSubmitButton pendingText="Aprovando…"
                 type="submit"
                 className="btn"
               >
                 Aprovar atleta
-              </button>
+              </PendingSubmitButton>
             </form>
           ) : (
             <div
@@ -2038,7 +2039,7 @@ const [categoryHistory, eligibilityAuditHistory] =
                 />
               </label>
 
-              <button
+              <PendingSubmitButton pendingText="Rejeitando…"
                 type="submit"
                 className="btn-secondary"
                 style={{
@@ -2048,7 +2049,7 @@ const [categoryHistory, eligibilityAuditHistory] =
                 }}
               >
                 Confirmar reprovação
-              </button>
+              </PendingSubmitButton>
             </form>
           </details>
 
@@ -2093,12 +2094,12 @@ const [categoryHistory, eligibilityAuditHistory] =
                 />
               </label>
 
-              <button
+              <PendingSubmitButton pendingText="Confirmando…"
                 type="submit"
                 className="btn-secondary"
               >
                 Confirmar liberação
-              </button>
+              </PendingSubmitButton>
             </form>
           </details>
 
@@ -2142,12 +2143,12 @@ const [categoryHistory, eligibilityAuditHistory] =
                 />
               </label>
 
-              <button
+              <PendingSubmitButton pendingText="Confirmando…"
                 type="submit"
                 className="btn-secondary"
               >
                 Confirmar desistência
-              </button>
+              </PendingSubmitButton>
             </form>
           </details>
         </section>
@@ -2350,12 +2351,12 @@ const [categoryHistory, eligibilityAuditHistory] =
               />
             </label>
 
-            <button
+            <PendingSubmitButton pendingText="Salvando…"
               type="submit"
               className="btn"
             >
               Salvar avaliação passada
-            </button>
+            </PendingSubmitButton>
           </form>
         </details>
       ) : null}
@@ -3151,9 +3152,9 @@ const [categoryHistory, eligibilityAuditHistory] =
                     />
                   </label>
 
-                  <button type="submit">
+                  <PendingSubmitButton pendingText="Salvando…" type="submit">
                     Salvar dados privados e médicos
-                  </button>
+                  </PendingSubmitButton>
                 </form>
               </div>
 
@@ -3443,9 +3444,9 @@ const [categoryHistory, eligibilityAuditHistory] =
                             </label>
                           </div>
 
-                          <button type="submit">
+                          <PendingSubmitButton pendingText="Salvando…" type="submit">
                             Salvar responsável
-                          </button>
+                          </PendingSubmitButton>
                         </form>
 
                         <form
@@ -3464,12 +3465,12 @@ const [categoryHistory, eligibilityAuditHistory] =
                             value={guardian.id}
                           />
 
-                          <button
+                          <PendingSubmitButton pendingText="Excluindo…"
                             className="btn btn-secondary"
                             type="submit"
                           >
                             Excluir responsável
-                          </button>
+                          </PendingSubmitButton>
                         </form>
                       </details>
                     ),
@@ -3645,9 +3646,9 @@ const [categoryHistory, eligibilityAuditHistory] =
                       </label>
                     </div>
 
-                    <button type="submit">
+                    <PendingSubmitButton pendingText="Cadastrando…" type="submit">
                       Cadastrar responsável
-                    </button>
+                    </PendingSubmitButton>
                   </form>
                 </details>
               </div>
@@ -3761,7 +3762,7 @@ const [categoryHistory, eligibilityAuditHistory] =
               <strong>
                 {futsalFederation
                   ? `${futsalFederation.authorityName || "Federação"} · ${futsalFederation.registrationNumber}`
-                  : "—"}
+                  : "Inscrição não informada"}
               </strong>
             </div>
 
@@ -3772,7 +3773,7 @@ const [categoryHistory, eligibilityAuditHistory] =
               <strong>
                 {footballFederation
                   ? `${footballFederation.authorityName || "Federação"} · ${footballFederation.registrationNumber}`
-                  : "—"}
+                  : "Inscrição não informada"}
               </strong>
             </div>
 

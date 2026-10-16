@@ -1,5 +1,6 @@
 "use client";
 
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import { useState } from "react";
 
 type QtrColors = {
@@ -209,9 +210,9 @@ export default function QtrColorSettings({
             Restaurar padrão
           </button>
 
-          <button type="submit">
+          <PendingSubmitButton pendingText="Salvando…" type="submit">
             Salvar cores
-          </button>
+          </PendingSubmitButton>
         </div>
       </form>
     </section>

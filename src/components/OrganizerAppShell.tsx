@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -245,7 +246,7 @@ export default async function OrganizerAppShell({
           action="/api/auth/logout"
           method="post"
         >
-          <button type="submit">Sair</button>
+          <PendingSubmitButton pendingText="Saindo…" type="submit">Sair</PendingSubmitButton>
         </form>
       </aside>
 

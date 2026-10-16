@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import ModuleHero from "@/components/ModuleHero";
 import { prisma } from "@/lib/prisma";
@@ -78,11 +79,11 @@ export default async function PlayerLinksPage() {
               <div className="actions">
                 <form action={approvePlayerLink}>
                   <input type="hidden" name="id" value={link.id} />
-                  <button type="submit">Confirmar vínculo</button>
+                  <PendingSubmitButton pendingText="Confirmando…" type="submit">Confirmar vínculo</PendingSubmitButton>
                 </form>
                 <form action={rejectPlayerLink}>
                   <input type="hidden" name="id" value={link.id} />
-                  <button type="submit" className="btn-danger">Recusar</button>
+                  <PendingSubmitButton pendingText="Cancelando…" type="submit" className="btn-danger">Recusar</PendingSubmitButton>
                 </form>
               </div>
             </article>
@@ -119,12 +120,12 @@ export default async function PlayerLinksPage() {
                     name="id"
                     value={link.id}
                   />
-                  <button
+                  <PendingSubmitButton pendingText="Cancelando…"
                     type="submit"
                     className="btn-danger"
                   >
                     Desvincular
-                  </button>
+                  </PendingSubmitButton>
                 </form>
               </div>
             </article>

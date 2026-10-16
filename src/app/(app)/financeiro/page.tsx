@@ -477,9 +477,9 @@ export default async function FinancePage() {
               />
             </label>
 
-            <button type="submit">
+            <PendingSubmitButton pendingText="Cadastrando…" type="submit">
               Criar cobrança
-            </button>
+            </PendingSubmitButton>
           </form>
         </section>
 
@@ -554,9 +554,9 @@ export default async function FinancePage() {
               />
             </label>
 
-            <button type="submit">
+            <PendingSubmitButton pendingText="Cadastrando…" type="submit">
               Gerar mensalidades
-            </button>
+            </PendingSubmitButton>
           </form>
 
           <hr
@@ -637,10 +637,10 @@ export default async function FinancePage() {
               />
             </label>
 
-            <button type="submit">
+            <PendingSubmitButton pendingText="Gerando…" type="submit">
               Gerar taxa para
               convocados
-            </button>
+            </PendingSubmitButton>
           </form>
         </section>
       </div>
@@ -780,12 +780,12 @@ export default async function FinancePage() {
                                 </option>
                               </select>
 
-                              <button
+                              <PendingSubmitButton pendingText="Processando…"
                                 className="btn-small"
                                 type="submit"
                               >
                                 Dar baixa
-                              </button>
+                              </PendingSubmitButton>
                             </form>
                           ) : (
                             <form
@@ -802,12 +802,12 @@ export default async function FinancePage() {
                                 }
                               />
 
-                              <button
+                              <PendingSubmitButton pendingText="Processando…"
                                 className="btn-secondary btn-small"
                                 type="submit"
                               >
                                 Reabrir
-                              </button>
+                              </PendingSubmitButton>
                             </form>
                           )}
 
@@ -827,12 +827,12 @@ export default async function FinancePage() {
                                 }
                               />
 
-                              <button
+                              <PendingSubmitButton pendingText="Cancelando…"
                                 className="btn-secondary btn-small"
                                 type="submit"
                               >
                                 Cancelar
-                              </button>
+                              </PendingSubmitButton>
                             </form>
                           ) : null}
 
@@ -890,12 +890,12 @@ Se o pagamento já foi realizado, desconsidere.`}
                               }
                             />
 
-                            <button
+                            <PendingSubmitButton pendingText="Excluindo…"
                               className="btn-danger btn-small"
                               type="submit"
                             >
                               Excluir
-                            </button>
+                            </PendingSubmitButton>
                           </form>
                         </div>
                       </td>

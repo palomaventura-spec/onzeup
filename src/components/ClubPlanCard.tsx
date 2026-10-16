@@ -1,4 +1,5 @@
 "use client";
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import { useState } from "react";
 import { createClubAsaasCheckout } from "@/app/checkout/club/actions";
 
@@ -37,8 +38,8 @@ export default function ClubPlanCard(props: Props) {
       <form action={createClubAsaasCheckout} className="plan-payment-actions">
         <input type="hidden" name="plan" value={props.plan} />
         <input type="hidden" name="cycle" value={cycle} />
-        <button name="method" value="CARD">Pagar com cartão</button>
-        <button className="btn-secondary" name="method" value="PIX">Pagar com Pix</button>
+        <PendingSubmitButton pendingText="Processando pagamento…" name="method" value="CARD">Pagar com cartão</PendingSubmitButton>
+        <PendingSubmitButton pendingText="Processando pagamento…" className="btn-secondary" name="method" value="PIX">Pagar com Pix</PendingSubmitButton>
       </form>
     </article>
   );

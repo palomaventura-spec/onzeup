@@ -588,7 +588,7 @@ export default async function StaffPage({
               </label>
             </fieldset>
 
-            <button type="submit">Adicionar à comissão</button>
+            <PendingSubmitButton pendingText="Cadastrando…" type="submit">Adicionar à comissão</PendingSubmitButton>
           </form>
         </div>
       </details>

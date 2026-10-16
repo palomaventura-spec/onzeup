@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -324,7 +325,7 @@ export default async function MatchSheetPage({
             </div>
           )}
           {editable ? (
-            <button type="submit">Salvar rascunho da súmula</button>
+            <PendingSubmitButton pendingText="Salvando…" type="submit">Salvar rascunho da súmula</PendingSubmitButton>
           ) : null}
         </section>
       </form>
@@ -379,7 +380,7 @@ export default async function MatchSheetPage({
               Observação
               <input name="notes" />
             </label>
-            <button type="submit">Adicionar</button>
+            <PendingSubmitButton pendingText="Processando…" type="submit">Adicionar</PendingSubmitButton>
           </form>
         ) : null}
         <div className="match-event-list">
@@ -406,9 +407,9 @@ export default async function MatchSheetPage({
                   <form action={deleteMatchEvent}>
                     <input type="hidden" name="matchId" value={match.id} />
                     <input type="hidden" name="eventId" value={event.id} />
-                    <button className="btn-danger btn-small" type="submit">
+                    <PendingSubmitButton pendingText="Excluindo…" className="btn-danger btn-small" type="submit">
                       Excluir
-                    </button>
+                    </PendingSubmitButton>
                   </form>
                 ) : null}
               </div>
@@ -432,7 +433,7 @@ export default async function MatchSheetPage({
               </div>
               <form action={finalizeMatchSheet}>
                 <input type="hidden" name="matchId" value={match.id} />
-                <button type="submit">Finalizar súmula</button>
+                <PendingSubmitButton pendingText="Finalizando…" type="submit">Finalizar súmula</PendingSubmitButton>
               </form>
             </>
           ) : (
@@ -445,9 +446,9 @@ export default async function MatchSheetPage({
               </div>
               <form action={reopenMatchSheet}>
                 <input type="hidden" name="matchId" value={match.id} />
-                <button className="btn-secondary" type="submit">
+                <PendingSubmitButton pendingText="Processando…" className="btn-secondary" type="submit">
                   Reabrir súmula
-                </button>
+                </PendingSubmitButton>
               </form>
             </>
           )}

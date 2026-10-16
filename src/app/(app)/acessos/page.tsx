@@ -389,12 +389,12 @@ export default async function AccessPage({
                               </option>
                             </select>
 
-                            <button
+                            <PendingSubmitButton pendingText="Salvando…"
                               type="submit"
                               className="btn-small"
                             >
                               Salvar
-                            </button>
+                            </PendingSubmitButton>
                           </form>
                         )}
                       </td>
@@ -427,12 +427,12 @@ export default async function AccessPage({
                                 value={user.id}
                               />
 
-                              <button
+                              <PendingSubmitButton pendingText="Enviando…"
                                 type="submit"
                                 className="btn-secondary btn-small"
                               >
                                 Reenviar convite
-                              </button>
+                              </PendingSubmitButton>
                             </form>
                           ) : null}
 
@@ -450,7 +450,7 @@ export default async function AccessPage({
                                 value={user.id}
                               />
 
-                              <button
+                              <PendingSubmitButton pendingText="Atualizando…"
                                 type="submit"
                                 className={
                                   user.active
@@ -461,7 +461,7 @@ export default async function AccessPage({
                                 {user.active
                                   ? "Desativar"
                                   : "Reativar"}
-                              </button>
+                              </PendingSubmitButton>
                             </form>
                           ) : null}
                         </div>

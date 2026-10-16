@@ -173,6 +173,10 @@ export async function POST(request: Request) {
             data: {
               plan: "PREMIUM",
               planStatus: "ACTIVE",
+              isComplimentary: false,
+              complimentaryPlan: null,
+              complimentaryUntil: null,
+              complimentaryReason: null,
               premiumUntil: nextPremiumUntil,
               template: local.player?.template === "FREE_CLEAN" ? "PREMIUM_DARK" : undefined,
             },

@@ -190,7 +190,6 @@ export async function linkMatchingClubAthletes(formData: FormData) {
   const playerId = clean(formData.get("playerId"));
   const athleteFullName = clean(formData.get("athleteFullName"));
   const birthDateRaw = clean(formData.get("birthDate"));
-  const guardianName = clean(formData.get("guardianName"));
 
   if (!playerId || !athleteFullName || !birthDateRaw) {
     redirect(
@@ -223,7 +222,6 @@ export async function linkMatchingClubAthletes(formData: FormData) {
       .trim();
 
   const requestedName = normalize(athleteFullName);
-  const requestedGuardianName = normalize(guardianName);
 
   const parts = birthDateRaw.split("-").map(Number);
 
@@ -237,6 +235,18 @@ export async function linkMatchingClubAthletes(formData: FormData) {
   }
 
   const [year, month, day] = parts;
+  const validDate =
+    year >= 1900 &&
+    year <= new Date().getUTCFullYear() &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= 31 &&
+    new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10) === birthDateRaw;
+
+  if (!validDate) {
+    redirect(`/responsavel/dados?player=${player.id}&linkStatus=dados-incompletos`);
+  }
 
   const birthStart = new Date(
     Date.UTC(year, month - 1, day, 0, 0, 0, 0),
@@ -261,13 +271,6 @@ export async function linkMatchingClubAthletes(formData: FormData) {
     select: {
       id: true,
       name: true,
-      guardianName: true,
-      organizationId: true,
-      guardians: {
-        select: {
-          name: true,
-        },
-      },
     },
   });
 
@@ -278,21 +281,8 @@ export async function linkMatchingClubAthletes(formData: FormData) {
       return false;
     }
 
-    const clubGuardianNames = [
-      athlete.guardianName,
-      ...athlete.guardians.map((item) => item.name),
-    ]
-      .map(normalize)
-      .filter(Boolean);
-
-    if (
-      requestedGuardianName &&
-      clubGuardianNames.length > 0 &&
-      !clubGuardianNames.includes(requestedGuardianName)
-    ) {
-      return false;
-    }
-
+    // Nome completo + data de nascimento localizam apenas candidatos.
+    // A relacao familiar e a autorizacao sao verificadas pelo clube depois.
     return true;
   });
 

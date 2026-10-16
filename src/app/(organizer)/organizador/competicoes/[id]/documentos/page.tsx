@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -298,12 +299,12 @@ export default async function CompetitionDocumentsPage({
               </span>
             </label>
 
-            <button
+            <PendingSubmitButton pendingText="Processando…"
               type="submit"
               className="od-action-primary"
             >
               Adicionar documento
-            </button>
+            </PendingSubmitButton>
           </form>
         </article>
 
@@ -469,13 +470,13 @@ export default async function CompetitionDocumentsPage({
                             requirement.id,
                           )}
                         >
-                          <button
+                          <PendingSubmitButton pendingText="Atualizando…"
                             type="submit"
                           >
                             {requirement.active
                               ? "Desativar"
                               : "Ativar"}
-                          </button>
+                          </PendingSubmitButton>
                         </form>
 
                         {requirement
@@ -489,11 +490,11 @@ export default async function CompetitionDocumentsPage({
                               requirement.id,
                             )}
                           >
-                            <button
+                            <PendingSubmitButton pendingText="Excluindo…"
                               type="submit"
                             >
                               Excluir
-                            </button>
+                            </PendingSubmitButton>
                           </form>
                         ) : null}
                       </div>

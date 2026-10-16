@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -151,6 +152,10 @@ const groups: MenuGroup[] = [
         label: "Dados da conta",
         permission: "PLAN_MANAGE",
       },
+      {
+        href: "/suporte",
+        label: "Ajuda e suporte",
+      },
     ],
   },
 ];
@@ -264,6 +269,11 @@ const mobileMoreItems: MobileMenuItem[] = [
   {
     href: "/ajuda",
     label: "Ajuda",
+    icon: "help",
+  },
+  {
+    href: "/suporte",
+    label: "Suporte",
     icon: "help",
   },
 ];
@@ -396,9 +406,9 @@ export default async function AppShell({
             action="/api/auth/logout"
             method="post"
           >
-            <button type="submit">
+            <PendingSubmitButton pendingText="Saindo…" type="submit">
               Sair
-            </button>
+            </PendingSubmitButton>
           </form>
         </div>
       </aside>
@@ -428,7 +438,7 @@ export default async function AppShell({
             </div>
 
             <form action={endAdminSupportSession}>
-              <button
+              <PendingSubmitButton pendingText="Processando…"
                 type="submit"
                 style={{
                   border: "1px solid #111827",
@@ -441,7 +451,7 @@ export default async function AppShell({
                 }}
               >
                 Voltar ao Super Admin
-              </button>
+              </PendingSubmitButton>
             </form>
           </div>
         ) : null}

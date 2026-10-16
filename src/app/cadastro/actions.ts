@@ -12,6 +12,32 @@ import { notifyAdminNewRegistration } from "@/lib/admin-notifications";
 
 const clean = (v: FormDataEntryValue | null) => String(v || "").trim();
 
+function safeInternalDestination(value: string) {
+  if (!value) return "";
+  if (!value.startsWith("/") || value.startsWith("//")) return "";
+  if (value.includes("\\") || /[\r\n]/.test(value)) return "";
+
+  try {
+    const parsed = new URL(value, "https://www.onzeup.com.br");
+
+    if (parsed.origin !== "https://www.onzeup.com.br") {
+      return "";
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "";
+  }
+}
+
+function cadastroDestination(query: string, next: string) {
+  const safeNext = safeInternalDestination(next);
+
+  return `/cadastro?${query}${
+    safeNext ? `&next=${encodeURIComponent(safeNext)}` : ""
+  }`;
+}
+
 function appUrl() {
   return (
     process.env.NEXT_PUBLIC_APP_URL ||
@@ -21,7 +47,11 @@ function appUrl() {
   ).replace(/\/$/, "");
 }
 
-async function issueVerification(userId: string, email: string) {
+async function issueVerification(
+  userId: string,
+  email: string,
+  next = "",
+) {
   const raw = createEmailVerificationToken();
   const tokenHash = hashEmailVerificationToken(raw);
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -34,7 +64,11 @@ async function issueVerification(userId: string, email: string) {
     data: { userId, tokenHash, expiresAt },
   });
 
-  const verifyUrl = `${appUrl()}/api/verificar-email?token=${raw}`;
+  const safeNext = safeInternalDestination(next);
+
+  const verifyUrl =
+    `${appUrl()}/api/verificar-email?token=${raw}` +
+    (safeNext ? `&next=${encodeURIComponent(safeNext)}` : "");
 
   const result = await sendTransactionalEmail({
     to: email,
@@ -69,9 +103,10 @@ export async function registerGuardian(formData: FormData) {
   const confirm = clean(formData.get("confirm"));
   const legal = formData.get("legal") === "on";
   const ref = clean(formData.get("ref"));
+  const next = safeInternalDestination(clean(formData.get("next")));
 
   if (!name || !email || password.length < 8 || password !== confirm || !legal) {
-    redirect("/cadastro?erro=dados");
+    redirect(cadastroDestination("erro=dados", next));
   }
 
   const existing = await prisma.user.findUnique({
@@ -90,13 +125,16 @@ export async function registerGuardian(formData: FormData) {
       !existing.active &&
       !existing.emailVerifiedAt
     ) {
-      const sent = await issueVerification(existing.id, email);
+      const sent = await issueVerification(existing.id, email, next);
       redirect(
-        `/cadastro?status=${sent ? "reenviado" : "erro-email"}&email=${encodeURIComponent(email)}`
+        cadastroDestination(
+          `status=${sent ? "reenviado" : "erro-email"}&email=${encodeURIComponent(email)}`,
+          next,
+        ),
       );
     }
 
-    redirect("/cadastro?erro=email-existente");
+    redirect(cadastroDestination("erro=email-existente", next));
   }
 
   const passwordHash = await hash(password, 12);
@@ -125,7 +163,7 @@ export async function registerGuardian(formData: FormData) {
     select: { id: true },
   });
 
-  const sent = await issueVerification(user.id, email);
+  const sent = await issueVerification(user.id, email, next);
 
   await notifyAdminNewRegistration({
     type: "PLAYER",
@@ -136,14 +174,18 @@ export async function registerGuardian(formData: FormData) {
   });
 
   redirect(
-    `/cadastro?status=${sent ? "enviado" : "erro-email"}&email=${encodeURIComponent(email)}`
+    cadastroDestination(
+      `status=${sent ? "enviado" : "erro-email"}&email=${encodeURIComponent(email)}`,
+      next,
+    ),
   );
 }
 
 export async function resendGuardianVerification(formData: FormData) {
   const email = clean(formData.get("email")).toLowerCase();
+  const next = safeInternalDestination(clean(formData.get("next")));
 
-  if (!email) redirect("/cadastro?erro=dados");
+  if (!email) redirect(cadastroDestination("erro=dados", next));
 
   const user = await prisma.user.findUnique({
     where: { email },
@@ -162,12 +204,15 @@ export async function resendGuardianVerification(formData: FormData) {
     user.active ||
     user.emailVerifiedAt
   ) {
-    redirect("/cadastro?status=reenviado");
+    redirect(cadastroDestination("status=reenviado", next));
   }
 
-  const sent = await issueVerification(user.id, email);
+  const sent = await issueVerification(user.id, email, next);
 
   redirect(
-    `/cadastro?status=${sent ? "reenviado" : "erro-email"}&email=${encodeURIComponent(email)}`
-  );
+        cadastroDestination(
+          `status=${sent ? "reenviado" : "erro-email"}&email=${encodeURIComponent(email)}`,
+          next,
+        ),
+      );
 }

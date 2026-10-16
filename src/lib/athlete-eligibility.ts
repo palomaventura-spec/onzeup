@@ -279,12 +279,6 @@ export async function syncAutomaticEligibility(
   const hasConfiguredDocumentRequirements =
     requiredDocumentRequirements.length > 0;
 
-  const requiredDocumentIds = new Set(
-    requiredDocumentRequirements.map(
-      (requirement) => requirement.id
-    )
-  );
-
   const allRequiredDocumentsFulfilled =
     hasConfiguredDocumentRequirements &&
     requiredDocumentRequirements.every(
@@ -315,11 +309,7 @@ export async function syncAutomaticEligibility(
               return false;
             }
 
-            if (requirement.requiresApproval) {
-              return document.status === "APPROVED";
-            }
-
-            return true;
+            return document.status === "APPROVED";
           }
         );
 
@@ -329,56 +319,13 @@ export async function syncAutomaticEligibility(
       }
     );
 
-  const hasRelevantDocumentAfterConfirmation =
-    athlete.documentationConfirmedAt
-      ? activeDocuments.some(
-          (document) =>
-            Boolean(
-              document.requirementId &&
-                requiredDocumentIds.has(
-                  document.requirementId
-                )
-            ) &&
-            document.createdAt >
-              athlete.documentationConfirmedAt!,
-        )
-      : false;
-
-  const hasExpiredLegacyDocument =
-    activeDocuments.some(
-      (document) =>
-        document.status === "EXPIRED" ||
-        Boolean(
-          document.expiresAt &&
-            document.expiresAt < now
-        ),
-    );
-
-  const hasPendingOrRejectedLegacyDocument =
-    activeDocuments.some(
-      (document) =>
-        document.status === "PENDING" ||
-        document.status === "REJECTED",
-    );
-
-  const hasLegacyDocumentAfterConfirmation =
-    athlete.documentationConfirmedAt
-      ? activeDocuments.some(
-          (document) =>
-            document.createdAt >
-            athlete.documentationConfirmedAt!,
-        )
-      : false;
-
+  // 11UP_DOCUMENTOS_APTO_AUTOMATICO_V1
+  // A revisao/aceite de cada arquivo eh registrada no proprio documento.
+  // Uma confirmacao adicional da ficha nao eh requisito de aptidao.
+  // Sem requisitos configurados nao e seguro considerar um unico anexo
+  // como documentacao completa em categorias que exigem documentacao.
   const documentationReady =
-    Boolean(athlete.documentationConfirmedAt) &&
-    (hasConfiguredDocumentRequirements
-      ? allRequiredDocumentsFulfilled &&
-        !hasRelevantDocumentAfterConfirmation
-      : activeDocuments.length > 0 &&
-        !hasExpiredLegacyDocument &&
-        !hasPendingOrRejectedLegacyDocument &&
-        !hasLegacyDocumentAfterConfirmation);
+    hasConfiguredDocumentRequirements && allRequiredDocumentsFulfilled;
 
   const validMedicalDocument = activeDocuments.some(
     (document) =>
@@ -387,12 +334,6 @@ export async function syncAutomaticEligibility(
       document.status === "APPROVED" &&
       (!document.expiresAt ||
         document.expiresAt >= now),
-  );
-
-  const federationSports = new Set(
-    athlete.sportRegistrations.map(
-      (registration) => registration.sport,
-    ),
   );
 
   const requiresDocumentation =
@@ -413,8 +354,9 @@ export async function syncAutomaticEligibility(
       key: "AUTO:DOCUMENTATION",
       type: AthleteEligibilityIssueType.DOCUMENTATION,
       scope: AthleteEligibilityScope.GLOBAL,
-      reason:
-        "Documentação obrigatória ainda não está completa e confirmada.",
+      reason: !hasConfiguredDocumentRequirements
+        ? "Configure os documentos obrigatórios da categoria para verificar a aptidão documental."
+        : "Documentação obrigatória ainda não está completa e aprovada.",
       shouldBeOpen:
         requiresDocumentation && !documentationReady,
     },
@@ -429,35 +371,23 @@ export async function syncAutomaticEligibility(
     },
   ];
 
+  // Registros federativos sao opcionais: encerrar impedimentos automaticos antigos.
+  // Pendencias MANUAIS cadastradas pelo gestor nunca sao apagadas aqui.
   for (const sport of ["FOOTBALL", "FUTSAL"] as const) {
-    const sportMemberships =
-      activeStandardMemberships.filter(
-        (membership) =>
-          membership.sport === sport ||
-          membership.sport === "BOTH",
-      );
-
-    const required =
-      sportMemberships.some(
-        (membership) =>
-          membership.category
-            ?.requiresFederationRegistration,
-      );
-
-    automaticIssues.push({
-      key: `AUTO:FEDERATION:${sport}`,
-      type:
-        AthleteEligibilityIssueType.FEDERATION_REGISTRATION,
-      scope:
-        sport === "FOOTBALL"
+    await setAutomaticEligibilityIssue(tx, {
+      organizationId: input.organizationId,
+      athleteId: input.athleteId,
+      issue: {
+        key: `AUTO:FEDERATION:${sport}`,
+        type: AthleteEligibilityIssueType.FEDERATION_REGISTRATION,
+        scope: sport === "FOOTBALL"
           ? AthleteEligibilityScope.FOOTBALL
           : AthleteEligibilityScope.FUTSAL,
-      reason:
-        sport === "FOOTBALL"
-          ? "Inscrição na federação de futebol ainda não está ativa."
-          : "Inscrição na federação de futsal ainda não está ativa.",
-      shouldBeOpen:
-        required && !federationSports.has(sport),
+        reason: "Inscricao federativa opcional.",
+        shouldBeOpen: false,
+      },
+      actor: input.actor,
+      effectiveAt: input.effectiveAt,
     });
   }
 

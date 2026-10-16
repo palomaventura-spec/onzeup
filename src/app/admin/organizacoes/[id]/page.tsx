@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -173,9 +174,9 @@ export default async function OrganizationAdminDetail({
             />
           </label>
 
-          <button className="btn" type="submit">
+          <PendingSubmitButton pendingText="Entrando…" className="btn" type="submit">
             Entrar em modo suporte
-          </button>
+          </PendingSubmitButton>
         </form>
       </section>
       <section className="card admin-access-card admin-plan-card">
@@ -195,7 +196,7 @@ export default async function OrganizationAdminDetail({
               <option value="BUSINESS">Elite</option>
             </select>
           </label>
-          <button className="btn" type="submit">Salvar plano</button>
+          <PendingSubmitButton pendingText="Salvando…" className="btn" type="submit">Salvar plano</PendingSubmitButton>
         </form>
       </section>
 
@@ -231,7 +232,7 @@ export default async function OrganizationAdminDetail({
             Motivo / observação
             <input name="complimentaryReason" defaultValue={org.complimentaryReason || ""} placeholder="Ex.: piloto parceiro 11UP" />
           </label>
-          <button className="btn" type="submit">Salvar controle de acesso</button>
+          <PendingSubmitButton pendingText="Salvando…" className="btn" type="submit">Salvar controle de acesso</PendingSubmitButton>
         </form>
       </section>
 
@@ -257,7 +258,7 @@ export default async function OrganizationAdminDetail({
             <>
               <form action={reactivateOrganization}>
                 <input type="hidden" name="organizationId" value={org.id} />
-                <button className="btn-secondary" type="submit">Reativar organização</button>
+                <PendingSubmitButton pendingText="Atualizando…" className="btn-secondary" type="submit">Reativar organização</PendingSubmitButton>
               </form>
 
               <form action={deleteInactiveOrganization}>

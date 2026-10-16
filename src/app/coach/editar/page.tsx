@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import ImageUpload from "@/components/ImageUpload";
 import { requireUser } from "@/lib/auth";
@@ -77,7 +78,7 @@ export default async function CoachEdit({
           <input name="directoryVisible" type="checkbox" defaultChecked={p.directoryVisible}/>
           <span>Aparecer no catálogo de treinadores</span>
         </label>
-        <button className="btn">Salvar perfil</button>
+        <PendingSubmitButton pendingText="Salvando…" className="btn">Salvar perfil</PendingSubmitButton>
       </form>
     </main>
   );

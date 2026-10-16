@@ -1,11 +1,15 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/auth";
+import { reconcileExpiredSimplePlayerCourtesies } from "@/lib/player-simple-courtesy";
 import AdminConfirmSubmit from "../AdminConfirmSubmit";
 import {
   deactivatePlayer,
   deleteInactivePlayer,
   reactivatePlayer,
+  grantSimplePlayerCourtesy,
+  endSimplePlayerCourtesy,
   updatePremiumPlayerGuardian,
 } from "./actions";
 
@@ -37,6 +41,8 @@ export default async function AdminPlayers({
   const term = String(query.q || "").trim();
   const status = String(query.status || "ALL").toUpperCase();
   const plan = String(query.plan || "ALL").toUpperCase();
+
+  await reconcileExpiredSimplePlayerCourtesies();
 
   const players = await prisma.playerProfile.findMany({
     where: {
@@ -86,7 +92,11 @@ export default async function AdminPlayers({
             ? "Player desativado. Ele saiu do catálogo e agora pode ser excluído definitivamente."
             : query.saved === "guardian"
               ? "Responsável do Premium atualizado. Os demais Players, o plano e os vínculos existentes foram preservados."
-              : "Player reativado com sucesso."}
+              : query.saved === "simple_courtesy"
+                ? "Cortesia Player Simples concedida. A família não será cobrada por este benefício durante a vigência."
+                : query.saved === "courtesy_ended"
+                  ? "Cortesia Simples encerrada. O vínculo com o clube foi preservado."
+                  : "Player reativado com sucesso."}
         </div>
       ) : null}
 
@@ -106,7 +116,17 @@ export default async function AdminPlayers({
                   ? "Esta alteração está disponível somente para um Player Premium."
                   : query.error === "stale_guardian"
                     ? "O responsável mudou desde que a página foi aberta. Atualize a página e confira o cadastro."
-                    : "Não foi possível concluir a ação solicitada."}
+                    : query.error === "invalid_date"
+                      ? "Informe uma data futura válida para a cortesia."
+                      : query.error === "link_required"
+                        ? "Cortesia não liberada: é necessário um vínculo ativo e confirmado pelo clube."
+                        : query.error === "existing_premium"
+                          ? "Não é permitido substituir uma assinatura Premium paga ou uma cortesia Premium."
+                          : query.error === "inactive"
+                            ? "Reative o Player antes de conceder a cortesia."
+                            : query.error === "not_simple_courtesy"
+                              ? "Este perfil não possui cortesia Simples ativa para encerrar."
+                              : "Não foi possível concluir a ação solicitada."}
         </div>
       ) : null}
 
@@ -123,7 +143,7 @@ export default async function AdminPlayers({
         </select>
         <select name="plan" defaultValue={plan}>
           <option value="ALL">Todos os planos</option>
-          <option value="FREE">Free</option>
+          <option value="FREE">Simples</option>
           <option value="PREMIUM">Premium</option>
         </select>
         <button className="btn" type="submit">Filtrar</button>
@@ -176,8 +196,12 @@ export default async function AdminPlayers({
                       ) : null}
                     </td>
                     <td>
-                      <span className="badge">{p.plan}</span>
-                      {p.isComplimentary ? <div className="help">Cortesia</div> : null}
+                      <span className="badge">{p.plan === "PREMIUM" ? "Premium" : "Simples"}</span>
+                      {p.isComplimentary ? (
+                        <div className="help">Cortesia {p.complimentaryPlan === "SIMPLE" ? "Simples" : "Premium"}
+                          {p.complimentaryUntil ? ` até ${p.complimentaryUntil.toLocaleDateString("pt-BR")}` : ""}
+                        </div>
+                      ) : null}
                     </td>
                     <td>
                       <span className={`badge ${inactive ? "admin-status-inactive" : "admin-status-active"}`}>
@@ -214,7 +238,7 @@ export default async function AdminPlayers({
                           <>
                             <form action={reactivatePlayer}>
                               <input type="hidden" name="playerId" value={p.id} />
-                              <button className="btn-secondary btn-small" type="submit">Reativar</button>
+                              <PendingSubmitButton pendingText="Atualizando…" className="btn-secondary btn-small" type="submit">Reativar</PendingSubmitButton>
                             </form>
                             <form action={deleteInactivePlayer}>
                               <input type="hidden" name="playerId" value={p.id} />
@@ -226,6 +250,31 @@ export default async function AdminPlayers({
                             </form>
                           </>
                         )}
+
+                        <details style={{ marginTop: 10, minWidth: 190 }}>
+                          <summary style={{ cursor: "pointer" }}>Cortesia Player Simples</summary>
+                          {p.isComplimentary && p.complimentaryPlan === "SIMPLE" ? (
+                            <form action={endSimplePlayerCourtesy} style={{ marginTop: 10 }}>
+                              <input type="hidden" name="playerId" value={p.id} />
+                              <AdminConfirmSubmit
+                                label="Encerrar cortesia"
+                                confirmText={`Encerrar a cortesia Simples de ${p.name}? O perfil público ficará indisponível até regularização do plano. O vínculo com o clube será preservado.`}
+                              />
+                            </form>
+                          ) : (
+                            <form action={grantSimplePlayerCourtesy} style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                              <input type="hidden" name="playerId" value={p.id} />
+                              <label htmlFor={`simples-until-${p.id}`}>Válida até (obrigatório)</label>
+                              <input id={`simples-until-${p.id}`} type="date" name="complimentaryUntil" min={new Date().toISOString().slice(0, 10)} required />
+                              <p className="help">Somente após vínculo aprovado pelo clube. Não altera Premium pago.</p>
+                              <AdminConfirmSubmit
+                                label="Conceder Simples"
+                                confirmText={`Conceder gratuitamente o Player Simples a ${p.name}, pelo período informado? O Premium não está incluído.`}
+                              />
+                            </form>
+                          )}
+                        </details>
+
                       </div>
                     </td>
                   </tr>

@@ -1,5 +1,6 @@
 "use client";
 
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -9,7 +10,8 @@ const NAV_ITEMS = [
   { href: "/admin/organizacoes", label: "Organizações", icon: "▣" },
   { href: "/admin/players", label: "Players", icon: "⚽" },
   { href: "/admin/coaches", label: "Coaches", icon: "◇" },
-  { href: "/admin/support", label: "Suporte", icon: "S" },
+  { href: "/admin/chamados", label: "Chamados", icon: "✉" },
+  { href: "/admin/support", label: "Acessos de suporte", icon: "S" },
   { href: "/admin/pagamentos", label: "Pagamentos", icon: "R$" },
   { href: "/admin/planos", label: "Planos", icon: "★" },
 ];
@@ -43,7 +45,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         <nav className="admin-nav-v171" aria-label="Navegação administrativa">
           <span className="admin-nav-group-v171">PLATAFORMA</span>
 
-          {NAV_ITEMS.slice(0, 5).map((item) => (
+          {NAV_ITEMS.slice(0, 6).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -56,7 +58,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
 
           <span className="admin-nav-group-v171">FINANCEIRO</span>
 
-          {NAV_ITEMS.slice(5).map((item) => (
+          {NAV_ITEMS.slice(6).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -75,10 +77,10 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           </Link>
 
           <form action="/api/auth/logout" method="post">
-            <button type="submit" className="admin-logout-v171">
+            <PendingSubmitButton pendingText="Saindo…" type="submit" className="admin-logout-v171">
               <i aria-hidden="true">⇥</i>
               <span>Sair</span>
-            </button>
+            </PendingSubmitButton>
           </form>
         </div>
       </aside>

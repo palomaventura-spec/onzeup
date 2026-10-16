@@ -48,7 +48,7 @@ export default async function PlayerDataPage({
         return {
           type: "warning",
           title: "Não encontramos uma correspondência segura.",
-          text: "Confira o nome completo, a data de nascimento do atleta e o nome do responsável.",
+          text: "Confira o nome completo e a data de nascimento do atleta. Se ele for aluno novo, entre em contato com o clube: o cadastro pode ainda nao estar no sistema.",
         };
 
       case "dados-incompletos":
@@ -143,12 +143,12 @@ export default async function PlayerDataPage({
           <span>{user.name}</span>
 
           <form action="/api/auth/logout" method="post">
-            <button
+            <PendingSubmitButton pendingText="Saindo…"
               className="btn-secondary btn-small"
               type="submit"
             >
               Sair
-            </button>
+            </PendingSubmitButton>
           </form>
         </div>
       </header>
@@ -596,16 +596,11 @@ export default async function PlayerDataPage({
                           />
                         </label>
 
-                        <label>
-                          <span>
-                            Nome do responsável
-                          </span>
 
-                          <input
-                            name="guardianName"
-                            defaultValue={user.name}
-                          />
-                        </label>
+                        <p className="muted" style={{ fontSize: 13, margin: "4px 0" }}>
+                          Busque pelo nome completo e pela data de nascimento do atleta.
+                          O vínculo só será ativado depois da aprovação do clube.
+                        </p>
 
                         <PendingSubmitButton
                           className="btn-secondary"
@@ -621,6 +616,8 @@ export default async function PlayerDataPage({
                     <div className="player-link-list">
                       {selected.athleteLinks.map((link) => (
                         <article key={link.id}>
+                          {link.active && link.verified ? (
+                            <>
                           <div>
                             {link.athlete.organization
                               .logoUrl ? (
@@ -680,20 +677,18 @@ export default async function PlayerDataPage({
                             )}
                           </section>
 
-                          <b
-                            className={
-                              link.active &&
-                              link.verified
-                                ? "verified"
-                                : ""
-                            }
-                          >
-                            {!link.active
-                              ? "Vínculo encerrado"
-                              : link.verified
-                                ? "Vínculo verificado"
-                                : "Aguardando verificação"}
-                          </b>
+                          <b className="verified">Vínculo verificado</b>
+                            </>
+                          ) : (
+                            <section>
+                              <strong>Solicitação de vínculo</strong>
+                              <p className="muted">
+                                {link.active
+                                  ? "Aguardando conferência e aprovação do clube."
+                                  : "Vínculo encerrado."}
+                              </p>
+                            </section>
+                          )}
                         </article>
                       ))}
                     </div>

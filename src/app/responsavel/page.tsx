@@ -1,9 +1,22 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  ArrowRight,
+  Bell,
+  ExternalLink,
+  UserRound,
+  Globe2,
+  Plus,
+  UsersRound,
+  Headset,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import DemoBanner from "@/components/DemoBanner";
+import { reconcileExpiredSimplePlayerCourtesies } from "@/lib/player-simple-courtesy";
 import { reconcileExpiredPlayerTrials } from "@/lib/billing-entitlements";
+import styles from "./PlayerHome.module.css";
 
 export default async function GuardianPortal({
   searchParams,
@@ -19,24 +32,17 @@ export default async function GuardianPortal({
   const query = await searchParams;
 
   const guardianBase = await prisma.guardianProfile.findUnique({
-    where: {
-      userId: user.id,
-    },
-    select: {
-      id: true,
-    },
+    where: { userId: user.id },
+    select: { id: true },
   });
 
   if (guardianBase) {
-    await reconcileExpiredPlayerTrials({
-      guardianId: guardianBase.id,
-    });
+    await reconcileExpiredSimplePlayerCourtesies({ guardianId: guardianBase.id });
+    await reconcileExpiredPlayerTrials({ guardianId: guardianBase.id });
   }
 
   const guardian = await prisma.guardianProfile.findUnique({
-    where: {
-      userId: user.id,
-    },
+    where: { userId: user.id },
     include: {
       players: {
         include: {
@@ -46,60 +52,28 @@ export default async function GuardianPortal({
                 include: {
                   organization: true,
                   memberships: {
-                    where: {
-                      status: "ACTIVE",
-                    },
-                    include: {
-                      organization: true,
-                      category: true,
-                    },
+                    where: { status: "ACTIVE" },
+                    include: { organization: true, category: true },
                   },
                 },
               },
             },
           },
         },
-        orderBy: {
-          createdAt: "asc",
-        },
+        orderBy: { createdAt: "asc" },
       },
     },
   });
 
   const players = guardian?.players || [];
-
   const selected =
-    players.find((player) => player.id === query.player) ||
-    players[0] ||
-    null;
+    players.find((player) => player.id === query.player) || players[0] || null;
 
   const unreadCommunicationCount = selected
     ? await prisma.clubCommunicationRecipient.count({
-        where: {
-          playerId: selected.id,
-          readAt: null,
-        },
+        where: { playerId: selected.id, readAt: null },
       })
     : 0;
-
-  const recentCommunications = selected
-    ? await prisma.clubCommunicationRecipient.findMany({
-        where: {
-          playerId: selected.id,
-        },
-        include: {
-          communication: {
-            include: {
-              organization: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 3,
-      })
-    : [];
 
   const activeLinks =
     selected?.athleteLinks.filter(
@@ -109,297 +83,225 @@ export default async function GuardianPortal({
         link.athlete.memberships.length > 0,
     ) || [];
 
+  const selectedName = selected?.nickname || selected?.name || "";
+  const selectedPlan = selected?.plan === "PREMIUM" ? "Premium" : "Simples";
+
   return (
-    <main className="guardian-portal">
+    <main className={`guardian-portal ${styles.portal}`}>
       {user.email.startsWith("demo-player-") ? (
         <DemoBanner kind="player" />
       ) : null}
 
-      <header className="guardian-portal-nav">
+      <header className={`guardian-portal-nav ${styles.topNav}`}>
         <Link href="/responsavel" className="player-brand">
           11<span>UP</span> <b>PLAYER</b>
         </Link>
 
-        <div>
+        <div className={styles.topNavRight}>
+          <Link href="/suporte" className={styles.navNotice} title="Ajuda e suporte" aria-label="Ajuda e suporte">
+            <Headset size={17} aria-hidden="true" />
+          </Link>
           {selected ? (
             <Link
               href={`/responsavel/comunicacao?player=${selected.id}`}
-              className="btn-secondary btn-small"
-              title="Comunicados"
+              className={styles.navNotice}
+              aria-label={
+                unreadCommunicationCount > 0
+                  ? `Comunicados: ${unreadCommunicationCount} não lidos`
+                  : "Ver comunicados"
+              }
+              title="Comunicados do clube"
             >
-              🔔
-              {unreadCommunicationCount > 0
-                ? ` ${unreadCommunicationCount}`
-                : ""}
+              <Bell size={17} aria-hidden="true" />
+              {unreadCommunicationCount > 0 ? (
+                <span className={styles.navCount}>
+                  {unreadCommunicationCount}
+                </span>
+              ) : null}
             </Link>
           ) : null}
-
-          <span>{user.name}</span>
-
+          <span className={styles.userName}>{user.name}</span>
           <form action="/api/auth/logout" method="post">
-            <button
-              className="btn-secondary btn-small"
+            <PendingSubmitButton
+              pendingText="Saindo…"
+              className={styles.logoutButton}
               type="submit"
             >
               Sair
-            </button>
+            </PendingSubmitButton>
           </form>
         </div>
       </header>
 
-      <div className="guardian-portal-container">
-        <section className="player-welcome">
+      <div className={`guardian-portal-container ${styles.container}`}>
+        <section className={styles.intro}>
           <div>
-            <span className="page-eyebrow">
-              ÁREA DA FAMÍLIA
-            </span>
-
-            <h1>11UP Player</h1>
-
-            <p>
-              Acompanhe o atleta, receba comunicados dos clubes
-              e gerencie sua página esportiva.
+            <p className={styles.eyebrow}>ÁREA DA FAMÍLIA</p>
+            <h1>Bem-vindo ao 11UP Player</h1>
+            <p className={styles.subtitle}>
+              Tudo o que você precisa para acompanhar seu atleta, em um só lugar.
             </p>
           </div>
-
-          <Link
-            className="btn"
-            href="/responsavel/pagina?new=1"
-          >
-            + Novo perfil
-          </Link>
+          {selected ? (
+            <Link href="/responsavel/pagina?new=1" className={styles.addPlayer}>
+              <Plus size={17} aria-hidden="true" />
+              Adicionar atleta
+            </Link>
+          ) : null}
         </section>
 
-        <div className="player-portal-layout">
-          <aside className="player-profile-sidebar">
-            <div className="player-sidebar-title">
-              MEUS ATLETAS
-            </div>
-
-            {players.map((player) => (
-              <Link
-                key={player.id}
-                className={`player-switcher ${
-                  selected?.id === player.id ? "active" : ""
-                }`}
-                href={`/responsavel?player=${player.id}`}
-              >
-                <div>
-                  {player.photoUrl ? (
-                    <img src={player.photoUrl} alt="" />
+        {selected ? (
+          <>
+            <section className={styles.playerSummary} aria-label="Atleta selecionado">
+              <div className={styles.playerIdentity}>
+                <div className={styles.avatar}>
+                  {selected.photoUrl ? (
+                    <img src={selected.photoUrl} alt="" loading="lazy" />
                   ) : (
-                    <span>
-                      {(player.nickname || player.name)
-                        .slice(0, 2)
-                        .toUpperCase()}
+                    <span aria-hidden="true">
+                      {selectedName.slice(0, 2).toUpperCase()}
                     </span>
                   )}
                 </div>
-
-                <section>
-                  <strong>
-                    {player.nickname || player.name}
-                  </strong>
-
-                  <small>
-                    {player.position || "Atleta"} •{" "}
-                    {player.plan === "PREMIUM"
-                      ? "Premium"
-                      : "Simples"}
-                  </small>
-                </section>
-
-                <b>→</b>
-              </Link>
-            ))}
-
-            {!players.length ? (
-              <div className="player-sidebar-empty">
-                Nenhum perfil criado.
+                <div className={styles.playerDetails}>
+                  <p className={styles.eyebrow}>ATLETA SELECIONADO</p>
+                  <h2>{selectedName}</h2>
+                  <div className={styles.playerMeta}>
+                    <span className={styles.planPill}>Player {selectedPlan}</span>
+                    <span className={styles.linkPill}>
+                      {activeLinks.length === 1
+                        ? "1 clube vinculado"
+                        : activeLinks.length > 1
+                          ? `${activeLinks.length} vínculos com clubes`
+                          : "Nenhum clube vinculado"}
+                    </span>
+                  </div>
+                </div>
               </div>
-            ) : null}
-          </aside>
+              {selected.isPublic ? (
+                <a
+                  className={styles.publicPageLink}
+                  href={`https://players.onzeup.com.br/${selected.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Ver página
+                  <ExternalLink size={15} aria-hidden="true" />
+                </a>
+              ) : null}
+            </section>
 
-          <section className="player-editor-area">
-            {selected ? (
-              <>
-                <div className="player-editor-head">
-                  <div>
-                    <span className="page-eyebrow">
-                      VISÃO GERAL
-                    </span>
-
-                    <h2>
-                      {selected.nickname || selected.name}
-                    </h2>
-
-                    <span
-                      className={`player-plan-badge ${
-                        selected.plan === "PREMIUM"
-                          ? "premium"
-                          : "free"
+            {players.length > 1 ? (
+              <nav className={styles.switcherSection} aria-label="Selecionar atleta">
+                <div className={styles.switcherLabel}>
+                  <UsersRound size={15} aria-hidden="true" />
+                  Trocar de atleta
+                </div>
+                <div className={styles.switcherList}>
+                  {players.map((player) => (
+                    <Link
+                      key={player.id}
+                      href={`/responsavel?player=${player.id}`}
+                      className={`${styles.switcherItem} ${
+                        player.id === selected.id ? styles.switcherActive : ""
                       }`}
+                      aria-current={player.id === selected.id ? "page" : undefined}
                     >
-                      {selected.plan === "PREMIUM"
-                        ? "★ PREMIUM"
-                        : "PLAYER SIMPLES"}
-                    </span>
-                  </div>
-
-                  {selected.isPublic ? (
-                    <a
-                      className="btn-secondary"
-                      href={`https://players.onzeup.com.br/${selected.slug}`}
-                      target="_blank"
-                    >
-                      Ver página ↗
-                    </a>
-                  ) : null}
+                      {player.nickname || player.name}
+                    </Link>
+                  ))}
                 </div>
+              </nav>
+            ) : null}
 
-                <section className="player-preview-card">
-                  <div>
-                    <span className="page-eyebrow">
-                      🔔 COMUNICAÇÃO
+            <section className={styles.actionsSection} aria-labelledby="player-actions-title">
+              <div className={styles.actionsHeading}>
+                <h2 id="player-actions-title">O que você deseja fazer?</h2>
+                <p>Escolha uma das opções abaixo.</p>
+              </div>
+              <div className={styles.actionsGrid}>
+                <Link
+                  className={styles.actionCard}
+                  href={`/responsavel/comunicacao?player=${selected.id}`}
+                >
+                  <div className={styles.cardTop}>
+                    <span className={styles.iconBox}>
+                      <Bell size={22} strokeWidth={2} aria-hidden="true" />
                     </span>
-
-                    <h3>Comunicados dos clubes</h3>
-
-                    <p className="muted">
-                      {unreadCommunicationCount > 0
-                        ? `Você tem ${unreadCommunicationCount} comunicado(s) não lido(s).`
-                        : "Nenhum comunicado novo."}
-                    </p>
-
-                    {recentCommunications.length ? (
-                      <div
-                        style={{
-                          display: "grid",
-                          gap: 10,
-                          marginTop: 12,
-                        }}
-                      >
-                        {recentCommunications.map(
-                          (recipient) => (
-                            <div key={recipient.id}>
-                              <strong>
-                                {
-                                  recipient.communication
-                                    .title
-                                }
-                              </strong>
-
-                              <small
-                                className="muted"
-                                style={{
-                                  display: "block",
-                                }}
-                              >
-                                {recipient.communication
-                                  .organization.publicName ||
-                                  recipient.communication
-                                    .organization.name}
-                              </small>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    ) : null}
+                    <ArrowRight className={styles.cardArrow} size={20} aria-hidden="true" />
                   </div>
-
-                  <Link
-                    className="btn"
-                    href={`/responsavel/comunicacao?player=${selected.id}`}
-                  >
-                    Ver comunicação
-                  </Link>
-                </section>
-
-                <section className="player-preview-card">
-                  <div>
-                    <span className="page-eyebrow">
-                      👤 DADOS
-                    </span>
-
-                    <h3>Dados do atleta</h3>
-
-                    <p className="muted">
-                      Informações pessoais e esportivas,
-                      responsável e vínculos com clubes.
-                    </p>
-
-                    <small className="muted">
-                      {activeLinks.length
-                        ? `${activeLinks.length} vínculo(s) ativo(s) com clube`
-                        : "Nenhum vínculo ativo com clube"}
-                    </small>
+                  <div className={styles.actionCopy}>
+                    <h3>Comunicados do clube</h3>
+                    <p>Leia avisos e mensagens do clube.</p>
                   </div>
-
-                  <Link
-                    className="btn-secondary"
-                    href={`/responsavel/dados?player=${selected.id}`}
+                  <span
+                    className={`${styles.cardFooter} ${
+                      unreadCommunicationCount > 0 ? styles.footerAttention : ""
+                    }`}
                   >
-                    Editar dados
-                  </Link>
-                </section>
-
-                <section className="player-preview-card">
-                  <div>
-                    <span className="page-eyebrow">
-                      🌐 MINHA PÁGINA
-                    </span>
-
-                    <h3>Página pessoal do atleta</h3>
-
-                    <p className="muted">
-                      Foto, capa, apresentação, estatísticas,
-                      carreira, conquistas, vídeos e galeria.
-                    </p>
-
-                    <small className="muted">
-                      {selected.isPublic
-                        ? "Página publicada"
-                        : "Página privada"}
-                      {" • "}
-                      {selected.plan === "PREMIUM"
-                        ? "Premium"
-                        : "Simples"}
-                    </small>
-                  </div>
-
-                  <Link
-                    className="btn"
-                    href={`/responsavel/pagina?player=${selected.id}`}
-                  >
-                    Editar página
-                  </Link>
-                </section>
-              </>
-            ) : (
-              <section className="player-preview-card">
-                <div>
-                  <span className="page-eyebrow">
-                    PRIMEIRO PASSO
+                    {unreadCommunicationCount > 0
+                      ? unreadCommunicationCount === 1
+                        ? "1 comunicado não lido"
+                        : `${unreadCommunicationCount} comunicados não lidos`
+                      : "Ver comunicação"}
                   </span>
-
-                  <h3>Crie o perfil do atleta</h3>
-
-                  <p className="muted">
-                    Depois você poderá editar os dados,
-                    configurar a página e vinculá-lo aos clubes.
-                  </p>
-                </div>
+                </Link>
 
                 <Link
-                  className="btn"
-                  href="/responsavel/pagina?new=1"
+                  className={styles.actionCard}
+                  href={`/responsavel/dados?player=${selected.id}`}
                 >
-                  Criar perfil
+                  <div className={styles.cardTop}>
+                    <span className={styles.iconBox}>
+                      <UserRound size={22} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                    <ArrowRight className={styles.cardArrow} size={20} aria-hidden="true" />
+                  </div>
+                  <div className={styles.actionCopy}>
+                    <h3>Dados do atleta</h3>
+                    <p>Consulte dados, documentos e vínculos.</p>
+                  </div>
+                  <span className={styles.cardFooter}>Ver e editar dados</span>
                 </Link>
-              </section>
-            )}
+
+                <Link
+                  className={styles.actionCard}
+                  href={`/responsavel/pagina?player=${selected.id}`}
+                >
+                  <div className={styles.cardTop}>
+                    <span className={styles.iconBox}>
+                      <Globe2 size={22} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                    <ArrowRight className={styles.cardArrow} size={20} aria-hidden="true" />
+                  </div>
+                  <div className={styles.actionCopy}>
+                    <h3>Página do atleta</h3>
+                    <p>Atualize fotos e sua trajetória esportiva.</p>
+                  </div>
+                  <span className={styles.cardFooter}>
+                    {selected.isPublic ? "Página publicada" : "Página privada"}
+                    {" · Editar"}
+                  </span>
+                </Link>
+              </div>
+            </section>
+          </>
+        ) : (
+          <section className={styles.emptyState}>
+            <div className={styles.emptyIcon}>
+              <UserRound size={26} aria-hidden="true" />
+            </div>
+            <h2>Vamos começar pelo perfil do atleta?</h2>
+            <p>
+              Crie um perfil para consultar dados, receber comunicados e solicitar
+              vínculos com clubes.
+            </p>
+            <Link className={styles.primaryButton} href="/responsavel/pagina?new=1">
+              <Plus size={18} aria-hidden="true" />
+              Criar perfil do atleta
+            </Link>
           </section>
-        </div>
+        )}
       </div>
     </main>
   );

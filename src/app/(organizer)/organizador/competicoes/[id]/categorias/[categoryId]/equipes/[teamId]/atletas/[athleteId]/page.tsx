@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -839,12 +840,12 @@ export default async function CompetitionAthletePage({
                               />
                             </label>
 
-                            <button
+                            <PendingSubmitButton pendingText="Salvando…"
                               type="submit"
                               className="od-action-primary"
                             >
                               Salvar análise
-                            </button>
+                            </PendingSubmitButton>
                           </form>
                         </div>
                       ) : null}
@@ -876,14 +877,14 @@ export default async function CompetitionAthletePage({
                           purpose="competition-athlete-document"
                         />
 
-                        <button
+                        <PendingSubmitButton pendingText="Salvando…"
                           type="submit"
                           className="od-action-primary"
                         >
                           {latestDocument
                             ? "Enviar nova versão"
                             : "Salvar documento"}
-                        </button>
+                        </PendingSubmitButton>
                       </form>
                     </div>
                   );

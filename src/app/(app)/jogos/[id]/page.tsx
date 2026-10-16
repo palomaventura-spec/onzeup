@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SportType } from "@prisma/client";
@@ -846,9 +847,9 @@ export default async function EditMatchPage({
               </span>
             </div>
 
-            <button type="submit">
+            <PendingSubmitButton pendingText="Salvando…" type="submit">
               Salvar alterações
-            </button>
+            </PendingSubmitButton>
           </div>
         </form>
       ) : (
@@ -922,9 +923,9 @@ export default async function EditMatchPage({
                 value={match.id}
               />
 
-              <button type="submit">
+              <PendingSubmitButton pendingText="Excluindo…" type="submit">
                 Excluir jogo
-              </button>
+              </PendingSubmitButton>
             </form>
           </div>
         </details>

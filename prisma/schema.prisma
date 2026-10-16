@@ -421,6 +421,8 @@ model User {
   sessions                                     Session[]
   organization                                 Organization?                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   AdminSupportSession                          AdminSupportSession[]
+  supportTicketsCreated                       SupportTicket[]               @relation("SupportTicketRequester")
+  supportMessagesAuthored                     SupportMessage[]              @relation("SupportMessageAuthor")
 
   createdGrowthProfiles      AthleteGrowthProfile[]     @relation("AthleteGrowthProfileCreator")
   recordedBoneAgeAssessments AthleteBoneAgeAssessment[] @relation("AthleteBoneAgeRecorder")
@@ -1196,6 +1198,8 @@ model PerformanceTemplate {
   sport          SportType              @default(BOTH)
   active         Boolean                @default(true)
   systemDefault  Boolean                @default(false)
+  modelFamilyKey String?
+  classificationJson String?
   version        Int                    @default(1)
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
@@ -1204,6 +1208,7 @@ model PerformanceTemplate {
   evaluations    AthleteEvaluation[]
 
   @@index([organizationId, active])
+  @@unique([organizationId, modelFamilyKey, version])
   @@index([athleteRole, sport, active])
 }
 
@@ -2709,4 +2714,50 @@ model AthleteDocumentManualIssue {
   @@index([organizationId, athleteId, status])
   @@index([athleteId, blocking, status])
   @@index([createdAt])
+}
+
+// Central de chamados 11UP: atendimento privado entre solicitante e Super Admin.
+enum SupportTicketArea {
+  CLUB
+  PLAYER
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  ANSWERED
+  CLOSED
+}
+
+model SupportTicket {
+  id               String              @id @default(cuid())
+  requesterId      String
+  area             SupportTicketArea
+  organizationId   String?
+  organizationName String?
+  subject          String
+  status           SupportTicketStatus @default(OPEN)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  requester        User                @relation("SupportTicketRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  messages         SupportMessage[]
+
+  @@index([requesterId, updatedAt])
+  @@index([status, updatedAt])
+  @@index([area, status, updatedAt])
+}
+
+model SupportMessage {
+  id             String        @id @default(cuid())
+  ticketId       String
+  authorId       String?
+  body           String
+  attachmentName String?
+  attachmentMime String?
+  attachmentData Bytes?        @db.ByteA
+  createdAt      DateTime      @default(now())
+  ticket         SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author         User?         @relation("SupportMessageAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
 }

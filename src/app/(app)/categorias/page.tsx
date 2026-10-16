@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import type React from "react";
 
@@ -387,7 +388,7 @@ export default async function CategoriesPage({
             <textarea name="description" rows={3} placeholder="Objetivos, faixa etária ou observações." />
           </label>
 
-          <button type="submit">Criar categoria</button>
+          <PendingSubmitButton pendingText="Cadastrando…" type="submit">Criar categoria</PendingSubmitButton>
         </form>
       </details>
 
@@ -530,14 +531,14 @@ export default async function CategoriesPage({
                                     name="requirementId"
                                     value={requirement.id}
                                   />
-                                  <button
+                                  <PendingSubmitButton pendingText="Atualizando…"
                                     type="submit"
                                     className="btn btn-secondary btn-small"
                                   >
                                     {requirement.active
                                       ? "Desativar"
                                       : "Ativar"}
-                                  </button>
+                                  </PendingSubmitButton>
                                 </form>
                               </div>
                             ),
@@ -623,7 +624,7 @@ export default async function CategoriesPage({
                                 </small>
                               </span>
 
-                              <button
+                              <PendingSubmitButton pendingText="Processando…"
                                 type="submit"
                                 className="btn btn-secondary btn-small"
                                 disabled={alreadyExists}
@@ -631,7 +632,7 @@ export default async function CategoriesPage({
                                 {alreadyExists
                                   ? "Adicionado"
                                   : "＋ Adicionar"}
-                              </button>
+                              </PendingSubmitButton>
                             </form>
                           );
                         })}
@@ -757,9 +758,9 @@ export default async function CategoriesPage({
                           value="true"
                         />
 
-                        <button type="submit">
+                        <PendingSubmitButton pendingText="Cadastrando…" type="submit">
                           ＋ Adicionar documento obrigatório
-                        </button>
+                        </PendingSubmitButton>
                       </form>
                     </div>
 
@@ -785,9 +786,9 @@ export default async function CategoriesPage({
                  </summary>
                 <form action={deleteCategory}>
                   <input type="hidden" name="id" value={category.id} />
-                  <button className="btn-danger btn-small" type="submit">
+                  <PendingSubmitButton pendingText="Excluindo…" className="btn-danger btn-small" type="submit">
                     Inativar categoria
-                  </button>
+                  </PendingSubmitButton>
                 </form>
               </details>
             </article>

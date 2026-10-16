@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -535,12 +536,12 @@ export default async function AthletePreRegistrationReviewPage({
                 className="pre-review-reason"
               />
 
-              <button
+              <PendingSubmitButton pendingText="Rejeitando…"
                 type="submit"
                 className="reject"
               >
                 Rejeitar cadastro
-              </button>
+              </PendingSubmitButton>
             </form>
 
             <form
@@ -552,12 +553,12 @@ export default async function AthletePreRegistrationReviewPage({
                 value={registration.id}
               />
 
-              <button
+              <PendingSubmitButton pendingText="Aprovando…"
                 type="submit"
                 className="approve"
               >
                 Aprovar e incluir no elenco →
-              </button>
+              </PendingSubmitButton>
             </form>
           </div>
         ) : (

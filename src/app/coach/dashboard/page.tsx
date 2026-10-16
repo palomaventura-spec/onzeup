@@ -115,9 +115,9 @@ export default async function CoachDashboard({
           </Link>
 
           <form action="/api/auth/logout" method="post">
-            <button className="btn-secondary" type="submit">
+            <PendingSubmitButton pendingText="Saindo…" className="btn-secondary" type="submit">
               Sair
-            </button>
+            </PendingSubmitButton>
           </form>
         </div>
       </header>

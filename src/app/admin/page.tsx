@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/auth";
@@ -85,7 +86,7 @@ export default async function AdminHome() {
           <p className="admin-email-note">Admin central: {adminEmail()}</p>
         </div>
         <form action="/api/auth/logout" method="post">
-          <button className="players-secondary-cta">Sair</button>
+          <PendingSubmitButton pendingText="Saindo…" className="players-secondary-cta">Sair</PendingSubmitButton>
         </form>
       </div>
 

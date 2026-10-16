@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +70,7 @@ export default async function AdminLoginPage({
             />
           </label>
 
-          <button className="btn" type="submit">Entrar no Super Admin</button>
+          <PendingSubmitButton pendingText="Entrando…" className="btn" type="submit">Entrar no Super Admin</PendingSubmitButton>
         </form>
 
         <div className="admin-login-links">

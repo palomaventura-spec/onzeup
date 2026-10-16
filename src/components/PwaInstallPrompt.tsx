@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import styles from "./PwaInstallPrompt.module.css";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -12,6 +13,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function PwaInstallPrompt() {
+  const pathname = usePathname();
   const [installEvent, setInstallEvent] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
@@ -73,7 +75,7 @@ export default function PwaInstallPrompt() {
     setVisible(false);
   }
 
-  if (!visible || !installEvent) return null;
+  if (pathname !== "/" || !visible || !installEvent) return null;
 
   return (
     <aside
