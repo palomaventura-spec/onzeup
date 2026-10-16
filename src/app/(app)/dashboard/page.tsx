@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { requireOrganizationUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { birthdayInfo } from "@/lib/athlete-birthdays";
+import { listClubDocumentPriorities } from "@/lib/club-document-priorities";
+import { hasClubPermission } from "@/lib/club-permissions";
 
 const AREA_LABELS = {
   PHYSICAL: "Física",
@@ -46,8 +48,9 @@ export default async function Dashboard() {
   const monthAgo = new Date(todayStart); monthAgo.setDate(monthAgo.getDate() - 30);
   const expiryLimit = new Date(todayStart); expiryLimit.setDate(expiryLimit.getDate() + 30);
 
-  const [athletes, todaySessions, recurringTrainings, upcomingMatches, pendingDocuments,
-    expiringDocuments, overdueCharges, pendingCallUps, attendances, latestEvaluation, birthdayAthletes] = await Promise.all([
+  // 11UP_PRIORIDADES_V1
+  const [athletes, todaySessions, recurringTrainings, upcomingMatches, documentPriorities,
+    overdueCharges, pendingCallUps, attendances, latestEvaluation, birthdayAthletes] = await Promise.all([
     prisma.athlete.count({ where: { organizationId: orgId, active: true } }),
     prisma.trainingSession.findMany({
       where: { organizationId: orgId, startsAt: { gte: todayStart, lt: tomorrow }, status: "SCHEDULED" },
@@ -61,10 +64,7 @@ export default async function Dashboard() {
       where: { organizationId: orgId, startsAt: { gte: now, lt: weekEnd }, status: "SCHEDULED" },
       include: { category: true, callUps: true }, orderBy: { startsAt: "asc" }, take: 5,
     }),
-    prisma.athleteDocument.count({ where: { organizationId: orgId, status: { in: ["PENDING", "REJECTED"] }, deletedAt: null } }),
-    prisma.athleteDocument.count({
-      where: { organizationId: orgId, status: "APPROVED", deletedAt: null, expiresAt: { gte: todayStart, lte: expiryLimit } },
-    }),
+    listClubDocumentPriorities(orgId, timeZone),
     prisma.charge.count({
       where: { organizationId: orgId, OR: [{ status: "OVERDUE" }, { status: "PENDING", dueDate: { lt: todayStart } }] },
     }),
@@ -92,6 +92,12 @@ export default async function Dashboard() {
       },
     }),
   ]);
+
+  const pendingDocuments = documentPriorities.summary.pending;
+  const expiringDocuments = documentPriorities.summary.expiring;
+  const expiredDocuments = documentPriorities.summary.expired;
+  const categoryConfigurationIssues = documentPriorities.configurationWarnings.length;
+  const canViewDocumentPriorities = hasClubPermission(user, "ATHLETES_EDIT");
 
   const upcomingBirthdays = birthdayAthletes
     .flatMap((athlete) => {
@@ -152,6 +158,8 @@ export default async function Dashboard() {
   const attentionTotal =
     pendingDocuments +
     expiringDocuments +
+    expiredDocuments +
+    categoryConfigurationIssues +
     overdueCharges +
     pendingCallUps +
     upcomingBirthdays.length;
@@ -316,7 +324,7 @@ export default async function Dashboard() {
         </Link>
 
         <Link
-          href="/notificacoes"
+          href={canViewDocumentPriorities ? "/prioridades" : "/notificacoes"}
           className={attentionTotal ? "attention" : ""}
         >
           <span className="dashboard-v3-kpi-icon">!</span>
@@ -440,12 +448,24 @@ export default async function Dashboard() {
               <span>PRIORIDADES</span>
               <h2>Atenção necessária</h2>
             </div>
+            {canViewDocumentPriorities ? <Link href="/prioridades">Ver lista completa →</Link> : null}
           </div>
 
           {attentionTotal ? (
             <div className="dashboard-v3-priority-list">
+              {expiredDocuments ? (
+                <Link href={canViewDocumentPriorities ? "/prioridades?status=VENCIDO" : "/notificacoes"}>
+                  <i className="danger">!</i>
+                  <div>
+                    <strong>{expiredDocuments} documento(s) vencido(s)</strong>
+                    <span>Atletas que precisam renovar documentos</span>
+                  </div>
+                  <b>{expiredDocuments}</b>
+                </Link>
+              ) : null}
+
               {pendingDocuments ? (
-                <Link href="/atletas">
+                <Link href={canViewDocumentPriorities ? "/prioridades?status=PENDENTE" : "/notificacoes"}>
                   <i className="danger">!</i>
                   <div>
                     <strong>
@@ -460,15 +480,26 @@ export default async function Dashboard() {
               ) : null}
 
               {expiringDocuments ? (
-                <Link href="/atletas">
+                <Link href={canViewDocumentPriorities ? "/prioridades?status=A_VENCER" : "/notificacoes"}>
                   <i className="warning">⌁</i>
                   <div>
                     <strong>
-                      {expiringDocuments} exame(s) vencem em 30 dias
+                      {expiringDocuments} documento(s) vencem em 30 dias
                     </strong>
-                    <span>Acompanhamento médico</span>
+                    <span>Revisar os prazos de validade</span>
                   </div>
                   <b>{expiringDocuments}</b>
+                </Link>
+              ) : null}
+
+              {categoryConfigurationIssues ? (
+                <Link href="/categorias">
+                  <i className="warning">!</i>
+                  <div>
+                    <strong>{categoryConfigurationIssues} categoria(s) sem requisitos documentais configurados</strong>
+                    <span>Conferir documentos obrigatórios por categoria</span>
+                  </div>
+                  <b>{categoryConfigurationIssues}</b>
                 </Link>
               ) : null}
 
