@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { sendManualDocumentNotice } from "./notificacoes/actions";
 import { requireClubPermission } from "@/lib/club-access";
 import { listClubDocumentPriorities, type DocumentPriorityStatus } from "@/lib/club-document-priorities";
 import styles from "./Prioridades.module.css";
 
-type Filters = { status?: string; categoria?: string; q?: string; pagina?: string };
+type Filters = { status?: string; categoria?: string; q?: string; pagina?: string; aviso?: string };
 
 const STATUS_LABELS: Record<DocumentPriorityStatus, string> = {
   VENCIDO: "Vencido",
@@ -128,8 +129,13 @@ export default async function ClubPrioritiesPage({
           <p>Veja os atletas, as categorias e os documentos com pendências ou vencimentos. Selecione um atleta para resolver diretamente na ficha.</p>
         </div>
         <Link className={styles.secondaryButton} href="/atletas/documentos">Envio de documentos →</Link>
+        <Link className={styles.secondaryButton} href="/prioridades/notificacoes">Notificações →</Link>
       </header>
 
+      {params.aviso === "enviado" ? <p role="status" style={{ color: "#b8ed62" }}>Aviso enviado ao Player autorizado.</p> : null}
+      {params.aviso === "recente" ? <p role="status" style={{ color: "#fbd38d" }}>Já foi enviado um aviso recentemente para este atleta. Nenhuma mensagem duplicada.</p> : null}
+      {params.aviso === "sem-player" ? <p role="status" style={{ color: "#fbd38d" }}>Nenhum Player com vínculo aprovado para esse atleta. Use “Abrir ficha” para solicitar documentos por link seguro ou e-mail.</p> : null}
+      {params.aviso === "sem-pendencias" ? <p role="status" style={{ color: "#fbd38d" }}>Pendência não encontrada ou já regularizada.</p> : null}
       <div className={styles.metrics}>
         <Link href={statusLink("VENCIDO")} className={styles.metric}>
           <span>Vencidos</span>
@@ -241,9 +247,26 @@ export default async function ClubPrioritiesPage({
                           <span className={`${styles.status} ${item.status === "VENCIDO" ? styles.expired : item.status === "A_VENCER" ? styles.expiring : styles.pending}`}>
                             {STATUS_LABELS[item.status]}
                           </span>
+                          {item.notificationKind !== "REVIEW" ? (
+                            <form action={sendManualDocumentNotice}>
+                              <input type="hidden" name="athleteId" value={group.id} />
+                              <input type="hidden" name="priorityKey" value={item.key} />
+                              <button type="submit" style={{ background: "#263e30", border: "1px solid #6f9a68", color: "#dfffc9", padding: "8px 10px", borderRadius: 8, cursor: "pointer" }}>
+                                Solicitar pelo Player
+                              </button>
+                            </form>
+                          ) : <small style={{ color: "#bcd3c4" }}>Aguardando ação do clube</small>}
                         </div>
                       ))}
                     </div>
+                    {group.items.some((item) => item.notificationKind !== "REVIEW") ? (
+                      <form action={sendManualDocumentNotice} style={{ marginTop: 12 }}>
+                        <input type="hidden" name="athleteId" value={group.id} />
+                        <button type="submit" style={{ background: "#a8df2f", color: "#101d14", borderRadius: 10, border: 0, padding: "10px 14px", fontWeight: 800, cursor: "pointer" }}>
+                          Solicitar todas as pendências pelo Player
+                        </button>
+                      </form>
+                    ) : null}
                     <Link className={styles.openLink} href={`/atletas/${encodeURIComponent(group.id)}/dados`}>
                       Abrir ficha documental do atleta →
                     </Link>

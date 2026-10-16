@@ -57,6 +57,8 @@ model Organization {
   partnershipActivationIntents PlayerPartnershipActivationIntent[]
   athleteAuditLogs             AthleteDataAuditLog[]
   athleteDocuments             AthleteDocument[]
+  documentNoticeSettings       DocumentNoticeSettings?
+  documentNoticeLogs           DocumentNoticeLog[]
   athleteDocumentManualIssues  AthleteDocumentManualIssue[]
   categoryDocumentRequirements CategoryDocumentRequirement[]
   athleteRegistrationRequests  AthleteRegistrationRequest[]
@@ -2760,4 +2762,42 @@ model SupportMessage {
   author         User?         @relation("SupportMessageAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([ticketId, createdAt])
+}
+
+/// Preferencias do envio de avisos documentais por clube. Manual e o padrao seguro.
+model DocumentNoticeSettings {
+  id               String   @id @default(cuid())
+  organizationId   String   @unique
+  mode             String   @default("MANUAL")
+  intervalDays     Int      @default(7)
+  notifyMissing    Boolean  @default(true)
+  notifyRejected   Boolean  @default(true)
+  notifyExpired    Boolean  @default(true)
+  notifyExpiring   Boolean  @default(true)
+  activatedAt      DateTime?
+  updatedByUserId  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+/// Registro de comunicados enviados: dedupKey unico evita execucoes duplicadas.
+model DocumentNoticeLog {
+  id              String   @id @default(cuid())
+  organizationId  String
+  athleteId       String
+  playerId        String
+  communicationId String?
+  mode            String
+  itemCount       Int
+  itemSignature   String
+  dedupKey        String   @unique
+  createdAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, athleteId, createdAt])
+  @@index([organizationId, playerId, createdAt])
 }

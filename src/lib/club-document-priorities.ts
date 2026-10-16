@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 export type DocumentPriorityStatus = "VENCIDO" | "A_VENCER" | "PENDENTE";
+export type DocumentNoticeKind = "MISSING" | "REJECTED" | "EXPIRED" | "EXPIRING" | "REVIEW";
 
 export type DocumentPriority = {
   key: string;
@@ -10,6 +11,7 @@ export type DocumentPriority = {
   categoryName: string;
   documentName: string;
   status: DocumentPriorityStatus;
+  notificationKind: DocumentNoticeKind;
   description: string;
   expiresAt: Date | null;
 };
@@ -159,6 +161,10 @@ export async function listClubDocumentPriorities(organizationId: string, timeZon
               categoryName: category.name,
               documentName: requirement.label,
               status,
+              notificationKind: doc.status === "PENDING" || noExpiry ? "REVIEW" :
+                status === "VENCIDO" ? "EXPIRED" :
+                doc.status === "REJECTED" ? "REJECTED" :
+                status === "A_VENCER" ? "EXPIRING" : "REVIEW",
               description,
               expiresAt: doc.expiresAt,
             });
@@ -174,6 +180,7 @@ export async function listClubDocumentPriorities(organizationId: string, timeZon
             categoryName: category.name,
             documentName: requirement.label,
             status: "PENDENTE",
+            notificationKind: "MISSING",
             description: attached.length
               ? "Quantidade de documentos válidos insuficiente para este requisito."
               : "Nenhum documento aprovado vinculado ao requisito obrigatório.",
@@ -198,6 +205,7 @@ export async function listClubDocumentPriorities(organizationId: string, timeZon
             categoryName: category.name,
             documentName: "Atestado / exame médico obrigatório",
             status: "PENDENTE",
+            notificationKind: "MISSING",
             description: "Categoria exige exame médico aprovado e válido.",
             expiresAt: null,
           });
@@ -226,6 +234,8 @@ export async function listClubDocumentPriorities(organizationId: string, timeZon
         categoryName: defaultCategory?.name ?? "Sem categoria ativa",
         documentName: doc.title || "Documento avulso",
         status,
+        notificationKind: doc.status === "PENDING" ? "REVIEW" : doc.status === "REJECTED" ? "REJECTED" :
+          status === "VENCIDO" ? "EXPIRED" : status === "A_VENCER" ? "EXPIRING" : "REVIEW",
         description: doc.status === "REJECTED"
           ? "Documento rejeitado. Verifique a ficha do atleta."
           : status === "VENCIDO" ? "Documento vencido."
@@ -244,6 +254,7 @@ export async function listClubDocumentPriorities(organizationId: string, timeZon
         categoryName: defaultCategory?.name ?? "Sem categoria ativa",
         documentName: issue.title,
         status: "PENDENTE",
+        notificationKind: "REVIEW",
         description: issue.blocking
           ? "Pendência manual bloqueante registrada pelo gestor."
           : "Pendência manual aberta registrada pelo gestor.",
