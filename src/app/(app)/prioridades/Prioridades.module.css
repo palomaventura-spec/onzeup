@@ -37,3 +37,39 @@
 .footerNote{font-size:12px;line-height:1.5;color:#9db1a4;margin:18px 0 0}
 @media(max-width:780px){.main{padding:12px 10px 55px}.header{padding:18px;display:block}.secondaryButton{display:inline-block;margin-top:16px}.metrics{gap:8px}.metric{padding:13px}.metric strong{font-size:26px}.metric span{font-size:12px}.metric small{font-size:11px}.panel{padding:15px}.filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.configuration{display:block}.configuration a{display:inline-block;margin-top:10px}}
 @media(max-width:500px){.breadcrumb{align-items:flex-start;flex-direction:column}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.metric{padding:10px 8px}.metric strong{font-size:25px}.metric span{font-size:11px}.metric small{font-size:10px}.filters{grid-template-columns:minmax(0,1fr)}.tabs{gap:6px}.tab,.activeTab{padding:8px 10px;font-size:12px}}
+
+/* Entrega 1.1: prioridades organizadas por atleta, recolhidas e paginadas. */
+.listInfo{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px;color:#e2eee6;font-size:13px}
+.listInfo span{color:#a8bdaf;font-size:12px}
+.listInfo strong{color:#e9f5ea !important;opacity:1 !important;font-weight:800}
+.athleteList{display:grid;gap:10px}
+.athleteGroup{min-width:0;border:1px solid #345144;border-radius:14px;background:#12211b;overflow:hidden}
+.athleteGroup[open]{border-color:#749b4a;background:#15271e}
+.athleteSummary{list-style:none;display:grid;grid-template-columns:minmax(0,1.4fr) auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:17px 18px;cursor:pointer;min-width:0}
+.athleteSummary::-webkit-details-marker{display:none}
+.athleteSummary::marker{content:""}
+.athleteSummary:hover{background:#1b3025}
+.athleteSummary:focus-visible{outline:2px solid #b5ec3c;outline-offset:-2px}
+.athleteIdentity{display:grid;gap:5px;min-width:0}
+.athleteIdentity strong{color:#fff;font-size:16px;overflow-wrap:anywhere}
+.athleteIdentity small{font-size:12px;color:#b8cfc0}
+.itemCount{color:#dce8df;font-size:13px;white-space:nowrap}
+.groupBadges{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;min-width:0}
+.expandLabel{white-space:nowrap;color:#c4ef84;font-size:13px;font-weight:750}
+.expandLabel span{display:inline-block;transition:transform .2s;margin-left:4px}
+.athleteGroup[open] .expandLabel span{transform:rotate(180deg)}
+.athleteDetails{padding:0 18px 18px;border-top:1px solid #335143}
+.documentList{display:grid;margin:6px 0 16px}
+.documentItem{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:18px;align-items:center;padding:14px 0;border-bottom:1px solid #2b4336}
+.documentDescription{display:grid;gap:5px;min-width:0}
+.documentDescription strong{color:#f5fbf5;font-size:14px}
+.documentDescription small{color:#afc8ba;line-height:1.45;font-size:12px}
+.documentExpiry{font-size:12px;color:#d1e1d6;white-space:nowrap}
+.athleteDetails .openLink{display:inline-block;margin:2px 0 0}
+.pagination{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;margin:20px 0 0}
+.pagination a,.paginationDisabled{border:1px solid #3d5a4b;padding:9px 12px;border-radius:9px;color:#e1efdf;text-decoration:none;font-size:13px}
+.pagination a:hover{border-color:#a2dc1c}
+.pagination .paginationActive{background:#a2dc1c;border-color:#a2dc1c;color:#122011;font-weight:800}
+.paginationDisabled{color:#7c9184;border-color:#293e33}
+@media(max-width:980px){.athleteSummary{grid-template-columns:minmax(0,1fr) auto;row-gap:12px}.groupBadges{justify-content:flex-start}.documentItem{grid-template-columns:minmax(0,1fr) auto}.documentExpiry{grid-column:1;grid-row:2}.documentItem>.status{grid-column:2;grid-row:1}}
+@media(max-width:600px){.listInfo{display:grid;gap:4px}.athleteSummary{padding:14px 12px;gap:10px}.athleteIdentity strong{font-size:14px}.itemCount{font-size:12px}.groupBadges{grid-column:1/-1;justify-content:flex-start}.expandLabel{justify-self:end;font-size:12px}.athleteDetails{padding:0 12px 14px}.documentItem{gap:8px}.documentExpiry{white-space:normal}.pagination a,.paginationDisabled{padding:8px 10px}}
