@@ -190,6 +190,7 @@ function formatDate(date: Date) {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: "UTC", // Horário civil gravado em UTC (compatibilidade com o histórico)
   }).format(date);
 }
 
@@ -198,6 +199,7 @@ function formatTime(date: Date) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: "UTC", // Exibir exatamente a hora informada no cadastro
   }).format(date);
 }
 

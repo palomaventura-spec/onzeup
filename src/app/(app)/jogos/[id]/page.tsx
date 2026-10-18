@@ -124,6 +124,7 @@ function formatDate(date: Date) {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: "UTC", // Horário civil gravado em UTC (compatibilidade com o histórico)
   }).format(date);
 }
 
@@ -132,6 +133,7 @@ function formatTime(date: Date) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: "UTC", // Exibir exatamente a hora informada no cadastro
   }).format(date);
 }
 
@@ -142,6 +144,7 @@ function formatDateTime(date: Date) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "UTC",
   }).format(date);
 }
 
@@ -186,7 +189,7 @@ export default async function EditMatchPage({
 
   const { id } = await params;
 
-  const [match, categories, staffMembers] = await Promise.all([
+  const [match, categories, staffMembers, organization] = await Promise.all([
     prisma.match.findFirst({
       where: {
         id,
@@ -231,19 +234,35 @@ export default async function EditMatchPage({
           },
         })
       : Promise.resolve([]),
+
+    prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: { publicName: true, name: true },
+    }),
   ]);
 
   if (!match) {
     notFound();
   }
 
+  // A categoria identifica a faixa etária; não é o nome da equipe.
+  const clubName =
+    organization?.publicName?.trim() ||
+    organization?.name?.trim() ||
+    "Clube";
+  const matchTitle =
+    match.homeAway === "AWAY"
+      ? `${match.opponent} × ${clubName}`
+      : `${clubName} × ${match.opponent}`;
+
   const calendarUrl = googleCalendarUrl({
-    title: `${match.category.name} × ${match.opponent}`,
+    title: matchTitle,
     start: match.startsAt,
     location: match.location,
     details:
-      [match.competition, match.notes].filter(Boolean).join(" • ") ||
-      "Jogo cadastrado no 11UP",
+      [match.category.name, match.competition, match.notes]
+        .filter(Boolean)
+        .join(" • ") || "Jogo cadastrado no 11UP",
   });
 
   const isRetroactive =
@@ -262,12 +281,10 @@ export default async function EditMatchPage({
             {sportLabel(match.sport).toUpperCase()}
           </span>
 
-          <h1>
-            {match.category.name} × {match.opponent}
-          </h1>
+          <h1>{matchTitle}</h1>
 
           <p>
-            {formatDate(match.startsAt)} · {formatTime(match.startsAt)}
+            {match.category.name} · {formatDate(match.startsAt)} · {formatTime(match.startsAt)}
             {match.location ? ` · ${match.location}` : ""}
           </p>
         </div>

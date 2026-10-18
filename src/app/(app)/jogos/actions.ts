@@ -59,9 +59,17 @@ function parseDateTime(date: string, time: string) {
     return null;
   }
 
-  const parsed = new Date(`${date}T${time}:00`);
-
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  // Compatibilidade com partidas existentes: o banco registra a data/hora
+  // civil informada pelo gestor nos componentes UTC do campo DateTime.
+  // Assim a gravação não depende do fuso do computador ou do Vercel.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) {
+    return null;
+  }
+  const parsed = new Date(`${date}T${time}:00.000Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date || parsed.toISOString().slice(11, 16) !== time) {
+    return null;
+  }
+  return parsed;
 }
 
 function parseStatus(value: string): MatchStatus {

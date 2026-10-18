@@ -151,12 +151,19 @@ function addMonths(date: Date, amount: number) {
   return result;
 }
 
-function time(date: Date) {
+function time(date: Date, type: AgendaItem["type"]) {
   return new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    ...(type === "MATCH" ? { timeZone: "UTC" } : {}),
   }).format(date);
+}
+
+// Jogos atuais guardam a hora civil do cadastro nos componentes UTC.
+// Para o Google, criamos o instante correspondente no Rio (UTC-3 em 2026).
+function matchCalendarInstant(date: Date) {
+  return new Date(`${date.toISOString().slice(0, 19)}-03:00`);
 }
 
 function longDate(date: Date) {
@@ -284,7 +291,7 @@ export default async function AgendaPage({
   const horizonDays =
     Math.ceil((queryEnd.getTime() - queryStart.getTime()) / 86400000) + 1;
 
-  const [trainings, matches, categories] = await Promise.all([
+  const [trainings, matches, categories, organization] = await Promise.all([
     prisma.trainingSchedule.findMany({
       where: {
         organizationId: user.organizationId,
@@ -309,6 +316,10 @@ export default async function AgendaPage({
       where: { organizationId: user.organizationId },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
+    }),
+    prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: { publicName: true, name: true },
     }),
   ]);
 
@@ -349,12 +360,16 @@ export default async function AgendaPage({
     }
   });
 
+  const clubName = organization?.publicName?.trim() || organization?.name?.trim() || "Clube";
+
   matches.forEach((match) =>
     allItems.push({
       id: `match-${match.id}`,
       type: "MATCH",
       startsAt: match.startsAt,
-      title: `${match.category.name} × ${match.opponent}`,
+      title: match.homeAway === "AWAY"
+        ? `${match.opponent} × ${clubName}`
+        : `${clubName} × ${match.opponent}`,
       subtitle: match.competition || "Jogo",
       categoryId: match.categoryId,
       categoryName: match.category.name,
@@ -590,7 +605,7 @@ export default async function AgendaPage({
                   </small>
                   <strong>{item.title}</strong>
                   <span>
-                    {time(item.startsAt)} · {item.location || "Local a definir"}
+                    {time(item.startsAt, item.type)} · {item.location || "Local a definir"}
                   </span>
                 </div>
               </Link>
@@ -684,7 +699,7 @@ export default async function AgendaPage({
                             href={item.href}
                             key={item.id}
                           >
-                            <b>{time(item.startsAt)}</b>
+                            <b>{time(item.startsAt, item.type)}</b>
                             <span>{item.title}</span>
                           </Link>
                         ))}
@@ -722,7 +737,7 @@ export default async function AgendaPage({
                     {dayItems.map((item) => {
                       const calendarUrl = googleCalendarUrl({
                         title: item.title,
-                        start: item.startsAt,
+                        start: item.type === "MATCH" ? matchCalendarInstant(item.startsAt) : item.startsAt,
                         end: item.endsAt,
                         location: item.location,
                         details: item.subtitle,
@@ -735,7 +750,7 @@ export default async function AgendaPage({
                           }`}
                           key={item.id}
                         >
-                          <time>{time(item.startsAt)}</time>
+                          <time>{time(item.startsAt, item.type)}</time>
 
                           <span
                             className={`agenda-v4-event-dot ${

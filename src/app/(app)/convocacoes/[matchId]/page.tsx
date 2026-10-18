@@ -131,6 +131,7 @@ function fmt(date: Date) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "UTC",
   }).format(date);
 }
 
@@ -139,6 +140,7 @@ function formatDate(date: Date) {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: "UTC",
   }).format(date);
 }
 
@@ -147,6 +149,7 @@ function formatTime(date: Date) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: "UTC",
   }).format(date);
 }
 
@@ -698,6 +701,20 @@ export default async function MatchCallUpsPage({
     user.organization?.name ||
     "11UP";
 
+  // Os horários legados de jogos estão salvos como horário civil em UTC.
+  // Preserva a leitura atual dos jogos sem escrever no banco.
+  const clubName = orgName;
+  const matchTitle =
+    match.homeAway === "AWAY"
+      ? `${match.opponent} × ${clubName}`
+      : `${clubName} × ${match.opponent}`;
+
+  // Para o Google Agenda, converte o horário civil legado de Brasília
+  // em um instante UTC real. Em 2026 Brasília permanece em UTC-03:00.
+  const googleMatchStart = new Date(
+    `${match.startsAt.toISOString().slice(0, 19)}-03:00`,
+  );
+
   const location =
     match.location ||
     "Local a definir";
@@ -728,9 +745,9 @@ export default async function MatchCallUpsPage({
 
   const calendarUrl =
     googleCalendarUrl({
-      title: `${match.category.name} × ${match.opponent}`,
+      title: matchTitle,
       start:
-        match.startsAt,
+        googleMatchStart,
       location:
         match.location,
       details: `Convocação • ${
@@ -768,7 +785,7 @@ export default async function MatchCallUpsPage({
     const staff =
       "A definir";
 
-    return `⚽ CONVOCAÇÃO — ${match.category.name}\n\nOlá! ${name} está convocado(a) para a próxima partida.\n\n🆚 ${match.opponent}\n📅 ${fmt(match.startsAt)}\n⏰ Chegada: ${match.presentationTime || "A definir"}\n📍 ${location}\n🏆 ${match.competition || "Jogo"}\n👕 ${match.arrivalAttire === "TRAINING_UNIFORM" ? "Chegar com uniforme de treino; troca no local" : "Chegar uniformizado para o jogo"}\n🧦 ${match.sockRequirement || "Meião oficial"}\n🛡️ ${match.shinGuardsRequired ? "Caneleira obrigatória" : "Caneleira opcional"}\n👟 ${footwear}\n👥 Comissão: ${staff}\n${match.equipmentNotes ? `📌 ${match.equipmentNotes}\n` : ""}\n${ending}\n\n${orgName}`;
+    return `⚽ CONVOCAÇÃO — ${match.category.name}\n\nOlá! ${name} está convocado(a) para a próxima partida.\n\n🆚 ${matchTitle}\n📅 ${fmt(match.startsAt)}\n⏰ Chegada: ${match.presentationTime || "A definir"}\n📍 ${location}\n🏆 ${match.competition || "Jogo"}\n👕 ${match.arrivalAttire === "TRAINING_UNIFORM" ? "Chegar com uniforme de treino; troca no local" : "Chegar uniformizado para o jogo"}\n🧦 ${match.sockRequirement || "Meião oficial"}\n🛡️ ${match.shinGuardsRequired ? "Caneleira obrigatória" : "Caneleira opcional"}\n👟 ${footwear}\n👥 Comissão: ${staff}\n${match.equipmentNotes ? `📌 ${match.equipmentNotes}\n` : ""}\n${ending}\n\n${orgName}`;
   };
 
   const confirmedCount =
@@ -805,10 +822,7 @@ export default async function MatchCallUpsPage({
               : "FUTEBOL"}
           </span>
 
-          <h1>
-            {match.category.name} ×{" "}
-            {match.opponent}
-          </h1>
+          <h1>{matchTitle}</h1>
 
           <p>
             {formatDate(

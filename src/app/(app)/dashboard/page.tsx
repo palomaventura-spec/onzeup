@@ -18,6 +18,25 @@ function time(value: Date, timeZone: string) {
   return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone }).format(value);
 }
 
+// Compatibilidade com os horários de jogos já cadastrados no 11UP.
+// O horário civil da partida está representado nos componentes UTC da data.
+// Treinos continuam usando o fuso da organização.
+function matchTime(value: Date) {
+  return `${String(value.getUTCHours()).padStart(2, "0")}:${String(value.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function matchShortDate(value: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit", month: "short", timeZone: "UTC",
+  }).format(value);
+}
+
+function matchTitle(organizationName: string, opponent: string, homeAway: string | null) {
+  return homeAway === "AWAY"
+    ? `${opponent} × ${organizationName}`
+    : `${organizationName} × ${opponent}`;
+}
+
 function dateLabel(value: Date, timeZone: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     weekday: "long", day: "2-digit", month: "long", timeZone,
@@ -40,6 +59,7 @@ export default async function Dashboard() {
 
   const orgId = user.organizationId;
   const org = user.organization;
+  const orgName = org.publicName || org.name;
   const timeZone = org.timezone || "America/Sao_Paulo";
   const now = new Date();
   const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
@@ -150,8 +170,8 @@ export default async function Dashboard() {
       title: `Treino ${item.category.name}`, detail: item.location || "Local a definir", type: "Treino", href: "/treinos",
     }))),
     ...upcomingMatches.filter((item) => item.startsAt < tomorrow).map((item) => ({
-      id: `match-${item.id}`, sort: item.startsAt.getTime(), hour: time(item.startsAt, timeZone),
-      title: `${item.category.name} × ${item.opponent}`, detail: item.location || "Local a definir", type: "Jogo", href: `/jogos/${item.id}`,
+      id: `match-${item.id}`, sort: item.startsAt.getTime(), hour: matchTime(item.startsAt),
+      title: matchTitle(orgName, item.opponent, item.homeAway), detail: item.location || "Local a definir", type: "Jogo", href: `/jogos/${item.id}`,
     })),
   ].sort((a, b) => a.sort - b.sort).slice(0, 5);
 
@@ -396,14 +416,14 @@ export default async function Dashboard() {
                     className="dashboard-v3-game-row"
                   >
                     <time>
-                      <b>{shortDate(match.startsAt, timeZone)}</b>
-                      <span>{time(match.startsAt, timeZone)}</span>
+                      <b>{matchShortDate(match.startsAt)}</b>
+                      <span>{matchTime(match.startsAt)}</span>
                     </time>
 
                     <div>
                       <small>{match.category.name}</small>
                       <strong>
-                        {match.category.name} × {match.opponent}
+                        {matchTitle(orgName, match.opponent, match.homeAway)}
                       </strong>
                       <span>
                         {match.location || "Local a definir"}
