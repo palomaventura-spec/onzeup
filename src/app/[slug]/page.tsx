@@ -16,6 +16,32 @@ function career(value?: string | null) {
   });
 }
 
+function publicPlayerName(name: string, nickname?: string | null) {
+  const preferred = nickname?.trim();
+  return preferred || name.trim().split(/\s+/)[0] || "Atleta";
+}
+
+function youtubeEmbedUrl(value: string): string | null {
+  try {
+    const url = new URL(value.trim());
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    let id: string | null = null;
+    if (host === "youtu.be") {
+      id = url.pathname.split("/").filter(Boolean)[0] || null;
+    } else if (host === "youtube.com" || host === "m.youtube.com" || host === "youtube-nocookie.com") {
+      if (url.pathname === "/watch") id = url.searchParams.get("v");
+      else {
+        const parts = url.pathname.split("/").filter(Boolean);
+        if (["shorts", "embed", "live"].includes(parts[0])) id = parts[1] || null;
+      }
+    }
+    if (!id || !/^[a-zA-Z0-9_-]{11}$/.test(id)) return null;
+    return `https://www.youtube-nocookie.com/embed/${id}`;
+  } catch {
+    return null;
+  }
+}
+
 export default async function PlayerPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   await reconcileExpiredSimplePlayerCourtesies({ slug });
@@ -37,6 +63,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
   const achievements = lines(player.achievements);
   const careerItems = career(player.careerHistory);
   const light = player.template === "CLEAN_LIGHT";
+  const displayName = publicPlayerName(player.name, player.nickname);
 
   const statItems = [
     { label: "Jogos", value: player.matches },
@@ -50,19 +77,18 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
       <header className="athlete-nav">
         <Link href="/" className="player-brand">11<span>UP</span> <b>PLAYER</b></Link>
         <nav><a href="#sobre">Sobre</a><a href="#carreira">Carreira</a><a href="#videos">Vídeos</a><a href="#galeria">Galeria</a></nav>
-        <PlayerPublicActions name={player.name} />
+        <PlayerPublicActions name={displayName} />
       </header>
 
       <section className="athlete-hero" style={player.coverUrl ? { backgroundImage: `linear-gradient(90deg, rgba(4,8,12,.97), rgba(4,8,12,.7)), url(${player.coverUrl})` } : undefined}>
         <div className="athlete-wrap athlete-hero-grid">
           <div className="athlete-portrait">
-            {player.photoUrl ? <img src={player.photoUrl} alt={player.name} /> : <span>{player.name.slice(0,2).toUpperCase()}</span>}
+            {player.photoUrl ? <img src={player.photoUrl} alt={displayName} /> : <span>{displayName.slice(0,2).toUpperCase()}</span>}
           </div>
 
           <div className="athlete-identity">
             <span className="athlete-kicker">ATLETA • 11UP PLAYER</span>
-            <h1>{player.name}</h1>
-            {player.nickname ? <h2>{player.nickname}</h2> : null}
+            <h1>{displayName}</h1>
 
             <div className="athlete-tags">
               {player.position ? <span>{player.position}</span> : null}
@@ -135,14 +161,43 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
         {videos.length ? (
           <section id="videos" className="athlete-section">
             <div className="athlete-section-label"><span>04</span><b>VÍDEOS</b></div>
-            <div><h2>Melhores momentos</h2><div className="athlete-videos">{videos.map((url,index)=><a href={url} target="_blank" key={`${url}-${index}`}><span>▶</span><div><small>VÍDEO {String(index+1).padStart(2,"0")}</small><strong>Assistir melhores momentos</strong></div><b>↗</b></a>)}</div></div>
+            <div>
+              <h2>Melhores momentos</h2>
+              <div className="athlete-videos">
+                {videos.map((url, index) => {
+                  const embedUrl = youtubeEmbedUrl(url);
+                  return (
+                    <div key={`${url}-${index}`} style={{ minWidth: 0 }}>
+                      <small style={{ display: "block", marginBottom: 8, fontWeight: 700 }}>
+                        VÍDEO {String(index + 1).padStart(2, "0")}
+                      </small>
+                      {embedUrl ? (
+                        <iframe
+                          src={embedUrl}
+                          title={`Melhores momentos ${index + 1} de ${displayName}`}
+                          loading="lazy"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          referrerPolicy="strict-origin-when-cross-origin"
+                          allowFullScreen
+                          style={{ display: "block", width: "100%", aspectRatio: "16 / 9", height: "auto", border: 0, borderRadius: 14, background: "#071016" }}
+                        />
+                      ) : (
+                        <div style={{ padding: 20, border: "1px solid rgba(128,145,155,.3)", borderRadius: 14 }}>
+                          Vídeo indisponível para reprodução incorporada. Confira o endereço cadastrado.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </section>
         ) : null}
 
         {gallery.length ? (
           <section id="galeria" className="athlete-gallery-section">
             <div><span className="athlete-kicker">EM CAMPO</span><h2>Galeria</h2></div>
-            <div className="athlete-gallery">{gallery.slice(0,12).map((url,index)=><img src={url} key={`${url}-${index}`} alt={`${player.name} ${index+1}`} />)}</div>
+            <div className="athlete-gallery">{gallery.slice(0,12).map((url,index)=><img src={url} key={`${url}-${index}`} alt={`${displayName} ${index+1}`} />)}</div>
           </section>
         ) : null}
 
@@ -164,7 +219,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
       </div>
 
       <footer className="athlete-footer">
-        <div className="athlete-wrap"><div><strong>11<span>UP</span> PLAYER</strong><p>Perfil esportivo administrado pela família.</p></div><PlayerPublicActions name={player.name} /></div>
+        <div className="athlete-wrap"><div><strong>11<span>UP</span> PLAYER</strong><p>Perfil esportivo administrado pela família.</p></div><PlayerPublicActions name={displayName} /></div>
       </footer>
     </main>
   );

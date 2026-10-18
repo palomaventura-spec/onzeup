@@ -16,6 +16,50 @@ function career(value?: string | null) {
   });
 }
 
+
+type PublicVideo = { url: string; title: string; description: string };
+
+function parsePublicVideos(value?: string | null): PublicVideo[] {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+        .map((item) => ({ url: String(item.url || "").trim(), title: String(item.title || "").trim(), description: String(item.description || "").trim() }))
+        .filter((item) => item.url);
+    }
+  } catch { /* links anteriores sao salvos em linhas */ }
+  return lines(raw).map((url) => ({ url, title: "", description: "" }));
+}
+
+function youtubeEmbed(input: string): string | null {
+  try {
+    const u = new URL(input);
+    const host = u.hostname.toLowerCase();
+    let id = "";
+    if (host === "youtu.be" || host === "www.youtu.be") id = u.pathname.split("/")[1] || "";
+    else if (["youtube.com", "www.youtube.com", "m.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com"].includes(host)) {
+      if (u.pathname === "/watch") id = u.searchParams.get("v") || "";
+      else if (/^\/(shorts|embed|live)\//.test(u.pathname)) id = u.pathname.split("/")[2] || "";
+    }
+    return /^[a-zA-Z0-9_-]{11}$/.test(id) ? `https://www.youtube-nocookie.com/embed/${id}` : null;
+  } catch { return null; }
+}
+
+function instagramProfile(input?: string | null): string | null {
+  const raw = String(input || "").trim();
+  if (!raw) return null;
+  let username = raw.replace(/^@/, "");
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const url = new URL(raw);
+      if (!["instagram.com", "www.instagram.com"].includes(url.hostname.toLowerCase())) return null;
+      username = url.pathname.split("/").filter(Boolean)[0] || "";
+    } catch { return null; }
+  }
+  return /^[a-zA-Z0-9._]{1,30}$/.test(username) ? `https://www.instagram.com/${username}/` : null;
+}
 export default async function PlayerPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   await reconcileExpiredSimplePlayerCourtesies({ slug });
@@ -33,10 +77,12 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
   if (!player) notFound();
 
   const gallery = lines(player.gallery);
-  const videos = lines(player.videos);
+  const videos = parsePublicVideos(player.videos);
   const achievements = lines(player.achievements);
   const careerItems = career(player.careerHistory);
   const light = player.template === "CLEAN_LIGHT";
+  const publicName = player.nickname?.trim() || "Atleta 11UP";
+  const instagramUrl = instagramProfile(player.instagram);
 
   const statItems = [
     { label: "Jogos", value: player.matches },
@@ -50,19 +96,19 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
       <header className="athlete-nav">
         <Link href="/" className="player-brand">ONZE<span>UP</span> <b>PLAYER</b></Link>
         <nav><a href="#sobre">Sobre</a><a href="#carreira">Carreira</a><a href="#videos">Vídeos</a><a href="#galeria">Galeria</a></nav>
-        <PlayerPublicActions name={player.name} />
+        <PlayerPublicActions name={publicName} />
       </header>
 
       <section className="athlete-hero" style={player.coverUrl ? { backgroundImage: `linear-gradient(90deg, rgba(4,8,12,.97), rgba(4,8,12,.7)), url(${player.coverUrl})` } : undefined}>
         <div className="athlete-wrap athlete-hero-grid">
           <div className="athlete-portrait">
-            {player.photoUrl ? <img src={player.photoUrl} alt={player.name} /> : <span>{player.name.slice(0,2).toUpperCase()}</span>}
+            {player.photoUrl ? <img src={player.photoUrl} alt={publicName} /> : <span>{publicName.slice(0,2).toUpperCase()}</span>}
           </div>
 
           <div className="athlete-identity">
             <span className="athlete-kicker">ATLETA • 11UP PLAYER</span>
-            <h1>{player.name}</h1>
-            {player.nickname ? <h2>{player.nickname}</h2> : null}
+            <h1>{publicName}</h1>
+            {/* Nome completo nao e divulgado por padrao. */}
 
             <div className="athlete-tags">
               {player.position ? <span>{player.position}</span> : null}
@@ -71,9 +117,9 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
               {player.nationality ? <span>{player.nationality}</span> : null}
             </div>
 
-            {player.instagram ? (
-              <a className="athlete-instagram" target="_blank" href={`https://instagram.com/${player.instagram.replace("@","")}`}>
-                {player.instagram} ↗
+            {instagramUrl ? (
+              <a className="athlete-instagram" target="_blank" href={instagramUrl} rel="noopener noreferrer">
+                Seguir no Instagram ↗
               </a>
             ) : null}
           </div>
@@ -135,7 +181,15 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
         {videos.length ? (
           <section id="videos" className="athlete-section">
             <div className="athlete-section-label"><span>04</span><b>VÍDEOS</b></div>
-            <div><h2>Melhores momentos</h2><div className="athlete-videos">{videos.map((url,index)=><a href={url} target="_blank" key={`${url}-${index}`}><span>▶</span><div><small>VÍDEO {String(index+1).padStart(2,"0")}</small><strong>Assistir melhores momentos</strong></div><b>↗</b></a>)}</div></div>
+            <div><h2>Melhores momentos</h2><div className="athlete-videos">{videos.map((video, index) => {
+              const embed = youtubeEmbed(video.url);
+              return <article key={`${video.url}-${index}`} style={{ width: "100%", minWidth: 0 }}>
+                {embed ? <div style={{ aspectRatio: "16 / 9", width: "100%", overflow: "hidden", borderRadius: 12, background: "#080b0c" }}>
+                  <iframe src={embed} title={video.title || `Melhores momentos ${index + 1}`} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" style={{ display: "block", border: 0, width: "100%", height: "100%" }} />
+                </div> : <p>Este endereço de vídeo não é compatível com a reprodução incorporada.</p>}
+                <div style={{ padding: "10px 0 16px" }}><small>VÍDEO {String(index+1).padStart(2,"0")}</small><strong style={{ display: "block" }}>{video.title || "Melhores momentos"}</strong>{video.description ? <p>{video.description}</p> : null}</div>
+              </article>;
+            })}</div></div>
           </section>
         ) : null}
 
@@ -164,7 +218,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
       </div>
 
       <footer className="athlete-footer">
-        <div className="athlete-wrap"><div><strong>ONZE<span>UP</span> PLAYER</strong><p>Perfil esportivo administrado pela família.</p></div><PlayerPublicActions name={player.name} /></div>
+        <div className="athlete-wrap"><div><strong>ONZE<span>UP</span> PLAYER</strong><p>Perfil esportivo administrado pela família.</p></div><PlayerPublicActions name={publicName} /></div>
       </footer>
     </main>
   );
