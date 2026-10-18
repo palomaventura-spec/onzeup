@@ -141,36 +141,50 @@ function hexColor(value: string) {
   );
 }
 
+// Apenas para renderizacao no PDF: preserva os dados originais do QTS.
+// As fontes padrao Helvetica do pdf-lib usam WinAnsi e nao aceitam quebras
+// de linha, caracteres de controle, emojis e alguns simbolos Unicode.
+function safePdfText(
+  value: string,
+  font: { widthOfTextAtSize(text: string, size: number): number },
+  size: number,
+): string {
+  const flattened = value
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  let result = "";
+  for (const char of flattened) {
+    try {
+      font.widthOfTextAtSize(char, size);
+      result += char;
+    } catch {
+      result += "?";
+    }
+  }
+  return result;
+}
+
 function fitText(
   text: string,
   maxWidth: number,
-  font: {
-    widthOfTextAtSize(
-      text: string,
-      size: number,
-    ): number;
-  },
+  font: { widthOfTextAtSize(text: string, size: number): number },
   size: number,
 ) {
-  if (
-    font.widthOfTextAtSize(text, size) <=
-    maxWidth
-  ) {
-    return text;
+  const safeText = safePdfText(text, font, size);
+  if (font.widthOfTextAtSize(safeText, size) <= maxWidth) {
+    return safeText;
   }
 
-  let result = text;
-
+  let result = safeText;
   while (
     result.length > 1 &&
-    font.widthOfTextAtSize(
-      `${result}…`,
-      size,
-    ) > maxWidth
+    font.widthOfTextAtSize(`${result}…`, size) > maxWidth
   ) {
     result = result.slice(0, -1);
   }
-
   return `${result}…`;
 }
 
@@ -184,7 +198,7 @@ function wrapCategoryText(
   font: { widthOfTextAtSize(text: string, size: number): number },
   size: number,
 ): string[] {
-  const words = text.trim().split(/\s+/).filter(Boolean);
+  const words = safePdfText(text, font, size).split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
 
