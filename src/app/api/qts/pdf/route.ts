@@ -448,19 +448,22 @@ export async function GET(request: Request) {
       const { lines, fontSize } = categoryNameLayout(row);
       const nameHeight =
         12 + lines.length * (fontSize + 1.5) + (row.birthYear ? 13 : 0);
-      const maxEventsPerDay = DAYS.reduce((max, [key]) => {
-        const events = row[key as DayKey];
-        return Math.max(
-          max,
-          Array.isArray(events)
-            ? events.filter((event) => event.hidden !== true).length
-            : 0,
-        );
-      }, 0);
-      const eventHeight =
-        maxEventsPerDay <= 1
-          ? 48
-          : 6 + maxEventsPerDay * 32 + (maxEventsPerDay - 1) * 3;
+      // Calcula a altura usando o titulo COMPLETO de cada atividade.
+      // A largura e a mesma das celulas desenhadas abaixo.
+      const dayTextWidth = (pageSize[0] - margin * 2 - categoryWidth) / 7 - 14;
+      const eventHeight = DAYS.reduce((max, [key]) => {
+        const events = Array.isArray(row[key as DayKey])
+          ? row[key as DayKey]!.filter((event) => event.hidden !== true)
+          : [];
+        const needed = events.reduce((sum, event) => {
+          const title = event.title || typeLabel(event.type);
+          const titleLines = wrapCategoryText(title, dayTextWidth, bold, 9);
+          const detailCount = Number(Boolean(event.startTime || event.endTime)) +
+            Number(Boolean(event.location)) + Number(Boolean(event.notes));
+          return sum + Math.max(48, 14 + titleLines.length * 10 + detailCount * 9);
+        }, 0);
+        return Math.max(max, needed + Math.max(0, events.length - 1) * 2 + 6);
+      }, 48);
       return Math.max(48, Math.ceil(nameHeight), eventHeight);
     }
 
@@ -875,27 +878,31 @@ export async function GET(request: Request) {
                     }
 
                     const lineHeight = cardHeight < 34 ? 8 : 9;
-                    const maxDetails = Math.min(
-                      details.length,
-                      Math.max(0, Math.floor((cardHeight - 12) / lineHeight)),
+                    const titleLines = wrapCategoryText(
+                      title, dayWidth - 14, bold, titleSize,
                     );
-                    const visibleDetails = details.slice(0, maxDetails);
-
-                    // Titulos e horarios compactos, sem ultrapassar as celulas.
+                    const titleLineHeight = titleSize + 1;
                     let textY = cardY + cardHeight - 10;
-                    page.drawText(
-                      fitText(title, dayWidth - 14, bold, titleSize),
-                      {
+
+                    // Titulo completo, quebrado em linhas dentro da celula.
+                    titleLines.forEach((part) => {
+                      page.drawText(part, {
                         x: cellX + 7,
                         y: textY,
                         size: titleSize,
                         font: bold,
                         color: eventTextColor,
-                      },
-                    );
+                      });
+                      textY -= titleLineHeight;
+                    });
 
-                    visibleDetails.forEach((detail) => {
-                      textY -= lineHeight;
+                    // Mantem o horario e os demais detalhes abaixo do titulo.
+                    const detailSpace = textY - (cardY + 4);
+                    const maxDetails = Math.min(
+                      details.length,
+                      Math.max(0, Math.floor(detailSpace / lineHeight)),
+                    );
+                    details.slice(0, maxDetails).forEach((detail) => {
                       page.drawText(
                         fitText(detail, dayWidth - 14, regular, detailSize),
                         {
@@ -906,6 +913,7 @@ export async function GET(request: Request) {
                           color: eventTextColor,
                         },
                       );
+                      textY -= lineHeight;
                     });
                   },
                 );
