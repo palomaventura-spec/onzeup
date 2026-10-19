@@ -15,7 +15,7 @@ import {
 } from "../actions";
 import { createPlayerPremiumAsaas, createPlayerPremiumPixAsaas } from "@/app/checkout/actions";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
-import { reconcileExpiredPlayerPremiums } from "@/lib/billing-entitlements";
+import { hasEffectivePlayerPremium, reconcileExpiredPlayerPremiums, reconcileExpiredPlayerTrials } from "@/lib/billing-entitlements";
 
 export default async function GuardianPortal({
   searchParams,
@@ -70,7 +70,10 @@ export default async function GuardianPortal({
     }
   })();
   const guardianBase = await prisma.guardianProfile.findUnique({ where: { userId: user.id }, select: { id: true } });
-  if (guardianBase) await reconcileExpiredPlayerPremiums({ guardianId: guardianBase.id });
+  if (guardianBase) {
+    await reconcileExpiredPlayerTrials({ guardianId: guardianBase.id });
+    await reconcileExpiredPlayerPremiums({ guardianId: guardianBase.id });
+  }
 
   const guardian = await prisma.guardianProfile.findUnique({
     where: { userId: user.id },
@@ -103,6 +106,20 @@ export default async function GuardianPortal({
     query.new === "1"
       ? null
       : players.find((player) => player.id === query.player) || players[0] || null;
+
+  const canEditPremium = !selected || hasEffectivePlayerPremium(selected);
+  const featuredVideo = (() => {
+    const raw = selected?.videos || "";
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const first = parsed[0];
+        return first && typeof first === "object" && typeof first.url === "string" && first.url !== "__11UP_NO_FEATURED_VIDEO__" ? first.url : "";
+      }
+    } catch { /* Formato de URLs por linha. */ }
+    const first = raw.split(/\r?\n/).map(url => url.trim()).find(Boolean) || "";
+    return first === "__11UP_NO_FEATURED_VIDEO__" ? "" : first;
+  })();
 
   const linkedAthleteIds = selected?.athleteLinks.map(link => link.athleteId) || [];
   const upcomingCallUps = linkedAthleteIds.length
@@ -201,7 +218,7 @@ export default async function GuardianPortal({
                 </div>
                 <section>
                   <strong>{player.nickname || player.name}</strong>
-                  <small>{player.position || "Atleta"} • {player.plan === "PREMIUM" ? "Premium" : "Free"}</small>
+                  <small>{player.position || "Atleta"} • {player.plan === "PREMIUM" ? "Premium" : "Simples"}</small>
                 </section>
                 <b>→</b>
               </Link>
@@ -225,7 +242,7 @@ export default async function GuardianPortal({
               <div>
                 <span className="page-eyebrow">{selected ? "EDITAR PERFIL" : "NOVO PERFIL"}</span>
                 <h2>{selected ? (selected.nickname || selected.name) : "Criar 11UP Player"}</h2>
-                {selected ? <span className={`player-plan-badge ${selected.plan === "PREMIUM" ? "premium" : "free"}`}>{selected.plan === "PREMIUM" ? "★ PREMIUM" : "FREE"}</span> : null}
+                {selected ? <span className={`player-plan-badge ${selected.plan === "PREMIUM" ? "premium" : "free"}`}>{selected.plan === "PREMIUM" ? "★ PREMIUM" : "SIMPLES"}</span> : null}
               </div>
               <div className="player-editor-actions">
                 <span className={`publication-status ${selected?.isPublic ? "public" : "private"}`}>
@@ -279,8 +296,8 @@ export default async function GuardianPortal({
                 </div>
 
                 <div className="form">
-                  <label>Nome completo <small className="field-help">Este será o nome principal no perfil público.</small><input name="name" required defaultValue={selected?.name || ""} placeholder="Ex.: João Silva" /></label>
-                  <label>Apelido / nome esportivo <small className="field-help">Opcional. Aparece abaixo do nome completo.</small><input name="nickname" defaultValue={selected?.nickname || ""} placeholder="Ex.: JS10" /></label>
+                  <label>Nome completo <small className="field-help">Dado cadastral. Não é exibido no perfil público por padrão.</small><input name="name" required defaultValue={selected?.name || ""} placeholder="Ex.: João Silva" /></label>
+                  <label>Apelido / nome esportivo <small className="field-help">É o nome principal exibido publicamente. Preencha para identificar o atleta na página.</small><input name="nickname" defaultValue={selected?.nickname || ""} placeholder="Ex.: JS10" /></label>
                   <label>Endereço público <small className="field-help">Ex.: joao-silva</small><input name="slug" defaultValue={selected?.slug || ""} placeholder="joao-silva" /></label>
 
                   <div className="two-field-row">
@@ -309,7 +326,7 @@ export default async function GuardianPortal({
                   </div>
                   <input type="hidden" name="plan" value={selected?.plan || "FREE"} />
                   <label>Plano atual
-                    <input value={selected?.plan === "PREMIUM" ? "11UP Player Premium" : "11UP Player Free"} readOnly />
+                    <input value={selected?.plan === "PREMIUM" ? "11UP Player Premium" : "11UP Player Simples"} readOnly />
                     <small className="field-help">O upgrade para Premium é ativado após a confirmação do pagamento.</small>
                   </label>
                   <label>Template
@@ -352,12 +369,13 @@ export default async function GuardianPortal({
 
               <div className="two-field-row">
                 <label>Vídeos — um link por linha
-                  <small className="field-help">{selected?.plan === "PREMIUM" ? "Premium: vários vídeos." : "Free: o primeiro link será utilizado."}</small>
-                  <textarea name="videos" rows={6} defaultValue={selected?.videos || ""} placeholder={"https://youtube.com/watch?v=...\nhttps://youtu.be/..."} />
+                  <small className="field-help">{canEditPremium ? "Premium: vários vídeos." : "Simples: um vídeo em destaque. Outros vídeos Premium continuam guardados."}</small>
+                  <textarea name="videos" rows={canEditPremium ? 6 : 2} defaultValue={canEditPremium ? (selected?.videos || "") : featuredVideo} placeholder={canEditPremium ? "https://youtube.com/watch?v=...\nhttps://youtu.be/..." : "https://youtube.com/watch?v=..."} />
+                  {!canEditPremium ? <span className="field-help"><label><input type="checkbox" name="removeFeaturedVideo" /> Remover o vídeo em destaque (sem apagar os vídeos Premium guardados)</label></span> : null}
                 </label>
-                <label>Galeria — uma URL de imagem por linha
+                {canEditPremium ? <label>Galeria — uma URL de imagem por linha
                   <textarea name="gallery" rows={6} defaultValue={selected?.gallery || ""} placeholder="https://..." />
-                </label>
+                </label> : <div className="field-help">Sua galeria Premium continua guardada e ficará disponível quando o Premium estiver ativo.</div>}
               </div>
 
               <label className="check player-public-toggle">
@@ -367,6 +385,7 @@ export default async function GuardianPortal({
                   <small>Permite que o perfil seja acessado pelo endereço /player/...</small>
                 </span>
               </label>
+<label className="check-row"><input type="checkbox" name="publicationConsent" defaultChecked={false} /><span>Autorizo expressamente a publicação dos dados esportivos, imagens e vídeos deste atleta menor sob minha responsabilidade. Sem esta autorização, o perfil permanecerá privado.</span></label>
 <label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público 11UP Players</span></label>
 
               <div className="actions">
@@ -384,10 +403,10 @@ export default async function GuardianPortal({
                 <div>
                   <span className="page-eyebrow">PRÉ-VISUALIZAÇÃO</span>
                   <h3>Veja como o perfil aparece para o público.</h3>
-                  <p className="muted">O mesmo painel atende Free e Premium. O layout público muda conforme o plano.</p>
+                  <p className="muted">O mesmo painel atende Simples e Premium. O layout público muda conforme o plano.</p>
                 </div>
                 <div>
-                  <Link className="btn-secondary" href="/gustavo-aguiar-free" target="_blank">Modelo Free ↗</Link>
+                  <Link className="btn-secondary" href="/gustavo-aguiar-free" target="_blank">Modelo Simples ↗</Link>
                   <Link className="btn-secondary" href="/gustavo-aguiar" target="_blank">Modelo Premium ↗</Link>
                   {selected.isPublic ? <a className="btn" href={`https://players.onzeup.com.br/${selected.slug}`} target="_blank">Abrir perfil publicado ↗</a> : null}
                 </div>

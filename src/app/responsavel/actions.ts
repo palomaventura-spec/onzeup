@@ -4,10 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { hasEffectivePlayerPremium, reconcileExpiredPlayerPremiums } from "@/lib/billing-entitlements";
+import { hasEffectivePlayerPremium } from "@/lib/billing-entitlements";
 import { PLAYER_TRIAL_DAYS } from "@/lib/player-plans";
 
 const clean = (value: FormDataEntryValue | null) => String(value ?? "").trim();
+
+// Marcador interno: oculta o vídeo em destaque sem excluir o histórico Premium.
+const NO_FEATURED_VIDEO = "__11UP_NO_FEATURED_VIDEO__";
 
 function safeSlug(value: string) {
   return value
@@ -85,15 +88,13 @@ export async function savePlayer(formData: FormData) {
   });
   if (existingSlug) slug = `${slug}-${Date.now().toString().slice(-5)}`;
 
-  if (id) await reconcileExpiredPlayerPremiums({ guardianId: guardian.id });
   const currentPlayer = id
     ? await prisma.playerProfile.findFirst({
         where: { id, guardianId: guardian.id },
-        select: { plan: true, planStatus: true, premiumUntil: true, trialEndsAt: true, isComplimentary: true, complimentaryUntil: true, complimentaryPlan: true, template: true },
+        select: { plan: true, planStatus: true, premiumUntil: true, trialEndsAt: true, isComplimentary: true, complimentaryUntil: true, complimentaryPlan: true, template: true, videos: true },
       })
     : null;
   const effectivePremium = currentPlayer ? hasEffectivePlayerPremium(currentPlayer) : true;
-  const effectivePlan = effectivePremium ? "PREMIUM" : "FREE";
 
   const data = {
     name,
@@ -121,15 +122,49 @@ export async function savePlayer(formData: FormData) {
     titles: Number(clean(formData.get("titles"))) || null,
     careerHistory: clean(formData.get("careerHistory")) || null,
     achievements: clean(formData.get("achievements")) || null,
-    videos: (() => {
-      const all = clean(formData.get("videos")).split(/\r?\n/).map(v => v.trim()).filter(Boolean);
-      return (effectivePremium ? all : all.slice(0, 1)).join("\n") || null;
-    })(),
-    gallery: effectivePremium ? (clean(formData.get("gallery")) || null) : null,
-    template: effectivePremium ? (clean(formData.get("template")) || currentPlayer?.template || "PREMIUM_DARK") : "FREE_CLEAN",
-    plan: effectivePlan,
-    isPublic: formData.get("isPublic") === "on",
-    directoryVisible: formData.get("directoryVisible") === "on",
+    // Direitos de acesso controlam o que pode ser editado, nunca apagam o
+    // conteúdo Premium já salvo. A exibição é limitada nas páginas públicas.
+    ...(effectivePremium
+      ? {
+          videos: clean(formData.get("videos")) || null,
+          gallery: clean(formData.get("gallery")) || null,
+          template: clean(formData.get("template")) || currentPlayer?.template || "PREMIUM_DARK",
+        }
+      : {
+          // No Simples, somente o primeiro link pode ser substituído.
+          // Os demais vídeos Premium permanecem salvos para eventual reativação.
+          videos: (() => {
+            const raw = currentPlayer?.videos || "";
+            // Preserva também o formato JSON legado com títulos e descrições.
+            let items: Array<{ url: string; title?: string; description?: string }> = [];
+            let isJson = false;
+            try {
+              const parsed: unknown = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                isJson = true;
+                items = parsed.filter((item): item is { url: string; title?: string; description?: string } =>
+                  !!item && typeof item === "object" && typeof item.url === "string"
+                );
+              }
+            } catch { /* Lista de URLs, formato atual. */ }
+            if (!isJson) {
+              items = raw.split(/\r?\n/).map(url => url.trim()).filter(Boolean).map(url => ({ url }));
+            }
+            const previous = items[0]?.url === NO_FEATURED_VIDEO ? items.slice(1) : items.slice(1);
+            const remove = formData.get("removeFeaturedVideo") === "on";
+            const link = clean(formData.get("videos")).split(/\r?\n/).map(v => v.trim()).find(Boolean);
+            // A exclusão é explícita: campo vazio sem marcar a caixa mantém o vídeo.
+            if (!remove && !link) return raw || null;
+            const featured = remove ? NO_FEATURED_VIDEO : link!;
+            if (featured === NO_FEATURED_VIDEO && previous.length === 0) return null;
+            const next = [{ url: featured }, ...previous];
+            return isJson ? JSON.stringify(next) : next.map(item => item.url).join("\n");
+          })(),
+        }),
+    // O plano e o status são gerenciados exclusivamente pelas rotinas de
+    // assinatura/cortesia, não pelo formulário de edição do perfil.
+    isPublic: formData.get("isPublic") === "on" && formData.get("publicationConsent") === "on",
+    directoryVisible: formData.get("isPublic") === "on" && formData.get("publicationConsent") === "on" && formData.get("directoryVisible") === "on",
   };
 
   if (id) {

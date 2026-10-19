@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import PlayerPublicActions from "@/components/PlayerPublicActions";
 import { reconcileExpiredSimplePlayerCourtesies } from "@/lib/player-simple-courtesy";
-import { reconcileExpiredPlayerPremiums } from "@/lib/billing-entitlements";
+import { hasEffectivePlayerPremium, reconcileExpiredPlayerPremiums } from "@/lib/billing-entitlements";
 
 function lines(value?: string | null) {
   return String(value || "").split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
@@ -59,7 +59,9 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
   if (!player) notFound();
 
   const gallery = lines(player.gallery);
-  const videos = lines(player.videos);
+  const savedVideos = lines(player.videos);
+  const videos = (hasEffectivePlayerPremium(player) ? savedVideos : savedVideos.slice(0, 1))
+    .filter((url) => url !== "__11UP_NO_FEATURED_VIDEO__");
   const achievements = lines(player.achievements);
   const careerItems = career(player.careerHistory);
   const light = player.template === "CLEAN_LIGHT";
