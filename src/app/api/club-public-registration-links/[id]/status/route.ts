@@ -19,6 +19,8 @@ export async function PATCH(request: Request, { params }: Params) {
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   const requested = body && typeof body === "object" && !Array.isArray(body) ? (body as { status?: unknown }).status : null;
+  if (requested === "ACTIVE" && process.env.CLUB_PUBLIC_REGISTRATION_ACTIVATION_ENABLED !== "true")
+    return NextResponse.json({ error: "Ativação pública indisponível até homologação." }, { status: 503 });
   if (requested !== "ACTIVE" && requested !== "PAUSED" && requested !== "REVOKED")
     return NextResponse.json({ error: "Situação inválida." }, { status: 400 });
   try {
