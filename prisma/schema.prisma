@@ -8,7 +8,6 @@ datasource db {
 }
 
 model Organization {
-  trainingAbsenceRequests       TrainingAbsenceRequest[]
   id                           String                          @id @default(cuid())
   name                         String
   publicName                   String?
@@ -92,6 +91,7 @@ model Organization {
   staffMembers                 StaffMember[]
   staffCategoryPermissions     StaffCategoryPermission[]
   subscription                 Subscription?
+  trainingAbsenceRequests       TrainingAbsenceRequest[]
   trainingSchedules            TrainingSchedule[]
   trainingSessions             TrainingSession[]
   trainingAttendances          TrainingAttendance[]
@@ -108,6 +108,13 @@ model Organization {
 
   athleteGrowthProfiles     AthleteGrowthProfile[]
   athleteBoneAgeAssessments AthleteBoneAgeAssessment[]
+  publicRegistrationLinks PublicRegistrationLink[]
+  publicRegistrationSubmissions PublicRegistrationSubmission[]
+  birthdayReminderSettings ClubBirthdayReminderSetting[]
+  gpsProfiles GpsProfile[]
+
+  gpsSessions GpsSession[]
+
 }
 
 model Competition {
@@ -370,9 +377,6 @@ enum CompetitionTeamStatus {
 }
 
 model User {
-  absenceRequestEvents                         TrainingAbsenceRequestEvent[] @relation("AbsenceRequestEventActor")
-  absenceRequestsReviewed                      TrainingAbsenceRequest[]      @relation("AbsenceRequestReviewer")
-  absenceRequestsSubmitted                     TrainingAbsenceRequest[]      @relation("AbsenceRequestSubmitter")
   id                                           String                       @id @default(cuid())
   name                                         String
   email                                        String                       @unique
@@ -412,6 +416,9 @@ model User {
   athleteDataAuditLogs                         AthleteDataAuditLog[]        @relation("AthleteDataAuditActor")
   recordedMatchAthleteStats                    MatchAthleteStat[]           @relation("MatchAthleteStatRecorder")
   recordedTrainingSessions                     TrainingSession[]            @relation("TrainingSessionRecorder")
+  absenceRequestsSubmitted                     TrainingAbsenceRequest[]      @relation("AbsenceRequestSubmitter")
+  absenceRequestsReviewed                      TrainingAbsenceRequest[]      @relation("AbsenceRequestReviewer")
+  absenceRequestEvents                         TrainingAbsenceRequestEvent[] @relation("AbsenceRequestEventActor")
   recordedTrainingAttendances                  TrainingAttendance[]         @relation("TrainingAttendanceRecorder")
   trainingAuditLogs                            TrainingAuditLog[]           @relation("TrainingAuditActor")
   athleteHistoryEntriesAuthored                AthleteHistoryEntry[]        @relation("AthleteHistoryEntryAuthor")
@@ -434,6 +441,10 @@ model User {
   recordedBoneAgeAssessments AthleteBoneAgeAssessment[] @relation("AthleteBoneAgeRecorder")
 
   @@index([organizationId])
+  publicRegistrationLinksCreated PublicRegistrationLink[] @relation("PublicRegistrationLinkCreator")
+  publicRegistrationSubmissionsReviewed PublicRegistrationSubmission[] @relation("PublicRegistrationSubmissionReviewer")
+  createdGpsSessions GpsSession[]
+
 }
 
 model ClubUserInvite {
@@ -501,6 +512,12 @@ model Category {
   @@unique([organizationId, name, sport, type])
   @@index([organizationId])
   @@index([organizationId, sport, type, active])
+  publicRegistrationLinks PublicRegistrationLink[]
+  publicRegistrationSubmissions PublicRegistrationSubmission[]
+  gpsProfiles GpsProfile[]
+
+  gpsSessions GpsSession[]
+
 }
 
 model CategoryEvaluationTarget {
@@ -512,7 +529,7 @@ model CategoryEvaluationTarget {
   evaluationCategory Category @relation("EvaluationCategoryTargets", fields: [evaluationCategoryId], references: [id], onDelete: Cascade)
   targetCategory     Category @relation("EvaluationTargetCategories", fields: [targetCategoryId], references: [id], onDelete: Cascade)
 
-  @@unique([evaluationCategoryId, targetCategoryId])
+  @@unique([evaluationCategoryId, targetCategoryId], map: "CategoryEvaluationTarget_evaluationCategoryId_targetCategoryId_")
   @@index([evaluationCategoryId])
   @@index([targetCategoryId])
 }
@@ -547,10 +564,10 @@ model StaffMember {
 
   @@index([organizationId])
   @@index([categoryId])
+  birthDate DateTime?
 }
 
 model Athlete {
-  absenceRequests             TrainingAbsenceRequest[]
   id                         String                       @id @default(cuid())
   name                       String
   nickname                   String?
@@ -574,6 +591,8 @@ model Athlete {
   category                   Category?                    @relation(fields: [categoryId], references: [id])
   evaluationTargetCategory   Category?                    @relation("AthleteEvaluationTargetCategory", fields: [evaluationTargetCategoryId], references: [id], onDelete: SetNull)
   organization               Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  healthDeclarations AthleteHealthDeclaration[]
+  absenceRequests             TrainingAbsenceRequest[]
   memberships                AthleteMembership[]
   callUps                    CallUp[]
   charges                    Charge[]
@@ -613,6 +632,7 @@ model Athlete {
   @@index([categoryId])
   @@index([evaluationTargetCategoryId])
   @@index([name])
+  publicRegistrationSubmissions PublicRegistrationSubmission[]
 }
 
 model AthleteSportRegistration {
@@ -728,6 +748,7 @@ model AthleteGuardian {
 
   @@index([athleteId, relation])
   @@index([athleteId, isPrimary])
+  birthDate DateTime?
 }
 
 model AthleteRegistrationRequest {
@@ -795,6 +816,8 @@ model AthleteDocument {
   uploadedBy               User?                        @relation("AthleteDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   reviewedBy               User?                        @relation("AthleteDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
   requirement              CategoryDocumentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  sourcePublicRegistrationDocumentId String? @unique
+  sourcePublicRegistrationDocument PublicRegistrationDocument? @relation(fields: [sourcePublicRegistrationDocumentId], references: [id], onDelete: SetNull)
 
   growthBoneAgeAssessments AthleteBoneAgeAssessment[] @relation("AthleteGrowthBoneAgeDocument")
 
@@ -829,6 +852,7 @@ model CategoryDocumentRequirement {
   organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   category     Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   documents    AthleteDocument[]
+  publicRegistrationRequirements PublicRegistrationDocumentRequirement[]
 
   @@unique([categoryId, key])
   @@index([organizationId, active])
@@ -895,7 +919,6 @@ model AthletePreRegistrationRequest {
 }
 
 model TrainingSchedule {
-  absenceRequests           TrainingAbsenceRequest[]
   id                       String             @id @default(cuid())
   date                     DateTime?
   weekday                  Int
@@ -914,6 +937,7 @@ model TrainingSchedule {
   organization             Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   responsibleStaffMember   StaffMember?       @relation("TrainingScheduleResponsible", fields: [responsibleStaffMemberId], references: [id], onDelete: SetNull)
   sessions                 TrainingSession[]
+  absenceRequests           TrainingAbsenceRequest[]
   auditLogs                TrainingAuditLog[]
 
   @@index([organizationId])
@@ -957,6 +981,8 @@ model TrainingSession {
   @@index([recordedByUserId])
   @@index([responsibleStaffMemberId])
   @@index([status, startsAt])
+  gpsSessions GpsSession[]
+
 }
 
 model TrainingAttendance {
@@ -1128,7 +1154,7 @@ model AthleteEligibilityIssue {
   @@index([resolvedByUserId])
   @@index([authorizedByUserId])
   @@index([authorizationRevokedByUserId])
-  @@index([athleteId, authorizedAt, authorizationRevokedAt])
+  @@index([athleteId, authorizedAt, authorizationRevokedAt], map: "AthleteEligibilityIssue_athleteId_authorizedAt_authorizationRev")
 }
 
 model AthleteEvaluation {
@@ -1316,7 +1342,7 @@ model AthleteBoneAgeAssessment {
   recordedBy     User?            @relation("AthleteBoneAgeRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
   reportDocument AthleteDocument? @relation("AthleteGrowthBoneAgeDocument", fields: [reportDocumentId], references: [id], onDelete: SetNull)
 
-  @@index([organizationId, athleteId, examinedAt])
+  @@index([organizationId, athleteId, examinedAt], map: "AthleteBoneAgeAssessment_organizationId_athleteId_examinedAt_id")
   @@index([athleteId, examinedAt])
   @@index([recordedByUserId])
   @@index([reportDocumentId])
@@ -1427,9 +1453,21 @@ model AthleteGpsRecord {
   notes                       String?
   sourceFileName              String?
   rawData                     Json?
+  averageHeartRateBpm         Int?
+  gpsSessionId                String?
+  highIntensityAccelerations  Int?
+  highIntensityDecelerations  Int?
+  maxHeartRateBpm             Int?
+  peakAccelerationMps2        Decimal?         @db.Decimal(7, 3)
+  peakDecelerationMps2        Decimal?         @db.Decimal(7, 3)
+  sessionRpe                  Int?
+  speedZones                  Json?
+  sprintDistanceMeters        Decimal?         @db.Decimal(10, 2)
+  timeBlocks                  Json?
   createdAt                   DateTime      @default(now())
   updatedAt                   DateTime      @updatedAt
 
+  gpsSession      GpsSession?      @relation(fields: [gpsSessionId], references: [id], onDelete: SetNull)
   organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   athlete         Athlete          @relation(fields: [athleteId], references: [id], onDelete: Cascade)
   trainingSession TrainingSession? @relation(fields: [trainingSessionId], references: [id], onDelete: SetNull)
@@ -1443,6 +1481,8 @@ model AthleteGpsRecord {
   @@index([trainingSessionId])
   @@index([matchId])
   @@index([recordedByUserId])
+  @@index([gpsSessionId])
+  @@unique([gpsSessionId, athleteId])
 }
 
 model PerformanceReport {
@@ -1658,6 +1698,8 @@ model Match {
   @@index([categoryId, startsAt])
   @@index([callUpRuleId])
   @@index([formationTemplateId])
+  gpsSessions GpsSession[]
+
 }
 
 model MatchStaffAssignment {
@@ -2636,7 +2678,7 @@ model AthleteHistoryEntry {
   @@index([organizationId, athleteId, occurredAt])
   @@index([athleteId, source, occurredAt])
   @@index([organizationId, source, sourceId])
-  @@index([organizationId, followUpRequired, followUpResolvedAt])
+  @@index([organizationId, followUpRequired, followUpResolvedAt], map: "AthleteHistoryEntry_organizationId_followUpRequired_followUpRes")
   @@index([authorUserId])
   @@index([followUpResolvedByUserId])
 }
@@ -2808,6 +2850,177 @@ model DocumentNoticeLog {
   @@index([organizationId, playerId, createdAt])
 }
 
+// ENTREGA 1.3A — Estrutura preparatória. Links permanecem DRAFT até a etapa de formulário e documentos.
+enum PublicRegistrationLinkStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  REVOKED
+}
+
+model PublicRegistrationLink {
+  id              String                       @id @default(cuid())
+  organizationId  String
+  categoryId      String
+  createdByUserId String
+  name            String
+  tokenHash       String                       @unique
+  status          PublicRegistrationLinkStatus @default(DRAFT)
+  expiresAt       DateTime
+  maxSubmissions  Int?
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy User @relation("PublicRegistrationLinkCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  requirements PublicRegistrationDocumentRequirement[]
+  submissions PublicRegistrationSubmission[]
+  @@index([organizationId, status, createdAt])
+  @@index([categoryId, status])
+  @@index([expiresAt])
+}
+
+// 11UP Club 1.3A: cada envio pertence a um link e nao consome o link.
+enum PublicRegistrationSubmissionStatus {
+  PENDING_DOCUMENTS
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum PublicRegistrationDocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PublicRegistrationDocumentOwner {
+  ATHLETE
+  FATHER
+  MOTHER
+  GUARDIAN
+}
+
+enum ClubBirthdayAudience {
+  ATHLETES
+  GUARDIANS
+  STAFF
+}
+
+model PublicRegistrationDocumentRequirement {
+  id             String  @id @default(cuid())
+  linkId         String
+  label          String
+  owner          PublicRegistrationDocumentOwner @default(ATHLETE)
+  required       Boolean @default(true)
+  expires        Boolean @default(false)
+  sortOrder      Int @default(0)
+  active         Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  link           PublicRegistrationLink @relation(fields: [linkId], references: [id], onDelete: Restrict)
+  documents      PublicRegistrationDocument[]
+  categoryRequirementId String?
+  categoryRequirement CategoryDocumentRequirement? @relation(fields: [categoryRequirementId], references: [id], onDelete: SetNull)
+  @@index([categoryRequirementId])
+  @@index([linkId, active, sortOrder], map: "PublicRegistrationDocumentRequirement_linkId_active_sortOrder_i")
+}
+
+model PublicRegistrationSubmission {
+  id               String @id @default(cuid())
+  linkId           String
+  organizationId   String
+  categoryId       String
+  status           PublicRegistrationSubmissionStatus @default(SUBMITTED)
+  payloadEncrypted String
+  uploadTokenHash String? @unique
+  uploadTokenExpiresAt DateTime?
+  photoStorageKey String?
+  reviewedByUserId String?
+  reviewNotesEncrypted String?
+  linkedAthleteId  String?
+  submittedAt      DateTime @default(now())
+  reviewedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  link             PublicRegistrationLink @relation(fields: [linkId], references: [id], onDelete: Restrict)
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category         Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  reviewedBy       User? @relation("PublicRegistrationSubmissionReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  linkedAthlete    Athlete? @relation(fields: [linkedAthleteId], references: [id], onDelete: SetNull)
+  documents        PublicRegistrationDocument[]
+  reviewLogs PublicRegistrationReviewLog[]
+  healthDeclarations AthleteHealthDeclaration[]
+  @@index([organizationId, status, submittedAt], map: "PublicRegistrationSubmission_organizationId_status_submittedAt_")
+  @@index([linkId, submittedAt])
+  @@index([linkedAthleteId])
+}
+
+model PublicRegistrationReviewLog {
+  id String @id @default(cuid())
+  submissionId String
+  organizationId String
+  actorUserId String
+  action String
+  previousStatus PublicRegistrationSubmissionStatus
+  newStatus PublicRegistrationSubmissionStatus
+  reasonEncrypted String?
+  createdAt DateTime @default(now())
+  submission PublicRegistrationSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  @@index([submissionId, createdAt])
+  @@index([organizationId, createdAt])
+}
+
+model PublicRegistrationDocument {
+  id               String @id @default(cuid())
+  submissionId     String
+  requirementId    String?
+  labelSnapshot    String
+  ownerSnapshot    PublicRegistrationDocumentOwner
+  storageKey       String @unique
+  originalFileName String
+  mimeType         String
+  sizeBytes        Int
+  expiresAt        DateTime?
+  status           PublicRegistrationDocumentStatus @default(PENDING)
+  reviewedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  submission       PublicRegistrationSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  requirement      PublicRegistrationDocumentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  athleteDocuments AthleteDocument[]
+  @@index([submissionId, status])
+}
+
+/// Registro historico imutavel da declaracao preventiva da inscricao coletiva.
+/// Nao representa aptidao medica e nunca deve ser publicado no Player.
+model AthleteHealthDeclaration {
+  id                 String @id @default(cuid())
+  organizationId     String
+  athleteId          String
+  sourceSubmissionId String @unique
+  questionnaireEncrypted String
+  declaredAt         DateTime
+  recordedAt         DateTime @default(now())
+  recordedByUserId   String?
+  athlete            Athlete @relation(fields: [athleteId], references: [id], onDelete: Restrict)
+  sourceSubmission   PublicRegistrationSubmission @relation(fields: [sourceSubmissionId], references: [id], onDelete: Restrict)
+  @@index([organizationId, athleteId, recordedAt])
+}
+
+model ClubBirthdayReminderSetting {
+  id             String @id @default(cuid())
+  organizationId String
+  audience       ClubBirthdayAudience
+  leadDays       Int? // null=disabled, 0=today, 7 or 30=advance
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@unique([organizationId, audience])
+}
+
 /// Solicitação privada de justificativa feita pelo responsável; não altera presença automaticamente.
 model TrainingAbsenceRequest {
   id             String                       @id @default(cuid())
@@ -2868,4 +3081,66 @@ enum TrainingAbsenceRequestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+
+model GpsProfile {
+  id             String       @id @default(cuid())
+  organizationId String
+  categoryId     String?
+  name           String
+  sport          SportType    @default(BOTH)
+  active         Boolean      @default(true)
+  isDefault      Boolean      @default(false)
+  providerName   String?
+  enabledMetrics Json?
+  speedZones     Json?
+  thresholds     Json?
+  columnMapping  Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  category       Category?    @relation(fields: [categoryId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sessions        GpsSession[]
+
+  @@index([organizationId, categoryId])
+  @@index([organizationId, sport, active])
+}
+
+
+model GpsSession {
+  id                String             @id @default(cuid())
+  organizationId    String
+  categoryId        String?
+  trainingSessionId String?
+  matchId           String?
+  profileId         String?
+  createdByUserId   String?
+  context           GpsContext
+  sport             SportType          @default(BOTH)
+  source            GpsDataSource      @default(MANUAL)
+  activityAt        DateTime
+  location          String?
+  durationMinutes   Int?
+  sourceFileName    String?
+  notes             String?
+  profileSnapshot   Json?
+  importMetadata    Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime  @updatedAt
+  athleteRecords  AthleteGpsRecord[]
+  category          Category?          @relation(fields: [categoryId], references: [id])
+  createdBy         User?              @relation(fields: [createdByUserId], references: [id])
+  match             Match?             @relation(fields: [matchId], references: [id])
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  profile           GpsProfile?        @relation(fields: [profileId], references: [id])
+  trainingSession   TrainingSession?   @relation(fields: [trainingSessionId], references: [id])
+
+  @@index([categoryId, activityAt])
+  @@index([createdByUserId])
+  @@index([matchId])
+  @@index([organizationId, activityAt])
+  @@index([organizationId, sport, activityAt])
+  @@index([profileId])
+  @@index([trainingSessionId])
 }
