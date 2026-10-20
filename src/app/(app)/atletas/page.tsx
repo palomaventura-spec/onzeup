@@ -1291,7 +1291,7 @@ const positions = [
     }}
   >
     <Icon name="file" size={17} />
-    Links de cadastro
+    Links coletivos
   </Link>
 ) : null}
 
@@ -1316,7 +1316,7 @@ const positions = [
                     }}
                   >
                     <Icon name="file" size={17} />
-                    Cadastro por link
+                    Inscrições recebidas
                   </Link>
                 ) : null}
 
@@ -1341,7 +1341,7 @@ const positions = [
                     }}
                   >
                     <Icon name="file" size={17} />
-                    Cadastro digital
+                    Pré-cadastro individual
                   </Link>
                 ) : null}
 

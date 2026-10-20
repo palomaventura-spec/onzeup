@@ -122,7 +122,7 @@ export default function LinksCadastroClient({ categories }: { categories: Catego
     <main style={{ padding: "24px clamp(16px, 4vw, 40px)", display: "grid", gap: 22, maxWidth: 1120, margin: "0 auto" }}>
       <header style={{ padding: 24, borderRadius: 22, background: "linear-gradient(115deg,#071923,#123820)", color: "white" }}>
         <p style={{ color: "#a3e635", fontSize: 12, fontWeight: 800, letterSpacing: ".1em" }}>11UP CLUB · ATLETAS</p>
-        <h1 style={{ margin: "8px 0", fontSize: "clamp(28px, 4vw, 42px)", color: "#ffffff" }}>Links de cadastro</h1>
+        <h1 style={{ margin: "8px 0", fontSize: "clamp(28px, 4vw, 42px)", color: "#ffffff" }}>Links coletivos de inscrição</h1>
         <p style={{ color: "#d7e1e2" }}>Prepare links coletivos reutilizáveis por categoria de avaliação ou regular e acompanhe os cadastros recebidos.</p>
         <nav style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
           <Link href="/atletas" style={{ color: "white" }}>← Voltar para atletas</Link>
