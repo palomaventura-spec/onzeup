@@ -37,7 +37,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       select: { status: true, payloadEncrypted: true, linkedAthleteId: true, categoryId: true },
     });
     if (!submission) return NextResponse.json({ error: "Inscrição não encontrada." }, { status: 404 });
-    if (submission.status !== "SUBMITTED") {
+    if (submission.status !== "SUBMITTED" || submission.linkedAthleteId !== null) {
       return NextResponse.json({ error: "A verificação de duplicidade está disponível para inscrições finalizadas." }, { status: 409 });
     }
 
@@ -60,7 +60,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         id: true, name: true, nickname: true, birthYear: true, categoryId: true,
         privateData: { select: { birthDate: true } },
       },
-      take: 1000,
+
       orderBy: { name: "asc" },
     });
 
