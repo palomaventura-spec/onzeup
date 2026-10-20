@@ -3,6 +3,7 @@ import ModuleHero from "@/components/ModuleHero";
 import WhatsAppAction from "@/components/WhatsAppAction";
 import CommunicationComposer from "./CommunicationComposer";
 import TrainingCommunicationShortcut from "./TrainingCommunicationShortcut";
+import TrainingAbsenceInbox from "./TrainingAbsenceInbox";
 import { prisma } from "@/lib/prisma";
 import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
@@ -107,6 +108,7 @@ export default async function CommunicationPage() {
         />
       ) : null}
       <div className="communication-grid">
+        <TrainingAbsenceInbox />
         <section className="card">
           <div className="section-title-row">
             <div><span className="page-eyebrow">JOGOS</span><h2>Convocações</h2></div>

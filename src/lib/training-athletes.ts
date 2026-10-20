@@ -16,33 +16,61 @@ export async function findEligibleTrainingAthletes(
       ? ["BOTH"]
       : ["BOTH", sport];
 
-  const evaluationTargets =
-    await prisma.categoryEvaluationTarget.findMany({
-      where: {
-        targetCategoryId: categoryId,
-        evaluationCategory: {
-          organizationId,
-          active: true,
-          type: "EVALUATION",
-          sport: {
-            in: allowedSports,
+  // A chamada pertence a uma categoria-base (regular) e inclui
+  // os atletas das categorias de avaliacao vinculadas a ela.
+  // A resolucao funciona tambem quando o treino foi criado na
+  // propria categoria de avaliacao.
+  const selectedCategory = await prisma.category.findFirst({
+    where: { id: categoryId, organizationId, active: true },
+    select: { id: true, type: true },
+  });
+
+  if (!selectedCategory) return [];
+
+  const linkedRegularTargets =
+    selectedCategory.type === "EVALUATION"
+      ? await prisma.categoryEvaluationTarget.findMany({
+          where: {
+            evaluationCategoryId: categoryId,
+            targetCategory: {
+              organizationId,
+              active: true,
+              type: "STANDARD",
+              sport: { in: allowedSports },
+            },
           },
-        },
-      },
-      select: {
-        evaluationCategoryId: true,
-      },
-    });
+          select: { targetCategoryId: true },
+        })
+      : [];
 
-  const evaluationCategoryIds =
-    evaluationTargets.map(
-      (item) => item.evaluationCategoryId,
-    );
+  const regularCategoryIds =
+    selectedCategory.type === "EVALUATION"
+      ? linkedRegularTargets.map((item) => item.targetCategoryId)
+      : [categoryId];
 
-  const eligibleCategoryIds = [
-    categoryId,
-    ...evaluationCategoryIds,
-  ];
+  const linkedEvaluationTargets =
+    regularCategoryIds.length > 0
+      ? await prisma.categoryEvaluationTarget.findMany({
+          where: {
+            targetCategoryId: { in: regularCategoryIds },
+            evaluationCategory: {
+              organizationId,
+              active: true,
+              type: "EVALUATION",
+              sport: { in: allowedSports },
+            },
+          },
+          select: { evaluationCategoryId: true },
+        })
+      : [];
+
+  const eligibleCategoryIds = Array.from(
+    new Set([
+      ...regularCategoryIds,
+      ...linkedEvaluationTargets.map((item) => item.evaluationCategoryId),
+      categoryId,
+    ]),
+  );
 
   const categories =
     await prisma.category.findMany({

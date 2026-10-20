@@ -8,6 +8,7 @@ datasource db {
 }
 
 model Organization {
+  trainingAbsenceRequests       TrainingAbsenceRequest[]
   id                           String                          @id @default(cuid())
   name                         String
   publicName                   String?
@@ -369,6 +370,9 @@ enum CompetitionTeamStatus {
 }
 
 model User {
+  absenceRequestEvents                         TrainingAbsenceRequestEvent[] @relation("AbsenceRequestEventActor")
+  absenceRequestsReviewed                      TrainingAbsenceRequest[]      @relation("AbsenceRequestReviewer")
+  absenceRequestsSubmitted                     TrainingAbsenceRequest[]      @relation("AbsenceRequestSubmitter")
   id                                           String                       @id @default(cuid())
   name                                         String
   email                                        String                       @unique
@@ -546,6 +550,7 @@ model StaffMember {
 }
 
 model Athlete {
+  absenceRequests             TrainingAbsenceRequest[]
   id                         String                       @id @default(cuid())
   name                       String
   nickname                   String?
@@ -890,6 +895,7 @@ model AthletePreRegistrationRequest {
 }
 
 model TrainingSchedule {
+  absenceRequests           TrainingAbsenceRequest[]
   id                       String             @id @default(cuid())
   date                     DateTime?
   weekday                  Int
@@ -2800,4 +2806,66 @@ model DocumentNoticeLog {
   @@index([organizationId, createdAt])
   @@index([organizationId, athleteId, createdAt])
   @@index([organizationId, playerId, createdAt])
+}
+
+/// Solicitação privada de justificativa feita pelo responsável; não altera presença automaticamente.
+model TrainingAbsenceRequest {
+  id             String                       @id @default(cuid())
+  organizationId String
+  athleteId      String
+  scheduleId     String
+  submittedById  String
+  reason         String
+  details        String?                      @db.Text
+  status         TrainingAbsenceRequestStatus @default(PENDING)
+  reviewedById   String?
+  reviewedAt     DateTime?
+  reviewNotes    String?                      @db.Text
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  athlete      Athlete @relation(fields: [athleteId], references: [id], onDelete: Restrict)
+  schedule     TrainingSchedule @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  submittedBy  User @relation("AbsenceRequestSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  reviewedBy   User? @relation("AbsenceRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  attachments  TrainingAbsenceAttachment[]
+  events       TrainingAbsenceRequestEvent[]
+
+  @@index([organizationId, status, createdAt])
+  @@index([athleteId, scheduleId])
+  @@index([scheduleId, status])
+  @@index([submittedById, createdAt])
+}
+
+/// Arquivo privado: storageKey nunca é servido sem autenticação/autorização por pedido.
+model TrainingAbsenceAttachment {
+  id               String @id @default(cuid())
+  requestId        String
+  storageKey       String @unique
+  originalFileName String
+  mimeType         String
+  sizeBytes        Int
+  checksumSha256   String
+  createdAt        DateTime @default(now())
+  request          TrainingAbsenceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  @@index([requestId])
+}
+
+/// Trilhas de auditoria de envio e análise; incluir metadata mínima, nunca dados médicos completos.
+model TrainingAbsenceRequestEvent {
+  id        String @id @default(cuid())
+  requestId String
+  actorId   String?
+  action    String
+  createdAt DateTime @default(now())
+  request   TrainingAbsenceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  actor     User? @relation("AbsenceRequestEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+  @@index([requestId, createdAt])
+}
+
+enum TrainingAbsenceRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

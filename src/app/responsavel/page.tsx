@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import {
   ArrowRight,
   Bell,
+  CalendarDays,
   ExternalLink,
   UserRound,
   Globe2,
@@ -245,6 +246,23 @@ export default async function GuardianPortal({
                         : `${unreadCommunicationCount} comunicados não lidos`
                       : "Ver comunicação"}
                   </span>
+                </Link>
+
+                <Link
+                  className={styles.actionCard}
+                  href={`/responsavel/agenda?player=${selected.id}`}
+                >
+                  <div className={styles.cardTop}>
+                    <span className={styles.iconBox}>
+                      <CalendarDays size={22} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                    <ArrowRight className={styles.cardArrow} size={20} aria-hidden="true" />
+                  </div>
+                  <div className={styles.actionCopy}>
+                    <h3>Minha Agenda Esportiva</h3>
+                    <p>Acompanhe treinos, jogos e convocações dos clubes vinculados.</p>
+                  </div>
+                  <span className={styles.cardFooter}>Ver minha agenda</span>
                 </Link>
 
                 <Link
