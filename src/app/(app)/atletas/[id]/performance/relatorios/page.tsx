@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -386,9 +387,9 @@ export default async function AthleteReportsPage({
 
               <div className="athlete-report-v8-card-actions">
                 <Link href={card.sourceHref}>{card.sourceLabel}</Link>
-                <button className="btn" type="submit">
+                <PendingSubmitButton pendingText="Gerando…" className="btn" type="submit">
                   Gerar relatório
-                </button>
+                </PendingSubmitButton>
               </div>
             </form>
           </article>
@@ -432,7 +433,7 @@ export default async function AthleteReportsPage({
                 <Link href={`/atletas/${athlete.id}/performance/treino`}>
                   Ver registros do treino
                 </Link>
-                <button className="btn" type="submit">Gerar relatório</button>
+                <PendingSubmitButton pendingText="Gerando…" className="btn" type="submit">Gerar relatório</PendingSubmitButton>
               </div>
             </form>
           ) : (
@@ -481,9 +482,9 @@ export default async function AthleteReportsPage({
                 <Link href={`/atletas/${athlete.id}/performance/avaliacoes`}>
                   Ver avaliações
                 </Link>
-                <button className="btn" type="submit">
+                <PendingSubmitButton pendingText="Gerando…" className="btn" type="submit">
                   Gerar relatório
-                </button>
+                </PendingSubmitButton>
               </div>
             </form>
           ) : (
@@ -541,7 +542,7 @@ export default async function AthleteReportsPage({
                     Vou conferir o PDF e a autorização de compartilhamento antes de enviá-lo.
                   </label>
                 ) : null}
-                <button className="btn" type="submit">Gerar {audience === "INTERNAL" ? "prontuário interno" : "prontuário compartilhável"}</button>
+                <PendingSubmitButton pendingText="Gerando…" className="btn" type="submit">Gerar {audience === "INTERNAL" ? "prontuário interno" : "prontuário compartilhável"}</PendingSubmitButton>
               </form>
             ))}
           </div>

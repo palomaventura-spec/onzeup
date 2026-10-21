@@ -4,6 +4,7 @@ import PerformanceRadarChart from "@/components/PerformanceRadarChart";
 import { requireClubPermission } from "@/lib/club-access";
 import { hasEffectiveClubElite } from "@/lib/billing-entitlements";
 import { prisma } from "@/lib/prisma";
+import { format11UPName, parsePerformanceClassification, performanceStage, performanceScorePercentage } from "@/lib/performance-model-catalog";
 
 import PerformanceAutoPrint from "./PerformanceAutoPrint";
 
@@ -61,7 +62,7 @@ export default async function PerformanceIndividualPdfPage({
       include: {
         athlete: { include: { category: true } },
         evaluator: { select: { name: true } },
-        template: { select: { name: true } },
+        template: { select: { name: true, version: true, modelFamilyKey: true, classificationJson: true } },
         scores: {
           orderBy: [{ sortOrder: "asc" }, { metricLabel: "asc" }],
         },
@@ -99,6 +100,9 @@ export default async function PerformanceIndividualPdfPage({
       athleteId: evaluation.athleteId,
       organizationId: user.organizationId,
       athleteRole: evaluation.athleteRole,
+      ...(evaluation.template?.modelFamilyKey ? {
+        template: { is: { modelFamilyKey: evaluation.template.modelFamilyKey } },
+      } : {}),
       status: "FINALIZED",
       evaluatedAt: { lte: evaluation.evaluatedAt },
     },
@@ -106,6 +110,8 @@ export default async function PerformanceIndividualPdfPage({
     include: { scores: true },
   });
 
+  const stageConfig = parsePerformanceClassification(evaluation.template?.classificationJson);
+  const stageResult = performanceStage(performanceScorePercentage(evaluation.scores), stageConfig);
   const overall = average(evaluation.scores);
   const radarItems = AREAS.map(([key, label]) => ({
     label,
@@ -140,7 +146,7 @@ export default async function PerformanceIndividualPdfPage({
               {organization.publicName || organization.name}
             </div>
           </div>
-          <h1>{evaluation.title || "Relatório de avaliação"}</h1>
+          <h1>{format11UPName(evaluation.title || "Relatório de avaliação")}</h1>
           <div>
             {evaluation.athlete.name} •{" "}
             {evaluation.athlete.category?.name || "Sem categoria"} •{" "}
@@ -155,6 +161,11 @@ export default async function PerformanceIndividualPdfPage({
         </div>
       </header>
 
+      {stageResult ? (
+        <section className="pr-note" style={{marginBottom:12}}>
+          <strong>Classificação do modelo:</strong> {stageResult} · Versão {evaluation.template?.version}
+        </section>
+      ) : null}
       <section className="pr-summary">
         <div className="pr-box">
           <small>Resultado geral</small>
@@ -166,7 +177,7 @@ export default async function PerformanceIndividualPdfPage({
         </div>
         <div className="pr-box">
           <small>Classificação</small>
-          <strong>{classification(overall)}</strong>
+          <strong>{stageResult ?? classification(overall)}</strong>
         </div>
         <div className="pr-box">
           <small>Função avaliada</small>

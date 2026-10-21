@@ -1,0 +1,39 @@
+/* Avaliação Técnico-Tática — experiência de pontuação inspirada na planilha original. */
+.root {display:grid;gap:18px;width:100%;min-width:0;color:#15252d;}
+.intro {display:flex;align-items:start;justify-content:space-between;gap:18px;border:1px solid #dbe4e8;border-radius:18px;background:#fff;padding:24px;}
+.intro h2{margin:7px 0;font-size:clamp(21px,2vw,28px);line-height:1.2;color:#112532;}
+.intro p{margin:6px 0 0;max-width:750px;color:#647581;font-size:13px;line-height:1.6;}
+.eyebrow{font-size:10px;letter-spacing:.12em;font-weight:900;color:#5e820d;}
+.progress{min-width:190px;max-width:250px;width:24%;display:grid;gap:6px;border:1px solid #dce6e9;border-radius:12px;padding:13px;background:#f8fafb;}
+.progress span{font-size:11px;color:#607381;font-weight:750;}
+.progress strong{font-size:22px;line-height:1.25;color:#142a2d;}
+.progressTrack{height:7px;background:#e2e9eb;border-radius:99px;overflow:hidden;}
+.progressFill{height:100%;background:#9ddb16;transition:width 140ms ease;}
+.scoreGuide{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;background:#f4f8eb;border:1px solid #d7e6bb;padding:12px 18px;border-radius:12px;font-size:12px;line-height:1.6;color:#486022;}
+.scoreGuide strong{font-weight:900;}
+.area{background:#fff;border:1px solid #dce5e9;border-radius:18px;padding:20px 22px;min-width:0;}
+.areaHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5eaed;padding-bottom:14px;margin-bottom:4px;}
+.areaHeading h3{margin:0;font-size:17px;line-height:1.35;color:#142836;}
+.areaHeading>span{font-size:11px;color:#66800e;background:#f0f8d9;border-radius:99px;padding:6px 10px;font-weight:800;white-space:nowrap;}
+.rows{display:grid;}
+.row{border:0;min-width:0;border-bottom:1px solid #ebeff1;margin:0;padding:18px 0;display:grid;grid-template-columns:minmax(240px,1.6fr) minmax(215px,1fr);gap:8px 18px;align-items:center;}
+.row:last-child{border-bottom:0;padding-bottom:2px;}
+.criterionName{grid-column:1;grid-row:1;display:flex;align-items:center;gap:9px;padding:0;max-width:100%;font-size:13px;font-weight:850;line-height:1.45;color:#203540;}
+.index{width:25px;height:25px;flex:0 0 25px;display:grid;place-items:center;border-radius:8px;background:#f0f4f5;color:#66808d;font-size:11px;}
+.scoreOptions{grid-column:2;grid-row:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;}
+.scoreOption{display:flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;min-width:0;min-height:45px;padding:8px!important;border:1px solid #d6e1e5;border-radius:10px;background:#fff;color:#334651;cursor:pointer;font-size:15px;font-weight:900;transition:background .15s,border-color .15s;}
+.scoreOption:hover{border-color:#80b829;background:#f8fbea;}
+.scoreOption.selected{border-color:#91c900;background:#e9f8bc;color:#263500;box-shadow:0 0 0 1px #91c900 inset;}
+.scoreOption .scoreInput{width:15px!important;min-width:15px!important;max-width:15px!important;height:15px!important;min-height:15px!important;margin:0!important;padding:0!important;accent-color:#669e00;flex:0 0 15px;}
+.notes{grid-column:1/-1;margin:0 0 0 34px;}
+.notes summary{cursor:pointer;color:#607785;font-size:11px;font-weight:750;max-width:max-content;}
+.notes textarea{margin-top:8px;width:min(100%,650px);min-height:72px;border-radius:10px;padding:10px 12px;box-sizing:border-box;background:#fff;color:#203740;border:1px solid #d8e2e6;}
+.result{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 24px;border-radius:16px;background:#f4f9e9;border:1px solid #cfe69b;}
+.result>div:first-child{display:grid;gap:5px;}
+.result span{font-size:11px;font-weight:800;color:#577409;}
+.result strong{font-size:21px;color:#1d350c;}
+.result p{margin:0;color:#54682d;font-size:12px;line-height:1.5;}
+.thresholds{font-size:11px;line-height:1.7;color:#637638;max-width:340px;text-align:right;}
+@media(max-width:900px){.intro{flex-direction:column;}.progress{width:100%;max-width:none;}.row{grid-template-columns:1fr;gap:12px;}.criterionName,.scoreOptions{grid-column:1;grid-row:auto;}.scoreOptions{max-width:420px;}.notes{grid-column:1;margin-left:0;}.result{align-items:flex-start;flex-direction:column;}.thresholds{text-align:left;}}
+@media(max-width:540px){.intro,.area{padding:15px;}.areaHeading h3{font-size:15px;}.scoreOptions{max-width:none;}.row{padding:14px 0;}.scoreOption{min-height:48px;}.result{padding:16px;}}
+@media(prefers-reduced-motion:reduce){.scoreOption,.progressFill{transition:none;}}

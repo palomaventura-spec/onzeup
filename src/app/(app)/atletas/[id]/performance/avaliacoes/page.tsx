@@ -5,7 +5,9 @@ import SafeAvatar from "@/components/SafeAvatar";
 import ModuleTabs from "@/components/ModuleTabs";
 
 import { requireClubPermission } from "@/lib/club-access";
+import { hasClubPermission } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
+import { format11UPName } from "@/lib/performance-model-catalog";
 
 type EvaluationKpiIcon = "total" | "finalized" | "draft" | "archived";
 
@@ -116,6 +118,7 @@ export default async function AthleteEvaluationsPage({
             },
           },
           scores: true,
+          template: {select: {name: true, criteria: {where: {active: true}, select: {id: true}}}},
         },
       },
     },
@@ -216,6 +219,9 @@ export default async function AthleteEvaluationsPage({
         ]}
       />
 
+      {hasClubPermission(user, "PERFORMANCE_MANAGE") && user.role !== "SUPER_ADMIN" ? (
+        <div style={{margin:"12px 0"}}><Link className="btn btn-secondary" href="/performance/modelos">Gerenciar modelos de avaliação</Link></div>
+      ) : null}
       <section className="athlete-performance-v4-heading athlete-evaluations-v7-heading">
         <div>
           <span className="page-eyebrow">AVALIAÇÕES</span>
@@ -302,16 +308,14 @@ export default async function AthleteEvaluationsPage({
 
                 <tbody>
                   {visibleEvaluations.map((evaluation) => {
-                    const completion = Math.min(
-                      100,
-                      Math.round((evaluation.scores.length / 25) * 100),
-                    );
+                    const criterionTotal = evaluation.template?.criteria.length ?? 25;
+                    const completion = Math.min(100, Math.round((evaluation.scores.length / Math.max(1, criterionTotal)) * 100));
 
                     return (
                       <tr key={evaluation.id}>
                         <td>
                           <strong className="athlete-evaluations-v7-title">
-                            {evaluation.title || "Avaliação"}
+                            {format11UPName(evaluation.title || evaluation.template?.name || "Avaliação")}
                           </strong>
                         </td>
                         <td>
@@ -323,7 +327,7 @@ export default async function AthleteEvaluationsPage({
                         <td>{evaluation.evaluator?.name || "—"}</td>
                         <td>
                           <div className="athlete-evaluations-v7-completion">
-                            <strong>{evaluation.scores.length}/25</strong>
+                            <strong>{evaluation.scores.length}/{criterionTotal}</strong>
                             <span>
                               <i style={{ width: `${completion}%` }} />
                             </span>

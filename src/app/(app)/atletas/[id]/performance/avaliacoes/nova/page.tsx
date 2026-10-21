@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -6,6 +7,8 @@ import { hasEffectiveClubElite } from "@/lib/billing-entitlements";
 import { prisma } from "@/lib/prisma";
 
 import { createPerformanceEvaluation } from "../../actions";
+import { format11UPName, parsePerformanceClassification } from "@/lib/performance-model-catalog";
+import SpreadsheetEvaluationForm from "./SpreadsheetEvaluationForm";
 
 const AREA_ORDER = [
   "PHYSICAL",
@@ -150,9 +153,15 @@ export default async function NewPerformanceEvaluationPage({
 
   if (!elite) redirect("/performance?erro=elite");
 
-  const template =
-    templates.find((item) => item.id === query.template) || templates[0];
+  // Após preparar os modelos do clube, ocultamos os globais de fábrica no seletor.
+  const clubTemplates = templates.filter((item) => item.organizationId === user.organizationId);
+  const availableTemplates = clubTemplates.length ? clubTemplates : templates;
+  const template = availableTemplates.find((item) => item.id === query.template) || availableTemplates[0];
   const message = errorMessage(query.erro);
+  const isSpreadsheetModel = Boolean(template?.modelFamilyKey?.startsWith("PLANILHA_"));
+  const spreadsheetClassification = isSpreadsheetModel
+    ? parsePerformanceClassification(template?.classificationJson)
+    : null;
   const today = new Date();
   const trainingDate = trainingSchedule?.date ?? null;
   const periodStart = trainingDate
@@ -219,17 +228,17 @@ export default async function NewPerformanceEvaluationPage({
           </Link>
         </div>
 
-        {templates.length > 1 ? (
+        {availableTemplates.length > 1 ? (
           <div style={{ marginTop: 20 }}>
             <span className="help">Modelo de avaliação</span>
             <div className="actions" style={{ marginTop: 8 }}>
-              {templates.map((item) => (
+              {availableTemplates.map((item) => (
                 <Link
                   className={item.id === template?.id ? "btn" : "btn btn-secondary"}
                   href={evaluationHref(requestedRole, item.id)}
                   key={item.id}
                 >
-                  {item.name}
+                  {format11UPName(item.name)}
                 </Link>
               ))}
             </div>
@@ -237,6 +246,9 @@ export default async function NewPerformanceEvaluationPage({
         ) : null}
       </section>
 
+      <div className="actions" style={{marginBottom:18}}>
+        <Link className="btn btn-secondary" href="/performance/modelos">Modelos de avaliação</Link>
+      </div>
       {!template ? (
         <section className="card empty">
           Nenhum modelo ativo encontrado. Execute novamente o seed do Performance.
@@ -260,7 +272,7 @@ export default async function NewPerformanceEvaluationPage({
 
           <section className="card">
             <span className="page-eyebrow">IDENTIFICAÇÃO</span>
-            <h2>{template.name}</h2>
+            <h2>{format11UPName(template.name)}</h2>
             {template.description ? (
               <p className="muted">{template.description}</p>
             ) : null}
@@ -302,6 +314,26 @@ export default async function NewPerformanceEvaluationPage({
             </div>
           </section>
 
+          {isSpreadsheetModel ? (
+            <SpreadsheetEvaluationForm
+              groups={AREA_ORDER.map((area) => ({
+                key: area,
+                title: AREA_LABELS[area],
+                criteria: template.criteria
+                  .filter((criterion) => criterion.area === area)
+                  .map((criterion) => ({
+                    id: criterion.id,
+                    label: criterion.label,
+                    levels: criterion.levels.map((level) => ({
+                      score: level.score,
+                    })),
+                  })),
+              })).filter((group) => group.criteria.length > 0)}
+              urgencyMax={spreadsheetClassification?.urgencyMax ?? null}
+              attentionMax={spreadsheetClassification?.attentionMax ?? null}
+            />
+          ) : (
+            <>
           {AREA_ORDER.map((area) => {
             const criteria = template.criteria.filter(
               (criterion) => criterion.area === area
@@ -387,6 +419,9 @@ export default async function NewPerformanceEvaluationPage({
             );
           })}
 
+            </>
+          )}
+
           <section className="card">
             <span className="page-eyebrow">PARECER DO AVALIADOR</span>
             <h2>Conclusão e próximos passos</h2>
@@ -419,20 +454,20 @@ export default async function NewPerformanceEvaluationPage({
 
           <section className="card">
             <div className="actions">
-              <button
+              <PendingSubmitButton pendingText="Salvando…"
                 className="btn btn-secondary"
                 name="intent"
                 value="DRAFT"
                 type="submit"
               >
                 Salvar rascunho
-              </button>
-              <button name="intent" value="FINALIZED" type="submit">
+              </PendingSubmitButton>
+              <PendingSubmitButton pendingText="Finalizando…" name="intent" value="FINALIZED" type="submit">
                 Finalizar avaliação
-              </button>
+              </PendingSubmitButton>
             </div>
             <p className="help" style={{ marginTop: 12 }}>
-              O rascunho aceita notas incompletas. Para finalizar, os 25 critérios
+              O rascunho aceita notas incompletas. Para finalizar, todos os {template.criteria.length} critérios
               precisam estar preenchidos.
             </p>
           </section>

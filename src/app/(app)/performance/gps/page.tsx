@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import {
   ClubPermissionCode,
@@ -15,6 +16,8 @@ import {
   createClubManualGpsRecord,
   importClubGpsCsv,
 } from "./actions";
+
+import GpsSessionPrototype from "./GpsSessionPrototype";
 
 const PAGE_SIZE = 20;
 
@@ -873,6 +876,18 @@ export default async function PerformanceGpsPage({
         </div>
       ) : null}
 
+      <GpsSessionPrototype
+        athletes={athletes.map((athlete) => ({
+          id: athlete.id,
+          name: athlete.name,
+          nickname: athlete.nickname,
+          categoryName:
+            athlete.category?.sport === selectedSport
+              ? athlete.category.name
+              : athlete.memberships[0]?.category?.name ?? null,
+        }))}
+      />
+
       <section className="gps-club-v8-entry-grid">
         <article className="gps-club-v8-entry-card import">
           <header>
@@ -999,10 +1014,10 @@ export default async function PerformanceGpsPage({
               </small>
             </label>
 
-            <button type="submit">
+            <PendingSubmitButton pendingText="Importando…" type="submit">
               <Icon name="upload" size={17} />
               Importar CSV
-            </button>
+            </PendingSubmitButton>
           </form>
 
           <footer>
@@ -1232,9 +1247,9 @@ export default async function PerformanceGpsPage({
               />
             </label>
 
-            <button type="submit">
+            <PendingSubmitButton pendingText="Salvando…" type="submit">
               Salvar GPS
-            </button>
+            </PendingSubmitButton>
           </form>
         </article>
       </section>

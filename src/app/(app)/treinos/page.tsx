@@ -393,7 +393,7 @@ export default async function TrainingPage({
 
       active: true,
 
-      type: "STANDARD",
+      type: { in: ["STANDARD", "EVALUATION"] },
 
     },
 

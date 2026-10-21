@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -667,9 +668,9 @@ export default async function AthleteGpsPerformancePage({
           </label>
 
           <div className="athlete-gps-v7-form-actions">
-            <button className="btn" type="submit">
+            <PendingSubmitButton pendingText="Salvando…" className="btn" type="submit">
               Salvar GPS
-            </button>
+            </PendingSubmitButton>
           </div>
         </form>
       </section>

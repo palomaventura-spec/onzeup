@@ -150,14 +150,9 @@ async function createPlayerPremium(
       },
     });
 
-    await prisma.playerProfile.update({
-      where: {
-        id: player.id,
-      },
-      data: {
-        planStatus: "AWAITING_PAYMENT",
-      },
-    });
+    // O pedido PENDING já está na tabela Payment; não alterar o direito do Player
+    // até que o webhook valide o pagamento efetivo.
+
   } catch (error) {
     console.error(
       "PLAYER_PREMIUM_ASAAS_CREATE_ERROR",

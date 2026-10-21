@@ -173,6 +173,22 @@ async function validateAthleteForSport({
     select: {
       id: true,
       categoryId: true,
+      memberships: {
+        where: {
+          organizationId,
+          sport,
+          status: "ACTIVE",
+          category: {
+            sport,
+            active: true,
+            type: "STANDARD",
+          },
+        },
+        select: {
+          categoryId: true,
+        },
+      },
+
     },
   });
 }
@@ -190,6 +206,11 @@ async function validateActivityLink({
   trainingSessionId: string | null;
   matchId: string | null;
 }) {
+  // IDs conflitantes não podem ser tratados como registros avulsos.
+  if (trainingSessionId && matchId) return null;
+  if (context === GpsContext.TRAINING && matchId) return null;
+  if (context === GpsContext.MATCH && trainingSessionId) return null;
+
   if (context === GpsContext.TRAINING && trainingSessionId) {
     const session = await prisma.trainingSession.findFirst({
       where: {
@@ -206,6 +227,7 @@ async function validateActivityLink({
       select: {
         id: true,
         startsAt: true,
+        categoryId: true,
       },
     });
 
@@ -213,6 +235,7 @@ async function validateActivityLink({
       ? {
           trainingSessionId: session.id,
           matchId: null,
+          categoryId: session.categoryId,
           activityAt: session.startsAt,
         }
       : null;
@@ -228,6 +251,7 @@ async function validateActivityLink({
       select: {
         id: true,
         startsAt: true,
+        categoryId: true,
       },
     });
 
@@ -235,6 +259,7 @@ async function validateActivityLink({
       ? {
           trainingSessionId: null,
           matchId: match.id,
+          categoryId: match.categoryId,
           activityAt: match.startsAt,
         }
       : null;
@@ -243,6 +268,7 @@ async function validateActivityLink({
   return {
     trainingSessionId: null,
     matchId: null,
+    categoryId: null,
     activityAt: null,
   };
 }
@@ -292,6 +318,18 @@ export async function createClubManualGpsRecord(
 
   if (!activityLink) {
     redirect(gpsUrl(sport, "erro=vinculo"));
+  }
+
+  // Um GPS vinculado a treino/jogo requer vínculo com a categoria exata.
+  // Registros avulsos continuam permitidos após a validação da modalidade.
+  if (
+    activityLink.categoryId &&
+    athlete.categoryId !== activityLink.categoryId &&
+    !athlete.memberships.some(
+      (membership) => membership.categoryId === activityLink.categoryId,
+    )
+  ) {
+    redirect(gpsUrl(sport, "erro=categoria"));
   }
 
   const durationMinutes = optionalInt(
@@ -599,6 +637,11 @@ export async function importClubGpsCsv(
 
   if (!activityLink) {
     redirect(gpsUrl(sport, "erro=vinculo"));
+  }
+
+  // A categoria selecionada no CSV deve coincidir com a atividade vinculada.
+  if (activityLink.categoryId && activityLink.categoryId !== categoryId) {
+    redirect(gpsUrl(sport, "erro=categoria"));
   }
 
   const athletes = await prisma.athlete.findMany({

@@ -1271,6 +1271,56 @@ const positions = [
 
             <div className="athletes-v4-hero-actions">
                 {canEdit ? (
+  <Link
+    href="/atletas/links-cadastro"
+    style={{
+      minHeight: 46,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      padding: "0 18px",
+      borderRadius: 13,
+      border: "1px solid rgba(153,230,0,.56)",
+      background: "rgba(153,230,0,.14)",
+      color: "#d3ff84",
+      textDecoration: "none",
+      fontSize: 12,
+      fontWeight: 900,
+      whiteSpace: "nowrap",
+    }}
+  >
+    <Icon name="file" size={17} />
+    Links de cadastro
+  </Link>
+) : null}
+
+                {canEdit ? (
+                  <Link
+                    href="/atletas/inscricoes-publicas"
+                    style={{
+                      minHeight: 46,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      padding: "0 18px",
+                      borderRadius: 13,
+                      border: "1px solid rgba(255,255,255,.24)",
+                      background: "rgba(255,255,255,.10)",
+                      color: "#ffffff",
+                      textDecoration: "none",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <Icon name="file" size={17} />
+                    Cadastro por link
+                  </Link>
+                ) : null}
+
+                {canEdit ? (
                   <Link
                     href="/atletas/pre-cadastros"
                     style={{

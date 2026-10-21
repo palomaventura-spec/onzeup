@@ -1216,6 +1216,23 @@ export default function TrainingAttendanceForm({
     >
       Ver avaliação
     </Link>
+    {sessionStatus === "IN_PROGRESS" &&
+    ["PRESENT", "LATE", "PARTIAL"].includes(athlete.status ?? "") &&
+    !savingIds.has(athlete.id) ? (
+      <Link
+        href={`/atletas/${athlete.id}/performance/avaliacoes/escolher?trainingScheduleId=${encodeURIComponent(scheduleId)}`}
+        title={`Escolher outro modelo para ${athlete.nickname || athlete.name}`}
+        style={{
+          fontSize: 11,
+          fontWeight: 800,
+          color: "#416300",
+          textDecoration: "underline",
+          whiteSpace: "nowrap",
+        }}
+      >
+        Avaliar outro modelo
+      </Link>
+    ) : null}
   </div>
 ) : (
   sessionStatus !== "IN_PROGRESS" ? (
@@ -1269,7 +1286,7 @@ export default function TrainingAttendanceForm({
     </span>
   ) : (
     <Link
-      href={`/atletas/${athlete.id}/performance/avaliacoes/nova?trainingScheduleId=${encodeURIComponent(scheduleId)}&returnTo=${encodeURIComponent(`/treinos/${scheduleId}`)}`}
+      href={`/atletas/${athlete.id}/performance/avaliacoes/escolher?trainingScheduleId=${encodeURIComponent(scheduleId)}`}
       title={`Avaliar ${athlete.nickname || athlete.name}`}
       aria-label={`Avaliar ${athlete.nickname || athlete.name}`}
       style={{

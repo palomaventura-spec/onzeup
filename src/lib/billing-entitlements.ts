@@ -39,41 +39,24 @@ export function hasEffectivePlayerPremium(
   },
   now = new Date()
 ) {
-  if (hasValidComplimentaryAccess(input, now)) {
-    const complimentaryPlan = String(input.complimentaryPlan || "PREMIUM").toUpperCase();
-
-    return complimentaryPlan === "PREMIUM";
-  }
-
-  if (input.isComplimentary && String(input.complimentaryPlan || "").toUpperCase() === "SIMPLE") {
-    return false;
-  }
-
   const status = String(input.planStatus || "").toUpperCase();
-
-  if (
-    status === "CANCELLED" ||
-    status === "TRIAL_EXPIRED"
-  ) {
-    return false;
+  const plan = String(input.plan || "").toUpperCase();
+  // Uma assinatura paga válida prevalece sobre a cortesia Simples.
+  if (plan === "PREMIUM" && (status === "ACTIVE" || status === "PAST_DUE")) {
+    if (input.premiumUntil) return !isPastGrace(input.premiumUntil, now);
+    return status === "ACTIVE";
   }
 
-  if (status === "TRIAL") {
-    return Boolean(
-      input.trialEndsAt &&
-      input.trialEndsAt >= now
-    );
+  if (hasValidComplimentaryAccess(input, now)) {
+    return String(input.complimentaryPlan || "PREMIUM").toUpperCase() === "PREMIUM";
   }
 
-  if (String(input.plan || "").toUpperCase() !== "PREMIUM") {
-    return false;
+  // Checkout pendente não deve encerrar uma avaliação gratuita vigente.
+  if ((status === "TRIAL" || status === "AWAITING_PAYMENT") && input.trialEndsAt) {
+    return input.trialEndsAt >= now;
   }
 
-  if (!input.premiumUntil) {
-    return String(input.planStatus || "ACTIVE").toUpperCase() === "ACTIVE";
-  }
-
-  return !isPastGrace(input.premiumUntil, now);
+  return false;
 }
 
 export function hasEffectiveClubElite(
@@ -134,17 +117,12 @@ export async function reconcileExpiredPlayerTrials(filter?: {
       trialEndsAt: {
         lt: now,
       },
-      OR: [
-        {
-          isComplimentary: false,
-        },
-        {
-          isComplimentary: true,
-          complimentaryUntil: {
-            lt: now,
-          },
-        },
-      ],
+      NOT: {
+        AND: [
+          { isComplimentary: true },
+          { OR: [{ complimentaryUntil: null }, { complimentaryUntil: { gte: now } }] },
+        ],
+      },
     },
     data: {
       planStatus: "TRIAL_EXPIRED",
@@ -165,6 +143,7 @@ export async function reconcileExpiredPlayerPremiums(filter?: {
       ...(filter?.guardianId ? { guardianId: filter.guardianId } : {}),
       ...(filter?.slug ? { slug: filter.slug } : {}),
       plan: "PREMIUM",
+      planStatus: { in: ["ACTIVE", "PAST_DUE"] },
       premiumUntil: { lt: cutoff },
       OR: [
         { isComplimentary: false },

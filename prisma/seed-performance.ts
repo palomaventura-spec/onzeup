@@ -721,7 +721,7 @@ async function upsertTemplate(input: {
 
 async function main() {
   const line = await upsertTemplate({
-    name: "Avaliação ONZEUP — Jogador de linha",
+    name: "Avaliação 11UP — Jogador de linha",
     description:
       "Modelo padrão com 25 critérios físicos, técnicos, táticos, cognitivos e emocionais.",
     athleteRole: PerformanceAthleteRole.LINE_PLAYER,
@@ -729,7 +729,7 @@ async function main() {
   });
 
   const goalkeeper = await upsertTemplate({
-    name: "Avaliação ONZEUP — Goleiro",
+    name: "Avaliação 11UP — Goleiro",
     description:
       "Modelo padrão com 25 critérios específicos para o desenvolvimento de goleiros.",
     athleteRole: PerformanceAthleteRole.GOALKEEPER,
