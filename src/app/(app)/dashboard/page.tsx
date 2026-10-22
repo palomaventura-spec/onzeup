@@ -117,7 +117,17 @@ export default async function Dashboard() {
   const expiringDocuments = documentPriorities.summary.expiring;
   const expiredDocuments = documentPriorities.summary.expired;
   const categoryConfigurationIssues = documentPriorities.configurationWarnings.length;
+  // Contar arquivos reais, nunca notificações/solicitações. Separar origem Player de outros canais.
   const canViewDocumentPriorities = hasClubPermission(user, "ATHLETES_EDIT");
+  const documentsWaitingReview = canViewDocumentPriorities ? await prisma.athleteDocument.count({
+    where: { organizationId: orgId, status: "PENDING", deletedAt: null, athlete: { active: true } },
+  }) : 0;
+  const playerAttachments = canViewDocumentPriorities ? await prisma.clubCommunicationMessageAttachment.findMany({
+    where: { athleteDocument: { organizationId: orgId, status: "PENDING", deletedAt: null, athlete: { active: true } } },
+    select: { athleteDocumentId: true },
+  }) : [];
+  const playerDocumentsWaitingReview = new Set(playerAttachments.map(item => item.athleteDocumentId)).size;
+  const otherDocumentsWaitingReview = Math.max(0, documentsWaitingReview - playerDocumentsWaitingReview);
 
   const upcomingBirthdays = birthdayAthletes
     .flatMap((athlete) => {
@@ -714,17 +724,13 @@ export default async function Dashboard() {
             </div>
           </Link>
 
-          <Link href="/atletas">
+          {canViewDocumentPriorities && <Link href="/comunicacao/documentos">
             <i className="amber" />
             <div>
-              <strong>Documentos e exames</strong>
-              <span>
-                {pendingDocuments + expiringDocuments
-                  ? `${pendingDocuments + expiringDocuments} item(ns) precisam de atenção.`
-                  : "Documentação em dia."}
-              </span>
+              <strong>Central de Documentos</strong>
+              <span>{playerDocumentsWaitingReview} recebido(s) pelo Player em análise · {otherDocumentsWaitingReview} de outros canais em análise · {pendingDocuments} requisito(s) pendente(s).</span>
             </div>
-          </Link>
+          </Link>}
 
           <Link href="/qtr">
             <i className="blue" />

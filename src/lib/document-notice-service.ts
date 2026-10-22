@@ -116,7 +116,44 @@ export async function sendOneDocumentNotice(args: {
       playerId: args.playerId, createdAt: { gte: limit } },
     select: { id: true },
   });
-  if (recent) return false;
+  if (recent) {
+    // Avisos enviados antes da Comunicação Documental não tinham pedidos estruturados.
+    // Reaproveitar a conversa original; nunca disparar outra comunicação neste intervalo.
+    const authorized = await prisma.playerAthleteLink.findFirst({
+      where: { athleteId: args.athleteId, playerId: args.playerId, verified: true, active: true,
+        athlete: { organizationId: args.organizationId, active: true } },
+      select: { id: true },
+    });
+    if (!authorized) return false;
+    const oldNotice = await prisma.documentNoticeLog.findFirst({
+      where: { organizationId: args.organizationId, athleteId: args.athleteId,
+        playerId: args.playerId, createdAt: { gte: limit }, communicationId: { not: null } },
+      orderBy: { createdAt: "desc" }, select: { communicationId: true },
+    });
+    if (!oldNotice?.communicationId) return false;
+    const recipient = await prisma.clubCommunicationRecipient.findFirst({
+      where: { communicationId: oldNotice.communicationId,
+        athleteId: args.athleteId, playerId: args.playerId,
+        communication: { organizationId: args.organizationId },
+        athlete: { organizationId: args.organizationId, active: true } },
+      select: { id: true },
+    });
+    if (!recipient) return false;
+    const requested = args.items.filter(item => item.notificationKind !== "REVIEW");
+    if (!requested.length) return false;
+    const linked = await prisma.clubCommunicationDocumentRequest.createMany({
+      data: requested.map(item => ({
+        recipientId: recipient.id, priorityKey: item.key,
+        documentName: item.documentName, notificationKind: item.notificationKind,
+        requirementId: item.requirementId ?? null,
+        sourceDocumentId: item.sourceDocumentId ?? null,
+        categoryId: item.categoryId ?? null,
+        description: item.description,
+      })),
+      skipDuplicates: true,
+    });
+    return linked.count > 0 ? "UPDATED" as const : false;
+  }
 
   // Revalidar o vinculo imediatamente antes de criar o comunicado.
   const verified = await prisma.playerAthleteLink.findFirst({
@@ -133,7 +170,7 @@ export async function sendOneDocumentNotice(args: {
   const body = [
     "O clube identificou documentos que precisam de regularização no cadastro do atleta.",
     "", "Documentos para conferir:", ...names.map((n) => `• ${n}`),
-    "", "Consulte a ficha do atleta e a área de documentos, ou fale com o clube para solicitar um link seguro de envio.",
+    "", "Abra a Comunicação do Player para enviar os documentos solicitados, quando disponíveis para envio.",
     "Se você já enviou os documentos, aguarde a análise do clube.",
   ].join("\n");
 
@@ -151,7 +188,21 @@ export async function sendOneDocumentNotice(args: {
         authorUserId: args.authorUserId || null,
         title: "11UP Club — Documentos para regularizar",
         body, audienceType: "ATHLETE", targetAthleteId: args.athleteId,
-        recipients: { create: [{ athleteId: args.athleteId, playerId: args.playerId }] },
+        recipients: { create: [{
+          athleteId: args.athleteId,
+          playerId: args.playerId,
+          documentRequests: {
+            create: args.items.filter((item) => item.notificationKind !== "REVIEW").map((item) => ({
+              priorityKey: item.key,
+              documentName: item.documentName,
+              notificationKind: item.notificationKind,
+              requirementId: item.requirementId ?? null,
+              sourceDocumentId: item.sourceDocumentId ?? null,
+              categoryId: item.categoryId ?? null,
+              description: item.description,
+            })),
+          },
+        }] },
       }, select: { id: true },
     });
     await tx.documentNoticeLog.update({ where: { dedupKey },
@@ -187,7 +238,7 @@ export async function runAutomaticDocumentNotices() {
             timeZone: row.organization.timezone,
             intervalDays: prefs.intervalDays,
           });
-          if (sent) delivered++;
+          if (sent === true) delivered++;
         } catch (error) {
           failed++;
           console.error("DOCUMENT_NOTICE_AUTO_DELIVERY_ERROR", row.organizationId,

@@ -77,14 +77,18 @@ export async function sendManualDocumentNotice(formData: FormData) {
   if (!items.length) redirect("/prioridades?aviso=sem-pendencias");
   if (!group.playerIds.length) redirect("/prioridades?aviso=sem-player");
   let sent = 0;
+  let updated = 0;
   for (const playerId of group.playerIds) {
-    if (await sendOneDocumentNotice({ organizationId: user.organizationId,
+    const result = await sendOneDocumentNotice({ organizationId: user.organizationId,
       athleteId, playerId, items, mode: "MANUAL", timeZone,
       intervalDays: settings.intervalDays, authorUserId: user.id,
-    })) sent++;
+    });
+    if (result === true) sent++;
+    if (result === "UPDATED") updated++;
   }
   revalidatePath("/prioridades");
   revalidatePath("/prioridades/notificacoes");
   revalidatePath("/responsavel/comunicacao");
-  redirect(`/prioridades?aviso=${sent ? "enviado" : "recente"}`);
+  revalidatePath("/comunicacao/documentos");
+  redirect(`/prioridades?aviso=${sent ? "enviado" : updated ? "atualizado" : "recente"}`);
 }

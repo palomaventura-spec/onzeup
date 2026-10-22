@@ -10,6 +10,8 @@ export type DocumentPriority = {
   categoryId: string | null;
   categoryName: string;
   documentName: string;
+  requirementId?: string | null;
+  sourceDocumentId?: string | null;
   status: DocumentPriorityStatus;
   notificationKind: DocumentNoticeKind;
   description: string;
@@ -155,6 +157,8 @@ export async function listClubDocumentPriorities(organizationId: string, timeZon
             if (status !== "A_VENCER") hasBlockingDocument = true;
             rows.push({
               key: `doc:${doc.id}:${requirement.id}`,
+              requirementId: requirement.id,
+              sourceDocumentId: doc.id,
               athleteId: athlete.id,
               athleteName: athlete.name,
               categoryId: category.id,
@@ -174,6 +178,7 @@ export async function listClubDocumentPriorities(organizationId: string, timeZon
         if (requirement.required && valid < Math.max(1, requirement.minCount) && !hasBlockingDocument) {
           rows.push({
             key: `missing:${athlete.id}:${requirement.id}`,
+            requirementId: requirement.id,
             athleteId: athlete.id,
             athleteName: athlete.name,
             categoryId: category.id,

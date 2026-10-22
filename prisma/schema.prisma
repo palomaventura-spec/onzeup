@@ -445,6 +445,8 @@ model User {
   publicRegistrationSubmissionsReviewed PublicRegistrationSubmission[] @relation("PublicRegistrationSubmissionReviewer")
   createdGpsSessions GpsSession[]
 
+  communicationMessagesAuthored ClubCommunicationMessage[] @relation("ClubCommunicationMessageAuthor")
+
 }
 
 model ClubUserInvite {
@@ -829,6 +831,8 @@ model AthleteDocument {
   @@index([registrationRequestId, requestItemKey])
   @@index([requirementId])
   @@index([athleteId, requirementId, status])
+  communicationAttachments ClubCommunicationMessageAttachment[]
+
 }
 
 model CategoryDocumentRequirement {
@@ -2345,7 +2349,7 @@ enum PerformanceArea {
   PHYSICAL
   COGNITIVE
   EMOTIONAL
-  // Mantidos por compatibilidade com dados jÃƒÆ’Ã‚Â¡ existentes.
+  // Mantidos por compatibilidade com dados j├âãÆ├åÔÇÖ├âÔÇÜ├é┬í existentes.
   BEHAVIORAL
   COMPETITIVE
 }
@@ -2556,6 +2560,9 @@ model ClubCommunicationRecipient {
   @@index([communicationId, readAt])
   @@index([playerId, readAt, createdAt])
   @@index([athleteId, createdAt])
+  documentRequests ClubCommunicationDocumentRequest[]
+    messages ClubCommunicationMessage[]
+
 }
 
 enum ClubPermissionCode {
@@ -2850,7 +2857,7 @@ model DocumentNoticeLog {
   @@index([organizationId, playerId, createdAt])
 }
 
-// ENTREGA 1.3A — Estrutura preparatória. Links permanecem DRAFT até a etapa de formulário e documentos.
+// ENTREGA 1.3A ÔÇö Estrutura preparat├│ria. Links permanecem DRAFT at├® a etapa de formul├írio e documentos.
 enum PublicRegistrationLinkStatus {
   DRAFT
   ACTIVE
@@ -3021,7 +3028,7 @@ model ClubBirthdayReminderSetting {
   @@unique([organizationId, audience])
 }
 
-/// Solicitação privada de justificativa feita pelo responsável; não altera presença automaticamente.
+/// Solicita├º├úo privada de justificativa feita pelo respons├ível; n├úo altera presen├ºa automaticamente.
 model TrainingAbsenceRequest {
   id             String                       @id @default(cuid())
   organizationId String
@@ -3051,7 +3058,7 @@ model TrainingAbsenceRequest {
   @@index([submittedById, createdAt])
 }
 
-/// Arquivo privado: storageKey nunca é servido sem autenticação/autorização por pedido.
+/// Arquivo privado: storageKey nunca ├® servido sem autentica├º├úo/autoriza├º├úo por pedido.
 model TrainingAbsenceAttachment {
   id               String @id @default(cuid())
   requestId        String
@@ -3065,7 +3072,7 @@ model TrainingAbsenceAttachment {
   @@index([requestId])
 }
 
-/// Trilhas de auditoria de envio e análise; incluir metadata mínima, nunca dados médicos completos.
+/// Trilhas de auditoria de envio e an├ílise; incluir metadata m├¡nima, nunca dados m├®dicos completos.
 model TrainingAbsenceRequestEvent {
   id        String @id @default(cuid())
   requestId String
@@ -3143,4 +3150,59 @@ model GpsSession {
   @@index([organizationId, sport, activityAt])
   @@index([profileId])
   @@index([trainingSessionId])
+}
+
+model ClubCommunicationDocumentRequest {
+  id              String   @id @default(cuid())
+  recipientId     String
+  priorityKey     String
+  documentName    String
+  notificationKind String
+  requirementId   String?
+  sourceDocumentId String?
+  categoryId      String?
+  description     String?
+  createdAt       DateTime @default(now())
+
+  recipient ClubCommunicationRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([recipientId, priorityKey])
+  @@index([recipientId, createdAt])
+  @@index([requirementId])
+  attachments ClubCommunicationMessageAttachment[]
+}
+
+model ClubCommunicationMessage {
+  id           String   @id @default(cuid())
+  recipientId  String
+  authorUserId String?
+  senderType   ClubCommunicationSenderType
+  body         String   @default("")
+  createdAt    DateTime @default(now())
+
+  recipient   ClubCommunicationRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  author      User? @relation("ClubCommunicationMessageAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+  attachments ClubCommunicationMessageAttachment[]
+
+  @@index([recipientId, createdAt])
+  @@index([authorUserId, createdAt])
+}
+
+model ClubCommunicationMessageAttachment {
+  id                String   @id @default(cuid())
+  messageId         String
+  athleteDocumentId String   @unique
+  documentRequestId String?
+  createdAt         DateTime @default(now())
+
+  message         ClubCommunicationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  athleteDocument AthleteDocument          @relation(fields: [athleteDocumentId], references: [id], onDelete: Restrict)
+  documentRequest ClubCommunicationDocumentRequest? @relation(fields: [documentRequestId], references: [id], onDelete: SetNull)
+
+  @@index([messageId])
+}
+
+enum ClubCommunicationSenderType {
+  CLUB
+  PLAYER
 }

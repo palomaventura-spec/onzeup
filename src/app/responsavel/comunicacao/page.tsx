@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PlayerCommunicationBody from "@/components/PlayerCommunicationBody";
+import PlayerDocumentConversation from "@/components/PlayerDocumentConversation";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -40,26 +41,31 @@ export default async function PlayerCommunicationPage({
     players[0] ||
     null;
 
-  const communications = selected
-    ? await prisma.clubCommunicationRecipient.findMany({
-        where: {
-          playerId: selected.id,
-        },
-        include: {
-          athlete: true,
-          communication: {
-            include: {
-              organization: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 50,
-      })
-    : [];
+  const eligible = selected ? await prisma.clubCommunicationRecipient.findMany({
+    where: {
+      playerId: selected.id,
+      athlete: { active: true, playerLinks: { some: { playerId: selected.id, active: true, verified: true } } },
+      communication: { organization: { active: true } },
+    },
+    select: { id: true, athlete: { select: { organizationId: true } }, communication: { select: { organizationId: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  }) : [];
 
+  const authorizedIds = eligible.filter((row) =>
+    row.athlete.organizationId === row.communication.organizationId
+  ).map((row) => row.id);
+
+  const communications = await prisma.clubCommunicationRecipient.findMany({
+    where: { id: { in: authorizedIds } },
+    include: {
+      athlete: true,
+      documentRequests: { orderBy: { createdAt: "asc" } },
+      messages: { orderBy: { createdAt: "asc" }, include: { attachments: { include: { athleteDocument: { select: { originalFileName: true, status: true } } } } } },
+      communication: { include: { organization: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
   const unreadCount = communications.filter(
     (recipient) => !recipient.readAt,
   ).length;
@@ -275,6 +281,7 @@ export default async function PlayerCommunicationPage({
                           </h3>
 
                           <PlayerCommunicationBody body={recipient.communication.body} />
+                          <PlayerDocumentConversation recipientId={recipient.id} requests={recipient.documentRequests} messages={recipient.messages} />
                         </div>
 
                         {!recipient.readAt ? (
