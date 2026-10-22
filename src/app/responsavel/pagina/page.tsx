@@ -5,14 +5,7 @@ import { requireUser } from "@/lib/auth";
 import ImageUpload from "@/components/ImageUpload";
 import PlayerActions from "@/components/PlayerActions";
 import DemoBanner from "@/components/DemoBanner";
-import {
-  deletePlayer,
-  linkMatchingClubAthletes,
-  markPlayerCommunicationRead,
-  respondToPlayerCallUp,
-  saveGuardianProfile,
-  savePlayer,
-} from "../actions";
+import { deletePlayer, saveGuardianProfile, savePlayer } from "../actions";
 import { createPlayerPremiumAsaas, createPlayerPremiumPixAsaas } from "@/app/checkout/actions";
 import PendingSubmitButton from "@/components/PendingSubmitButton";
 import { hasEffectivePlayerPremium, reconcileExpiredPlayerPremiums, reconcileExpiredPlayerTrials } from "@/lib/billing-entitlements";
@@ -121,46 +114,11 @@ export default async function GuardianPortal({
     return first === "__11UP_NO_FEATURED_VIDEO__" ? "" : first;
   })();
 
-  const linkedAthleteIds = selected?.athleteLinks.map(link => link.athleteId) || [];
-  const upcomingCallUps = linkedAthleteIds.length
-    ? await prisma.callUp.findMany({
-        where: {
-          athleteId: { in: linkedAthleteIds },
-          match: { startsAt: { gte: new Date() } },
-        },
-        include: {
-          athlete: true,
-          organization: true,
-          match: { include: { category: true } },
-        },
-        orderBy: { match: { startsAt: "asc" } },
-        take: 12,
-      })
-    : [];
-  const playerCommunications = selected
-    ? await prisma.clubCommunicationRecipient.findMany({
-        where: {
-          playerId: selected.id,
-        },
-        include: {
-          athlete: true,
-          communication: {
-            include: {
-              organization: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 30,
-      })
-    : [];
 
-  const unreadCommunicationCount =
-    playerCommunications.filter(
-      (recipient) => !recipient.readAt,
-    ).length;
+
+
+
+
 
   return (
     <main className="guardian-portal">
@@ -168,25 +126,8 @@ export default async function GuardianPortal({
       <header className="guardian-portal-nav">
         <Link href="/responsavel" className="player-brand">11<span>UP</span> <b>PLAYER</b></Link>
         <div>
-          {selected ? (
-            <a
-              href="#player-communications"
-              className="btn-secondary btn-small"
-              aria-label={
-                unreadCommunicationCount > 0
-                  ? `${unreadCommunicationCount} comunicado(s) não lido(s)`
-                  : "Comunicados"
-              }
-              title="Comunicados"
-            >
-              🔔
-              {unreadCommunicationCount > 0 ? (
-                <strong style={{ marginLeft: 5 }}>
-                  {unreadCommunicationCount}
-                </strong>
-              ) : null}
-            </a>
-          ) : null}
+
+          <Link href={selected ? `/responsavel?player=${selected.id}` : "/responsavel"} className="btn-secondary btn-small">← Voltar à página inicial</Link>
           <span>{user.name}</span>
           <form action="/api/auth/logout" method="post">
             <PendingSubmitButton pendingText="Saindo…" className="btn-secondary btn-small" type="submit">Sair</PendingSubmitButton>
@@ -201,7 +142,7 @@ export default async function GuardianPortal({
             <h1>11UP Player</h1>
             <p>Crie e gerencie o perfil esportivo dos seus filhos. O conteúdo pertence à família.</p>
           </div>
-          <Link className="btn" href="/responsavel?new=1">+ Novo perfil</Link>
+          <Link className="btn" href="/responsavel/pagina?new=1">+ Novo perfil</Link>
         </section>
 
         <div className="player-portal-layout">
@@ -210,7 +151,7 @@ export default async function GuardianPortal({
             {players.map((player) => (
               <Link
                 className={`player-switcher ${selected?.id === player.id ? "active" : ""}`}
-                href={`/responsavel?player=${player.id}`}
+                href={`/responsavel/pagina?player=${player.id}`}
                 key={player.id}
               >
                 <div>
@@ -413,332 +354,10 @@ export default async function GuardianPortal({
               </section>
             ) : null}
 
-            {selected ? (
-              <section
-                id="player-communications"
-                className="player-family-agenda"
-              >
-                <div className="section-title-row">
-                  <div>
-                    <span className="page-eyebrow">
-                      COMUNICAÇÃO
-                    </span>
 
-                    <h2>Comunicados dos clubes</h2>
 
-                    <p className="muted">
-                      Avisos oficiais enviados pelas organizações
-                      vinculadas ao atleta.
-                    </p>
-                  </div>
 
-                  {unreadCommunicationCount > 0 ? (
-                    <span className="badge">
-                      {unreadCommunicationCount} não lido
-                      {unreadCommunicationCount > 1
-                        ? "s"
-                        : ""}
-                    </span>
-                  ) : null}
-                </div>
 
-                {playerCommunications.length ? (
-                  <div className="player-agenda-list">
-                    {playerCommunications.map(
-                      (recipient) => (
-                        <article
-                          key={recipient.id}
-                          style={{
-                            borderLeft: recipient.readAt
-                              ? undefined
-                              : "4px solid var(--accent, #9DDB16)",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "grid",
-                              gap: 6,
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: 8,
-                                alignItems: "center",
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              {!recipient.readAt ? (
-                                <b className="badge">
-                                  Novo
-                                </b>
-                              ) : null}
-
-                              <small>
-                                {new Intl.DateTimeFormat(
-                                  "pt-BR",
-                                  {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  },
-                                ).format(
-                                  recipient.communication
-                                    .sentAt,
-                                )}
-                              </small>
-                            </div>
-
-                            <strong>
-                              {recipient.communication
-                                .organization.publicName ||
-                                recipient.communication
-                                  .organization.name}
-                            </strong>
-
-                            <h3
-                              style={{
-                                margin: 0,
-                              }}
-                            >
-                              {
-                                recipient.communication
-                                  .title
-                              }
-                            </h3>
-
-                            <small className="muted">
-                              Atleta:{" "}
-                              {recipient.athlete.nickname ||
-                                recipient.athlete.name}
-                            </small>
-
-                            <p
-                              style={{
-                                whiteSpace: "pre-line",
-                                margin: 0,
-                              }}
-                            >
-                              {
-                                recipient.communication
-                                  .body
-                              }
-                            </p>
-                          </div>
-
-                          {!recipient.readAt ? (
-                            <form
-                              action={
-                                markPlayerCommunicationRead
-                              }
-                            >
-                              <input
-                                type="hidden"
-                                name="recipientId"
-                                value={recipient.id}
-                              />
-
-                              <PendingSubmitButton
-                                className="btn-secondary btn-small"
-                                pendingText="Marcando..."
-                              >
-                                Marcar como lido
-                              </PendingSubmitButton>
-                            </form>
-                          ) : (
-                            <small className="muted">
-                              ✓ Lido
-                            </small>
-                          )}
-                        </article>
-                      ),
-                    )}
-                  </div>
-                ) : (
-                  <p className="muted">
-                    Nenhum comunicado recebido para este
-                    atleta.
-                  </p>
-                )}
-              </section>
-            ) : null}
-            {selected ? (
-              <section className="player-family-agenda">
-                <div className="section-title-row">
-                  <div>
-                    <span className="page-eyebrow">MINHA ROTINA</span>
-                    <h2>Agenda esportiva do atleta</h2>
-                    <p className="muted">Convocações de todas as organizações vinculadas aparecem juntas para a família, sem misturar os dados internos dos clubes.</p>
-                  </div>
-                </div>
-
-                {upcomingCallUps.length ? (
-                  <div className="player-agenda-list">
-                    {upcomingCallUps.map(call => (
-                      <article key={call.id}>
-                        <div>
-                          <small>{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(call.match.startsAt)}</small>
-                          <strong>{call.organization.publicName || call.organization.name}</strong>
-                          <p>{call.match.category.name} • x {call.match.opponent}</p>
-                        </div>
-                        <div className="player-callup-response">
-                          <b className={`callup-family-status ${call.status.toLowerCase()}`}>
-                            {call.status === "CONFIRMED" ? "Confirmado" : call.status === "DECLINED" ? "Não poderá" : "Convocado"}
-                          </b>
-                          {call.status === "PENDING" ? (
-                            <div className="player-callup-response-actions">
-                              <form action={respondToPlayerCallUp}>
-                                <input type="hidden" name="callUpId" value={call.id} />
-                                <input type="hidden" name="status" value="CONFIRMED" />
-                                <PendingSubmitButton className="btn btn-small" pendingText="Confirmando...">
-                                  Confirmar presença
-                                </PendingSubmitButton>
-                              </form>
-                              <form action={respondToPlayerCallUp}>
-                                <input type="hidden" name="callUpId" value={call.id} />
-                                <input type="hidden" name="status" value="DECLINED" />
-                                <PendingSubmitButton className="btn-secondary btn-small" pendingText="Enviando...">
-                                  Não poderá
-                                </PendingSubmitButton>
-                              </form>
-                            </div>
-                          ) : null}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="muted">Nenhuma convocação futura encontrada nos vínculos deste atleta.</p>
-                )}
-              </section>
-            ) : null}
-
-            {selected ? (
-              <section className="player-club-links">
-                <div className="section-title-row">
-                  <div>
-                    <span className="page-eyebrow">CLUBES</span>
-                    <h2>Vínculos esportivos</h2>
-                    <p className="muted">
-                      O perfil pertence ao atleta e o clube é um vínculo da trajetória.
-                      Para localizar um cadastro existente, informe o nome completo e a
-                      data de nascimento do atleta. O nome do responsável ajuda a
-                      confirmar a correspondência. O vínculo só é ativado após
-                      confirmação do clube.
-                    </p>
-                  </div>
-                  <details
-                    open={!selected.athleteLinks.some((link) => link.verified)}
-                    style={{
-                      minWidth: "min(100%, 330px)",
-                    }}
-                  >
-                    <summary
-                      style={{
-                        cursor: "pointer",
-                        fontWeight: 800,
-                        marginBottom: 12,
-                      }}
-                    >
-                      {selected.athleteLinks.some((link) => link.verified)
-                        ? "+ Vincular outro clube"
-                        : "Localizar vínculo com clube"}
-                    </summary>
-
-                    <form
-                    action={linkMatchingClubAthletes}
-                    style={{
-                      display: "grid",
-                      gap: 10,
-                      minWidth: "min(100%, 320px)",
-                    }}
-                  >
-                    <input
-                      type="hidden"
-                      name="playerId"
-                      value={selected.id}
-                    />
-
-                    <label>
-                      <span>Nome completo do atleta</span>
-                      <input
-                        name="athleteFullName"
-                        defaultValue={selected.name}
-                        placeholder="Nome completo"
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      <span>Data de nascimento</span>
-                      <input
-                        name="birthDate"
-                        type="date"
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      <span>Nome do responsável</span>
-                      <input
-                        name="guardianName"
-                        defaultValue={user.name}
-                        placeholder="Nome completo do responsável"
-                      />
-                    </label>
-
-                    <PendingSubmitButton
-                      className="btn-secondary"
-                      pendingText="Buscando vínculos..."
-                    >
-                      Buscar vínculos com clubes
-                    </PendingSubmitButton>
-                  </form>
-                  </details>
-                </div>
-
-                {selected.athleteLinks.length ? (
-                  <div className="player-link-list">
-                    {selected.athleteLinks.map((link) => (
-                      <article key={link.id}>
-                        <div>
-                          {link.athlete.organization.logoUrl ? <img src={link.athlete.organization.logoUrl} alt="" /> : <span>CL</span>}
-                        </div>
-                        <section>
-                          <strong>{link.athlete.organization.publicName || link.athlete.organization.name}</strong>
-                          {link.athlete.memberships.length ? (
-                            <div className="player-membership-chips">
-                              {link.athlete.memberships.map(membership => (
-                                <span key={membership.id}>
-                                  {membership.sport === "FOOTBALL" ? "Futebol" : membership.sport === "FUTSAL" ? "Futsal" : "Futebol + Futsal"}
-                                  {" • "}
-                                  {membership.category?.name || membership.teamLabel || "Equipe"}
-                                  {membership.season ? ` • ${membership.season}` : ""}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <p>{link.athlete.category?.name || "Sem categoria"} • {link.athlete.position || "Atleta"}</p>
-                          )}
-                        </section>
-                        <b className={link.verified ? "verified" : ""}>
-                          {link.verified ? "Vínculo verificado" : "Aguardando verificação"}
-                        </b>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="muted">
-                    Nenhum clube vinculado. Se uma equipe 11UP já cadastrou este atleta,
-                    informe o nome completo e a data de nascimento acima e clique em
-                    “Buscar vínculos com clubes”. A equipe confirmará a solicitação antes
-                    de ativá-la.
-                  </p>
-                )}
-              </section>
-            ) : null}
           </section>
         </div>
       </div>
