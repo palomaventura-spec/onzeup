@@ -188,6 +188,10 @@ export default async function GuardianAgendaPage({ searchParams }: {
   }
   const today = items.filter((item) => item.at >= start && item.at < clubDay(1));
   const upcoming = items.filter((item) => item.at >= clubDay(1));
+  // O botao so aparece quando a interface e a API estao ambas habilitadas.
+  const absenceSubmissionAvailable =
+    process.env.NEXT_PUBLIC_TRAINING_ABSENCE_SUBMISSIONS_ENABLED === "true" &&
+    process.env.TRAINING_ABSENCE_API_ENABLED === "true";
 
   function cards(list: AgendaItem[]) {
     return list.map((item) => (
@@ -202,7 +206,7 @@ export default async function GuardianAgendaPage({ searchParams }: {
         <p>Situação: {(item.status === "SCHEDULED" ? "PROGRAMADO" : item.status.replaceAll("_", " "))}</p>
         {item.kind === "JOGO" ? <p className={styles.callUp}>Convocação: {item.callUp === "SEM CONVOCAÇÃO INDIVIDUAL" ? "Ainda não consta convocação individual" : item.callUp?.replaceAll("_", " ")}</p> : null}
         {item.details?.map((detail) => <p key={detail}>{detail}</p>)}
-        {item.kind === "TREINO" && item.scheduleId && selected ? (
+        {item.kind === "TREINO" && item.scheduleId && selected && absenceSubmissionAvailable ? (
           <JustificarFaltaForm scheduleId={item.scheduleId} playerId={selected.id} />
         ) : null}
       </article>
@@ -230,7 +234,11 @@ export default async function GuardianAgendaPage({ searchParams }: {
             <section className={styles.section}><h2>Hoje</h2>{today.length ? <div className={styles.list}>{cards(today)}</div> : <p className={styles.empty}>Nenhum compromisso para hoje.</p>}</section>
             <section className={styles.section}><h2>Próximos 7 dias</h2>{upcoming.length ? <div className={styles.list}>{cards(upcoming)}</div> : <p className={styles.empty}>Nenhum compromisso cadastrado para os próximos dias.</p>}</section>
           </>}
-        <p className={styles.note}>A consulta da agenda está ativa. O envio de justificativas será habilitado após a conclusão da API segura e da aprovação pelo Club.</p>
+        {absenceSubmissionAvailable ? (
+          <p className={styles.note}>Não poderá participar de um treino? Toque em “Justificar falta” no compromisso correspondente, informe o motivo e envie sua solicitação. O clube analisará o pedido.</p>
+        ) : (
+          <p className={styles.note}>Aqui você pode acompanhar os treinos e jogos do atleta. A opção de justificar faltas estará disponível em breve.</p>
+        )}
       </div>
     </main>
   );
