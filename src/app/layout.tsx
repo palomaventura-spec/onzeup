@@ -27,6 +27,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
 
   icons: {
+    apple: [{ url: "/apple-touch-icon.png?v=11up2", sizes: "180x180", type: "image/png" }],
     icon: [
       {
         url: "/brand/11up/app/11up-icon-192.svg",

@@ -24,16 +24,17 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "pt-BR",
 
     icons: [
+      { src: "/pwa-icon-maskable-512.png?v=11up2", sizes: "512x512", type: "image/png", purpose: "maskable" },
       {
-        src: "/brand/11up/app/11up-icon-192.svg",
+        src: "/pwa-icon-192.png?v=11up2",
         sizes: "192x192",
-        type: "image/svg+xml",
+        type: "image/png",
         purpose: "any",
       },
       {
-        src: "/brand/11up/app/11up-icon-512.svg",
+        src: "/pwa-icon-512.png?v=11up2",
         sizes: "512x512",
-        type: "image/svg+xml",
+        type: "image/png",
         purpose: "any",
       },
     ],
@@ -45,10 +46,11 @@ export default function manifest(): MetadataRoute.Manifest {
         description: "Acessar a gestão do clube",
         url: "/dashboard",
         icons: [
+      { src: "/pwa-icon-maskable-512.png?v=11up2", sizes: "512x512", type: "image/png", purpose: "maskable" },
           {
-            src: "/brand/11up/app/11up-icon-192.svg",
+            src: "/pwa-icon-192.png?v=11up2",
             sizes: "192x192",
-            type: "image/svg+xml",
+            type: "image/png",
           },
         ],
       },
@@ -58,10 +60,11 @@ export default function manifest(): MetadataRoute.Manifest {
         description: "Acessar a área da família e do atleta",
         url: "/responsavel",
         icons: [
+      { src: "/pwa-icon-maskable-512.png?v=11up2", sizes: "512x512", type: "image/png", purpose: "maskable" },
           {
-            src: "/brand/11up/app/11up-icon-192.svg",
+            src: "/pwa-icon-192.png?v=11up2",
             sizes: "192x192",
-            type: "image/svg+xml",
+            type: "image/png",
           },
         ],
       },
@@ -71,10 +74,11 @@ export default function manifest(): MetadataRoute.Manifest {
         description: "Acessar a área do treinador",
         url: "/coach/dashboard",
         icons: [
+      { src: "/pwa-icon-maskable-512.png?v=11up2", sizes: "512x512", type: "image/png", purpose: "maskable" },
           {
-            src: "/brand/11up/app/11up-icon-192.svg",
+            src: "/pwa-icon-192.png?v=11up2",
             sizes: "192x192",
-            type: "image/svg+xml",
+            type: "image/png",
           },
         ],
       },
