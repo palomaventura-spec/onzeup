@@ -5,6 +5,7 @@ import PerformanceRadarChart from "@/components/PerformanceRadarChart";
 import { requireClubPermission } from "@/lib/club-access";
 import { hasEffectiveClubElite } from "@/lib/billing-entitlements";
 import { prisma } from "@/lib/prisma";
+import { format11UPName, parsePerformanceClassification, performanceStage, performanceScorePercentage } from "@/lib/performance-model-catalog";
 
 const AREAS = [
   { key: "PHYSICAL", label: "Física", color: "#2563eb" },
@@ -60,7 +61,7 @@ export default async function PerformanceEvaluationReportPage({
       include: {
         athlete: { include: { category: true } },
         evaluator: { select: { name: true } },
-        template: { select: { name: true } },
+        template: { select: { name: true, version: true, modelFamilyKey: true, classificationJson: true } },
         scores: {
           orderBy: [{ sortOrder: "asc" }, { metricLabel: "asc" }],
         },
@@ -92,12 +93,17 @@ export default async function PerformanceEvaluationReportPage({
       athleteId: id,
       organizationId: user.organizationId,
       athleteRole: evaluation.athleteRole,
+      ...(evaluation.template?.modelFamilyKey ? {
+        template: { is: { modelFamilyKey: evaluation.template.modelFamilyKey } },
+      } : {}),
       status: "FINALIZED",
     },
     orderBy: { evaluatedAt: "asc" },
     include: { scores: true },
   });
 
+  const stageConfig = parsePerformanceClassification(evaluation.template?.classificationJson);
+  const stageResult = performanceStage(performanceScorePercentage(evaluation.scores), stageConfig);
   const overall = average(evaluation.scores);
   const overallPercent = percent(overall);
   const areaResults = AREAS.map((area) => {
@@ -119,7 +125,7 @@ export default async function PerformanceEvaluationReportPage({
       <div className="page-head">
         <div>
           <span className="page-eyebrow">RELATÓRIO INTERNO • PERFORMANCE</span>
-          <h1>{evaluation.title || "Avaliação do atleta"}</h1>
+          <h1>{format11UPName(evaluation.title || "Avaliação do atleta")}</h1>
           <p className="muted">
             {evaluation.athlete.name} •{" "}
             {evaluation.athlete.category?.name || "Sem categoria"} •{" "}
@@ -152,7 +158,7 @@ export default async function PerformanceEvaluationReportPage({
         {[
           ["Resultado geral", overall === null ? "—" : `${overall.toFixed(2)} / 4`],
           ["Percentual geral", overallPercent === null ? "—" : `${overallPercent}%`],
-          ["Classificação", classification(overall)],
+          ["Classificação", stageResult ?? classification(overall)],
           ["Tipo", evaluation.athleteRole === "GOALKEEPER" ? "Goleiro" : "Jogador de linha"],
           ["Avaliador", evaluation.evaluator?.name || "—"],
           ["Status", evaluation.status === "FINALIZED" ? "Finalizada" : "Rascunho"],
@@ -165,6 +171,9 @@ export default async function PerformanceEvaluationReportPage({
       </section>
 
       <section className="card">
+        {stageResult ? (
+          <p style={{fontWeight:800}}>Classificação: {stageResult} · {format11UPName(evaluation.template?.name)} (v{evaluation.template?.version})</p>
+        ) : null}
         <span className="page-eyebrow">RESULTADO POR VALÊNCIA</span>
         <h2>Desempenho nesta avaliação</h2>
         <div

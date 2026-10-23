@@ -1,0 +1,64 @@
+/* Editor de modelos — caixas de seleção compactas e alinhadas. */
+.checkRow {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  min-width: 0;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid #dce5e8;
+  border-radius: 12px;
+  background: #f8fafb;
+  color: #263a45;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+}
+
+.checkRow:hover {
+  border-color: #b9d38b;
+  background: #f9fdf2;
+}
+
+.checkRow:focus-within {
+  outline: 2px solid #8ec900;
+  outline-offset: 2px;
+}
+
+/* O CSS global do 11UP define width:100% nos inputs.
+   Isolamos apenas os checkboxes deste editor. */
+.checkRow .checkbox {
+  display: block !important;
+  appearance: auto !important;
+  box-sizing: border-box !important;
+  flex: 0 0 20px !important;
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 4px;
+  accent-color: #84c500;
+  cursor: pointer;
+}
+
+.checkText {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 520px) {
+  .checkRow {
+    padding: 12px;
+    gap: 10px !important;
+    font-size: 12px;
+  }
+}

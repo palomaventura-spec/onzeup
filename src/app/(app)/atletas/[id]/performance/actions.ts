@@ -22,6 +22,8 @@ import {
   khamisRocheProjection,
 } from "@/lib/growth-calculations";
 import { prisma } from "@/lib/prisma";
+import { format11UPName } from "@/lib/performance-model-catalog";
+import { findEligibleTrainingAthletes } from "@/lib/training-athletes";
 
 function clean(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -191,6 +193,7 @@ export async function createPerformanceEvaluation(formData: FormData) {
         date: true,
         startTime: true,
         categoryId: true,
+        sport: true,
         location: true,
         notes: true,
       },
@@ -200,6 +203,17 @@ export async function createPerformanceEvaluation(formData: FormData) {
       redirect(
         `/atletas/${athleteId}/performance/avaliacoes/nova?erro=treino`,
       );
+    }
+
+    // Reutiliza a elegibilidade do próprio treino, inclusive categorias EVALUATION.
+    // A validação ocorre na action, protegendo também chamadas diretas.
+    const eligibleAthletes = await findEligibleTrainingAthletes(
+      user.organizationId,
+      trainingSchedule.categoryId,
+      trainingSchedule.sport,
+    );
+    if (!eligibleAthletes.some((item) => item.id === athlete.id)) {
+      redirect(`${returnTo}?erro=atleta-nao-elegivel&athleteId=${encodeURIComponent(athleteId)}`);
     }
 
     trainingDate = trainingSchedule.date;
@@ -291,6 +305,10 @@ export async function createPerformanceEvaluation(formData: FormData) {
           athleteId: athlete.id,
           trainingSessionId,
           status: "FINALIZED",
+          // Avaliações por métodos diferentes podem ocorrer no mesmo treino.
+          ...(template.modelFamilyKey ? {
+            template: { is: { modelFamilyKey: template.modelFamilyKey } },
+          } : {templateId: template.id}),
         },
         select: {
           id: true,
@@ -838,7 +856,7 @@ export async function generateIndividualPerformanceReport(
       evaluation: {
         id: evaluation.id,
         title: evaluation.title,
-        templateName: evaluation.template?.name || null,
+        templateName: evaluation.template?.name ? format11UPName(evaluation.template.name) : null,
         athleteRole: evaluation.athleteRole,
         sport: evaluation.sport,
         season: evaluation.season,
@@ -1651,7 +1669,7 @@ export async function generateSportsDossier(formData: FormData) {
       })),
     } } : {}),
     ...(sections.includes("EVALUATION") ? { evaluations: evals.map((item) => ({
-      id: item.id, title: item.title ?? item.template?.name ?? "Avaliação",
+      id: item.id, title: format11UPName(item.title ?? item.template?.name ?? "Avaliação"),
       sport: evaluationSport(item), date: item.evaluatedAt.toISOString(),
       evaluatorName: item.evaluator?.name ?? null,
       strengths: item.strengths, developmentPoints: item.developmentPoints,

@@ -150,6 +150,59 @@ export async function POST(request: Request) {
       lastDueDate: body.payment?.dueDate || previous.lastDueDate,
     });
 
+    // O Player usa transação serializável para impedir extensão dupla
+    // quando dois webhooks do mesmo pagamento chegam simultaneamente.
+    if (isPaidPayment && local.playerId && !local.organizationId) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const result = await prisma.$transaction(async (tx) => {
+            const current = await tx.payment.findUnique({ where: { id: local.id } });
+            if (!current) return { ignored: "payment-not-found" };
+            const state = readAsaasData(current.pixPayload);
+            const seenEvents = new Set(state.processedEventIds || []);
+            const seenPayments = new Set(state.processedPaymentIds || []);
+            if (seenEvents.has(body.id!)) return { duplicate: true };
+            const alreadyApplied = seenPayments.has(paymentId);
+            seenEvents.add(body.id!);
+            seenPayments.add(paymentId);
+            const player = await tx.playerProfile.findUnique({ where: { id: local.playerId! } });
+            if (!player) return { ignored: "player-not-found" };
+            const updatedPayload = writeAsaasData({
+              ...state,
+              provider: "ASAAS",
+              checkoutId,
+              subscriptionId,
+              checkoutStatus: body.checkout?.status || state.checkoutStatus || undefined,
+              processedEventIds: Array.from(seenEvents).slice(-80),
+              processedPaymentIds: Array.from(seenPayments).slice(-80),
+              lastEvent: event,
+              lastPaymentId: paymentId,
+              lastPaymentStatus: body.payment?.status || state.lastPaymentStatus,
+              lastDueDate: body.payment?.dueDate || state.lastDueDate,
+            });
+            await tx.payment.update({ where: { id: local.id }, data: {
+              status: "PAID", confirmedAt: current.confirmedAt || new Date(), pixPayload: updatedPayload,
+            } });
+            if (!alreadyApplied) {
+              const now = new Date();
+              const start = player.premiumUntil && player.premiumUntil > now ? player.premiumUntil : now;
+              await tx.playerProfile.update({ where: { id: player.id }, data: {
+                plan: "PREMIUM", planStatus: "ACTIVE",
+                premiumUntil: addMonths(start, 1),
+                // A cortesia já concedida permanece registrada; a assinatura paga tem prioridade.
+                template: player.template === "FREE_CLEAN" ? "PREMIUM_DARK" : undefined,
+              } });
+            }
+            return { activated: true, paymentAlreadyApplied: alreadyApplied };
+          }, { isolationLevel: "Serializable" });
+          return NextResponse.json({ ok: true, ...result });
+        } catch (error) {
+          if ((error as { code?: string })?.code === "P2034" && attempt < 2) continue;
+          throw error;
+        }
+      }
+    }
+
     if (isPaidPayment) {
       const operations: any[] = [
         prisma.payment.update({
@@ -223,7 +276,14 @@ export async function POST(request: Request) {
         prisma.payment.update({ where: { id: local.id }, data: { pixPayload: providerData } }),
       ];
 
-      if (local.playerId) {
+      const playerProtected = Boolean(local.player && (
+        (local.player.trialEndsAt && local.player.trialEndsAt >= new Date() && local.player.planStatus === "TRIAL") ||
+        (local.player.isComplimentary && (!local.player.complimentaryUntil || local.player.complimentaryUntil >= new Date())) ||
+        (local.player.plan === "PREMIUM" && local.player.planStatus === "ACTIVE" &&
+          (!local.player.premiumUntil || local.player.premiumUntil >= new Date())) ||
+        local.status === "PAID"
+      ));
+      if (local.playerId && !playerProtected) {
         operations.push(
           prisma.playerProfile.update({
             where: { id: local.playerId },
@@ -267,7 +327,13 @@ export async function POST(request: Request) {
         prisma.payment.update({ where: { id: local.id }, data: { pixPayload: providerData } }),
       ];
 
-      if (local.playerId) {
+      const playerProtected = Boolean(local.player && (
+        (local.player.trialEndsAt && local.player.trialEndsAt >= new Date() && local.player.planStatus === "TRIAL") ||
+        (local.player.isComplimentary && (!local.player.complimentaryUntil || local.player.complimentaryUntil >= new Date())) ||
+        (local.player.plan === "PREMIUM" && local.player.planStatus === "ACTIVE" &&
+          (!local.player.premiumUntil || local.player.premiumUntil >= new Date()))
+      ));
+      if (local.playerId && !playerProtected) {
         operations.push(
           prisma.playerProfile.update({
             where: { id: local.playerId },

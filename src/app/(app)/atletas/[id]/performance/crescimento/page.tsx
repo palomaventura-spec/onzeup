@@ -1,3 +1,4 @@
+import PendingSubmitButton from "@/components/PendingSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -173,7 +174,7 @@ export default async function AthleteGrowthPage({
           {effectiveRole === "MANAGER" ? (
             <form action={generateClubGrowthReport} className="growth-export-form">
               <input type="hidden" name="athleteId" value={athlete.id} />
-              <button className="growth-export-button" type="submit">Gerar relatório / PDF</button>
+              <PendingSubmitButton pendingText="Gerando…" className="growth-export-button" type="submit">Gerar relatório / PDF</PendingSubmitButton>
             </form>
           ) : null}
         </div>
@@ -253,7 +254,7 @@ export default async function AthleteGrowthPage({
                 <label>Altura da mãe (cm)<input name="motherHeightCm" type="number" step="0.1" min="120" max="220" defaultValue={n(profile?.motherHeightCm) ?? ""} /></label>
                 <label>Altura do pai (cm)<input name="fatherHeightCm" type="number" step="0.1" min="120" max="230" defaultValue={n(profile?.fatherHeightCm) ?? ""} /></label>
               </div>
-              <button className="growth-primary" type="submit">Salvar perfil privado</button>
+              <PendingSubmitButton pendingText="Salvando…" className="growth-primary" type="submit">Salvar perfil privado</PendingSubmitButton>
             </form>
           </article>
           ) : null}
@@ -269,7 +270,7 @@ export default async function AthleteGrowthPage({
                   <div><strong>{staff.name}</strong><small>{staff.roleTitle}</small></div>
                   <label><input type="checkbox" name="allowView" value="true" defaultChecked={canView || canManage} /> Ver</label>
                   <label><input type="checkbox" name="allowManage" value="true" defaultChecked={canManage} /> Registrar</label>
-                  <button type="submit">Salvar</button>
+                  <PendingSubmitButton pendingText="Salvando…" type="submit">Salvar</PendingSubmitButton>
                 </form>;
               })}</div> : <p className="muted">Nenhum profissional com usuário interno disponível para esta categoria.</p>}
             </article>
@@ -293,7 +294,7 @@ export default async function AthleteGrowthPage({
                 <label className="wide">Observação<textarea name="notes" rows={3} defaultValue={selected?.notes || ""} /></label>
               </div></details>
               {!birthDate ? <p className="growth-error">Cadastre a data de nascimento exata na ficha privada antes de salvar.</p> : null}
-              <div className="growth-form-actions"><button className="growth-primary" disabled={!birthDate} type="submit">{selected ? "Salvar alterações" : "Adicionar medição"}</button>{selected ? <Link href={`/atletas/${athlete.id}/performance/crescimento`}>Cancelar</Link> : null}</div>
+              <div className="growth-form-actions"><PendingSubmitButton pendingText="Cadastrando…" className="growth-primary" disabled={!birthDate} type="submit">{selected ? "Salvar alterações" : "Adicionar medição"}</PendingSubmitButton>{selected ? <Link href={`/atletas/${athlete.id}/performance/crescimento`}>Cancelar</Link> : null}</div>
             </form>
           </article>
         </section>
@@ -304,7 +305,7 @@ export default async function AthleteGrowthPage({
         {metrics.length ? <div className="growth-table-wrap"><table className="growth-table"><thead><tr><th>Data</th><th>Idade</th><th>Altura</th><th>Peso</th><th>IMC</th><th>Δ altura</th><th>cm/ano</th><th>Enverg./Alt.</th><th>Origem</th>{access.canManageGrowth ? <th>Ações</th> : null}</tr></thead><tbody>
           {[...metrics].reverse().map((item) => {
             const original = athlete.bodyMeasurements.find((m) => m.id === item.id)!;
-            return <tr key={item.id}><td>{dateLabel(item.measuredAt)}</td><td>{item.exactAge?.label || "—"}</td><td>{cm(item.heightCm)}</td><td>{kg(item.weightKg)}</td><td>{item.bmi?.toFixed(1) || "—"}</td><td>{item.growthDeltaCm == null ? "—" : `${item.growthDeltaCm > 0 ? "+" : ""}${item.growthDeltaCm} cm`}</td><td>{item.growthVelocityCmPerYear == null ? "—" : `${item.growthVelocityCmPerYear}`}</td><td>{item.wingspanHeightRatio ?? "—"}</td><td>{sourceLabel(original.measurementSource)}</td>{access.canManageGrowth ? <td><div className="growth-actions"><Link href={`?edit=${item.id}#nova-medicao`}>Editar</Link><form action={deleteClubGrowthMeasurement}><input type="hidden" name="athleteId" value={athlete.id} /><input type="hidden" name="measurementId" value={item.id} /><button type="submit">Excluir</button></form></div></td> : null}</tr>;
+            return <tr key={item.id}><td>{dateLabel(item.measuredAt)}</td><td>{item.exactAge?.label || "—"}</td><td>{cm(item.heightCm)}</td><td>{kg(item.weightKg)}</td><td>{item.bmi?.toFixed(1) || "—"}</td><td>{item.growthDeltaCm == null ? "—" : `${item.growthDeltaCm > 0 ? "+" : ""}${item.growthDeltaCm} cm`}</td><td>{item.growthVelocityCmPerYear == null ? "—" : `${item.growthVelocityCmPerYear}`}</td><td>{item.wingspanHeightRatio ?? "—"}</td><td>{sourceLabel(original.measurementSource)}</td>{access.canManageGrowth ? <td><div className="growth-actions"><Link href={`?edit=${item.id}#nova-medicao`}>Editar</Link><form action={deleteClubGrowthMeasurement}><input type="hidden" name="athleteId" value={athlete.id} /><input type="hidden" name="measurementId" value={item.id} /><PendingSubmitButton pendingText="Excluindo…" type="submit">Excluir</PendingSubmitButton></form></div></td> : null}</tr>;
           })}
         </tbody></table></div> : <p className="muted">Nenhuma medição registrada.</p>}
       </section>
@@ -319,9 +320,9 @@ export default async function AthleteGrowthPage({
           <label>Profissional / referência do laudo<input name="professional" /></label>
           <label>Documento anexado<select name="reportDocumentId" defaultValue=""><option value="">Sem documento vinculado</option>{medicalDocs.map((doc) => <option value={doc.id} key={doc.id}>{doc.title || doc.originalFileName}</option>)}</select></label>
           <label className="wide">Observação<textarea name="notes" rows={2} /></label>
-          <button className="growth-primary" type="submit">Registrar informação de idade óssea</button>
+          <PendingSubmitButton pendingText="Salvando…" className="growth-primary" type="submit">Registrar informação de idade óssea</PendingSubmitButton>
         </form> : null}
-        {athlete.boneAgeAssessments.length ? <div className="growth-bone-list">{athlete.boneAgeAssessments.map((item) => <article key={item.id}><div><strong>{dateLabel(item.examinedAt)}</strong><span>{boneMethodLabel(item.method)} · {item.boneAgeMonths} meses</span>{safeDecryptPrivateData(item.professionalEncrypted) ? <small>Profissional: {safeDecryptPrivateData(item.professionalEncrypted)}</small> : null}{safeDecryptPrivateData(item.notesEncrypted) ? <small>{safeDecryptPrivateData(item.notesEncrypted)}</small> : null}{item.reportDocument ? <small>Documento: {item.reportDocument.title || item.reportDocument.originalFileName}</small> : null}</div>{access.canManageGrowth ? <form action={deleteBoneAgeAssessment}><input type="hidden" name="athleteId" value={athlete.id} /><input type="hidden" name="assessmentId" value={item.id} /><button type="submit">Excluir</button></form> : null}</article>)}</div> : <p className="muted">Nenhuma informação de idade óssea registrada. Este exame não é obrigatório.</p>}
+        {athlete.boneAgeAssessments.length ? <div className="growth-bone-list">{athlete.boneAgeAssessments.map((item) => <article key={item.id}><div><strong>{dateLabel(item.examinedAt)}</strong><span>{boneMethodLabel(item.method)} · {item.boneAgeMonths} meses</span>{safeDecryptPrivateData(item.professionalEncrypted) ? <small>Profissional: {safeDecryptPrivateData(item.professionalEncrypted)}</small> : null}{safeDecryptPrivateData(item.notesEncrypted) ? <small>{safeDecryptPrivateData(item.notesEncrypted)}</small> : null}{item.reportDocument ? <small>Documento: {item.reportDocument.title || item.reportDocument.originalFileName}</small> : null}</div>{access.canManageGrowth ? <form action={deleteBoneAgeAssessment}><input type="hidden" name="athleteId" value={athlete.id} /><input type="hidden" name="assessmentId" value={item.id} /><PendingSubmitButton pendingText="Excluindo…" type="submit">Excluir</PendingSubmitButton></form> : null}</article>)}</div> : <p className="muted">Nenhuma informação de idade óssea registrada. Este exame não é obrigatório.</p>}
       </section>
 
       <footer className="growth-footer"><strong>{GROWTH_DISCLAIMER}</strong><span>Dados privados: não são usados no perfil público do atleta.</span></footer>
