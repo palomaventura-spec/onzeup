@@ -802,14 +802,12 @@ export default async function MatchCallUpsPage({
         "DECLINED",
     ).length;
 
+  // 11UP_INFO_CALLUP_STATUS_V1
+  // Informado nao e pendente. Convocacao informativa dispensa resposta.
   const pendingCount =
-    match.callUps.filter(
-      (item) =>
-        item.status !==
-          "CONFIRMED" &&
-        item.status !==
-          "DECLINED",
-    ).length;
+    match.callUpMode === "INFORMATION_ONLY"
+      ? 0
+      : match.callUps.filter((item) => item.status === "PENDING").length;
 
   return (
     <main className="callup-v13">
@@ -1002,16 +1000,19 @@ export default async function MatchCallUpsPage({
 
           <div>
             <small>
-              RESPOSTAS
+              {match.callUpMode === "INFORMATION_ONLY" ? "CONVOCAÇÕES" : "RESPOSTAS"}
             </small>
 
             <strong>
-              {confirmedCount} confirmados
+              {match.callUpMode === "INFORMATION_ONLY"
+                ? `${match.callUps.length} atletas informados`
+                : `${confirmedCount} confirmados`}
             </strong>
 
             <span>
-              {declinedCount} não poderão ·{" "}
-              {pendingCount} pendentes
+              {match.callUpMode === "INFORMATION_ONLY"
+                ? "Nenhuma confirmação necessária"
+                : <>{declinedCount} não poderão · {pendingCount} pendentes</>}
             </span>
           </div>
         </article>
@@ -1375,16 +1376,15 @@ export default async function MatchCallUpsPage({
                           <span
                             className={`callup-v13-status ${callUp.status.toLowerCase()}`}
                           >
-                            {callUp.status ===
-                            "CONFIRMED"
-                              ? "Confirmado"
-                              : callUp.status ===
-                                  "DECLINED"
-                                ? "Não poderá"
-                                : callUp.status ===
-                                    "INFORMED"
-                                  ? "Informado"
-                                  : "Aguardando"}
+                            {match.callUpMode === "INFORMATION_ONLY"
+                              ? "Convocado · sem confirmação"
+                              : callUp.status === "CONFIRMED"
+                                ? "Confirmado"
+                                : callUp.status === "DECLINED"
+                                  ? "Não poderá"
+                                  : callUp.status === "INFORMED"
+                                    ? "Informado"
+                                    : "Aguardando"}
                           </span>
                         </div>
 
@@ -1584,10 +1584,10 @@ export default async function MatchCallUpsPage({
           </h2>
 
           <p>
-            A arte usa a configuração,
-            escalação, atletas e informações
-            do jogo já salvas no 11UP.
-          </p>
+  Escolha entre a formação com titulares e reservas ou todos os
+  convocados no campo. Em ambas as artes, o 11UP mostra o nome
+  esportivo cadastrado para cada atleta.
+</p>
 
           <div className="callup-v13-publish-summary">
             <span>
@@ -1621,25 +1621,33 @@ export default async function MatchCallUpsPage({
         </div>
 
         <div className="callup-v13-publish-actions">
-          {startersReady ? (
-            <Link
-              className="primary"
-              href={`/convocacoes/${match.id}/arte`}
-            >
-              {artworkComplete
-                ? "Abrir arte e PDF"
-                : "Visualizar prévia"}
-              <Icon
-                name="arrow"
-                size={16}
-              />
-            </Link>
-          ) : (
-            <span className="disabled">
-              Complete a escalação
-            </span>
-          )}
-        </div>
+  {startersReady ? (
+    <Link
+      className="primary"
+      href={`/convocacoes/${match.id}/arte`}
+    >
+      Formação + reservas
+      <Icon name="arrow" size={16} />
+    </Link>
+  ) : (
+    <span className="disabled">
+      Formação + reservas: complete a escalação
+    </span>
+  )}
+  {match.callUps.length > 0 ? (
+    <Link
+      className="primary"
+      href={`/convocacoes/${match.id}/arte?modelo=elenco`}
+    >
+      Todo o elenco em campo
+      <Icon name="arrow" size={16} />
+    </Link>
+  ) : (
+    <span className="disabled">
+      Para mostrar todo o elenco, convoque os atletas
+    </span>
+  )}
+</div>
       </section>
     </main>
   );

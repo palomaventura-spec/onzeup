@@ -479,6 +479,7 @@ export async function createCallUps(formData: FormData) {
   );
 
   revalidatePath(`/convocacoes/${match.id}`);
+  revalidatePath("/responsavel/agenda");
 }
 
 export async function deleteCallUp(formData: FormData) {
@@ -531,6 +532,7 @@ export async function deleteCallUp(formData: FormData) {
   ]);
 
   revalidatePath(`/convocacoes/${callUp.matchId}`);
+  revalidatePath("/responsavel/agenda");
 }
 
 export async function updateCallUpStatus(formData: FormData) {
@@ -610,6 +612,7 @@ export async function updateCallUpStatus(formData: FormData) {
   });
 
   revalidatePath(`/convocacoes/${callUp.matchId}`);
+  revalidatePath("/responsavel/agenda");
 }
 
 export async function markCallUpsSent(formData: FormData) {
@@ -671,6 +674,7 @@ export async function markCallUpsSent(formData: FormData) {
   );
 
   revalidatePath(`/convocacoes/${match.id}`);
+  revalidatePath("/responsavel/agenda");
 }
 
 export async function goToMatchCallUps(formData: FormData) {
@@ -1173,4 +1177,5 @@ export async function saveCallUpLineup(formData: FormData) {
   revalidatePath(`/convocacoes/${matchId}`);
   revalidatePath(`/convocacoes/${matchId}/arte`);
   revalidatePath(`/jogos/${matchId}`);
+  revalidatePath("/responsavel/agenda");
 }

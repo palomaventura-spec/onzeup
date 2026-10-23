@@ -12,15 +12,20 @@ import ConvocationPrintActions from "../../ConvocationPrintActions";
 import SafeConvocationImage from "../../SafeConvocationImage";
 
 function dateParts(date: Date) {
+  // Datas e horas dos jogos ja sao registradas no formato UTC-as-wallclock.
+  // Manter consistencia com a pagina principal da convocacao.
   const dateText = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: "UTC",
   }).format(date);
 
   const timeText = new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
   }).format(date);
 
   return { dateText, timeText };
@@ -77,7 +82,7 @@ function AthleteBadge({
   number: number | null;
   captain: boolean;
 }) {
-  const name = athlete.nickname || athlete.name;
+  const name = athlete.nickname?.trim() || athlete.name.trim().split(/\s+/)[0] || "Atleta";
 
   return (
     <div className="art-athlete">
@@ -104,11 +109,15 @@ function AthleteBadge({
 
 export default async function ConvocationArtworkPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ matchId: string }>;
+  searchParams: Promise<{ modelo?: string }>;
 }) {
   const user = await requireClubPermission("CALLUPS_VIEW");
   const { matchId } = await params;
+  const { modelo } = await searchParams;
+  const showEntireSquad = modelo === "elenco";
 
   const match = await prisma.match.findFirst({
     where: {
@@ -123,7 +132,6 @@ export default async function ConvocationArtworkPage({
             orderBy: {
               createdAt: "asc",
             },
-            take: 1,
           },
         },
       },
@@ -342,7 +350,29 @@ export default async function ConvocationArtworkPage({
     .filter((stat) => stat.lineupRole === "SUBSTITUTE")
     .slice(0, reserveLimit);
 
+  // Modelo elenco: usar os atletas realmente convocados, independentemente
+  // de quem foi classificado internamente como titular ou reserva.
+  const squadEntries = match.callUps.map((callUp) => {
+    const stat = match.athleteStats.find((item) => item.athleteId === callUp.athleteId);
+    return {
+      athleteId: callUp.athleteId,
+      athlete: callUp.athlete,
+      jerseyNumber: stat?.jerseyNumber ?? callUp.athlete.jerseyNumber ?? null,
+      isCaptain: stat?.isCaptain ?? false,
+    };
+  }).sort((a, b) => {
+    const numberOrder = (a.jerseyNumber ?? 999) - (b.jerseyNumber ?? 999);
+    return numberOrder || (a.athlete.nickname || a.athlete.name).localeCompare(
+      b.athlete.nickname || b.athlete.name, "pt-BR",
+    );
+  });
+  const squadColumns = squadEntries.length <= 8 ? 3
+    : squadEntries.length <= 12 ? 4
+    : squadEntries.length <= 20 ? 5 : 6;
+  const squadRows = Math.ceil(squadEntries.length / squadColumns);
+
   if (
+    !showEntireSquad &&
     !requiredSlots.every((slot) =>
       starterStats.some(
         (stat) => stat.positionPlayed === slot,
@@ -353,8 +383,9 @@ export default async function ConvocationArtworkPage({
   }
 
   const isComplete =
+    match.callUps.length > 0 &&
     match.callUps.length === squadLimit &&
-    starterStats.length === formationSlots.length;
+    (showEntireSquad || starterStats.length === formationSlots.length);
 
   const { dateText, timeText } = dateParts(match.startsAt);
 
@@ -369,14 +400,44 @@ export default async function ConvocationArtworkPage({
       (item) => item.staffMember,
     );
 
+  // A escolha do tecnico respeita a funcao e a categoria real do jogo.
+  // "Sub 7" e "SUB-07" sao interpretados como a mesma categoria.
+  const normalizeStaffRole = (value: string) =>
+    value.normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\b0+(\d+)\b/g, "$1")
+      .replace(/[^a-z0-9]/g, "");
+
+  const isSupportRole = (role: string) =>
+    /auxiliar|assistente|adjunto|massag|preparador|prepfisico|fisico|fisioter|analista|goleiro|medico|coordena|supervis|diretor/.test(normalizeStaffRole(role));
+
+  const isHeadCoach = (member: { roleTitle: string }) =>
+    !isSupportRole(member.roleTitle) &&
+    /^(tecnico|treinador|headcoach|professor)/.test(normalizeStaffRole(member.roleTitle));
+
+  const isCategoryCoach = (member: { roleTitle: string }) =>
+    !isSupportRole(member.roleTitle) &&
+    normalizeStaffRole(member.roleTitle) === normalizeStaffRole(match.category.name);
+
   const coach =
-    selectedStaff[0] ||
-    match.category.staffMembers[0];
+    selectedStaff.find(isHeadCoach) ||
+    selectedStaff.find(isCategoryCoach) ||
+    match.category.staffMembers.find(isHeadCoach) ||
+    match.category.staffMembers.find(isCategoryCoach) ||
+    match.category.staffMembers.find((member) => !isSupportRole(member.roleTitle)) ||
+    selectedStaff.find((member) => member.categoryId === match.categoryId && !isSupportRole(member.roleTitle)) ||
+    null;
+
+  // Apenas os demais profissionais relacionados a ESTE jogo integram a comissao.
+  const commissionMembers = selectedStaff
+    .filter((member) => member.id !== coach?.id)
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 
   const athletePhotoPairs = await Promise.all(
-    match.athleteStats.map(async (stat) => [
-      stat.athleteId,
-      await embeddedImageUrl(stat.athlete.photoUrl),
+    match.callUps.map(async (callUp) => [
+      callUp.athleteId,
+      await embeddedImageUrl(callUp.athlete.photoUrl),
     ] as const),
   );
 
@@ -393,10 +454,11 @@ export default async function ConvocationArtworkPage({
 
   const sportLabel = isFutsal ? "Futsal" : "Futebol";
 
+  const fieldItemCount = showEntireSquad ? squadEntries.length : formationSlots.length;
   const fieldDensityClass =
-    formationSlots.length >= 13
+    fieldItemCount >= 21
       ? "poster-field-dense"
-      : formationSlots.length >= 10
+      : fieldItemCount >= 10
         ? "poster-field-compact"
         : "";
 
@@ -746,6 +808,24 @@ export default async function ConvocationArtworkPage({
             0 18px 40px rgba(0,0,0,.25);
         }
 
+        .convocation-poster-v2 .poster-field.poster-field-full-squad {
+          height: 730px;
+        }
+        .convocation-poster-v2 .poster-field-full-squad .art-athlete {
+          width: 94px;
+        }
+        .convocation-poster-v2 .poster-field-full-squad .art-photo {
+          width: 60px;
+          height: 60px;
+        }
+        .convocation-poster-v2 .poster-field-full-squad .art-nameplate {
+          width: 88px;
+        }
+        .convocation-poster-v2 .poster-field-full-squad .art-nameplate strong {
+          max-width: 62px;
+          font-size: 9px;
+        }
+
         .convocation-poster-v2 .poster-field::before {
           content: "";
           position: absolute;
@@ -937,6 +1017,63 @@ export default async function ConvocationArtworkPage({
           white-space: nowrap;
         }
 
+        /* Nome esportivo completo nos atletas posicionados em campo. */
+        .convocation-poster-v2 .poster-field .art-athlete {
+          width: 140px;
+        }
+
+        .convocation-poster-v2 .poster-field .art-nameplate {
+          width: 124px;
+          min-height: 30px;
+          height: auto;
+          padding: 3px 5px;
+          gap: 4px;
+          overflow: visible;
+        }
+
+        .convocation-poster-v2 .poster-field .art-nameplate strong {
+          display: block;
+          flex: 1 1 auto;
+          min-width: 0;
+          max-width: none;
+          overflow: visible;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          word-break: normal;
+          text-overflow: clip;
+          font-size: 10px;
+          line-height: 1.1;
+        }
+
+        /* Mantem as etiquetas legiveis no campo com 5 ou 6 colunas. */
+        .convocation-poster-v2 .poster-field.poster-field-full-squad .art-athlete {
+          width: 142px;
+        }
+
+        .convocation-poster-v2 .poster-field.poster-field-full-squad .art-nameplate {
+          width: 132px;
+          min-height: 32px;
+          padding: 4px 5px;
+        }
+
+        .convocation-poster-v2 .poster-field.poster-field-full-squad .art-nameplate strong {
+          max-width: none;
+          font-size: 10px;
+          white-space: normal;
+          overflow: visible;
+          overflow-wrap: anywhere;
+          text-overflow: clip;
+          line-height: 1.1;
+        }
+
+        .convocation-poster-v2 .poster-field.poster-field-full-squad.poster-field-dense .art-nameplate {
+          width: 116px;
+        }
+
+        .convocation-poster-v2 .poster-field.poster-field-full-squad.poster-field-dense .art-nameplate strong {
+          font-size: 9px;
+        }
+
         .convocation-poster-v2 .poster-bench {
           margin: 16px 38px 10px;
           padding: 10px 16px 12px;
@@ -1038,6 +1175,39 @@ export default async function ConvocationArtworkPage({
           font-size: 8px;
         }
 
+        /* Reserva: etiquetas sem corte, inclusive quando houver muitos nomes. */
+        .convocation-poster-v2 .poster-bench-dense .bench-grid {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 8px 4px;
+        }
+
+        .convocation-poster-v2 .bench-grid .art-nameplate {
+          width: 125px;
+          max-width: 100%;
+          height: auto;
+          min-height: 28px;
+          padding: 3px 4px;
+          overflow: visible;
+        }
+
+        .convocation-poster-v2 .poster-bench-dense .bench-grid .art-nameplate {
+          width: 118px;
+        }
+
+        .convocation-poster-v2 .bench-grid .art-nameplate strong,
+        .convocation-poster-v2 .poster-bench-dense .bench-grid .art-nameplate strong {
+          display: block;
+          flex: 1 1 auto;
+          min-width: 0;
+          max-width: none;
+          overflow: visible;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          text-overflow: clip;
+          font-size: 9px;
+          line-height: 1.05;
+        }
+
         .convocation-poster-v2 .poster-service-info {
           display: grid;
           grid-template-columns: .85fr 1.15fr 1.7fr;
@@ -1049,14 +1219,51 @@ export default async function ConvocationArtworkPage({
           background: rgba(4,10,14,.88);
         }
 
-        .convocation-poster-v2 .poster-service-info div {
+        .convocation-poster-v2 .poster-service-info > div {
           min-width: 0;
           padding: 9px 12px;
           border-left: 1px solid rgba(255,255,255,.12);
         }
 
-        .convocation-poster-v2 .poster-service-info div:first-child {
+        .convocation-poster-v2 .poster-service-info > div:first-child {
           border-left: 0;
+        }
+
+        .convocation-poster-v2 .poster-staff-list {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 5px;
+          min-width: 0;
+        }
+
+        .convocation-poster-v2 .poster-staff-list-many {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          column-gap: 8px;
+        }
+
+        .convocation-poster-v2 .poster-staff-person {
+          min-width: 0;
+          padding-bottom: 3px;
+          border-bottom: 1px solid rgba(255,255,255,.12);
+        }
+
+        .convocation-poster-v2 .poster-staff-person strong {
+          display: block;
+          overflow: visible;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          text-overflow: clip;
+          font-size: 9px;
+          line-height: 1.1;
+        }
+
+        .convocation-poster-v2 .poster-staff-person span {
+          display: block;
+          margin-top: 2px;
+          color: #aebfc9;
+          font-size: 8px;
+          line-height: 1.1;
+          overflow-wrap: anywhere;
         }
 
         .convocation-poster-v2 .poster-service-info small {
@@ -1077,6 +1284,83 @@ export default async function ConvocationArtworkPage({
           line-height: 1.25;
           text-overflow: ellipsis;
           white-space: nowrap;
+        }
+
+        .convocation-poster-v2 .poster-service-info {
+          grid-template-columns: 1.05fr 1.75fr 1.35fr;
+        }
+
+        .convocation-poster-v2 .poster-service-info > div:first-child > strong,
+        .convocation-poster-v2 .poster-service-info .poster-staff-person strong {
+          overflow: visible;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          text-overflow: clip;
+          line-height: 1.13;
+          font-size: 9px;
+        }
+
+        .convocation-poster-v2 .poster-service-info .poster-staff-list {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          column-gap: 8px;
+        }
+
+        /* O poster tem 1329px e um rodape absoluto de 44px. */
+        .convocation-poster-v2 .poster-field.poster-field-full-squad {
+          height: 590px;
+        }
+
+        .convocation-poster-v2.poster-with-notes .poster-field {
+          height: 540px;
+        }
+
+        .convocation-poster-v2.poster-with-notes .poster-field.poster-field-full-squad {
+          height: 545px;
+        }
+
+        .convocation-poster-v2 .poster-service-info {
+          align-items: start;
+          margin-bottom: 52px;
+        }
+
+        .convocation-poster-v2 .poster-service-info > div {
+          min-width: 0;
+          overflow: visible;
+        }
+
+        .convocation-poster-v2 .poster-staff-list {
+          row-gap: 9px;
+          align-items: start;
+        }
+
+        .convocation-poster-v2 .poster-staff-person {
+          overflow: visible;
+          min-width: 0;
+          padding: 0 0 4px;
+        }
+
+        .convocation-poster-v2 .poster-staff-person strong,
+        .convocation-poster-v2 .poster-staff-person span {
+          display: block;
+          overflow: visible;
+          overflow-wrap: anywhere;
+          white-space: normal;
+          text-overflow: clip;
+        }
+
+        .convocation-poster-v2 .poster-match-note {
+          margin-top: 8px;
+          padding-top: 6px;
+          border-top: 1px solid rgba(255,255,255,.15);
+        }
+
+        .convocation-poster-v2 .poster-match-note p {
+          margin: 0;
+          color: #e8eff2;
+          font-size: 9px;
+          line-height: 1.24;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
         }
 
         .convocation-poster-v2 .poster-footer {
@@ -1112,6 +1396,107 @@ export default async function ConvocationArtworkPage({
           font-style: italic;
         }
 
+        /* poster-split-fit-v1: A4 com formacao + reservas, sem cortes no rodape.
+           O modelo todo o elenco em campo NAO e alterado. */
+        .convocation-poster-v2:has(.poster-bench) .poster-header-v2 {
+          padding-top: 24px;
+          padding-bottom: 8px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-institutional-v2 {
+          min-height: 62px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-club-logo {
+          width: 62px !important;
+          height: 62px !important;
+          flex-basis: 62px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-brand-copy-v2 h2 {
+          font-size: 25px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-title-block-v2 {
+          margin: 9px 0 8px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-main-title {
+          font-size: 49px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-match-meta-v2 {
+          padding-top: 6px;
+          padding-bottom: 6px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-versus-v2 {
+          padding-top: 8px;
+          padding-bottom: 8px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-details-v2 {
+          margin-top: 6px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-details-v2 span {
+          min-height: 45px;
+          padding-top: 6px;
+          padding-bottom: 6px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-lineup-v2 {
+          margin-top: 2px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-lineup-head-v2 {
+          margin-bottom: 5px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-field:not(.poster-field-full-squad) {
+          height: 515px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-field:not(.poster-field-full-squad) .art-photo {
+          width: 60px;
+          height: 60px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-bench {
+          margin-top: 8px;
+          margin-bottom: 6px;
+          padding: 6px 12px 8px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-bench .poster-section-title {
+          margin-bottom: 5px;
+          padding-bottom: 5px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-bench .bench-grid {
+          gap: 4px 7px;
+          min-height: 0;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-bench .bench-grid .art-photo {
+          width: 43px;
+          height: 43px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-bench .bench-grid .art-nameplate {
+          min-height: 20px;
+          padding: 2px 4px;
+        }
+        .convocation-poster-v2:has(.poster-bench) .poster-service-info {
+          margin-bottom: 48px;
+        }
+
+        /* 11UP_CALLUP_PHOTO_FIT_V1
+           Retira a margem escura interna e evita zoom desnecessario.
+           Vale para ambos os modelos, inclusive o banco de reservas. */
+        .convocation-poster-v2 .art-photo {
+          padding: 0 !important;
+        }
+        .convocation-poster-v2 .art-photo-crop {
+          width: 100% !important;
+          height: 100% !important;
+          overflow: hidden !important;
+          border-radius: 50% !important;
+        }
+        .convocation-poster-v2 .art-photo-crop .art-athlete-image,
+        .convocation-poster-v2 .art-photo-crop > img {
+          display: block !important;
+          width: 100% !important;
+          height: 100% !important;
+          max-width: none !important;
+          object-fit: cover !important;
+          object-position: center 30% !important;
+          transform: none !important;
+          border-radius: 50% !important;
+        }
+
         @media (max-width: 980px) {
           .convocation-art-page {
             overflow-x: auto;
@@ -1131,6 +1516,32 @@ export default async function ConvocationArtworkPage({
             box-shadow: none;
           }
         }
+
+        /* 11UP_PHOTO_CIRCLE_CLIP_V2: foto limitada ao aro em ambos os modelos */
+        .convocation-poster-v2 .art-photo {
+          box-sizing: border-box !important;
+          padding: 0 !important;
+        }
+        .convocation-poster-v2 .art-photo-crop {
+          display: block !important;
+          position: relative !important;
+          width: 100% !important;
+          height: 100% !important;
+          border-radius: 50% !important;
+          overflow: hidden !important;
+          clip-path: circle(50% at 50% 50%) !important;
+        }
+        .convocation-poster-v2 .art-photo-crop > img,
+        .convocation-poster-v2 .art-photo-crop .art-athlete-image {
+          display: block !important;
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          object-position: 50% 30% !important;
+          transform: scale(1.06) !important;
+          transform-origin: center center !important;
+          border-radius: 50% !important;
+        }
       `}</style>
 
       <div className="convocation-art-toolbar convocation-no-print">
@@ -1141,11 +1552,28 @@ export default async function ConvocationArtworkPage({
           Voltar à convocação
         </Link>
 
+        <nav aria-label="Selecionar modelo de convocacao" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 700 }}>Modelo da arte:</span>
+          <Link
+            className={showEntireSquad ? "btn btn-secondary" : "btn"}
+            href={`/convocacoes/${match.id}/arte`}
+            aria-current={!showEntireSquad ? "page" : undefined}
+          >
+            Formação + reservas
+          </Link>
+          <Link
+            className={showEntireSquad ? "btn" : "btn btn-secondary"}
+            href={`/convocacoes/${match.id}/arte?modelo=elenco`}
+            aria-current={showEntireSquad ? "page" : undefined}
+          >
+            Todo o elenco em campo
+          </Link>
+        </nav>
         <ConvocationPrintActions />
       </div>
 
       <main
-        className="convocation-poster convocation-poster-v2"
+        className={`convocation-poster convocation-poster-v2 ${match.notes?.trim() || match.equipmentNotes?.trim() ? "poster-with-notes" : ""}`}
         id="convocation-poster"
       >
         {!isComplete ? (
@@ -1244,7 +1672,39 @@ export default async function ConvocationArtworkPage({
           </div>
         </header>
 
-        <section className="poster-lineup-v2">
+        {showEntireSquad ? (
+          <section className="poster-lineup-v2">
+            <div className="poster-lineup-head-v2">
+              <strong>Atletas convocados</strong>
+              <span>{sportLabel} • {squadEntries.length} atletas • elenco completo</span>
+            </div>
+            <div className={`poster-field poster-field-full-squad ${fieldDensityClass}`} aria-label="Todos os convocados no campo, sem divisão entre titulares e reservas">
+              <div className="field-mark field-center" />
+              <div className="field-mark field-area-top" />
+              <div className="field-mark field-area-bottom" />
+              {squadEntries.map((entry, index) => {
+                const row = Math.floor(index / squadColumns);
+                const columnStart = row * squadColumns;
+                const elementsInRow = Math.min(squadColumns, squadEntries.length - columnStart);
+                const column = index - columnStart;
+                const x = ((column + 1) / (elementsInRow + 1)) * 100;
+                const y = ((row + 0.5) / squadRows) * 100;
+                return (
+                  <div key={entry.athleteId} className="art-dynamic-slot" style={{ left: `${x}%`, top: `${y}%` }}>
+                    <AthleteBadge
+                      athlete={entry.athlete}
+                      photoUrl={athletePhotoById.get(entry.athleteId)}
+                      number={entry.jerseyNumber}
+                      captain={entry.isCaptain}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : (
+          <>
+            <section className="poster-lineup-v2">
           <div className="poster-lineup-head-v2">
             <strong>Formação inicial</strong>
             <span>
@@ -1312,6 +1772,8 @@ export default async function ConvocationArtworkPage({
             ))}
           </div>
         </section>
+          </>
+        )}
 
         <section className="poster-service-info">
           <div>
@@ -1322,15 +1784,19 @@ export default async function ConvocationArtworkPage({
           </div>
 
           <div>
-            <small>COMISSÃO</small>
-            <strong>
-              {selectedStaff.length
-                ? selectedStaff
-                    .map((member) => member.name)
-                    .join(" • ")
-                : coach?.roleTitle ||
-                  "Comissão técnica"}
-            </strong>
+            <small>COMISSÃO TÉCNICA</small>
+            {commissionMembers.length ? (
+              <div className={`poster-staff-list ${commissionMembers.length > 3 ? "poster-staff-list-many" : ""}`}>
+                {commissionMembers.map((member) => (
+                  <div className="poster-staff-person" key={member.id}>
+                    <strong>{member.name}</strong>
+                    <span>{member.roleTitle}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <strong>Demais integrantes não informados</strong>
+            )}
           </div>
 
           <div>
@@ -1352,6 +1818,18 @@ export default async function ConvocationArtworkPage({
                 ? " • caneleira"
                 : ""}
             </strong>
+            {match.notes?.trim() ? (
+              <div className="poster-match-note">
+                <small>OBSERVAÇÕES DO JOGO</small>
+                <p>{match.notes.trim()}</p>
+              </div>
+            ) : null}
+            {match.equipmentNotes?.trim() ? (
+              <div className="poster-match-note">
+                <small>OUTRAS ORIENTAÇÕES</small>
+                <p>{match.equipmentNotes.trim()}</p>
+              </div>
+            ) : null}
           </div>
         </section>
 

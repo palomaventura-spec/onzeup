@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import styles from "./Agenda.module.css";
 import JustificarFaltaForm from "./JustificarFaltaForm";
+import AgendaAutoRefresh from "./AgendaAutoRefresh";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ type AgendaItem = {
   status: string;
   details?: string[];
   callUp?: string;
+  callUpMode?: string;
   scheduleId?: string;
 };
 
@@ -49,6 +51,24 @@ function scheduleDateTime(date: Date, hhmm: string): Date | null {
   }).formatToParts(date);
   const part = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
   return new Date(Date.UTC(part("year"), part("month") - 1, part("day"), hour, minute));
+}
+
+function playerCallUpLabel(value: string | undefined, mode?: string) {
+  if (!value || value === "SEM CONVOCAÇÃO INDIVIDUAL") return "Ainda não consta convocação individual";
+  // 11UP_PLAYER_INFORMATION_ONLY_CALLUP_V1
+  // A modalidade informativa nao exige nenhuma resposta da familia.
+  // O modo da partida prevalece sobre estados PENDING antigos do cadastro.
+  if (mode === "INFORMATION_ONLY") {
+    if (value.split(" / ").includes("DECLINED")) return "Ausência informada";
+    return "Convocado · confirmação não necessária";
+  }
+  const titles: Record<string, string> = {
+    PENDING: "Convocado · aguardando confirmação",
+    INFORMED: "Convocado · informado pelo clube",
+    CONFIRMED: "Presença confirmada",
+    DECLINED: "Ausência informada",
+  };
+  return value.split(" / ").map((status) => titles[status] || status.replaceAll("_", " ")).join(" / ");
 }
 
 export default async function GuardianAgendaPage({ searchParams }: {
@@ -118,7 +138,38 @@ export default async function GuardianAgendaPage({ searchParams }: {
           allowed.push({ organizationId: athlete.organizationId, categoryId: athlete.categoryId, sport: "BOTH" });
         }
       }
-      hasActiveCategory = allowed.length > 0;
+      // 11UP_PLAYER_DIRECT_CALLUPS_V1
+      // Vínculo aprovado/ativo do Player + atleta ativo + mesmo clube em CallUp e Match.
+      // A convocação individual não depende da modalidade/categoria de um membership.
+      const individualCallUps = athletes.length
+        ? await prisma.callUp.findMany({
+            where: {
+              OR: athletes.map((athlete) => ({
+                athleteId: athlete.id,
+                organizationId: athlete.organizationId,
+                match: {
+                  is: {
+                    organizationId: athlete.organizationId,
+                    startsAt: { gte: start, lt: end },
+                  },
+                },
+              })),
+            },
+            select: {
+              status: true,
+              match: {
+                select: {
+                  id: true, startsAt: true, sport: true, status: true, callUpMode: true,
+                  opponent: true, location: true, competition: true,
+                  presentationTime: true, uniform: true, equipmentNotes: true,
+                  organization: { select: { name: true } },
+                  category: { select: { name: true } },
+                },
+              },
+            },
+          })
+        : [];
+      hasActiveCategory = allowed.length > 0 || individualCallUps.length > 0;
       if (allowed.length) {
         const keys = allowed.map((m) => ({ organizationId: m.organizationId, categoryId: m.categoryId! }));
         const [trainings, schedules, matches] = await Promise.all([
@@ -141,7 +192,7 @@ export default async function GuardianAgendaPage({ searchParams }: {
           prisma.match.findMany({
             where: { OR: keys, startsAt: { gte: start, lt: end } },
             select: { id: true, organizationId: true, categoryId: true, sport: true, startsAt: true,
-              location: true, opponent: true, competition: true, status: true,
+              location: true, opponent: true, competition: true, status: true, callUpMode: true,
               presentationTime: true, uniform: true, equipmentNotes: true,
               organization: { select: { name: true } }, category: { select: { name: true } },
               callUps: { where: { athleteId: { in: athleteIds } }, select: { athleteId: true, status: true } } },
@@ -177,12 +228,42 @@ export default async function GuardianAgendaPage({ searchParams }: {
           category: match.category.name, location: match.location, sport: String(match.sport),
           status: String(match.status),
           callUp: match.callUps.length ? match.callUps.map((callUp) => String(callUp.status)).join(" / ") : "SEM CONVOCAÇÃO INDIVIDUAL",
+          callUpMode: String(match.callUpMode),
           details: [match.competition ? `Competição: ${match.competition}` : "",
             match.presentationTime ? `Apresentação: ${match.presentationTime}` : "",
             match.uniform ? `Uniforme: ${match.uniform}` : "",
             match.equipmentNotes ? `Orientações: ${match.equipmentNotes}` : ""].filter(Boolean),
         }));
         items = [...trainingItems, ...scheduledItems, ...matchItems].sort((a, b) => a.at.getTime() - b.at.getTime());
+      }
+      // Convocações individuais prevalecem sobre a listagem geral da categoria.
+      // Inclui também jogos de atletas convocados cuja categoria/modalidade
+      // esportiva ativa ainda não reflete a convocação registrada pelo clube.
+      if (individualCallUps.length) {
+        const byKey = new Map(items.map((item) => [item.key, item] as const));
+        for (const callUp of individualCallUps) {
+          const match = callUp.match;
+          byKey.set(`jogo-${match.id}`, {
+            key: `jogo-${match.id}`,
+            at: match.startsAt,
+            kind: "JOGO",
+            title: `${match.organization.name} × ${match.opponent}`,
+            club: match.organization.name,
+            category: match.category.name,
+            location: match.location,
+            sport: String(match.sport),
+            status: String(match.status),
+            callUp: String(callUp.status),
+            callUpMode: String(match.callUpMode),
+            details: [
+              match.competition ? `Competição: ${match.competition}` : "",
+              match.presentationTime ? `Apresentação: ${match.presentationTime}` : "",
+              match.uniform ? `Uniforme: ${match.uniform}` : "",
+              match.equipmentNotes ? `Orientações: ${match.equipmentNotes}` : "",
+            ].filter(Boolean),
+          });
+        }
+        items = [...byKey.values()].sort((a, b) => a.at.getTime() - b.at.getTime());
       }
     }
   }
@@ -204,7 +285,7 @@ export default async function GuardianAgendaPage({ searchParams }: {
         <p>{item.club} · {item.category} · {item.sport === "FOOTBALL" ? "Futebol" : item.sport === "FUTSAL" ? "Futsal" : "Multimodalidade"}</p>
         {item.location ? <p>Local: {item.location}</p> : null}
         <p>Situação: {(item.status === "SCHEDULED" ? "PROGRAMADO" : item.status.replaceAll("_", " "))}</p>
-        {item.kind === "JOGO" ? <p className={styles.callUp}>Convocação: {item.callUp === "SEM CONVOCAÇÃO INDIVIDUAL" ? "Ainda não consta convocação individual" : item.callUp?.replaceAll("_", " ")}</p> : null}
+        {item.kind === "JOGO" ? <p className={styles.callUp}>Convocação: {playerCallUpLabel(item.callUp, item.callUpMode)}</p> : null}
         {item.details?.map((detail) => <p key={detail}>{detail}</p>)}
         {item.kind === "TREINO" && item.scheduleId && selected && absenceSubmissionAvailable ? (
           <JustificarFaltaForm scheduleId={item.scheduleId} playerId={selected.id} />
@@ -215,6 +296,7 @@ export default async function GuardianAgendaPage({ searchParams }: {
 
   return (
     <main className={styles.portal}>
+      <AgendaAutoRefresh />
       <header className={styles.nav}>
         <Link href="/responsavel" className={styles.brand}>11<span>UP</span> PLAYER</Link>
         <Link href={selected ? `/responsavel?player=${selected.id}` : "/responsavel"} className={styles.back}>← Voltar ao painel</Link>

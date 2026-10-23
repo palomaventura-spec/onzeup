@@ -6,6 +6,8 @@ import { requireClubPermission } from "@/lib/club-access";
 import { hasClubPermission } from "@/lib/club-permissions";
 import { prisma } from "@/lib/prisma";
 import SumulaPrintButton from "./SumulaPrintButton";
+import SumulaMinuteInputs from "./SumulaMinuteInputs";
+import SumulaHalfMinuteInputs from "./SumulaHalfMinuteInputs";
 
 import {
   addMatchEvent,
@@ -38,6 +40,7 @@ const eventLabels: Record<string, string> = {
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "UTC",
     dateStyle: "long",
     timeStyle: "short",
   }).format(date);
@@ -77,6 +80,238 @@ export default async function MatchSheetPage({
 
   return (
     <>
+      {/* SUMULA_PDF_A4_LANDSCAPE_V1 */}
+      <style>{`
+        .sumula-print-report { display: none; }
+        @page { size: A4 landscape; margin: 11mm; }
+        @media print {
+          html, body { background: #fff !important; color: #101820 !important; }
+          .shell { display: block !important; width: 100% !important; min-height: 0 !important; }
+          .shell > :not(.club-workspace) { display: none !important; }
+          .club-workspace { display: block !important; width: 100% !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; }
+          .club-workspace > :not(.club-main-content) { display: none !important; }
+          .club-main-content { display: block !important; width: 100% !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; max-width: none !important; }
+          .club-main-content > :not(.sumula-print-report):not(style) { display: none !important; }
+          .sumula-print-report { display: block !important; position: static !important; width: 100% !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; color: #17222b !important; font: 8.5pt Arial, sans-serif !important; }
+          .sumula-print-report * { box-sizing: border-box; }
+          .sumula-print-report h1 { font-size: 16pt !important; margin: 0 0 4mm !important; color: #101a22 !important; }
+          .sumula-print-report h2 { font-size: 10pt !important; margin: 5mm 0 2mm !important; color: #101a22 !important; }
+          .sumula-print-report .sumula-print-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 3mm; border-bottom: 2px solid #a5df27; gap: 8mm; }
+          .sumula-print-report .sumula-print-header small { font-weight: 800; letter-spacing: 1px; color: #45600b; }
+          .sumula-print-report .sumula-print-header p { margin: 1mm 0 0; font-size: 8pt; }
+          .sumula-print-report .sumula-print-score { font-weight: 800; font-size: 13pt; text-align: right; }
+          .sumula-print-report .sumula-print-meta { display: flex; flex-wrap: wrap; gap: 3mm 7mm; margin-top: 3mm; font-size: 8pt; }
+          .sumula-print-report .sumula-print-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 7.3pt; }
+          .sumula-print-report .sumula-print-table th { background: #eaf0e8; color: #233124; text-align: left; font-weight: 800; }
+          .sumula-print-report .sumula-print-table th, .sumula-print-report .sumula-print-table td { border: 1px solid #cfd8d5; padding: 1.4mm 1.1mm; vertical-align: top; white-space: normal; overflow-wrap: anywhere; word-break: normal; }
+          .sumula-print-report .sumula-print-table thead { display: table-header-group; }
+          .sumula-print-report .sumula-print-table tr { break-inside: avoid; page-break-inside: avoid; }
+          .sumula-print-report .sumula-print-table .num { text-align: center; }
+          .sumula-print-report .sumula-print-notes { white-space: pre-wrap; font-size: 8pt; }
+          .sumula-print-report .sumula-print-events { display: grid; gap: 1mm; font-size: 8pt; }
+          .sumula-print-report .sumula-print-events div { break-inside: avoid; border-bottom: 1px solid #e1e5e8; padding: 1mm 0; }
+          .sumula-print-report .sumula-print-foot { margin-top: 4mm; border-top: 1px solid #ced7d9; padding-top: 2mm; font-size: 7pt; color: #637079; }
+        }
+      `}</style>
+      {/* 11UP_SUMULA_CAMPO_CARTOES_VISIVEIS_V1: adapta apenas a tela de edição do futebol de campo */}
+      <style>{`
+        @media screen {
+          .sumula-campo-compacta.table { display: block; width: 100%; }
+          .sumula-campo-compacta thead { display: none; }
+          .sumula-campo-compacta tbody { display: grid; gap: 12px; width: 100%; }
+          .sumula-campo-compacta tbody > tr {
+            display: grid;
+            grid-template-columns: repeat(14, minmax(0, 1fr));
+            align-items: end;
+            gap: 10px 12px;
+            padding: 14px 16px;
+            border: 1px solid #dce5ea;
+            border-radius: 12px;
+            background: #fff;
+            min-width: 0;
+          }
+          .sumula-campo-compacta tbody > tr > td {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: stretch;
+            gap: 5px;
+            min-width: 0;
+            border: 0 !important;
+            padding: 0 !important;
+            vertical-align: top;
+          }
+          .sumula-campo-compacta tbody > tr > td::before {
+            display: block;
+            font-size: 10px;
+            line-height: 1.35;
+            font-weight: 800;
+            letter-spacing: .04em;
+            color: #61717d;
+            text-transform: uppercase;
+          }
+          .sumula-campo-compacta td:nth-child(1) { grid-column: span 3; }
+          .sumula-campo-compacta td:nth-child(2),
+          .sumula-campo-compacta td:nth-child(3) { grid-column: span 2; }
+          .sumula-campo-compacta td:nth-child(4) { grid-column: span 1; }
+          .sumula-campo-compacta td:nth-child(5),
+          .sumula-campo-compacta td:nth-child(6),
+          .sumula-campo-compacta td:nth-child(7),
+          .sumula-campo-compacta td:nth-child(8) { grid-column: span 1; }
+          .sumula-campo-compacta td:nth-child(9) { grid-column: span 2; }
+          .sumula-campo-compacta td:nth-child(10),
+          .sumula-campo-compacta td:nth-child(11),
+          .sumula-campo-compacta td:nth-child(12),
+          .sumula-campo-compacta td:nth-child(13),
+          .sumula-campo-compacta td:nth-child(14) { grid-column: span 2; }
+          .sumula-campo-compacta td:nth-child(15) { grid-column: span 4; }
+          .sumula-campo-compacta td:nth-child(1)::before { content: "ATLETA"; }
+          .sumula-campo-compacta td:nth-child(2)::before { content: "PRESENÇA"; }
+          .sumula-campo-compacta td:nth-child(3)::before { content: "FUNÇÃO"; }
+          .sumula-campo-compacta td:nth-child(4)::before { content: "Nº"; }
+          .sumula-campo-compacta td:nth-child(5)::before { content: "1º T · ENTRADA"; }
+          .sumula-campo-compacta td:nth-child(6)::before { content: "1º T · SAÍDA"; }
+          .sumula-campo-compacta td:nth-child(7)::before { content: "2º T · ENTRADA"; }
+          .sumula-campo-compacta td:nth-child(8)::before { content: "2º T · SAÍDA"; }
+          .sumula-campo-compacta td:nth-child(9)::before { content: "TOTAL JOGADO"; }
+          .sumula-campo-compacta td:nth-child(10)::before { content: "GOLS"; }
+          .sumula-campo-compacta td:nth-child(11)::before { content: "ASSISTÊNCIAS"; }
+          .sumula-campo-compacta td:nth-child(12)::before { content: "CA · AMARELO"; }
+          .sumula-campo-compacta td:nth-child(13)::before { content: "CV · VERMELHO"; }
+          .sumula-campo-compacta td:nth-child(14)::before { content: "CAPITÃO"; }
+          .sumula-campo-compacta td:nth-child(15)::before { content: "OBSERVAÇÕES"; }
+          .sumula-campo-compacta select,
+          .sumula-campo-compacta input[type="number"],
+          .sumula-campo-compacta textarea { 
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+          }
+          .sumula-campo-compacta textarea { min-height: 44px; height: 48px; resize: vertical; }
+          .sumula-campo-compacta input[type="radio"] { align-self: flex-start; width: 22px; height: 22px; }
+          .sumula-campo-compacta output { display: flex; align-items: center; min-height: 44px; }
+          .sumula-campo-compacta tbody > tr > td:first-child strong { overflow-wrap: anywhere; font-size: 15px; }
+        }
+        @media screen and (max-width: 1180px) {
+          .sumula-campo-compacta tbody > tr { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+          .sumula-campo-compacta td:nth-child(1) { grid-column: span 4; }
+          .sumula-campo-compacta td:nth-child(2),
+          .sumula-campo-compacta td:nth-child(3) { grid-column: span 3; }
+          .sumula-campo-compacta td:nth-child(4) { grid-column: span 2; }
+          .sumula-campo-compacta td:nth-child(5),
+          .sumula-campo-compacta td:nth-child(6),
+          .sumula-campo-compacta td:nth-child(7),
+          .sumula-campo-compacta td:nth-child(8) { grid-column: span 2; }
+          .sumula-campo-compacta td:nth-child(9) { grid-column: span 4; }
+          .sumula-campo-compacta td:nth-child(10),
+          .sumula-campo-compacta td:nth-child(11),
+          .sumula-campo-compacta td:nth-child(12),
+          .sumula-campo-compacta td:nth-child(13),
+          .sumula-campo-compacta td:nth-child(14) { grid-column: span 2; }
+          .sumula-campo-compacta td:nth-child(15) { grid-column: span 12; }
+        }
+        @media screen and (max-width: 700px) {
+          .sumula-campo-compacta tbody > tr { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 8px; padding: 12px; }
+          .sumula-campo-compacta td:nth-child(1) { grid-column: span 4; }
+          .sumula-campo-compacta td:nth-child(2),
+          .sumula-campo-compacta td:nth-child(3) { grid-column: span 2; }
+          .sumula-campo-compacta td:nth-child(4) { grid-column: span 1; }
+          .sumula-campo-compacta td:nth-child(5),
+          .sumula-campo-compacta td:nth-child(6),
+          .sumula-campo-compacta td:nth-child(7),
+          .sumula-campo-compacta td:nth-child(8) { grid-column: span 2; }
+          .sumula-campo-compacta td:nth-child(9) { grid-column: span 3; }
+          .sumula-campo-compacta td:nth-child(10),
+          .sumula-campo-compacta td:nth-child(11),
+          .sumula-campo-compacta td:nth-child(12),
+          .sumula-campo-compacta td:nth-child(13) { grid-column: span 1; }
+          .sumula-campo-compacta td:nth-child(14) { grid-column: span 1; }
+          .sumula-campo-compacta td:nth-child(15) { grid-column: span 3; }
+          .sumula-campo-compacta tbody > tr > td::before { font-size: 9px; }
+        }
+      `}</style>
+      <section className="sumula-print-report" aria-label="Sumula oficial para impressao">
+        <div className="sumula-print-header">
+          <div>
+            <small>11UP CLUB · SÚMULA DA PARTIDA</small>
+            <h1>{match.category.name} × {match.opponent}</h1>
+            <p>{formatDate(match.startsAt)} · {match.location || "Local a definir"}</p>
+          </div>
+          <div className="sumula-print-score">
+            {match.organization.publicName || match.organization.name} {match.goalsFor ?? "—"} × {match.goalsAgainst ?? "—"} {match.opponent}
+          </div>
+        </div>
+        <div className="sumula-print-meta">
+          <span><strong>Categoria:</strong> {match.category.name}</span>
+          <span><strong>Apresentação:</strong> {match.presentationTime || "—"}</span>
+          <span><strong>Uniforme:</strong> {match.uniform || "—"}</span>
+          <span><strong>Árbitro:</strong> {match.referee || "—"}</span>
+          <span><strong>Assistente:</strong> {match.assistantReferee || "—"}</span>
+          <span><strong>Status:</strong> {match.matchSheetStatus === "FINALIZED" ? "Finalizada" : "Rascunho"}</span>
+        </div>
+        <h2>Convocados · Participação e estatísticas ({match.callUps.length})</h2>
+        <table className="sumula-print-table">
+          <colgroup>
+            <col style={{ width: "15%" }} /><col style={{ width: "10%" }} /><col style={{ width: "8%" }} />
+            <col style={{ width: "4%" }} /><col style={{ width: "7%" }} /><col style={{ width: "7%" }} />
+            <col style={{ width: "5%" }} /><col style={{ width: "3%" }} /><col style={{ width: "3%" }} />
+            <col style={{ width: "4%" }} /><col style={{ width: "4%" }} /><col style={{ width: "4%" }} />
+            <col style={{ width: "26%" }} />
+          </colgroup>
+          <thead><tr>
+            <th>Atleta</th><th>Presença</th><th>Função</th><th>Nº</th>
+            <th>{match.sport === "FOOTBALL" ? "1º T (E–S)" : "Ent."}</th>
+            <th>{match.sport === "FOOTBALL" ? "2º T (E–S)" : "Saí."}</th>
+            <th>Min.</th><th>G</th><th>A</th><th>CA</th><th>CV</th><th>Cap.</th><th>Observações</th>
+          </tr></thead>
+          <tbody>
+            {match.callUps.map(({ athlete }) => {
+              const stat = stats.get(athlete.id);
+              const minuteCalc = stat?.enteredAtMinute != null && stat?.leftAtMinute != null && stat.leftAtMinute >= stat.enteredAtMinute
+                ? stat.leftAtMinute - stat.enteredAtMinute : null;
+              return (
+                <tr key={athlete.id}>
+                  <td>{athlete.nickname || athlete.name}</td>
+                  <td>{stat?.participation === "PRESENT" ? "Presente" : stat?.participation === "ABSENT" ? "Ausente" : stat?.participation === "INJURED" ? "Lesionado" : stat?.participation === "SUSPENDED" ? "Suspenso" : stat?.participation === "NOT_RELATED" ? "Não relacionado" : "Relacionado"}</td>
+                  <td>{stat?.lineupRole === "STARTER" ? "Titular" : stat?.lineupRole === "SUBSTITUTE" ? "Reserva" : stat?.lineupRole === "DID_NOT_PLAY" ? "Não entrou" : "—"}</td>
+                  <td className="num">{stat?.jerseyNumber ?? athlete.jerseyNumber ?? "—"}</td>
+                  <td className="num">{match.sport === "FOOTBALL"
+                    ? (stat?.firstHalfEntryMinute != null && stat?.firstHalfExitMinute != null
+                      ? `${stat.firstHalfEntryMinute}′–${stat.firstHalfExitMinute}′` : "—")
+                    : (stat?.enteredAtMinute ?? "—")}</td>
+                  <td className="num">{match.sport === "FOOTBALL"
+                    ? (stat?.secondHalfEntryMinute != null && stat?.secondHalfExitMinute != null
+                      ? `${stat.secondHalfEntryMinute}′–${stat.secondHalfExitMinute}′` : "—")
+                    : (stat?.leftAtMinute ?? "—")}</td>
+                  <td className="num">{stat?.minutesPlayed ?? minuteCalc ?? "—"}</td>
+                  <td className="num">{stat?.goals ?? 0}</td>
+                  <td className="num">{stat?.assists ?? 0}</td>
+                  <td className="num">{stat?.yellowCards ?? 0}</td>
+                  <td className="num">{stat?.redCards ?? 0}</td>
+                  <td className="num">{stat?.isCaptain ? "Sim" : "—"}</td>
+                  <td>{stat?.notes || "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {match.matchSheetNotes ? <><h2>Observações gerais</h2><div className="sumula-print-notes">{match.matchSheetNotes}</div></> : null}
+        {match.events.length ? <>
+          <h2>Ocorrências</h2>
+          <div className="sumula-print-events">
+            {match.events.map(event => (
+              <div key={event.id}>
+                {event.minute == null ? "—" : event.minute + "′"} · {eventLabels[event.type] || event.type} · {event.team === "OPPONENT" ? match.opponent : event.athlete?.nickname || event.athlete?.name || "Nosso clube"}
+                {event.period ? " · " + event.period : ""}{event.notes ? " · " + event.notes : ""}
+              </div>
+            ))}
+          </div>
+        </> : null}
+        <div className="sumula-print-foot">Gerado pelo 11UP Club · Dados salvos na súmula · GPS opcional</div>
+      </section>
+
       <div className="page-head match-sheet-head">
         <div>
           <span className="page-eyebrow">SÚMULA DA PARTIDA</span>
@@ -206,19 +441,28 @@ export default async function MatchSheetPage({
           </div>
           {match.callUps.length ? (
             <div className="table-wrap">
-              <table className="table match-sheet-table">
+              <table className={match.sport === "FOOTBALL" ? "table match-sheet-table sumula-campo-compacta" : "table match-sheet-table"}>
                 <thead>
                   <tr>
                     <th>Atleta</th>
                     <th>Presença</th>
                     <th>Função</th>
                     <th>Nº</th>
-                    <th>Min.</th>
+                     {/* 11UP_SUMULA_DOIS_TEMPOS_V1: uma entrada e uma saida POR TEMPO, somente campo */}
+                     {match.sport === "FOOTBALL" ? (
+                       <>
+                         <th>1º T · Ent.</th><th>1º T · Saí.</th>
+                         <th>2º T · Ent.</th><th>2º T · Saí.</th><th>Total</th>
+                       </>
+                     ) : (
+                       <><th>Entrada</th><th>Saída</th><th>Min.</th></>
+                     )}
                     <th>G</th>
                     <th>A</th>
                     <th>CA</th>
                     <th>CV</th>
                     <th>Cap.</th>
+                     <th>Observações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -274,16 +518,27 @@ export default async function MatchSheetPage({
                             disabled={!editable}
                           />
                         </td>
-                        <td>
-                          <input
-                            className="sheet-number"
-                            type="number"
-                            min="0"
-                            name={`minutesPlayed_${athlete.id}`}
-                            defaultValue={stat?.minutesPlayed ?? ""}
-                            disabled={!editable}
-                          />
-                        </td>
+                         {match.sport === "FOOTBALL" ? (
+                           <SumulaHalfMinuteInputs
+                             athleteId={athlete.id}
+                             athleteName={athlete.nickname || athlete.name}
+                             firstHalfEntry={stat?.firstHalfEntryMinute ?? null}
+                             firstHalfExit={stat?.firstHalfExitMinute ?? null}
+                             secondHalfEntry={stat?.secondHalfEntryMinute ?? null}
+                             secondHalfExit={stat?.secondHalfExitMinute ?? null}
+                             legacyMinutes={stat?.minutesPlayed ?? null}
+                             editable={editable}
+                           />
+                         ) : (
+                           <SumulaMinuteInputs
+                             athleteId={athlete.id}
+                             athleteName={athlete.nickname || athlete.name}
+                             initialEntry={stat?.enteredAtMinute ?? null}
+                             initialExit={stat?.leftAtMinute ?? null}
+                             initialMinutes={stat?.minutesPlayed ?? null}
+                             editable={editable}
+                           />
+                         )}
                         {(
                           [
                             "goals",
@@ -313,6 +568,17 @@ export default async function MatchSheetPage({
                             aria-label={`Definir ${athlete.name} como capitão`}
                           />
                         </td>
+                         <td>
+                           <textarea
+                             name={`notes_${athlete.id}`}
+                             defaultValue={stat?.notes ?? ""}
+                             disabled={!editable}
+                             rows={2}
+                             placeholder="Observações individuais do jogo"
+                             aria-label={`Observações de ${athlete.nickname || athlete.name}`}
+                             style={{ minWidth: 190, maxWidth: 300, resize: "vertical" }}
+                           />
+                         </td>
                       </tr>
                     );
                   })}

@@ -169,9 +169,10 @@ model CompetitionCategory {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  competition Competition             @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  teams       CompetitionTeam[]
-  callUpRules CompetitionCallUpRule[]
+  competition          Competition                      @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  teams                CompetitionTeam[]
+  callUpRules          CompetitionCallUpRule[]
+  documentRequirements CompetitionDocumentRequirement[]
 
   @@unique([competitionId, name])
   @@index([competitionId, active])
@@ -271,6 +272,7 @@ enum CompetitionCredentialStatus {
 model CompetitionDocumentRequirement {
   id            String   @id @default(cuid())
   competitionId String
+  categoryId    String?
   name          String
   description   String?
   required      Boolean  @default(true)
@@ -280,10 +282,12 @@ model CompetitionDocumentRequirement {
   updatedAt     DateTime @updatedAt
 
   competition Competition                  @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  category    CompetitionCategory?         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   documents   CompetitionAthleteDocument[]
 
   @@unique([competitionId, name])
   @@index([competitionId, active, sortOrder])
+  @@index([competitionId, categoryId, active, sortOrder])
 }
 
 model CompetitionAthleteDocument {
@@ -446,7 +450,6 @@ model User {
   createdGpsSessions GpsSession[]
 
   communicationMessagesAuthored ClubCommunicationMessage[] @relation("ClubCommunicationMessageAuthor")
-
 }
 
 model ClubUserInvite {
@@ -832,7 +835,6 @@ model AthleteDocument {
   @@index([requirementId])
   @@index([athleteId, requirementId, status])
   communicationAttachments ClubCommunicationMessageAttachment[]
-
 }
 
 model CategoryDocumentRequirement {
@@ -1752,6 +1754,11 @@ model MatchAthleteStat {
   enteredAtMinute  Int?
   leftAtMinute     Int?
   minutesPlayed    Int?
+  // 11UP_SUMULA_DOIS_TEMPOS_V1: registros por tempo para futebol de campo
+  firstHalfEntryMinute  Int?
+  firstHalfExitMinute   Int?
+  secondHalfEntryMinute Int?
+  secondHalfExitMinute  Int?
   positionPlayed   String?
   jerseyNumber     Int?
   isCaptain        Boolean                  @default(false)
@@ -2561,8 +2568,7 @@ model ClubCommunicationRecipient {
   @@index([playerId, readAt, createdAt])
   @@index([athleteId, createdAt])
   documentRequests ClubCommunicationDocumentRequest[]
-    messages ClubCommunicationMessage[]
-
+  messages ClubCommunicationMessage[]
 }
 
 enum ClubPermissionCode {

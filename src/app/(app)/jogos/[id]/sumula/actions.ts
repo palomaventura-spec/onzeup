@@ -28,6 +28,75 @@ function integer(value: FormDataEntryValue | null, minimum = 0) {
   return Number.isInteger(parsed) && parsed >= minimum ? parsed : null;
 }
 
+
+// SUMULA_AUTO_MINUTES_V1: o servidor nunca confia apenas no total calculado no navegador.
+function derivedMinutes(formData: FormData, athleteId: string) {
+  const from = integer(formData.get(`enteredAtMinute_${athleteId}`));
+  const to = integer(formData.get(`leftAtMinute_${athleteId}`));
+  if (from !== null && to !== null) {
+    if (to < from) throw new Error("Na sumula, o minuto de saida nao pode ser anterior ao de entrada.");
+    return to - from;
+  }
+  return integer(formData.get(`minutesPlayed_${athleteId}`));
+}
+
+
+// 11UP_SUMULA_DOIS_TEMPOS_V1: os minutos sao relativos a cada tempo, nunca ao relogio corrido da partida.
+type PriorFootballTime = {
+  minutesPlayed: number | null;
+  firstHalfEntryMinute: number | null;
+  firstHalfExitMinute: number | null;
+  secondHalfEntryMinute: number | null;
+  secondHalfExitMinute: number | null;
+};
+
+function readHalfMinute(formData: FormData, key: string): number | null {
+  const entry = formData.get(key);
+  if (entry === null) throw new Error("Campo de minutagem nao enviado: " + key);
+  const raw = String(entry).trim();
+  if (!raw) return null;
+  if (!/^\d+$/.test(raw)) throw new Error("Minutagem deve ser um numero inteiro.");
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 0 || value > 180) {
+    throw new Error("Minutagem fora do intervalo permitido (0 a 180).");
+  }
+  return value;
+}
+
+function footballMinuteData(formData: FormData, athleteId: string, prior?: PriorFootballTime) {
+  const firstHalfEntryMinute = readHalfMinute(formData, `firstHalfEntryMinute_${athleteId}`);
+  const firstHalfExitMinute = readHalfMinute(formData, `firstHalfExitMinute_${athleteId}`);
+  const secondHalfEntryMinute = readHalfMinute(formData, `secondHalfEntryMinute_${athleteId}`);
+  const secondHalfExitMinute = readHalfMinute(formData, `secondHalfExitMinute_${athleteId}`);
+  const pairs = [
+    [firstHalfEntryMinute, firstHalfExitMinute],
+    [secondHalfEntryMinute, secondHalfExitMinute],
+  ] as const;
+  let hasPeriod = false;
+  let total = 0;
+  for (const [entry, exit] of pairs) {
+    if (entry === null && exit === null) continue;
+    if (entry === null || exit === null) {
+      throw new Error("Preencha entrada e saida juntas em cada tempo.");
+    }
+    if (exit < entry) throw new Error("O minuto de saida nao pode ser anterior ao de entrada.");
+    hasPeriod = true;
+    total += exit - entry;
+  }
+  const hadPeriod = !!prior && [
+    prior.firstHalfEntryMinute, prior.firstHalfExitMinute,
+    prior.secondHalfEntryMinute, prior.secondHalfExitMinute,
+  ].some((value) => value !== null);
+  // Historico antigo fica intacto se nao foi substituido por novos tempos.
+  // Caso o usuario limpe tempos anteriormente registrados, limpa tambem o total.
+  const minutesPlayed = hasPeriod ? total : hadPeriod ? null : (prior?.minutesPlayed ?? null);
+  return {
+    firstHalfEntryMinute, firstHalfExitMinute,
+    secondHalfEntryMinute, secondHalfExitMinute,
+    minutesPlayed,
+  };
+}
+
 function participation(value: string): MatchParticipationStatus {
   return Object.values(MatchParticipationStatus).includes(
     value as MatchParticipationStatus,
@@ -45,7 +114,7 @@ function lineupRole(value: string): MatchLineupRole | null {
 async function editableMatch(matchId: string, organizationId: string) {
   return prisma.match.findFirst({
     where: { id: matchId, organizationId },
-    select: { id: true, matchSheetStatus: true },
+    select: { id: true, matchSheetStatus: true, sport: true },
   });
 }
 
@@ -73,6 +142,17 @@ export async function saveMatchSheet(formData: FormData) {
     select: { athleteId: true },
   });
   const validIds = new Set(validAthletes.map((item) => item.athleteId));
+
+  const existingStats = new Map(
+    (await prisma.matchAthleteStat.findMany({
+      where: { matchId, organizationId: user.organizationId, athleteId: { in: athleteIds } },
+      select: {
+        athleteId: true, enteredAtMinute: true, leftAtMinute: true, minutesPlayed: true,
+        firstHalfEntryMinute: true, firstHalfExitMinute: true,
+        secondHalfEntryMinute: true, secondHalfExitMinute: true,
+      },
+    })).map((item) => [item.athleteId, item]),
+  );
 
   const goalsFor = integer(formData.get("goalsFor"));
   const goalsAgainst = integer(formData.get("goalsAgainst"));
@@ -106,11 +186,18 @@ export async function saveMatchSheet(formData: FormData) {
             lineupRole: lineupRole(
               clean(formData.get(`lineupRole_${athleteId}`)),
             ),
-            enteredAtMinute: integer(
-              formData.get(`enteredAtMinute_${athleteId}`),
-            ),
-            leftAtMinute: integer(formData.get(`leftAtMinute_${athleteId}`)),
-            minutesPlayed: integer(formData.get(`minutesPlayed_${athleteId}`)),
+            enteredAtMinute: match.sport === "FOOTBALL"
+              ? (existingStats.get(athleteId)?.enteredAtMinute ?? null)
+              : integer(formData.get(`enteredAtMinute_${athleteId}`)),
+            leftAtMinute: match.sport === "FOOTBALL"
+              ? (existingStats.get(athleteId)?.leftAtMinute ?? null)
+              : integer(formData.get(`leftAtMinute_${athleteId}`)),
+            minutesPlayed: match.sport === "FOOTBALL"
+              ? (existingStats.get(athleteId)?.minutesPlayed ?? null)
+              : derivedMinutes(formData, athleteId),
+            ...(match.sport === "FOOTBALL"
+              ? footballMinuteData(formData, athleteId, existingStats.get(athleteId))
+              : {}),
             positionPlayed: optional(
               formData.get(`positionPlayed_${athleteId}`),
             ),
@@ -130,11 +217,18 @@ export async function saveMatchSheet(formData: FormData) {
             lineupRole: lineupRole(
               clean(formData.get(`lineupRole_${athleteId}`)),
             ),
-            enteredAtMinute: integer(
-              formData.get(`enteredAtMinute_${athleteId}`),
-            ),
-            leftAtMinute: integer(formData.get(`leftAtMinute_${athleteId}`)),
-            minutesPlayed: integer(formData.get(`minutesPlayed_${athleteId}`)),
+            enteredAtMinute: match.sport === "FOOTBALL"
+              ? (existingStats.get(athleteId)?.enteredAtMinute ?? null)
+              : integer(formData.get(`enteredAtMinute_${athleteId}`)),
+            leftAtMinute: match.sport === "FOOTBALL"
+              ? (existingStats.get(athleteId)?.leftAtMinute ?? null)
+              : integer(formData.get(`leftAtMinute_${athleteId}`)),
+            minutesPlayed: match.sport === "FOOTBALL"
+              ? (existingStats.get(athleteId)?.minutesPlayed ?? null)
+              : derivedMinutes(formData, athleteId),
+            ...(match.sport === "FOOTBALL"
+              ? footballMinuteData(formData, athleteId, existingStats.get(athleteId))
+              : {}),
             positionPlayed: optional(
               formData.get(`positionPlayed_${athleteId}`),
             ),
