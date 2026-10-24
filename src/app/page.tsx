@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import FeaturesShowcase from "./components/FeaturesShowcase";
 
 const products = [
   {
@@ -343,6 +344,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <FeaturesShowcase />
 
       <section className="ecosystem-connected">
         <div className="ecosystem-connected-copy">

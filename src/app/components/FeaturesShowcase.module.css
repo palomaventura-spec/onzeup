@@ -1,0 +1,236 @@
+.section {
+  background: radial-gradient(ellipse 65% 70% at 85% 15%, #132a35 0%, transparent 70%),
+    linear-gradient(135deg, #071018 0%, #060b11 60%, #09131b 100%);
+  color: #f7fbff;
+  padding: clamp(64px, 7vw, 112px) 22px;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  isolation: isolate;
+}
+
+.container {
+  max-width: 1320px;
+  margin-inline: auto;
+}
+
+.heading {
+  max-width: 860px;
+  margin-bottom: 30px;
+}
+
+.kicker, .eyebrow {
+  color: #adff30;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .15em;
+}
+
+.heading h2 {
+  color: #fff;
+  margin: 14px 0 14px;
+  font-size: clamp(29px, 4.5vw, 57px);
+  line-height: 1.06;
+  font-weight: 900;
+  letter-spacing: -.045em;
+}
+.heading h2 em {
+  color: #b5ff33;
+  font-style: normal;
+}
+.heading p {
+  max-width: 710px;
+  margin: 0;
+  font-size: clamp(15px, 1.55vw, 18px);
+  line-height: 1.65;
+  color: #b7c4d1;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 17px;
+}
+.tab {
+  appearance: none;
+  background: #111d27;
+  color: #d1dce5;
+  border: 1px solid #30414f;
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: inline-flex;
+  gap: 11px;
+  justify-content: center;
+  align-items: center;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.tab:hover { background: #182838; transform: translateY(-1px); }
+.tab:focus-visible, .featureButton:focus-visible, .arrows button:focus-visible,
+.productLink:focus-visible, .fullImageLink:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+.tabMark { width: 9px; height: 9px; border-radius: 50%; background: #a9ef25; }
+.playerTab .tabMark { background: #22a6ff; }
+.activeTab.clubTab { border-color: #aeff39; background: #19311b; color: #ddffa9; }
+.activeTab.playerTab { border-color: #258cff; background: #0d2743; color: #d4eaff; }
+
+.panel {
+  --accent: #b3ff36;
+  --accent-rgb: 179, 255, 54;
+  display: grid;
+  grid-template-columns: minmax(235px, 300px) minmax(0, 1fr);
+  gap: 19px;
+  border: 1px solid rgba(var(--accent-rgb), .25);
+  background: linear-gradient(150deg, rgba(var(--accent-rgb), .045), rgba(12, 21, 30, .9) 48%);
+  border-radius: 22px;
+  padding: 19px;
+  box-shadow: 0 22px 85px rgba(0, 0, 0, .23);
+}
+.player { --accent: #32a6ff; --accent-rgb: 50, 166, 255; }
+.sidebar {
+  padding: clamp(8px, 2vw, 21px) 7px clamp(8px, 2vw, 21px) 9px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.eyebrow { color: var(--accent); }
+.sidebar h3 {
+  margin: 14px 0 9px;
+  font-weight: 850;
+  font-size: clamp(26px, 2.9vw, 38px);
+  letter-spacing: -.045em;
+  line-height: 1.1;
+  color: #fff;
+}
+.summary {
+  color: #aab9c6;
+  line-height: 1.55;
+  font-size: 15px;
+  margin: 0 0 30px;
+}
+.featureNav { display: grid; gap: 8px; }
+.featureButton {
+  font: inherit;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 13px;
+  padding: 15px 11px;
+  min-height: 55px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255,255,255,.03);
+  color: #e3ebf4;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease;
+}
+.featureButton:hover { background: rgba(255,255,255,.08); }
+.selectedFeature {
+  border-color: rgba(var(--accent-rgb),.65);
+  background: rgba(var(--accent-rgb), .105);
+  color: #fff;
+}
+.featureNumber { font-size: 11px; color: var(--accent); letter-spacing: .075em; }
+.featureArrow { margin-left: auto; color: var(--accent); font-size: 19px; }
+.productLink {
+  margin-top: auto;
+  padding: 24px 0 4px;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.productLink:hover { text-decoration: underline; }
+.preview {
+  background: #080f18;
+  border: 1px solid #283a47;
+  border-radius: 15px;
+  padding: 12px;
+  min-width: 0;
+  overflow: hidden;
+}
+.previewTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 7px 12px;
+  color: #9aabba;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  gap: 10px;
+}
+.previewTop span:last-child { color: var(--accent); white-space: nowrap; }
+.previewCanvas {
+  overflow: hidden;
+  border-radius: 10px;
+  background: #0a1420;
+  border: 1px solid rgba(255,255,255,.07);
+  touch-action: pan-y;
+}
+.fullImageLink {
+  display: block;
+  line-height: 0;
+  cursor: zoom-in;
+}
+.previewImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1491 / 1055;
+  object-fit: contain;
+}
+.previewBottom {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 18px 7px 12px;
+}
+.previewBottom strong { color: #fff; font-weight: 800; font-size: clamp(17px, 2vw, 23px); }
+.previewBottom p { color: #aab9c6; font-size: 13px; margin: 5px 0 0; line-height: 1.5; }
+.arrows { display: inline-flex; gap: 7px; flex-shrink: 0; }
+.arrows button {
+  width: 39px;
+  height: 39px;
+  border: 1px solid #334857;
+  color: #e9f4ff;
+  background: #162531;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 19px;
+}
+.arrows button:hover { background: rgba(var(--accent-rgb), .17); border-color: var(--accent); }
+.note { display: block; padding: 3px 7px 6px; font-size: 11px; color: #8594a3; line-height: 1.5; }
+
+@media (max-width: 920px) {
+  .panel { grid-template-columns: 1fr; }
+  .sidebar { padding: 12px 9px 0; }
+  .summary { margin-bottom: 18px; }
+  .featureNav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; }
+  .featureButton { flex: 0 0 auto; scroll-snap-align: start; padding: 12px 14px; }
+  .productLink { margin-top: 0; padding: 9px 0 10px; }
+}
+@media (max-width: 560px) {
+  .section { padding: 60px 13px; }
+  .tabs { gap: 7px; }
+  .tab { flex: 1; padding: 13px 11px; }
+  .panel { gap: 10px; padding: 9px; border-radius: 15px; }
+  .preview { padding: 6px; }
+  .previewTop { font-size: 9px; padding: 8px 5px; }
+  .previewBottom { align-items: flex-start; padding: 14px 6px 12px; }
+  .previewBottom p { font-size: 12px; }
+  .arrows button { width: 34px; height: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab, .featureButton { transition: none; }
+}
