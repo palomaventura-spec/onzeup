@@ -49,7 +49,7 @@ export default async function PlayerLanding() {
       </section>
 
       <section className="player-independence-section">
-        <div className="player-independence-copy"><span className="page-eyebrow">O PERFIL É DO ATLETA</span><h2>O clube faz parte da trajetória.</h2><p>Não precisa estar vinculado a uma equipe para criar um 11UP Player. Atletas sem clube, de escolinhas, projetos, equipes independentes ou federados podem começar gratuitamente e manter o mesmo perfil ao longo da carreira.</p></div>
+        <div className="player-independence-copy"><span className="page-eyebrow">O PERFIL É DO ATLETA</span><h2>O clube faz parte da trajetória.</h2><p>Não precisa estar vinculado a uma equipe para criar um 11UP Player. Atletas sem clube, de escolinhas, projetos, equipes independentes ou federados podem criar seu perfil, conhecer os planos Simples e Premium e manter a mesma trajetória esportiva ao longo da carreira.</p></div>
         <div className="player-independence-grid">
           <article><span>SEM CLUBE</span><h3>Comece de onde você está.</h3><p>Crie o perfil, organize vídeos, números e trajetória agora. Quando houver um novo clube, ele poderá ser acrescentado ao histórico do atleta.</p></article>
           <article><span>JÁ JOGA POR UM CLUBE 11UP?</span><h3>Use o mesmo e-mail do responsável.</h3><p>Se a equipe já cadastrou o atleta no 11UP Club, crie a conta do responsável com o mesmo e-mail informado ao clube. Assim o sistema pode localizar o cadastro.</p><small>O e-mail apenas encontra possíveis correspondências. A família solicita e o clube confirma o vínculo antes de ele ficar ativo.</small></article>

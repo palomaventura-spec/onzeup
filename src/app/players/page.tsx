@@ -88,7 +88,7 @@ export default async function PlayersHome({
           <a href="https://onzeup.com.br/player">Sobre o Player</a>
           <a href="https://onzeup.com.br/login?perfil=player">Entrar</a>
           <a className="btn" href="https://onzeup.com.br/cadastro">
-            Criar perfil grátis
+            Criar perfil
           </a>
         </nav>
       </header>
@@ -281,21 +281,20 @@ export default async function PlayersHome({
           <h2>Seu atleta também pode estar aqui.</h2>
 
           <p>
-            Crie gratuitamente a identidade esportiva e publique o perfil
-            quando quiser.
+            Crie a identidade esportiva do atleta e conheça os planos Simples e Premium.
           </p>
         </div>
 
         <div>
           <a className="btn" href="https://onzeup.com.br/cadastro">
-            Criar perfil grátis
+            Criar perfil
           </a>
 
           <a
             className="players-secondary-cta"
             href="https://onzeup.com.br/player"
           >
-            Conhecer Free e Premium →
+            Conhecer Simples e Premium →
           </a>
         </div>
       </section>
