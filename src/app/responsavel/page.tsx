@@ -314,10 +314,10 @@ export default async function GuardianPortal({
                     <ArrowRight className={styles.cardArrow} size={20} aria-hidden="true" />
                   </div>
                   <div className={styles.actionCopy}>
-                    <h3>Desempenho</h3>
-                    <p>Veja dados oficiais do clube e registre a trajetória esportiva.</p>
+                    <h3>Diário de desempenho</h3>
+                    <p>Registre jogos, gols, assistências e acompanhe a evolução do atleta.</p>
                   </div>
-                  <span className={styles.cardFooter}>Ver desempenho</span>
+                  <span className={styles.cardFooter}>Abrir diário</span>
                 </Link>
               </div>
             </section>

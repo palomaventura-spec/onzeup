@@ -511,3 +511,32 @@
     transform: none;
   }
 }
+
+
+/* Ajuste visual do Diário de desempenho no portal do responsável */
+@media (min-width: 981px) {
+  .actionsGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .actionCard {
+    grid-column: span 2;
+  }
+
+  .actionCard:nth-child(5) {
+    order: 3;
+  }
+
+  .actionCard:nth-child(3),
+  .actionCard:nth-child(4) {
+    grid-column: span 3;
+  }
+
+  .actionCard:nth-child(3) {
+    order: 4;
+  }
+
+  .actionCard:nth-child(4) {
+    order: 5;
+  }
+}
