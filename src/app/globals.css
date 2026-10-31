@@ -3386,6 +3386,7 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
     min-width: 0;
   }
 }
+ .athlete-scout-history{margin:18px 0 0;padding:12px 14px;border:1px solid #2d4556;border-radius:10px;background:#101d27;color:#b9cbd7;font-size:12px;line-height:1.5}
 @media (max-width: 680px) {
   .athlete-premium-grid {
     grid-template-columns: 1fr;
@@ -20014,3 +20015,18 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
   .account-settings-hero { padding: 22px 18px; border-radius: 18px; }
   .account-settings-hero .account-settings-hero-status { padding: 16px; }
 }
+/* 11UP Player — painel público de trajetória preenchido pela família. */
+.athlete-diary-scout { display:grid; grid-template-columns:150px minmax(0,1fr); gap:34px; padding:58px 0; border-top:1px solid var(--athlete-line, #25313a); }
+.athlete-scout-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:22px; }
+.athlete-scout-heading h2 { margin:8px 0 0; font-size:clamp(25px,3vw,38px); letter-spacing:-.035em; }
+.athlete-scout-heading p { max-width:310px; margin:0; color:var(--athlete-muted, #9aacb8); font-size:13px; line-height:1.55; }
+.athlete-scout-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:24px 0 14px; }
+.athlete-scout-kpis article { min-width:0; padding:16px; border:1px solid var(--athlete-line, #28353e); border-radius:12px; background:var(--athlete-card, #10171d); }
+.athlete-scout-kpis strong { display:block; color:var(--athlete-accent, #a5df27); font-size:25px; letter-spacing:-.04em; }
+.athlete-scout-kpis span { display:block; margin-top:5px; color:var(--athlete-muted, #9aacb8); font-size:10px; font-weight:800; letter-spacing:.06em; line-height:1.35; text-transform:uppercase; }
+.athlete-scout-chart { padding:18px; border:1px solid var(--athlete-line, #28353e); border-radius:14px; background:linear-gradient(145deg, rgba(157,219,22,.08), transparent 46%),var(--athlete-card, #10171d); }
+.athlete-scout-chart-title { display:flex; justify-content:space-between; gap:12px; align-items:baseline; }.athlete-scout-chart-title strong { font-size:14px; }.athlete-scout-chart-title span { color:var(--athlete-muted, #9aacb8); font-size:11px; }
+.athlete-scout-bars { height:150px; display:flex; align-items:flex-end; gap:10px; padding:18px 2px 0; border-bottom:1px solid var(--athlete-line, #28353e); }
+.athlete-scout-bar-wrap { flex:1; min-width:20px; height:100%; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px; }.athlete-scout-bar-wrap i { display:block; width:min(100%,40px); border-radius:7px 7px 2px 2px; min-height:8px; background:linear-gradient(180deg, #b9ed36, #719d0d); }.athlete-scout-value { color:var(--athlete-text, #eff5f6); font-size:11px; font-weight:900; }.athlete-scout-bar-wrap small { color:var(--athlete-muted, #9aacb8); font-size:9px; white-space:nowrap; }
+@media (max-width:760px) { .athlete-diary-scout { grid-template-columns:1fr; gap:18px; padding:42px 0; }.athlete-scout-heading { display:block; }.athlete-scout-heading p { margin-top:10px; }.athlete-scout-kpis { grid-template-columns:repeat(2,1fr); }.athlete-scout-bars { gap:5px; } }
+

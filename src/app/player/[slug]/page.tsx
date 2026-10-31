@@ -60,6 +60,57 @@ function instagramProfile(input?: string | null): string | null {
   }
   return /^[a-zA-Z0-9._]{1,30}$/.test(username) ? `https://www.instagram.com/${username}/` : null;
 }
+
+type DiaryMatch = {
+  occurredAt: Date;
+  goals: number;
+  assists: number;
+};
+
+type HistoryPeriod = { label: string; matches: number; goals: number; assists: number };
+
+function PlayerDiaryScout({ entries, historyPeriods }: { entries: DiaryMatch[]; historyPeriods: HistoryPeriod[] }) {
+  if (!entries.length && !historyPeriods.length) return null;
+
+  const history = historyPeriods.reduce((total, item) => ({ games: total.games + item.matches, goals: total.goals + item.goals, assists: total.assists + item.assists }), { games: 0, goals: 0, assists: 0 });
+  const games = history.games + entries.length;
+  const goals = history.goals + entries.reduce((total, entry) => total + entry.goals, 0);
+  const assists = history.assists + entries.reduce((total, entry) => total + entry.assists, 0);
+  const recent = entries.slice(-8);
+  const highestGoalCount = Math.max(...recent.map((entry) => entry.goals), 1);
+
+  return (
+    <section id="desempenho" className="athlete-diary-scout">
+      <div className="athlete-section-label"><span>04</span><b>TRAJETÓRIA</b></div>
+      <div>
+        <div className="athlete-scout-heading">
+          <div><span className="athlete-kicker">DADOS DO DIÁRIO DA FAMÍLIA</span><h2>Indicadores de desempenho</h2></div>
+          <p>Histórico da família e diário individual. Não substituem dados oficiais da comissão técnica.</p>
+        </div>
+        <div className="athlete-scout-kpis">
+          <article><strong>{games}</strong><span>Jogos registrados</span></article>
+          <article><strong>{goals}</strong><span>Gols registrados</span></article>
+          <article><strong>{assists}</strong><span>Assistências</span></article>
+          <article><strong>{(goals / games).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</strong><span>Gols por jogo</span></article>
+        </div>
+        {historyPeriods.length ? <div className="athlete-scout-history">Histórico consolidado: {historyPeriods.map((item) => `${item.label} (${item.goals} gols)`).join(" · ")}</div> : null}
+        {recent.length ? <div className="athlete-scout-chart" role="img" aria-label="Gráfico de gols nos últimos jogos registrados">
+          <div className="athlete-scout-chart-title"><strong>Gols por jogo</strong><span>Últimos {recent.length} jogos registrados</span></div>
+          <div className="athlete-scout-bars">
+            {recent.map((entry, index) => (
+              <div className="athlete-scout-bar-wrap" key={`${entry.occurredAt.toISOString()}-${index}`}>
+                <span className="athlete-scout-value">{entry.goals}</span>
+                <i style={{ height: `${Math.max(10, (entry.goals / highestGoalCount) * 100)}%` }} />
+                <small>{entry.occurredAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</small>
+              </div>
+            ))}
+          </div>
+        </div> : null}
+      </div>
+    </section>
+  );
+}
+
 export default async function PlayerPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   await reconcileExpiredSimplePlayerCourtesies({ slug });
@@ -71,6 +122,15 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
         where: { verified: true },
         include: { athlete: { include: { organization: true, category: true } } },
       },
+      diaryEntries: {
+        orderBy: { occurredAt: "asc" },
+        take: 100,
+        select: { occurredAt: true, goals: true, assists: true },
+      },
+      historyPeriods: {
+        orderBy: { startedAt: "asc" },
+        select: { label: true, matches: true, goals: true, assists: true },
+      },
     },
   });
 
@@ -78,7 +138,8 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
 
   const gallery = lines(player.gallery);
   const savedVideos = parsePublicVideos(player.videos);
-  const videos = (hasEffectivePlayerPremium(player) ? savedVideos : savedVideos.slice(0, 1))
+  const hasPremium = hasEffectivePlayerPremium(player) || String(player.plan || "").toUpperCase() === "PREMIUM";
+  const videos = (hasPremium ? savedVideos : savedVideos.slice(0, 1))
     .filter((video) => video.url !== "__11UP_NO_FEATURED_VIDEO__");
   const achievements = lines(player.achievements);
   const careerItems = career(player.careerHistory);
@@ -97,7 +158,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
     <main className={`athlete-site ${light ? "athlete-site-light" : "athlete-site-dark"}`}>
       <header className="athlete-nav">
         <Link href="/" className="player-brand">ONZE<span>UP</span> <b>PLAYER</b></Link>
-        <nav><a href="#sobre">Sobre</a><a href="#carreira">Carreira</a><a href="#videos">Vídeos</a><a href="#galeria">Galeria</a></nav>
+        <nav><a href="#sobre">Sobre</a><a href="#carreira">Carreira</a>{hasPremium && player.showDiaryStatsPublic && (player.diaryEntries.length || player.historyPeriods.length) ? <a href="#desempenho">Desempenho</a> : null}<a href="#videos">Vídeos</a><a href="#galeria">Galeria</a></nav>
         <PlayerPublicActions name={publicName} />
       </header>
 
@@ -180,9 +241,11 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
           </section>
         ) : null}
 
+        {hasPremium && player.showDiaryStatsPublic ? <PlayerDiaryScout entries={player.diaryEntries} historyPeriods={player.historyPeriods} /> : null}
+
         {videos.length ? (
           <section id="videos" className="athlete-section">
-            <div className="athlete-section-label"><span>04</span><b>VÍDEOS</b></div>
+            <div className="athlete-section-label"><span>{hasPremium && player.showDiaryStatsPublic ? "05" : "04"}</span><b>VÍDEOS</b></div>
             <div><h2>Melhores momentos</h2><div className="athlete-videos">{videos.map((video, index) => {
               const embed = youtubeEmbed(video.url);
               return <article key={`${video.url}-${index}`} style={{ width: "100%", minWidth: 0 }}>
