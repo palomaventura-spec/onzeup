@@ -16,30 +16,99 @@ function career(value?: string | null) {
   });
 }
 
-function publicPlayerName(name: string, nickname?: string | null) {
-  const preferred = nickname?.trim();
-  return preferred || name.trim().split(/\s+/)[0] || "Atleta";
+
+type PublicVideo = { url: string; title: string; description: string };
+
+function parsePublicVideos(value?: string | null): PublicVideo[] {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+        .map((item) => ({ url: String(item.url || "").trim(), title: String(item.title || "").trim(), description: String(item.description || "").trim() }))
+        .filter((item) => item.url);
+    }
+  } catch { /* links anteriores sao salvos em linhas */ }
+  return lines(raw).map((url) => ({ url, title: "", description: "" }));
 }
 
-function youtubeEmbedUrl(value: string): string | null {
+function youtubeEmbed(input: string): string | null {
   try {
-    const url = new URL(value.trim());
-    const host = url.hostname.toLowerCase().replace(/^www\./, "");
-    let id: string | null = null;
-    if (host === "youtu.be") {
-      id = url.pathname.split("/").filter(Boolean)[0] || null;
-    } else if (host === "youtube.com" || host === "m.youtube.com" || host === "youtube-nocookie.com") {
-      if (url.pathname === "/watch") id = url.searchParams.get("v");
-      else {
-        const parts = url.pathname.split("/").filter(Boolean);
-        if (["shorts", "embed", "live"].includes(parts[0])) id = parts[1] || null;
-      }
+    const u = new URL(input);
+    const host = u.hostname.toLowerCase();
+    let id = "";
+    if (host === "youtu.be" || host === "www.youtu.be") id = u.pathname.split("/")[1] || "";
+    else if (["youtube.com", "www.youtube.com", "m.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com"].includes(host)) {
+      if (u.pathname === "/watch") id = u.searchParams.get("v") || "";
+      else if (/^\/(shorts|embed|live)\//.test(u.pathname)) id = u.pathname.split("/")[2] || "";
     }
-    if (!id || !/^[a-zA-Z0-9_-]{11}$/.test(id)) return null;
-    return `https://www.youtube-nocookie.com/embed/${id}`;
-  } catch {
-    return null;
+    return /^[a-zA-Z0-9_-]{11}$/.test(id) ? `https://www.youtube-nocookie.com/embed/${id}` : null;
+  } catch { return null; }
+}
+
+function instagramProfile(input?: string | null): string | null {
+  const raw = String(input || "").trim();
+  if (!raw) return null;
+  let username = raw.replace(/^@/, "");
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const url = new URL(raw);
+      if (!["instagram.com", "www.instagram.com"].includes(url.hostname.toLowerCase())) return null;
+      username = url.pathname.split("/").filter(Boolean)[0] || "";
+    } catch { return null; }
   }
+  return /^[a-zA-Z0-9._]{1,30}$/.test(username) ? `https://www.instagram.com/${username}/` : null;
+}
+
+type DiaryMatch = {
+  occurredAt: Date;
+  goals: number;
+  assists: number;
+};
+
+type HistoryPeriod = { label: string; matches: number; goals: number; assists: number };
+
+function PlayerDiaryScout({ entries, historyPeriods }: { entries: DiaryMatch[]; historyPeriods: HistoryPeriod[] }) {
+  if (!entries.length && !historyPeriods.length) return null;
+
+  const history = historyPeriods.reduce((total, item) => ({ games: total.games + item.matches, goals: total.goals + item.goals, assists: total.assists + item.assists }), { games: 0, goals: 0, assists: 0 });
+  const games = history.games + entries.length;
+  const goals = history.goals + entries.reduce((total, entry) => total + entry.goals, 0);
+  const assists = history.assists + entries.reduce((total, entry) => total + entry.assists, 0);
+  const recent = entries.slice(-8);
+  const highestGoalCount = Math.max(...recent.map((entry) => entry.goals), 1);
+
+  return (
+    <section id="desempenho" className="athlete-diary-scout">
+      <div className="athlete-section-label"><span>04</span><b>TRAJETÓRIA</b></div>
+      <div>
+        <div className="athlete-scout-heading">
+          <div><span className="athlete-kicker">DADOS DO DIÁRIO DO ATLETA</span><h2>Indicadores de desempenho</h2></div>
+          <p>Histórico consolidado e registros individuais do atleta. Dados informados pela família e não substituem informações oficiais da comissão técnica.</p>
+        </div>
+        <div className="athlete-scout-kpis">
+          <article><strong>{games}</strong><span>Jogos registrados</span></article>
+          <article><strong>{goals}</strong><span>Gols registrados</span></article>
+          <article><strong>{assists}</strong><span>Assistências</span></article>
+          <article><strong>{(goals / games).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</strong><span>Gols por jogo</span></article>
+        </div>
+        {historyPeriods.length ? <div className="athlete-scout-history">Histórico consolidado: {historyPeriods.map((item) => `${item.label} (${item.goals} gols)`).join(" · ")}</div> : null}
+        {recent.length ? <div className="athlete-scout-chart" role="img" aria-label="Gráfico de gols nos últimos jogos registrados">
+          <div className="athlete-scout-chart-title"><strong>Gols por jogo</strong><span>Últimos {recent.length} jogos registrados</span></div>
+          <div className="athlete-scout-bars">
+            {recent.map((entry, index) => (
+              <div className="athlete-scout-bar-wrap" key={`${entry.occurredAt.toISOString()}-${index}`}>
+                <span className="athlete-scout-value">{entry.goals}</span>
+                <i style={{ height: `${Math.max(10, (entry.goals / highestGoalCount) * 100)}%` }} />
+                <small>{entry.occurredAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</small>
+              </div>
+            ))}
+          </div>
+        </div> : null}
+      </div>
+    </section>
+  );
 }
 
 export default async function PlayerPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -53,19 +122,30 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
         where: { verified: true },
         include: { athlete: { include: { organization: true, category: true } } },
       },
+      diaryEntries: {
+        orderBy: { occurredAt: "asc" },
+        take: 100,
+        select: { occurredAt: true, goals: true, assists: true },
+      },
+      historyPeriods: {
+        orderBy: { startedAt: "asc" },
+        select: { label: true, matches: true, goals: true, assists: true },
+      },
     },
   });
 
   if (!player) notFound();
 
   const gallery = lines(player.gallery);
-  const savedVideos = lines(player.videos);
-  const videos = (hasEffectivePlayerPremium(player) ? savedVideos : savedVideos.slice(0, 1))
-    .filter((url) => url !== "__11UP_NO_FEATURED_VIDEO__");
+  const savedVideos = parsePublicVideos(player.videos);
+  const hasPremium = hasEffectivePlayerPremium(player) || String(player.plan || "").toUpperCase() === "PREMIUM";
+  const videos = (hasPremium ? savedVideos : savedVideos.slice(0, 1))
+    .filter((video) => video.url !== "__11UP_NO_FEATURED_VIDEO__");
   const achievements = lines(player.achievements);
   const careerItems = career(player.careerHistory);
   const light = player.template === "CLEAN_LIGHT";
-  const displayName = publicPlayerName(player.name, player.nickname);
+  const publicName = player.nickname?.trim() || "Atleta 11UP";
+  const instagramUrl = instagramProfile(player.instagram);
 
   const statItems = [
     { label: "Jogos", value: player.matches },
@@ -77,20 +157,21 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
   return (
     <main className={`athlete-site ${light ? "athlete-site-light" : "athlete-site-dark"}`}>
       <header className="athlete-nav">
-        <Link href="/" className="player-brand">11<span>UP</span> <b>PLAYER</b></Link>
-        <nav><a href="#sobre">Sobre</a><a href="#carreira">Carreira</a><a href="#videos">Vídeos</a><a href="#galeria">Galeria</a></nav>
-        <PlayerPublicActions name={displayName} />
+        <Link href="/" className="player-brand">ONZE<span>UP</span> <b>PLAYER</b></Link>
+        <nav><a href="#sobre">Sobre</a><a href="#carreira">Carreira</a>{hasPremium && player.showDiaryStatsPublic && (player.diaryEntries.length || player.historyPeriods.length) ? <a href="#desempenho">Desempenho</a> : null}<a href="#videos">Vídeos</a><a href="#galeria">Galeria</a></nav>
+        <PlayerPublicActions name={publicName} />
       </header>
 
       <section className="athlete-hero" style={player.coverUrl ? { backgroundImage: `linear-gradient(90deg, rgba(4,8,12,.97), rgba(4,8,12,.7)), url(${player.coverUrl})` } : undefined}>
         <div className="athlete-wrap athlete-hero-grid">
           <div className="athlete-portrait">
-            {player.photoUrl ? <img src={player.photoUrl} alt={displayName} /> : <span>{displayName.slice(0,2).toUpperCase()}</span>}
+            {player.photoUrl ? <img src={player.photoUrl} alt={publicName} /> : <span>{publicName.slice(0,2).toUpperCase()}</span>}
           </div>
 
           <div className="athlete-identity">
             <span className="athlete-kicker">ATLETA • 11UP PLAYER</span>
-            <h1>{displayName}</h1>
+            <h1>{publicName}</h1>
+            {/* Nome completo nao e divulgado por padrao. */}
 
             <div className="athlete-tags">
               {player.position ? <span>{player.position}</span> : null}
@@ -99,9 +180,9 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
               {player.nationality ? <span>{player.nationality}</span> : null}
             </div>
 
-            {player.instagram ? (
-              <a className="athlete-instagram" target="_blank" href={`https://instagram.com/${player.instagram.replace("@","")}`}>
-                {player.instagram} ↗
+            {instagramUrl ? (
+              <a className="athlete-instagram" target="_blank" href={instagramUrl} rel="noopener noreferrer">
+                Seguir no Instagram ↗
               </a>
             ) : null}
           </div>
@@ -160,46 +241,27 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
           </section>
         ) : null}
 
+        {hasPremium && player.showDiaryStatsPublic ? <PlayerDiaryScout entries={player.diaryEntries} historyPeriods={player.historyPeriods} /> : null}
+
         {videos.length ? (
           <section id="videos" className="athlete-section">
-            <div className="athlete-section-label"><span>04</span><b>VÍDEOS</b></div>
-            <div>
-              <h2>Melhores momentos</h2>
-              <div className="athlete-videos">
-                {videos.map((url, index) => {
-                  const embedUrl = youtubeEmbedUrl(url);
-                  return (
-                    <div key={`${url}-${index}`} style={{ minWidth: 0 }}>
-                      <small style={{ display: "block", marginBottom: 8, fontWeight: 700 }}>
-                        VÍDEO {String(index + 1).padStart(2, "0")}
-                      </small>
-                      {embedUrl ? (
-                        <iframe
-                          src={embedUrl}
-                          title={`Melhores momentos ${index + 1} de ${displayName}`}
-                          loading="lazy"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          referrerPolicy="strict-origin-when-cross-origin"
-                          allowFullScreen
-                          style={{ display: "block", width: "100%", aspectRatio: "16 / 9", height: "auto", border: 0, borderRadius: 14, background: "#071016" }}
-                        />
-                      ) : (
-                        <div style={{ padding: 20, border: "1px solid rgba(128,145,155,.3)", borderRadius: 14 }}>
-                          Vídeo indisponível para reprodução incorporada. Confira o endereço cadastrado.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <div className="athlete-section-label"><span>{hasPremium && player.showDiaryStatsPublic ? "05" : "04"}</span><b>VÍDEOS</b></div>
+            <div><h2>Melhores momentos</h2><div className="athlete-videos">{videos.map((video, index) => {
+              const embed = youtubeEmbed(video.url);
+              return <article key={`${video.url}-${index}`} style={{ width: "100%", minWidth: 0 }}>
+                {embed ? <div style={{ aspectRatio: "16 / 9", width: "100%", overflow: "hidden", borderRadius: 12, background: "#080b0c" }}>
+                  <iframe src={embed} title={video.title || `Melhores momentos ${index + 1}`} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" style={{ display: "block", border: 0, width: "100%", height: "100%" }} />
+                </div> : <p>Este endereço de vídeo não é compatível com a reprodução incorporada.</p>}
+                <div style={{ padding: "10px 0 16px" }}><small>VÍDEO {String(index+1).padStart(2,"0")}</small><strong style={{ display: "block" }}>{video.title || "Melhores momentos"}</strong>{video.description ? <p>{video.description}</p> : null}</div>
+              </article>;
+            })}</div></div>
           </section>
         ) : null}
 
         {gallery.length ? (
           <section id="galeria" className="athlete-gallery-section">
             <div><span className="athlete-kicker">EM CAMPO</span><h2>Galeria</h2></div>
-            <div className="athlete-gallery">{gallery.slice(0,12).map((url,index)=><img src={url} key={`${url}-${index}`} alt={`${displayName} ${index+1}`} />)}</div>
+            <div className="athlete-gallery">{gallery.slice(0,12).map((url,index)=><img src={url} key={`${url}-${index}`} alt={`${player.name} ${index+1}`} />)}</div>
           </section>
         ) : null}
 
@@ -221,7 +283,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
       </div>
 
       <footer className="athlete-footer">
-        <div className="athlete-wrap"><div><strong>11<span>UP</span> PLAYER</strong><p>Perfil esportivo administrado pela família.</p></div><PlayerPublicActions name={displayName} /></div>
+        <div className="athlete-wrap"><div><strong>ONZE<span>UP</span> PLAYER</strong><p>Perfil esportivo administrado pela família.</p></div><PlayerPublicActions name={publicName} /></div>
       </footer>
     </main>
   );

@@ -8,16 +8,16 @@ datasource db {
 }
 
 model Organization {
-  id                           String                          @id @default(cuid())
+  id                           String                              @id @default(cuid())
   name                         String
   publicName                   String?
   type                         OrganizationType
-  sport                        SportType                       @default(BOTH)
-  slug                         String                          @unique
+  sport                        SportType                           @default(BOTH)
+  slug                         String                              @unique
   description                  String?
   logoUrl                      String?
   coverUrl                     String?
-  accentColor                  String?                         @default("#9DDB16")
+  accentColor                  String?                             @default("#9DDB16")
   phone                        String?
   whatsapp                     String?
   email                        String?
@@ -25,34 +25,34 @@ model Organization {
   address                      String?
   city                         String?
   state                        String?
-  timezone                     String                          @default("America/Sao_Paulo")
-  active                       Boolean                         @default(true)
-  showAthletesPublicly         Boolean                         @default(true)
-  showStaffPublicly            Boolean                         @default(true)
-  showTrainingsPublicly        Boolean                         @default(true)
-  showMatchesPublicly          Boolean                         @default(true)
-  customDomain                 String?                         @unique
-  domainVerified               Boolean                         @default(false)
-  whatsappStatus               IntegrationStatus               @default(DISCONNECTED)
+  timezone                     String                              @default("America/Sao_Paulo")
+  active                       Boolean                             @default(true)
+  showAthletesPublicly         Boolean                             @default(true)
+  showStaffPublicly            Boolean                             @default(true)
+  showTrainingsPublicly        Boolean                             @default(true)
+  showMatchesPublicly          Boolean                             @default(true)
+  customDomain                 String?                             @unique
+  domainVerified               Boolean                             @default(false)
+  whatsappStatus               IntegrationStatus                   @default(DISCONNECTED)
   whatsappPhone                String?
-  paymentStatus                IntegrationStatus               @default(DISCONNECTED)
+  paymentStatus                IntegrationStatus                   @default(DISCONNECTED)
   paymentProvider              String?
-  onboardingCompleted          Boolean                         @default(false)
-  createdAt                    DateTime                        @default(now())
-  updatedAt                    DateTime                        @updatedAt
-  panelTheme                   String                          @default("DARK")
+  onboardingCompleted          Boolean                             @default(false)
+  createdAt                    DateTime                            @default(now())
+  updatedAt                    DateTime                            @updatedAt
+  panelTheme                   String                              @default("DARK")
   pixKey                       String?
-  publicBackground             String?                         @default("#080B0C")
-  publicTheme                  String                          @default("DARK")
-  secondaryColor               String?                         @default("#FFFFFF")
+  publicBackground             String?                             @default("#080B0C")
+  publicTheme                  String                              @default("DARK")
+  secondaryColor               String?                             @default("#FFFFFF")
   taxId                        String?
-  coverOverlay                 Int                             @default(68)
-  coverPosition                String                          @default("CENTER")
-  accessStatus                 String                          @default("ACTIVE")
+  coverOverlay                 Int                                 @default(68)
+  coverPosition                String                              @default("CENTER")
+  accessStatus                 String                              @default("ACTIVE")
   complimentaryReason          String?
   complimentaryUntil           DateTime?
-  documentStorageLimitBytes    BigInt                          @default(1073741824)
-  documentStorageUsedBytes     BigInt                          @default(0)
+  documentStorageLimitBytes    BigInt                              @default(1073741824)
+  documentStorageUsedBytes     BigInt                              @default(0)
   athletes                     Athlete[]
   partnershipActivationIntents PlayerPartnershipActivationIntent[]
   athleteAuditLogs             AthleteDataAuditLog[]
@@ -91,7 +91,7 @@ model Organization {
   staffMembers                 StaffMember[]
   staffCategoryPermissions     StaffCategoryPermission[]
   subscription                 Subscription?
-  trainingAbsenceRequests       TrainingAbsenceRequest[]
+  trainingAbsenceRequests      TrainingAbsenceRequest[]
   trainingSchedules            TrainingSchedule[]
   trainingSessions             TrainingSession[]
   trainingAttendances          TrainingAttendance[]
@@ -101,20 +101,19 @@ model Organization {
   users                        User[]
   clubCommunications           ClubCommunication[]
   competitions                 Competition[]
-  linkedCompetitionTeams       CompetitionTeam[]               @relation("LinkedCompetitionOrganization")
+  linkedCompetitionTeams       CompetitionTeam[]                   @relation("LinkedCompetitionOrganization")
   competitionCallUpRules       CompetitionCallUpRule[]
   formationTemplates           FormationTemplate[]
   AdminSupportSession          AdminSupportSession[]
 
-  athleteGrowthProfiles     AthleteGrowthProfile[]
-  athleteBoneAgeAssessments AthleteBoneAgeAssessment[]
-  publicRegistrationLinks PublicRegistrationLink[]
+  athleteGrowthProfiles         AthleteGrowthProfile[]
+  athleteBoneAgeAssessments     AthleteBoneAgeAssessment[]
+  publicRegistrationLinks       PublicRegistrationLink[]
   publicRegistrationSubmissions PublicRegistrationSubmission[]
-  birthdayReminderSettings ClubBirthdayReminderSetting[]
-  gpsProfiles GpsProfile[]
+  birthdayReminderSettings      ClubBirthdayReminderSetting[]
+  gpsProfiles                   GpsProfile[]
 
   gpsSessions GpsSession[]
-
 }
 
 model Competition {
@@ -381,75 +380,75 @@ enum CompetitionTeamStatus {
 }
 
 model User {
-  id                                           String                       @id @default(cuid())
+  id                                           String                        @id @default(cuid())
   name                                         String
-  email                                        String                       @unique
+  email                                        String                        @unique
   passwordHash                                 String
-  role                                         UserRole                     @default(COORDINATOR)
+  role                                         UserRole                      @default(COORDINATOR)
   clubRole                                     ClubRole?
-  active                                       Boolean                      @default(true)
+  active                                       Boolean                       @default(true)
   organizationId                               String?
-  createdAt                                    DateTime                     @default(now())
-  updatedAt                                    DateTime                     @updatedAt
-  accountStatus                                String                       @default("ACTIVE")
+  createdAt                                    DateTime                      @default(now())
+  updatedAt                                    DateTime                      @updatedAt
+  accountStatus                                String                        @default("ACTIVE")
   emailVerifiedAt                              DateTime?
   coachProfile                                 CoachProfile?
   clubInvites                                  ClubUserInvite[]
   emailVerificationTokens                      EmailVerificationToken[]
-  athleteEvaluations                           AthleteEvaluation[]          @relation("AthleteEvaluationAuthor")
-  evaluationProcessesCreated                   AthleteEvaluationProcess[]   @relation("AthleteEvaluationProcessCreator")
-  evaluationProcessesDecided                   AthleteEvaluationProcess[]   @relation("AthleteEvaluationProcessDecider")
-  athleteExitRecordsRecorded                   AthleteExitRecord[]          @relation("AthleteExitRecordRecorder")
-  athleteEligibilityIssuesCreated              AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueCreator")
-  athleteEligibilityIssuesResolved             AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueResolver")
-  athleteEligibilityIssuesAuthorized           AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueAuthorizer")
-  athleteEligibilityIssuesAuthorizationRevoked AthleteEligibilityIssue[]    @relation("AthleteEligibilityIssueAuthorizationRevoker")
-  athletePerformanceGoals                      AthletePerformanceGoal[]     @relation("AthletePerformanceGoalAuthor")
-  performanceReports                           PerformanceReport[]          @relation("PerformanceReportAuthor")
-  monthlyReportsCreated                        MonthlyAthleteReport[]       @relation("MonthlyAthleteReportCreator")
-  monthlyReportsReviewed                       MonthlyAthleteReport[]       @relation("MonthlyAthleteReportReviewer")
-  monthlyReportsApproved                       MonthlyAthleteReport[]       @relation("MonthlyAthleteReportApprover")
-  monthlyReportsSent                           MonthlyAthleteReport[]       @relation("MonthlyAthleteReportSender")
+  athleteEvaluations                           AthleteEvaluation[]           @relation("AthleteEvaluationAuthor")
+  evaluationProcessesCreated                   AthleteEvaluationProcess[]    @relation("AthleteEvaluationProcessCreator")
+  evaluationProcessesDecided                   AthleteEvaluationProcess[]    @relation("AthleteEvaluationProcessDecider")
+  athleteExitRecordsRecorded                   AthleteExitRecord[]           @relation("AthleteExitRecordRecorder")
+  athleteEligibilityIssuesCreated              AthleteEligibilityIssue[]     @relation("AthleteEligibilityIssueCreator")
+  athleteEligibilityIssuesResolved             AthleteEligibilityIssue[]     @relation("AthleteEligibilityIssueResolver")
+  athleteEligibilityIssuesAuthorized           AthleteEligibilityIssue[]     @relation("AthleteEligibilityIssueAuthorizer")
+  athleteEligibilityIssuesAuthorizationRevoked AthleteEligibilityIssue[]     @relation("AthleteEligibilityIssueAuthorizationRevoker")
+  athletePerformanceGoals                      AthletePerformanceGoal[]      @relation("AthletePerformanceGoalAuthor")
+  performanceReports                           PerformanceReport[]           @relation("PerformanceReportAuthor")
+  monthlyReportsCreated                        MonthlyAthleteReport[]        @relation("MonthlyAthleteReportCreator")
+  monthlyReportsReviewed                       MonthlyAthleteReport[]        @relation("MonthlyAthleteReportReviewer")
+  monthlyReportsApproved                       MonthlyAthleteReport[]        @relation("MonthlyAthleteReportApprover")
+  monthlyReportsSent                           MonthlyAthleteReport[]        @relation("MonthlyAthleteReportSender")
   permissionOverrides                          ClubUserPermissionOverride[]
-  createdRegistrationRequests                  AthleteRegistrationRequest[] @relation("AthleteRegistrationRequestCreator")
-  reviewedRegistrationRequests                 AthleteRegistrationRequest[] @relation("AthleteRegistrationRequestReviewer")
-  uploadedAthleteDocuments                     AthleteDocument[]            @relation("AthleteDocumentUploader")
-  documentManualIssuesCreated                  AthleteDocumentManualIssue[] @relation("AthleteDocumentManualIssueCreator")
-  documentManualIssuesResolved                 AthleteDocumentManualIssue[] @relation("AthleteDocumentManualIssueResolver")
-  reviewedAthleteDocuments                     AthleteDocument[]            @relation("AthleteDocumentReviewer")
-  athleteDataAuditLogs                         AthleteDataAuditLog[]        @relation("AthleteDataAuditActor")
-  recordedMatchAthleteStats                    MatchAthleteStat[]           @relation("MatchAthleteStatRecorder")
-  recordedTrainingSessions                     TrainingSession[]            @relation("TrainingSessionRecorder")
+  createdRegistrationRequests                  AthleteRegistrationRequest[]  @relation("AthleteRegistrationRequestCreator")
+  reviewedRegistrationRequests                 AthleteRegistrationRequest[]  @relation("AthleteRegistrationRequestReviewer")
+  uploadedAthleteDocuments                     AthleteDocument[]             @relation("AthleteDocumentUploader")
+  documentManualIssuesCreated                  AthleteDocumentManualIssue[]  @relation("AthleteDocumentManualIssueCreator")
+  documentManualIssuesResolved                 AthleteDocumentManualIssue[]  @relation("AthleteDocumentManualIssueResolver")
+  reviewedAthleteDocuments                     AthleteDocument[]             @relation("AthleteDocumentReviewer")
+  athleteDataAuditLogs                         AthleteDataAuditLog[]         @relation("AthleteDataAuditActor")
+  recordedMatchAthleteStats                    MatchAthleteStat[]            @relation("MatchAthleteStatRecorder")
+  recordedTrainingSessions                     TrainingSession[]             @relation("TrainingSessionRecorder")
   absenceRequestsSubmitted                     TrainingAbsenceRequest[]      @relation("AbsenceRequestSubmitter")
   absenceRequestsReviewed                      TrainingAbsenceRequest[]      @relation("AbsenceRequestReviewer")
   absenceRequestEvents                         TrainingAbsenceRequestEvent[] @relation("AbsenceRequestEventActor")
-  recordedTrainingAttendances                  TrainingAttendance[]         @relation("TrainingAttendanceRecorder")
-  trainingAuditLogs                            TrainingAuditLog[]           @relation("TrainingAuditActor")
-  athleteHistoryEntriesAuthored                AthleteHistoryEntry[]        @relation("AthleteHistoryEntryAuthor")
-  athleteHistoryEntriesResolved                AthleteHistoryEntry[]        @relation("AthleteHistoryEntryResolver")
-  staffMember                                  StaffMember?                 @relation("StaffMemberUser")
-  recordedBodyMeasurements                     AthleteBodyMeasurement[]     @relation("AthleteBodyMeasurementRecorder")
-  recordedWellbeingEntries                     AthleteWellbeingEntry[]      @relation("AthleteWellbeingEntryRecorder")
-  recordedExternalTrainings                    AthleteExternalTraining[]    @relation("AthleteExternalTrainingRecorder")
-  recordedGpsRecords                           AthleteGpsRecord[]           @relation("AthleteGpsRecordRecorder")
+  recordedTrainingAttendances                  TrainingAttendance[]          @relation("TrainingAttendanceRecorder")
+  trainingAuditLogs                            TrainingAuditLog[]            @relation("TrainingAuditActor")
+  athleteHistoryEntriesAuthored                AthleteHistoryEntry[]         @relation("AthleteHistoryEntryAuthor")
+  athleteHistoryEntriesResolved                AthleteHistoryEntry[]         @relation("AthleteHistoryEntryResolver")
+  staffMember                                  StaffMember?                  @relation("StaffMemberUser")
+  recordedBodyMeasurements                     AthleteBodyMeasurement[]      @relation("AthleteBodyMeasurementRecorder")
+  recordedWellbeingEntries                     AthleteWellbeingEntry[]       @relation("AthleteWellbeingEntryRecorder")
+  recordedExternalTrainings                    AthleteExternalTraining[]     @relation("AthleteExternalTrainingRecorder")
+  recordedGpsRecords                           AthleteGpsRecord[]            @relation("AthleteGpsRecordRecorder")
   guardianProfile                              GuardianProfile?
-  authoredClubCommunications                   ClubCommunication[]          @relation("ClubCommunicationAuthor")
+  authoredClubCommunications                   ClubCommunication[]           @relation("ClubCommunicationAuthor")
   payments                                     Payment[]
   sessions                                     Session[]
-  organization                                 Organization?                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization                                 Organization?                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   AdminSupportSession                          AdminSupportSession[]
-  supportTicketsCreated                       SupportTicket[]               @relation("SupportTicketRequester")
-  supportMessagesAuthored                     SupportMessage[]              @relation("SupportMessageAuthor")
+  supportTicketsCreated                        SupportTicket[]               @relation("SupportTicketRequester")
+  supportMessagesAuthored                      SupportMessage[]              @relation("SupportMessageAuthor")
 
-  createdGrowthProfiles      AthleteGrowthProfile[]     @relation("AthleteGrowthProfileCreator")
-  recordedBoneAgeAssessments AthleteBoneAgeAssessment[] @relation("AthleteBoneAgeRecorder")
-
-  @@index([organizationId])
-  publicRegistrationLinksCreated PublicRegistrationLink[] @relation("PublicRegistrationLinkCreator")
+  createdGrowthProfiles                 AthleteGrowthProfile[]         @relation("AthleteGrowthProfileCreator")
+  recordedBoneAgeAssessments            AthleteBoneAgeAssessment[]     @relation("AthleteBoneAgeRecorder")
+  publicRegistrationLinksCreated        PublicRegistrationLink[]       @relation("PublicRegistrationLinkCreator")
   publicRegistrationSubmissionsReviewed PublicRegistrationSubmission[] @relation("PublicRegistrationSubmissionReviewer")
-  createdGpsSessions GpsSession[]
+  createdGpsSessions                    GpsSession[]
 
   communicationMessagesAuthored ClubCommunicationMessage[] @relation("ClubCommunicationMessageAuthor")
+
+  @@index([organizationId])
 }
 
 model ClubUserInvite {
@@ -508,21 +507,20 @@ model Category {
   documentRequirements           CategoryDocumentRequirement[]
   clubCommunications             ClubCommunication[]
 
-  evaluationTargets           CategoryEvaluationTarget[] @relation("EvaluationCategoryTargets")
-  targetedByEvaluations       CategoryEvaluationTarget[] @relation("EvaluationTargetCategories")
-  evaluationTargetAthletes    Athlete[]                  @relation("AthleteEvaluationTargetCategory")
-  evaluationProcessesAsSource AthleteEvaluationProcess[] @relation("AthleteEvaluationProcessEvaluationCategory")
-  evaluationProcessesAsTarget AthleteEvaluationProcess[] @relation("AthleteEvaluationProcessTargetCategory")
+  evaluationTargets             CategoryEvaluationTarget[]     @relation("EvaluationCategoryTargets")
+  targetedByEvaluations         CategoryEvaluationTarget[]     @relation("EvaluationTargetCategories")
+  evaluationTargetAthletes      Athlete[]                      @relation("AthleteEvaluationTargetCategory")
+  evaluationProcessesAsSource   AthleteEvaluationProcess[]     @relation("AthleteEvaluationProcessEvaluationCategory")
+  evaluationProcessesAsTarget   AthleteEvaluationProcess[]     @relation("AthleteEvaluationProcessTargetCategory")
+  publicRegistrationLinks       PublicRegistrationLink[]
+  publicRegistrationSubmissions PublicRegistrationSubmission[]
+  gpsProfiles                   GpsProfile[]
+
+  gpsSessions GpsSession[]
 
   @@unique([organizationId, name, sport, type])
   @@index([organizationId])
   @@index([organizationId, sport, type, active])
-  publicRegistrationLinks PublicRegistrationLink[]
-  publicRegistrationSubmissions PublicRegistrationSubmission[]
-  gpsProfiles GpsProfile[]
-
-  gpsSessions GpsSession[]
-
 }
 
 model CategoryEvaluationTarget {
@@ -566,78 +564,78 @@ model StaffMember {
   categoryPermissions          StaffCategoryPermission[]
   responsibleTrainingSchedules TrainingSchedule[]        @relation("TrainingScheduleResponsible")
   responsibleTrainingSessions  TrainingSession[]         @relation("TrainingSessionResponsible")
+  birthDate                    DateTime?
 
   @@index([organizationId])
   @@index([categoryId])
-  birthDate DateTime?
 }
 
 model Athlete {
-  id                         String                       @id @default(cuid())
-  name                       String
-  nickname                   String?
-  jerseyNumber               Int?
-  position                   String?
-  dominantFoot               String?
-  birthYear                  Int?
-  photoUrl                   String?
-  active                     Boolean                      @default(true)
-  currentStatus              AthleteCurrentStatus         @default(ACTIVE)
-  guardianName               String?
-  guardianPhone              String?
-  guardianEmail              String?
-  organizationId             String
-  categoryId                 String?
-  evaluationTargetCategoryId String?
-  createdAt                  DateTime                     @default(now())
-  updatedAt                  DateTime                     @updatedAt
-  documentationConfirmedAt   DateTime?
-  guardianRelation           String?
-  category                   Category?                    @relation(fields: [categoryId], references: [id])
-  evaluationTargetCategory   Category?                    @relation("AthleteEvaluationTargetCategory", fields: [evaluationTargetCategoryId], references: [id], onDelete: SetNull)
-  organization               Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  healthDeclarations AthleteHealthDeclaration[]
-  absenceRequests             TrainingAbsenceRequest[]
-  memberships                AthleteMembership[]
-  callUps                    CallUp[]
-  charges                    Charge[]
-  playerLinks                PlayerAthleteLink[]
+  id                           String                              @id @default(cuid())
+  name                         String
+  nickname                     String?
+  jerseyNumber                 Int?
+  position                     String?
+  dominantFoot                 String?
+  birthYear                    Int?
+  photoUrl                     String?
+  active                       Boolean                             @default(true)
+  currentStatus                AthleteCurrentStatus                @default(ACTIVE)
+  guardianName                 String?
+  guardianPhone                String?
+  guardianEmail                String?
+  organizationId               String
+  categoryId                   String?
+  evaluationTargetCategoryId   String?
+  createdAt                    DateTime                            @default(now())
+  updatedAt                    DateTime                            @updatedAt
+  documentationConfirmedAt     DateTime?
+  guardianRelation             String?
+  category                     Category?                           @relation(fields: [categoryId], references: [id])
+  evaluationTargetCategory     Category?                           @relation("AthleteEvaluationTargetCategory", fields: [evaluationTargetCategoryId], references: [id], onDelete: SetNull)
+  organization                 Organization                        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  healthDeclarations           AthleteHealthDeclaration[]
+  absenceRequests              TrainingAbsenceRequest[]
+  memberships                  AthleteMembership[]
+  callUps                      CallUp[]
+  charges                      Charge[]
+  playerLinks                  PlayerAthleteLink[]
   partnershipActivationIntents PlayerPartnershipActivationIntent[]
-  communicationRecipients    ClubCommunicationRecipient[]
-  targetedCommunications     ClubCommunication[]          @relation("ClubCommunicationTargetAthlete")
-  evaluations                AthleteEvaluation[]
-  evaluationProcesses        AthleteEvaluationProcess[]
-  exitRecords                AthleteExitRecord[]
-  eligibilityIssues          AthleteEligibilityIssue[]
-  performanceGoals           AthletePerformanceGoal[]
-  performanceReports         PerformanceReport[]
-  monthlyReports             MonthlyAthleteReport[]
-  matchStats                 MatchAthleteStat[]
-  matchEvents                MatchEvent[]
-  trainingAttendances        TrainingAttendance[]
-  bodyMeasurements           AthleteBodyMeasurement[]
-  wellbeingEntries           AthleteWellbeingEntry[]
-  externalTrainings          AthleteExternalTraining[]
-  gpsRecords                 AthleteGpsRecord[]
-  privateData                AthletePrivateData?
-  guardians                  AthleteGuardian[]
-  documents                  AthleteDocument[]
-  documentManualIssues       AthleteDocumentManualIssue[]
-  registrationRequests       AthleteRegistrationRequest[]
-  sportRegistrations         AthleteSportRegistration[]
-  dataAuditLogs              AthleteDataAuditLog[]
-  historyEntries             AthleteHistoryEntry[]
-  competitionEntries         CompetitionAthlete[]         @relation("CompetitionAthleteSource")
+  communicationRecipients      ClubCommunicationRecipient[]
+  targetedCommunications       ClubCommunication[]                 @relation("ClubCommunicationTargetAthlete")
+  evaluations                  AthleteEvaluation[]
+  evaluationProcesses          AthleteEvaluationProcess[]
+  exitRecords                  AthleteExitRecord[]
+  eligibilityIssues            AthleteEligibilityIssue[]
+  performanceGoals             AthletePerformanceGoal[]
+  performanceReports           PerformanceReport[]
+  monthlyReports               MonthlyAthleteReport[]
+  matchStats                   MatchAthleteStat[]
+  matchEvents                  MatchEvent[]
+  trainingAttendances          TrainingAttendance[]
+  bodyMeasurements             AthleteBodyMeasurement[]
+  wellbeingEntries             AthleteWellbeingEntry[]
+  externalTrainings            AthleteExternalTraining[]
+  gpsRecords                   AthleteGpsRecord[]
+  privateData                  AthletePrivateData?
+  guardians                    AthleteGuardian[]
+  documents                    AthleteDocument[]
+  documentManualIssues         AthleteDocumentManualIssue[]
+  registrationRequests         AthleteRegistrationRequest[]
+  sportRegistrations           AthleteSportRegistration[]
+  dataAuditLogs                AthleteDataAuditLog[]
+  historyEntries               AthleteHistoryEntry[]
+  competitionEntries           CompetitionAthlete[]                @relation("CompetitionAthleteSource")
 
-  growthProfile      AthleteGrowthProfile?
-  boneAgeAssessments AthleteBoneAgeAssessment[]
+  growthProfile                 AthleteGrowthProfile?
+  boneAgeAssessments            AthleteBoneAgeAssessment[]
+  publicRegistrationSubmissions PublicRegistrationSubmission[]
 
   @@index([organizationId])
   @@index([organizationId, currentStatus])
   @@index([categoryId])
   @@index([evaluationTargetCategoryId])
   @@index([name])
-  publicRegistrationSubmissions PublicRegistrationSubmission[]
 }
 
 model AthleteSportRegistration {
@@ -750,10 +748,10 @@ model AthleteGuardian {
   updatedAt           DateTime            @updatedAt
   athlete             Athlete             @relation(fields: [athleteId], references: [id], onDelete: Cascade)
   documents           AthleteDocument[]
+  birthDate           DateTime?
 
   @@index([athleteId, relation])
   @@index([athleteId, isPrimary])
-  birthDate DateTime?
 }
 
 model AthleteRegistrationRequest {
@@ -787,44 +785,45 @@ model AthleteRegistrationRequest {
 }
 
 model AthleteDocument {
-  id                       String                       @id @default(cuid())
-  organizationId           String
-  athleteId                String
-  guardianId               String?
-  registrationRequestId    String?
-  uploadedByUserId         String?
-  reviewedByUserId         String?
-  category                 AthleteDocumentCategory
-  requestItemKey           String?
-  requirementId            String?
-  requirementKeySnapshot   String?
-  requirementLabelSnapshot String?
-  status                   AthleteDocumentStatus        @default(PENDING)
-  title                    String
-  storageProvider          String                       @default("VERCEL_BLOB_PRIVATE")
-  storageKey               String                       @unique
-  originalFileName         String
-  mimeType                 String
-  sizeBytes                Int
-  checksumSha256           String?
-  issuedAt                 DateTime?
-  expiresAt                DateTime?
-  reviewedAt               DateTime?
-  rejectionReason          String?
-  deletedAt                DateTime?
-  createdAt                DateTime                     @default(now())
-  updatedAt                DateTime                     @updatedAt
-  organization             Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  athlete                  Athlete                      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  guardian                 AthleteGuardian?             @relation(fields: [guardianId], references: [id], onDelete: SetNull)
-  registrationRequest      AthleteRegistrationRequest?  @relation(fields: [registrationRequestId], references: [id], onDelete: SetNull)
-  uploadedBy               User?                        @relation("AthleteDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
-  reviewedBy               User?                        @relation("AthleteDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  requirement              CategoryDocumentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
-  sourcePublicRegistrationDocumentId String? @unique
-  sourcePublicRegistrationDocument PublicRegistrationDocument? @relation(fields: [sourcePublicRegistrationDocumentId], references: [id], onDelete: SetNull)
+  id                                 String                       @id @default(cuid())
+  organizationId                     String
+  athleteId                          String
+  guardianId                         String?
+  registrationRequestId              String?
+  uploadedByUserId                   String?
+  reviewedByUserId                   String?
+  category                           AthleteDocumentCategory
+  requestItemKey                     String?
+  requirementId                      String?
+  requirementKeySnapshot             String?
+  requirementLabelSnapshot           String?
+  status                             AthleteDocumentStatus        @default(PENDING)
+  title                              String
+  storageProvider                    String                       @default("VERCEL_BLOB_PRIVATE")
+  storageKey                         String                       @unique
+  originalFileName                   String
+  mimeType                           String
+  sizeBytes                          Int
+  checksumSha256                     String?
+  issuedAt                           DateTime?
+  expiresAt                          DateTime?
+  reviewedAt                         DateTime?
+  rejectionReason                    String?
+  deletedAt                          DateTime?
+  createdAt                          DateTime                     @default(now())
+  updatedAt                          DateTime                     @updatedAt
+  organization                       Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete                            Athlete                      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  guardian                           AthleteGuardian?             @relation(fields: [guardianId], references: [id], onDelete: SetNull)
+  registrationRequest                AthleteRegistrationRequest?  @relation(fields: [registrationRequestId], references: [id], onDelete: SetNull)
+  uploadedBy                         User?                        @relation("AthleteDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  reviewedBy                         User?                        @relation("AthleteDocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  requirement                        CategoryDocumentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  sourcePublicRegistrationDocumentId String?                      @unique
+  sourcePublicRegistrationDocument   PublicRegistrationDocument?  @relation(fields: [sourcePublicRegistrationDocumentId], references: [id], onDelete: SetNull)
 
-  growthBoneAgeAssessments AthleteBoneAgeAssessment[] @relation("AthleteGrowthBoneAgeDocument")
+  growthBoneAgeAssessments AthleteBoneAgeAssessment[]           @relation("AthleteGrowthBoneAgeDocument")
+  communicationAttachments ClubCommunicationMessageAttachment[]
 
   @@index([organizationId, athleteId, category])
   @@index([guardianId, category])
@@ -834,7 +833,6 @@ model AthleteDocument {
   @@index([registrationRequestId, requestItemKey])
   @@index([requirementId])
   @@index([athleteId, requirementId, status])
-  communicationAttachments ClubCommunicationMessageAttachment[]
 }
 
 model CategoryDocumentRequirement {
@@ -855,9 +853,9 @@ model CategoryDocumentRequirement {
   createdAt        DateTime                          @default(now())
   updatedAt        DateTime                          @updatedAt
 
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  category     Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  documents    AthleteDocument[]
+  organization                   Organization                            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category                       Category                                @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  documents                      AthleteDocument[]
   publicRegistrationRequirements PublicRegistrationDocumentRequirement[]
 
   @@unique([categoryId, key])
@@ -925,25 +923,25 @@ model AthletePreRegistrationRequest {
 }
 
 model TrainingSchedule {
-  id                       String             @id @default(cuid())
+  id                       String                   @id @default(cuid())
   date                     DateTime?
   weekday                  Int
   startTime                String
   endTime                  String
   location                 String?
   notes                    String?
-  sport                    SportType          @default(BOTH)
+  sport                    SportType                @default(BOTH)
   trainingType             String?
   organizationId           String
   categoryId               String
   responsibleStaffMemberId String?
-  createdAt                DateTime           @default(now())
-  updatedAt                DateTime           @updatedAt
-  category                 Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  organization             Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  responsibleStaffMember   StaffMember?       @relation("TrainingScheduleResponsible", fields: [responsibleStaffMemberId], references: [id], onDelete: SetNull)
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  category                 Category                 @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  organization             Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  responsibleStaffMember   StaffMember?             @relation("TrainingScheduleResponsible", fields: [responsibleStaffMemberId], references: [id], onDelete: SetNull)
   sessions                 TrainingSession[]
-  absenceRequests           TrainingAbsenceRequest[]
+  absenceRequests          TrainingAbsenceRequest[]
   auditLogs                TrainingAuditLog[]
 
   @@index([organizationId])
@@ -980,6 +978,7 @@ model TrainingSession {
   gpsRecords               AthleteGpsRecord[]
   evaluations              AthleteEvaluation[]
   auditLogs                TrainingAuditLog[]
+  gpsSessions              GpsSession[]
 
   @@index([organizationId, startsAt])
   @@index([categoryId, startsAt])
@@ -987,8 +986,6 @@ model TrainingSession {
   @@index([recordedByUserId])
   @@index([responsibleStaffMemberId])
   @@index([status, startsAt])
-  gpsSessions GpsSession[]
-
 }
 
 model TrainingAttendance {
@@ -1230,25 +1227,25 @@ model AthleteEvaluationScore {
 }
 
 model PerformanceTemplate {
-  id             String                 @id @default(cuid())
-  organizationId String?
-  name           String
-  description    String?
-  athleteRole    PerformanceAthleteRole
-  sport          SportType              @default(BOTH)
-  active         Boolean                @default(true)
-  systemDefault  Boolean                @default(false)
-  modelFamilyKey String?
+  id                 String                 @id @default(cuid())
+  organizationId     String?
+  name               String
+  description        String?
+  athleteRole        PerformanceAthleteRole
+  sport              SportType              @default(BOTH)
+  active             Boolean                @default(true)
+  systemDefault      Boolean                @default(false)
+  modelFamilyKey     String?
   classificationJson String?
-  version        Int                    @default(1)
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  organization   Organization?          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  criteria       PerformanceCriterion[]
-  evaluations    AthleteEvaluation[]
+  version            Int                    @default(1)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  organization       Organization?          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  criteria           PerformanceCriterion[]
+  evaluations        AthleteEvaluation[]
 
-  @@index([organizationId, active])
   @@unique([organizationId, modelFamilyKey, version])
+  @@index([organizationId, active])
   @@index([athleteRole, sport, active])
 }
 
@@ -1464,11 +1461,11 @@ model AthleteGpsRecord {
   highIntensityAccelerations  Int?
   highIntensityDecelerations  Int?
   maxHeartRateBpm             Int?
-  peakAccelerationMps2        Decimal?         @db.Decimal(7, 3)
-  peakDecelerationMps2        Decimal?         @db.Decimal(7, 3)
+  peakAccelerationMps2        Decimal?      @db.Decimal(7, 3)
+  peakDecelerationMps2        Decimal?      @db.Decimal(7, 3)
   sessionRpe                  Int?
   speedZones                  Json?
-  sprintDistanceMeters        Decimal?         @db.Decimal(10, 2)
+  sprintDistanceMeters        Decimal?      @db.Decimal(10, 2)
   timeBlocks                  Json?
   createdAt                   DateTime      @default(now())
   updatedAt                   DateTime      @updatedAt
@@ -1482,13 +1479,13 @@ model AthleteGpsRecord {
 
   @@unique([athleteId, trainingSessionId])
   @@unique([athleteId, matchId])
+  @@unique([gpsSessionId, athleteId])
   @@index([organizationId, athleteId, activityAt])
   @@index([athleteId, context, activityAt])
   @@index([trainingSessionId])
   @@index([matchId])
   @@index([recordedByUserId])
   @@index([gpsSessionId])
-  @@unique([gpsSessionId, athleteId])
 }
 
 model PerformanceReport {
@@ -1699,13 +1696,12 @@ model Match {
   organization           Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   callUpRule             CompetitionCallUpRule? @relation(fields: [callUpRuleId], references: [id], onDelete: SetNull)
   formationTemplate      FormationTemplate?     @relation(fields: [formationTemplateId], references: [id], onDelete: SetNull)
+  gpsSessions            GpsSession[]
 
   @@index([organizationId, startsAt])
   @@index([categoryId, startsAt])
   @@index([callUpRuleId])
   @@index([formationTemplateId])
-  gpsSessions GpsSession[]
-
 }
 
 model MatchStaffAssignment {
@@ -1744,36 +1740,36 @@ model MatchEvent {
 }
 
 model MatchAthleteStat {
-  id               String                   @id @default(cuid())
-  organizationId   String
-  matchId          String
-  athleteId        String
-  recordedByUserId String?
-  participation    MatchParticipationStatus @default(RELATED)
-  lineupRole       MatchLineupRole?
-  enteredAtMinute  Int?
-  leftAtMinute     Int?
-  minutesPlayed    Int?
+  id                    String                   @id @default(cuid())
+  organizationId        String
+  matchId               String
+  athleteId             String
+  recordedByUserId      String?
+  participation         MatchParticipationStatus @default(RELATED)
+  lineupRole            MatchLineupRole?
+  enteredAtMinute       Int?
+  leftAtMinute          Int?
+  minutesPlayed         Int?
   // 11UP_SUMULA_DOIS_TEMPOS_V1: registros por tempo para futebol de campo
   firstHalfEntryMinute  Int?
   firstHalfExitMinute   Int?
   secondHalfEntryMinute Int?
   secondHalfExitMinute  Int?
-  positionPlayed   String?
-  jerseyNumber     Int?
-  isCaptain        Boolean                  @default(false)
-  lineupOrder      Int?
-  goals            Int                      @default(0)
-  assists          Int                      @default(0)
-  yellowCards      Int                      @default(0)
-  redCards         Int                      @default(0)
-  notes            String?
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  match            Match                    @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  athlete          Athlete                  @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  recordedBy       User?                    @relation("MatchAthleteStatRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  positionPlayed        String?
+  jerseyNumber          Int?
+  isCaptain             Boolean                  @default(false)
+  lineupOrder           Int?
+  goals                 Int                      @default(0)
+  assists               Int                      @default(0)
+  yellowCards           Int                      @default(0)
+  redCards              Int                      @default(0)
+  notes                 String?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  organization          Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  match                 Match                    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  athlete               Athlete                  @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  recordedBy            User?                    @relation("MatchAthleteStatRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([matchId, athleteId])
   @@index([organizationId, athleteId])
@@ -1849,21 +1845,21 @@ model Subscription {
 }
 
 model GuardianProfile {
-  id                String          @id @default(cuid())
-  userId            String          @unique
+  id                String                @id @default(cuid())
+  userId            String                @unique
   phone             String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
   referredByCoachId String?
-  referredByCoach   CoachProfile?   @relation("CoachReferrals", fields: [referredByCoachId], references: [id])
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referredByCoach   CoachProfile?         @relation("CoachReferrals", fields: [referredByCoachId], references: [id])
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   players           PlayerProfile[]
   billingProfile    PlayerBillingProfile?
 }
 
 model PlayerBillingProfile {
-  id              String          @id @default(cuid())
-  guardianId      String          @unique
+  id              String   @id @default(cuid())
+  guardianId      String   @unique
   billingName     String?
   billingEmail    String?
   billingPhone    String?
@@ -1876,79 +1872,83 @@ model PlayerBillingProfile {
   city            String?
   state           String?
   asaasCustomerId String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   guardian GuardianProfile @relation(fields: [guardianId], references: [id], onDelete: Cascade)
 
   @@index([asaasCustomerId])
 }
+
 model PlayerProfile {
-  id                  String              @id @default(cuid())
-  slug                String              @unique
-  name                String
-  nickname            String?
-  birthYear           Int?
-  position            String?
-  dominantFoot        String?
-  height              String?
-  currentClub         String?
-  photoUrl            String?
-  bio                 String?
-  instagram           String?
-  videos              String?
-  gallery             String?
-  isPublic            Boolean             @default(false)
-  guardianId          String
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  achievements        String?
-  assists             Int?
-  careerHistory       String?
-  coverUrl            String?
-  goals               Int?
-  matches             Int?
-  nationality         String?
-  secondaryPosition   String?
-  template            String              @default("FREE_CLEAN")
-  titles              Int?
-  weight              String?
-  categoryLabel       String?
-  complimentaryReason String?
-  complimentaryUntil  DateTime?
-  complimentaryPlan   String?
-  directoryVisible    Boolean             @default(false)
-  isComplimentary     Boolean             @default(false)
-  jerseyNumber        Int?
-  modality            String?
-  plan                String              @default("FREE")
-  planStatus          String              @default("ACTIVE")
-  premiumUntil        DateTime?
-  trialStartedAt      DateTime?
-  trialEndsAt         DateTime?
-  subscriptionStartedAt DateTime?
-  currentPeriodEndsAt DateTime?
-  asaasSubscriptionId String?
-  websiteUrl          String?
-  featuredUntil       DateTime?
-  isFeatured          Boolean             @default(false)
-  payments            Payment[]
-  athleteLinks        PlayerAthleteLink[]
+  id                      String                       @id @default(cuid())
+  slug                    String                       @unique
+  name                    String
+  nickname                String?
+  birthYear               Int?
+  position                String?
+  dominantFoot            String?
+  height                  String?
+  currentClub             String?
+  photoUrl                String?
+  bio                     String?
+  instagram               String?
+  videos                  String?
+  gallery                 String?
+  isPublic                Boolean                      @default(false)
+  guardianId              String
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+  achievements            String?
+  assists                 Int?
+  careerHistory           String?
+  coverUrl                String?
+  goals                   Int?
+  matches                 Int?
+  nationality             String?
+  secondaryPosition       String?
+  template                String                       @default("FREE_CLEAN")
+  titles                  Int?
+  weight                  String?
+  categoryLabel           String?
+  complimentaryReason     String?
+  complimentaryUntil      DateTime?
+  complimentaryPlan       String?
+  directoryVisible        Boolean                      @default(false)
+  showDiaryStatsPublic    Boolean                      @default(false)
+  isComplimentary         Boolean                      @default(false)
+  jerseyNumber            Int?
+  modality                String?
+  plan                    String                       @default("FREE")
+  planStatus              String                       @default("ACTIVE")
+  premiumUntil            DateTime?
+  trialStartedAt          DateTime?
+  trialEndsAt             DateTime?
+  subscriptionStartedAt   DateTime?
+  currentPeriodEndsAt     DateTime?
+  asaasSubscriptionId     String?
+  websiteUrl              String?
+  featuredUntil           DateTime?
+  isFeatured              Boolean                      @default(false)
+  payments                Payment[]
+  athleteLinks            PlayerAthleteLink[]
+  diaryEntries            PlayerDiaryEntry[]
+  historyPeriods          PlayerHistoryPeriod[]
   communicationRecipients ClubCommunicationRecipient[]
-  guardian            GuardianProfile     @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  guardian                GuardianProfile              @relation(fields: [guardianId], references: [id], onDelete: Cascade)
 
   @@index([guardianId])
 }
 
 model PlayerPartnershipActivationIntent {
-  id               String   @id @default(cuid())
-  tokenHash        String   @unique
+  id               String    @id @default(cuid())
+  tokenHash        String    @unique
   organizationId   String
   athleteId        String
   expiresAt        DateTime
   consumedAt       DateTime?
   consumedByUserId String?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime  @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   athlete      Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
@@ -2058,6 +2058,7 @@ model CoachProfile {
   linkedinUrl             String?
   contactEmail            String?
   directoryVisible        Boolean                   @default(true)
+  showDiaryStatsPublic    Boolean                   @default(false)
   isPublic                Boolean                   @default(false)
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
@@ -2552,23 +2553,23 @@ model ClubCommunication {
 }
 
 model ClubCommunicationRecipient {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   communicationId String
   athleteId       String
   playerId        String
   readAt          DateTime?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
 
-  communication ClubCommunication @relation(fields: [communicationId], references: [id], onDelete: Cascade)
-  athlete       Athlete           @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  player        PlayerProfile     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  communication    ClubCommunication                  @relation(fields: [communicationId], references: [id], onDelete: Cascade)
+  athlete          Athlete                            @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  player           PlayerProfile                      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  documentRequests ClubCommunicationDocumentRequest[]
+  messages         ClubCommunicationMessage[]
 
   @@unique([communicationId, athleteId, playerId])
   @@index([communicationId, readAt])
   @@index([playerId, readAt, createdAt])
   @@index([athleteId, createdAt])
-  documentRequests ClubCommunicationDocumentRequest[]
-  messages ClubCommunicationMessage[]
 }
 
 enum ClubPermissionCode {
@@ -2827,18 +2828,18 @@ model SupportMessage {
 
 /// Preferencias do envio de avisos documentais por clube. Manual e o padrao seguro.
 model DocumentNoticeSettings {
-  id               String   @id @default(cuid())
-  organizationId   String   @unique
-  mode             String   @default("MANUAL")
-  intervalDays     Int      @default(7)
-  notifyMissing    Boolean  @default(true)
-  notifyRejected   Boolean  @default(true)
-  notifyExpired    Boolean  @default(true)
-  notifyExpiring   Boolean  @default(true)
-  activatedAt      DateTime?
-  updatedByUserId  String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String    @id @default(cuid())
+  organizationId  String    @unique
+  mode            String    @default("MANUAL")
+  intervalDays    Int       @default(7)
+  notifyMissing   Boolean   @default(true)
+  notifyRejected  Boolean   @default(true)
+  notifyExpired   Boolean   @default(true)
+  notifyExpiring  Boolean   @default(true)
+  activatedAt     DateTime?
+  updatedByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
@@ -2884,11 +2885,12 @@ model PublicRegistrationLink {
   createdAt       DateTime                     @default(now())
   updatedAt       DateTime                     @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  createdBy User @relation("PublicRegistrationLinkCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  organization Organization                            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category     Category                                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy    User                                    @relation("PublicRegistrationLinkCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
   requirements PublicRegistrationDocumentRequirement[]
-  submissions PublicRegistrationSubmission[]
+  submissions  PublicRegistrationSubmission[]
+
   @@index([organizationId, status, createdAt])
   @@index([categoryId, status])
   @@index([expiresAt])
@@ -2923,114 +2925,120 @@ enum ClubBirthdayAudience {
 }
 
 model PublicRegistrationDocumentRequirement {
-  id             String  @id @default(cuid())
-  linkId         String
-  label          String
-  owner          PublicRegistrationDocumentOwner @default(ATHLETE)
-  required       Boolean @default(true)
-  expires        Boolean @default(false)
-  sortOrder      Int @default(0)
-  active         Boolean @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  link           PublicRegistrationLink @relation(fields: [linkId], references: [id], onDelete: Restrict)
-  documents      PublicRegistrationDocument[]
+  id                    String                          @id @default(cuid())
+  linkId                String
+  label                 String
+  owner                 PublicRegistrationDocumentOwner @default(ATHLETE)
+  required              Boolean                         @default(true)
+  expires               Boolean                         @default(false)
+  sortOrder             Int                             @default(0)
+  active                Boolean                         @default(true)
+  createdAt             DateTime                        @default(now())
+  updatedAt             DateTime                        @updatedAt
+  link                  PublicRegistrationLink          @relation(fields: [linkId], references: [id], onDelete: Restrict)
+  documents             PublicRegistrationDocument[]
   categoryRequirementId String?
-  categoryRequirement CategoryDocumentRequirement? @relation(fields: [categoryRequirementId], references: [id], onDelete: SetNull)
+  categoryRequirement   CategoryDocumentRequirement?    @relation(fields: [categoryRequirementId], references: [id], onDelete: SetNull)
+
   @@index([categoryRequirementId])
   @@index([linkId, active, sortOrder], map: "PublicRegistrationDocumentRequirement_linkId_active_sortOrder_i")
 }
 
 model PublicRegistrationSubmission {
-  id               String @id @default(cuid())
-  linkId           String
-  organizationId   String
-  categoryId       String
-  status           PublicRegistrationSubmissionStatus @default(SUBMITTED)
-  payloadEncrypted String
-  uploadTokenHash String? @unique
+  id                   String                             @id @default(cuid())
+  linkId               String
+  organizationId       String
+  categoryId           String
+  status               PublicRegistrationSubmissionStatus @default(SUBMITTED)
+  payloadEncrypted     String
+  uploadTokenHash      String?                            @unique
   uploadTokenExpiresAt DateTime?
-  photoStorageKey String?
-  reviewedByUserId String?
+  photoStorageKey      String?
+  reviewedByUserId     String?
   reviewNotesEncrypted String?
-  linkedAthleteId  String?
-  submittedAt      DateTime @default(now())
-  reviewedAt       DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  link             PublicRegistrationLink @relation(fields: [linkId], references: [id], onDelete: Restrict)
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  category         Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  reviewedBy       User? @relation("PublicRegistrationSubmissionReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  linkedAthlete    Athlete? @relation(fields: [linkedAthleteId], references: [id], onDelete: SetNull)
-  documents        PublicRegistrationDocument[]
-  reviewLogs PublicRegistrationReviewLog[]
-  healthDeclarations AthleteHealthDeclaration[]
+  linkedAthleteId      String?
+  submittedAt          DateTime                           @default(now())
+  reviewedAt           DateTime?
+  createdAt            DateTime                           @default(now())
+  updatedAt            DateTime                           @updatedAt
+  link                 PublicRegistrationLink             @relation(fields: [linkId], references: [id], onDelete: Restrict)
+  organization         Organization                       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category             Category                           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  reviewedBy           User?                              @relation("PublicRegistrationSubmissionReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  linkedAthlete        Athlete?                           @relation(fields: [linkedAthleteId], references: [id], onDelete: SetNull)
+  documents            PublicRegistrationDocument[]
+  reviewLogs           PublicRegistrationReviewLog[]
+  healthDeclarations   AthleteHealthDeclaration[]
+
   @@index([organizationId, status, submittedAt], map: "PublicRegistrationSubmission_organizationId_status_submittedAt_")
   @@index([linkId, submittedAt])
   @@index([linkedAthleteId])
 }
 
 model PublicRegistrationReviewLog {
-  id String @id @default(cuid())
-  submissionId String
-  organizationId String
-  actorUserId String
-  action String
-  previousStatus PublicRegistrationSubmissionStatus
-  newStatus PublicRegistrationSubmissionStatus
+  id              String                             @id @default(cuid())
+  submissionId    String
+  organizationId  String
+  actorUserId     String
+  action          String
+  previousStatus  PublicRegistrationSubmissionStatus
+  newStatus       PublicRegistrationSubmissionStatus
   reasonEncrypted String?
-  createdAt DateTime @default(now())
-  submission PublicRegistrationSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  createdAt       DateTime                           @default(now())
+  submission      PublicRegistrationSubmission       @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+
   @@index([submissionId, createdAt])
   @@index([organizationId, createdAt])
 }
 
 model PublicRegistrationDocument {
-  id               String @id @default(cuid())
+  id               String                                 @id @default(cuid())
   submissionId     String
   requirementId    String?
   labelSnapshot    String
   ownerSnapshot    PublicRegistrationDocumentOwner
-  storageKey       String @unique
+  storageKey       String                                 @unique
   originalFileName String
   mimeType         String
   sizeBytes        Int
   expiresAt        DateTime?
-  status           PublicRegistrationDocumentStatus @default(PENDING)
+  status           PublicRegistrationDocumentStatus       @default(PENDING)
   reviewedAt       DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  submission       PublicRegistrationSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  createdAt        DateTime                               @default(now())
+  updatedAt        DateTime                               @updatedAt
+  submission       PublicRegistrationSubmission           @relation(fields: [submissionId], references: [id], onDelete: Restrict)
   requirement      PublicRegistrationDocumentRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
   athleteDocuments AthleteDocument[]
+
   @@index([submissionId, status])
 }
 
 /// Registro historico imutavel da declaracao preventiva da inscricao coletiva.
 /// Nao representa aptidao medica e nunca deve ser publicado no Player.
 model AthleteHealthDeclaration {
-  id                 String @id @default(cuid())
-  organizationId     String
-  athleteId          String
-  sourceSubmissionId String @unique
+  id                     String                       @id @default(cuid())
+  organizationId         String
+  athleteId              String
+  sourceSubmissionId     String                       @unique
   questionnaireEncrypted String
-  declaredAt         DateTime
-  recordedAt         DateTime @default(now())
-  recordedByUserId   String?
-  athlete            Athlete @relation(fields: [athleteId], references: [id], onDelete: Restrict)
-  sourceSubmission   PublicRegistrationSubmission @relation(fields: [sourceSubmissionId], references: [id], onDelete: Restrict)
+  declaredAt             DateTime
+  recordedAt             DateTime                     @default(now())
+  recordedByUserId       String?
+  athlete                Athlete                      @relation(fields: [athleteId], references: [id], onDelete: Restrict)
+  sourceSubmission       PublicRegistrationSubmission @relation(fields: [sourceSubmissionId], references: [id], onDelete: Restrict)
+
   @@index([organizationId, athleteId, recordedAt])
 }
 
 model ClubBirthdayReminderSetting {
-  id             String @id @default(cuid())
+  id             String               @id @default(cuid())
   organizationId String
   audience       ClubBirthdayAudience
   leadDays       Int? // null=disabled, 0=today, 7 or 30=advance
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@unique([organizationId, audience])
 }
 
@@ -3050,11 +3058,11 @@ model TrainingAbsenceRequest {
   createdAt      DateTime                     @default(now())
   updatedAt      DateTime                     @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  athlete      Athlete @relation(fields: [athleteId], references: [id], onDelete: Restrict)
-  schedule     TrainingSchedule @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
-  submittedBy  User @relation("AbsenceRequestSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
-  reviewedBy   User? @relation("AbsenceRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  organization Organization                  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  athlete      Athlete                       @relation(fields: [athleteId], references: [id], onDelete: Restrict)
+  schedule     TrainingSchedule              @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  submittedBy  User                          @relation("AbsenceRequestSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  reviewedBy   User?                         @relation("AbsenceRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   attachments  TrainingAbsenceAttachment[]
   events       TrainingAbsenceRequestEvent[]
 
@@ -3066,27 +3074,29 @@ model TrainingAbsenceRequest {
 
 /// Arquivo privado: storageKey nunca ├® servido sem autentica├º├úo/autoriza├º├úo por pedido.
 model TrainingAbsenceAttachment {
-  id               String @id @default(cuid())
+  id               String                 @id @default(cuid())
   requestId        String
-  storageKey       String @unique
+  storageKey       String                 @unique
   originalFileName String
   mimeType         String
   sizeBytes        Int
   checksumSha256   String
-  createdAt        DateTime @default(now())
+  createdAt        DateTime               @default(now())
   request          TrainingAbsenceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
   @@index([requestId])
 }
 
 /// Trilhas de auditoria de envio e an├ílise; incluir metadata m├¡nima, nunca dados m├®dicos completos.
 model TrainingAbsenceRequestEvent {
-  id        String @id @default(cuid())
+  id        String                 @id @default(cuid())
   requestId String
   actorId   String?
   action    String
-  createdAt DateTime @default(now())
+  createdAt DateTime               @default(now())
   request   TrainingAbsenceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
-  actor     User? @relation("AbsenceRequestEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actor     User?                  @relation("AbsenceRequestEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+
   @@index([requestId, createdAt])
 }
 
@@ -3095,7 +3105,6 @@ enum TrainingAbsenceRequestStatus {
   APPROVED
   REJECTED
 }
-
 
 model GpsProfile {
   id             String       @id @default(cuid())
@@ -3114,12 +3123,11 @@ model GpsProfile {
   updatedAt      DateTime     @updatedAt
   category       Category?    @relation(fields: [categoryId], references: [id])
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  sessions        GpsSession[]
+  sessions       GpsSession[]
 
   @@index([organizationId, categoryId])
   @@index([organizationId, sport, active])
 }
-
 
 model GpsSession {
   id                String             @id @default(cuid())
@@ -3140,8 +3148,8 @@ model GpsSession {
   profileSnapshot   Json?
   importMetadata    Json?
   createdAt         DateTime           @default(now())
-  updatedAt         DateTime  @updatedAt
-  athleteRecords  AthleteGpsRecord[]
+  updatedAt         DateTime           @updatedAt
+  athleteRecords    AthleteGpsRecord[]
   category          Category?          @relation(fields: [categoryId], references: [id])
   createdBy         User?              @relation(fields: [createdByUserId], references: [id])
   match             Match?             @relation(fields: [matchId], references: [id])
@@ -3159,35 +3167,35 @@ model GpsSession {
 }
 
 model ClubCommunicationDocumentRequest {
-  id              String   @id @default(cuid())
-  recipientId     String
-  priorityKey     String
-  documentName    String
+  id               String   @id @default(cuid())
+  recipientId      String
+  priorityKey      String
+  documentName     String
   notificationKind String
-  requirementId   String?
+  requirementId    String?
   sourceDocumentId String?
-  categoryId      String?
-  description     String?
-  createdAt       DateTime @default(now())
+  categoryId       String?
+  description      String?
+  createdAt        DateTime @default(now())
 
-  recipient ClubCommunicationRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  recipient   ClubCommunicationRecipient           @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  attachments ClubCommunicationMessageAttachment[]
 
   @@unique([recipientId, priorityKey])
   @@index([recipientId, createdAt])
   @@index([requirementId])
-  attachments ClubCommunicationMessageAttachment[]
 }
 
 model ClubCommunicationMessage {
-  id           String   @id @default(cuid())
+  id           String                      @id @default(cuid())
   recipientId  String
   authorUserId String?
   senderType   ClubCommunicationSenderType
-  body         String   @default("")
-  createdAt    DateTime @default(now())
+  body         String                      @default("")
+  createdAt    DateTime                    @default(now())
 
-  recipient   ClubCommunicationRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-  author      User? @relation("ClubCommunicationMessageAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+  recipient   ClubCommunicationRecipient           @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  author      User?                                @relation("ClubCommunicationMessageAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
   attachments ClubCommunicationMessageAttachment[]
 
   @@index([recipientId, createdAt])
@@ -3201,8 +3209,8 @@ model ClubCommunicationMessageAttachment {
   documentRequestId String?
   createdAt         DateTime @default(now())
 
-  message         ClubCommunicationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  athleteDocument AthleteDocument          @relation(fields: [athleteDocumentId], references: [id], onDelete: Restrict)
+  message         ClubCommunicationMessage          @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  athleteDocument AthleteDocument                   @relation(fields: [athleteDocumentId], references: [id], onDelete: Restrict)
   documentRequest ClubCommunicationDocumentRequest? @relation(fields: [documentRequestId], references: [id], onDelete: SetNull)
 
   @@index([messageId])
@@ -3211,4 +3219,72 @@ model ClubCommunicationMessageAttachment {
 enum ClubCommunicationSenderType {
   CLUB
   PLAYER
+}
+
+model PlayerDiaryEntry {
+  id            String               @id @default(cuid())
+  playerId      String
+  entryType     PlayerDiaryEntryType @default(MATCH)
+  sport         SportType            @default(FOOTBALL)
+  occurredAt    DateTime
+  title         String
+  teamName      String?
+  opponent      String?
+  competition   String?
+  categoryLabel String?
+  location      String?
+  scoreFor      Int?
+  scoreAgainst  Int?
+  minutesPlayed Int?
+  position      String?
+  jerseyNumber  Int?
+  goals         Int                  @default(0)
+  assists       Int                  @default(0)
+  yellowCards   Int                  @default(0)
+  redCards      Int                  @default(0)
+  notes         String?
+  isPublic      Boolean              @default(false)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  player PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, occurredAt])
+  @@index([playerId, entryType, occurredAt])
+}
+
+model PlayerHistoryPeriod {
+  id          String                  @id @default(cuid())
+  playerId    String
+  periodType  PlayerHistoryPeriodType
+  season      String
+  label       String
+  sport       SportType               @default(FOOTBALL)
+  startedAt   DateTime
+  endedAt     DateTime
+  clubName    String?
+  competition String?
+  matches     Int                     @default(0)
+  goals       Int                     @default(0)
+  assists     Int                     @default(0)
+  notes       String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  player PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, startedAt, endedAt])
+  @@index([playerId, season])
+}
+
+enum PlayerHistoryPeriodType {
+  SEASON
+  SEMESTER
+  CUSTOM_PERIOD
+}
+
+enum PlayerDiaryEntryType {
+  MATCH
+  TOURNAMENT
+  ACHIEVEMENT
 }

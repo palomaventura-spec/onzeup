@@ -328,6 +328,7 @@ export default async function GuardianPortal({
               </label>
 <label className="check-row"><input type="checkbox" name="publicationConsent" defaultChecked={false} /><span>Autorizo expressamente a publicação dos dados esportivos, imagens e vídeos deste atleta menor sob minha responsabilidade. Sem esta autorização, o perfil permanecerá privado.</span></label>
 <label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público 11UP Players</span></label>
+<label className="check-row"><input type="checkbox" name="showDiaryStatsPublic" defaultChecked={selected?.showDiaryStatsPublic} disabled={!canEditPremium} /><span><strong>Exibir o painel visual da trajetória</strong><small>Mostra na página pública gráficos com jogos, gols e assistências registrados pela família. É uma funcionalidade Premium e sempre aparece identificada como registro particular, não como dado oficial do clube.</small></span></label>
 
               <div className="actions">
                 <PendingSubmitButton pendingText="Salvando perfil...">Salvar perfil</PendingSubmitButton>

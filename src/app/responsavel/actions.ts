@@ -165,6 +165,9 @@ export async function savePlayer(formData: FormData) {
     // assinatura/cortesia, não pelo formulário de edição do perfil.
     isPublic: formData.get("isPublic") === "on" && formData.get("publicationConsent") === "on",
     directoryVisible: formData.get("isPublic") === "on" && formData.get("publicationConsent") === "on" && formData.get("directoryVisible") === "on",
+    // O painel visual usa somente registros particulares e exige autorização
+    // separada para não apresentar o diário como dado oficial do Club.
+    showDiaryStatsPublic: formData.get("isPublic") === "on" && formData.get("publicationConsent") === "on" && formData.get("showDiaryStatsPublic") === "on",
   };
 
   if (id) {
@@ -619,4 +622,164 @@ export async function savePlayerBillingProfile(formData: FormData) {
       `/responsavel/assinatura?player=${playerId}`
     );
   }
+}
+
+function optionalInteger(value: FormDataEntryValue | null) {
+  const normalized = clean(value);
+  if (!normalized) return null;
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
+}
+
+export async function createPlayerDiaryEntry(formData: FormData) {
+  const user = await requireUser();
+  if (user.role !== "GUARDIAN") return;
+
+  const guardian = await guardianForUser(user.id);
+  const playerId = clean(formData.get("playerId"));
+  const occurredAtRaw = clean(formData.get("occurredAt"));
+  const occurredAt = occurredAtRaw ? new Date(`${occurredAtRaw}T12:00:00`) : null;
+
+  if (!playerId || !occurredAt || Number.isNaN(occurredAt.getTime())) return;
+
+  const player = await prisma.playerProfile.findFirst({
+    where: { id: playerId, guardianId: guardian.id },
+    select: { id: true },
+  });
+  if (!player) return;
+
+  const entryTypeValue = clean(formData.get("entryType"));
+  const entryType = ["MATCH", "TOURNAMENT", "ACHIEVEMENT"].includes(entryTypeValue)
+    ? entryTypeValue as "MATCH" | "TOURNAMENT" | "ACHIEVEMENT"
+    : "MATCH";
+  const sportValue = clean(formData.get("sport"));
+  const sport: "FOOTBALL" | "FUTSAL" =
+  sportValue === "FUTSAL" ? "FUTSAL" : "FOOTBALL";
+  const competition = clean(formData.get("competition"));
+  const opponent = clean(formData.get("opponent"));
+  const defaultTitle = entryType === "TOURNAMENT"
+    ? competition || "Torneio registrado"
+    : entryType === "ACHIEVEMENT"
+      ? "Conquista registrada"
+      : opponent ? `Jogo contra ${opponent}` : "Jogo registrado";
+
+  await prisma.playerDiaryEntry.create({
+    data: {
+      playerId: player.id,
+      entryType,
+      sport,
+      occurredAt,
+      title: clean(formData.get("title")) || defaultTitle,
+      teamName: clean(formData.get("teamName")) || null,
+      opponent: opponent || null,
+      competition: competition || null,
+      categoryLabel: clean(formData.get("categoryLabel")) || null,
+      location: clean(formData.get("location")) || null,
+      scoreFor: optionalInteger(formData.get("scoreFor")),
+      scoreAgainst: optionalInteger(formData.get("scoreAgainst")),
+      minutesPlayed: optionalInteger(formData.get("minutesPlayed")),
+      position: clean(formData.get("position")) || null,
+      jerseyNumber: optionalInteger(formData.get("jerseyNumber")),
+      goals: optionalInteger(formData.get("goals")) || 0,
+      assists: optionalInteger(formData.get("assists")) || 0,
+      yellowCards: optionalInteger(formData.get("yellowCards")) || 0,
+      redCards: optionalInteger(formData.get("redCards")) || 0,
+      notes: clean(formData.get("notes")) || null,
+    },
+  });
+
+  revalidatePath("/responsavel");
+  revalidatePath(`/responsavel/desempenho?player=${player.id}`);
+}
+
+export async function deletePlayerDiaryEntry(formData: FormData) {
+  const user = await requireUser();
+  if (user.role !== "GUARDIAN") return;
+
+  const guardian = await guardianForUser(user.id);
+  const entryId = clean(formData.get("entryId"));
+  const playerId = clean(formData.get("playerId"));
+  if (!entryId || !playerId) return;
+
+  await prisma.playerDiaryEntry.deleteMany({
+    where: {
+      id: entryId,
+      playerId,
+      player: { guardianId: guardian.id },
+    },
+  });
+
+  revalidatePath("/responsavel");
+  revalidatePath(`/responsavel/desempenho?player=${playerId}`);
+}
+
+export async function savePlayerHistoryPeriod(formData: FormData) {
+  const user = await requireUser();
+  if (user.role !== "GUARDIAN") return;
+
+  const guardian = await guardianForUser(user.id);
+  const playerId = clean(formData.get("playerId"));
+  const id = clean(formData.get("historyPeriodId"));
+  const startedAtRaw = clean(formData.get("startedAt"));
+  const endedAtRaw = clean(formData.get("endedAt"));
+  const startedAt = startedAtRaw ? new Date(`${startedAtRaw}T12:00:00`) : null;
+  const endedAt = endedAtRaw ? new Date(`${endedAtRaw}T12:00:00`) : null;
+  if (!playerId || !startedAt || !endedAt || Number.isNaN(startedAt.getTime()) || Number.isNaN(endedAt.getTime()) || endedAt < startedAt) return;
+
+  const player = await prisma.playerProfile.findFirst({
+    where: { id: playerId, guardianId: guardian.id },
+    select: { id: true, slug: true },
+  });
+  if (!player) return;
+
+  const periodTypeValue = clean(formData.get("periodType"));
+  const periodType = ["SEASON", "SEMESTER", "CUSTOM_PERIOD"].includes(periodTypeValue)
+    ? periodTypeValue as "SEASON" | "SEMESTER" | "CUSTOM_PERIOD"
+    : "CUSTOM_PERIOD";
+  const sport: "FOOTBALL" | "FUTSAL" = clean(formData.get("sport")) === "FUTSAL" ? "FUTSAL" : "FOOTBALL";
+  const season = clean(formData.get("season")) || String(startedAt.getFullYear());
+  const label = clean(formData.get("label")) || (periodType === "SEASON" ? `Temporada ${season}` : periodType === "SEMESTER" ? `${season} · semestre` : "Período histórico");
+
+  const data = {
+    periodType,
+    season,
+    label,
+    sport,
+    startedAt,
+    endedAt,
+    clubName: clean(formData.get("clubName")) || null,
+    competition: clean(formData.get("competition")) || null,
+    matches: optionalInteger(formData.get("matches")) || 0,
+    goals: optionalInteger(formData.get("goals")) || 0,
+    assists: optionalInteger(formData.get("assists")) || 0,
+    notes: clean(formData.get("notes")) || null,
+  };
+
+  if (id) {
+    await prisma.playerHistoryPeriod.updateMany({ where: { id, playerId: player.id }, data });
+  } else {
+    await prisma.playerHistoryPeriod.create({ data: { playerId: player.id, ...data } });
+  }
+
+  revalidatePath("/responsavel");
+  revalidatePath(`/responsavel/desempenho?player=${player.id}`);
+  revalidatePath(`/player/${player.slug}`);
+  revalidatePath(`/${player.slug}`);
+}
+
+export async function deletePlayerHistoryPeriod(formData: FormData) {
+  const user = await requireUser();
+  if (user.role !== "GUARDIAN") return;
+  const guardian = await guardianForUser(user.id);
+  const id = clean(formData.get("historyPeriodId"));
+  const playerId = clean(formData.get("playerId"));
+  if (!id || !playerId) return;
+
+  const player = await prisma.playerProfile.findFirst({ where: { id: playerId, guardianId: guardian.id }, select: { id: true, slug: true } });
+  if (!player) return;
+  await prisma.playerHistoryPeriod.deleteMany({ where: { id, playerId: player.id } });
+  revalidatePath("/responsavel");
+  revalidatePath(`/responsavel/desempenho?player=${player.id}`);
+  revalidatePath(`/player/${player.slug}`);
+  revalidatePath(`/${player.slug}`);
 }
