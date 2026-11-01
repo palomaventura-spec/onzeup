@@ -239,7 +239,7 @@ export default async function GuardianPortal({
                 <div className="form">
                   <label>Nome completo <small className="field-help">Dado cadastral. Não é exibido no perfil público por padrão.</small><input name="name" required defaultValue={selected?.name || ""} placeholder="Ex.: João Silva" /></label>
                   <label>Apelido / nome esportivo <small className="field-help">É o nome principal exibido publicamente. Preencha para identificar o atleta na página.</small><input name="nickname" defaultValue={selected?.nickname || ""} placeholder="Ex.: JS10" /></label>
-                  <label>Endereço público <small className="field-help">Ex.: joao-silva</small><input name="slug" defaultValue={selected?.slug || ""} placeholder="joao-silva" /></label>
+                  <label>Link público do perfil <small className="field-help">Use o apelido ou nome do atleta. Nunca informe endereço, telefone ou dados da família.</small><input name="publicSlug" defaultValue={selected?.slug || ""} placeholder="joao-silva" /></label>
 
                   <div className="two-field-row">
                     <label>Ano de nascimento<input name="birthYear" type="number" defaultValue={selected?.birthYear || ""} placeholder="2015" /></label>
