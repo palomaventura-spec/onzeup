@@ -20030,3 +20030,111 @@ button[disabled][aria-busy="true"]{opacity:.75;cursor:wait;pointer-events:none}
 .athlete-scout-bar-wrap { flex:1; min-width:20px; height:100%; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px; }.athlete-scout-bar-wrap i { display:block; width:min(100%,40px); border-radius:7px 7px 2px 2px; min-height:8px; background:linear-gradient(180deg, #b9ed36, #719d0d); }.athlete-scout-value { color:var(--athlete-text, #eff5f6); font-size:11px; font-weight:900; }.athlete-scout-bar-wrap small { color:var(--athlete-muted, #9aacb8); font-size:9px; white-space:nowrap; }
 @media (max-width:760px) { .athlete-diary-scout { grid-template-columns:1fr; gap:18px; padding:42px 0; }.athlete-scout-heading { display:block; }.athlete-scout-heading p { margin-top:10px; }.athlete-scout-kpis { grid-template-columns:repeat(2,1fr); }.athlete-scout-bars { gap:5px; } }
 
+
+
+/* 11UP Players vitrine premium */
+.catalog-first-page{
+  background:
+    radial-gradient(circle at 82% 4%,rgba(157,219,22,.10),transparent 25%),
+    #080c0e;
+}
+.catalog-title{padding:62px 6vw 26px}
+.catalog-title p{max-width:560px;font-size:16px;line-height:1.65}
+.catalog-featured{padding-top:18px;padding-bottom:64px}
+.catalog-section-title h2{font-size:clamp(34px,4vw,54px);letter-spacing:-.05em}
+.featured-player-grid{
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:14px;
+}
+.featured-player-card{
+  grid-column:span 3;
+  min-height:430px;
+  border-radius:20px;
+  border-color:#3c5209;
+  box-shadow:0 24px 60px rgba(0,0,0,.22);
+  transition:transform .22s ease,border-color .22s ease;
+}
+.featured-player-card:hover{transform:translateY(-5px);border-color:#9ddb16}
+.featured-player-card:first-child{grid-column:span 6;min-height:500px}
+.featured-player-card:only-child{grid-column:1/-1;min-height:470px}
+.featured-player-card:nth-child(2):last-child{grid-column:span 6}
+.featured-player-copy{padding:30px}
+.featured-player-copy h3{font-size:clamp(28px,3vw,44px)}
+.featured-player-copy p{max-width:560px;font-size:11px;line-height:1.5}
+.featured-mini-stats{display:none}
+.catalog-search-zone{padding-top:52px}
+.catalog-filter-form{
+  padding:10px;
+  border:1px solid #29363a;
+  border-radius:16px;
+  background:#0d1416;
+}
+.catalog-grid{gap:16px}
+.catalog-person-card{
+  border-radius:18px;
+  transition:transform .2s ease,border-color .2s ease;
+}
+.catalog-person-card:hover{transform:translateY(-4px);border-color:#9ddb16}
+.catalog-person-card.premium{border-color:#273237}
+.catalog-photo>b{display:none}
+.catalog-trust-footer{
+  padding:28px 6vw;
+  border-top:1px solid #202b2f;
+  color:#8c999e;
+  background:#080c0e;
+  font-size:11px;
+  line-height:1.7;
+  text-align:center;
+}
+@media(max-width:900px){
+  .featured-player-grid{grid-template-columns:1fr}
+  .featured-player-card,
+  .featured-player-card:first-child,
+  .featured-player-card:only-child,
+  .featured-player-card:nth-child(2):last-child{grid-column:auto;min-height:440px}
+}
+@media(max-width:560px){
+  .catalog-title{padding-top:46px}
+  .catalog-title h1{font-size:56px}
+  .featured-player-copy{padding:22px}
+  .catalog-filter-form{padding:8px}
+}
+/* Destaques semanais: cards iguais */
+/* Destaques semanais: cards iguais */
+.catalog-featured .featured-player-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.catalog-featured .featured-player-grid .featured-player-card,
+.catalog-featured .featured-player-grid .featured-player-card:first-child,
+.catalog-featured .featured-player-grid .featured-player-card:only-child {
+  grid-column: auto;
+  min-height: 0;
+  aspect-ratio: 3 / 4;
+}
+
+.catalog-featured .featured-player-grid-1 {
+  grid-template-columns: minmax(0, 360px);
+  justify-content: center;
+}
+
+.catalog-featured .featured-player-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 360px));
+  justify-content: center;
+}
+
+@media (max-width: 760px) {
+  .catalog-featured .featured-player-grid,
+  .catalog-featured .featured-player-grid-1,
+  .catalog-featured .featured-player-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-featured .featured-player-grid .featured-player-card {
+    max-width: 420px;
+    width: 100%;
+    margin-inline: auto;
+  }
+}

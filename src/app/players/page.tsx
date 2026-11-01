@@ -19,6 +19,9 @@ const PLAYER_POSITIONS = [
   "Atacante",
   "Pivô",
 ];
+function publicPlayerName(player: { nickname: string | null; name: string }) {
+  return player.nickname?.trim() || player.name.trim().split(/\s+/)[0] || "Atleta 11UP";
+}
 
 export default async function PlayersHome({
   searchParams,
@@ -63,7 +66,7 @@ export default async function PlayersHome({
         OR: [{ featuredUntil: null }, { featuredUntil: { gt: new Date() } }],
       },
       orderBy: { updatedAt: "desc" },
-      take: 6,
+      take: 3,
     }),
     prisma.playerProfile.findMany({
       where,
@@ -76,6 +79,7 @@ export default async function PlayersHome({
     query.q || query.category || query.position || query.year
   );
 
+  const catalogPlayers = players;
   return (
     <main className="catalog-first-page">
       <header className="catalog-nav">
@@ -88,20 +92,17 @@ export default async function PlayersHome({
           <a href="https://onzeup.com.br/player">Sobre o Player</a>
           <a href="https://onzeup.com.br/login?perfil=player">Entrar</a>
           <a className="btn" href="https://onzeup.com.br/cadastro">
-            Criar perfil
+            Criar perfil do atleta
           </a>
         </nav>
       </header>
 
       <section className="catalog-title">
-        <span className="page-eyebrow">11UP PLAYERS</span>
+        <span className="page-eyebrow">11UP PLAYERS · ATLETAS DA BASE</span>
 
-        <h1>Atletas da base.</h1>
+        <h1>Cada passo do seu atleta merece destaque.</h1>
 
-        <p>
-          Descubra perfis esportivos públicos cadastrados e administrados por
-          suas famílias.
-        </p>
+        <p>Registre conquistas, acompanhe a evolução e reúna em um só lugar os momentos que fazem parte da trajetória dele.</p>
       </section>
 
       {featured.length ? (
@@ -109,11 +110,11 @@ export default async function PlayersHome({
           <div className="catalog-section-title">
             <div>
               <span className="page-eyebrow">SELEÇÃO 11UP</span>
-              <h2>Atletas em destaque</h2>
+              <h2>Destaques da semana</h2>
             </div>
           </div>
 
-          <div className="featured-player-grid">
+          <div className={`featured-player-grid featured-player-grid-${featured.length}`}>
             {featured.map((p) => (
               <a
                 href={`https://players.onzeup.com.br/${p.slug}`}
@@ -121,7 +122,7 @@ export default async function PlayersHome({
                 className="featured-player-card"
               >
                 {p.photoUrl ? (
-                  <img src={p.photoUrl} alt={p.name} />
+                  <img src={p.photoUrl} alt={publicPlayerName(p)} />
                 ) : (
                   <div className="featured-placeholder">
                     {p.name.slice(0, 2)}
@@ -131,13 +132,13 @@ export default async function PlayersHome({
                 <div className="featured-player-shade" />
 
                 <div className="featured-player-copy">
-                  <span>★ DESTAQUE 11UP</span>
+                  <span>★ DESTAQUE DA SEMANA</span>
 
-                  <h3>{p.nickname || p.name}</h3>
+                  <h3>{publicPlayerName(p)}</h3>
 
                   <p>
                     {[
-                      p.name !== p.nickname ? p.name : null,
+
                       p.position,
                       p.categoryLabel,
                       p.currentClub,
@@ -179,7 +180,7 @@ export default async function PlayersHome({
             <h2>Encontre um atleta</h2>
           </div>
 
-          <span className="badge">{players.length} perfil(is)</span>
+          <span className="badge">{players.length === 1 ? "1 perfil público" : `${players.length} perfis públicos`}</span>
         </div>
 
         <form className="catalog-filter-form">
@@ -229,7 +230,7 @@ export default async function PlayersHome({
         </form>
 
         <div className="catalog-grid">
-          {players.map((p) => (
+          {catalogPlayers.map((p) => (
             <a
               href={`https://players.onzeup.com.br/${p.slug}`}
               className={`catalog-person-card ${
@@ -239,7 +240,7 @@ export default async function PlayersHome({
             >
               <div className="catalog-photo">
                 {p.photoUrl ? (
-                  <img src={p.photoUrl} alt={p.name} />
+                  <img src={p.photoUrl} alt={publicPlayerName(p)} />
                 ) : (
                   <span>{p.name.slice(0, 2).toUpperCase()}</span>
                 )}
@@ -249,13 +250,8 @@ export default async function PlayersHome({
 
               <small>11UP PLAYER</small>
 
-              <h3>{p.nickname || p.name}</h3>
-
-              {p.nickname ? (
-                <p className="catalog-real-name">{p.name}</p>
-              ) : null}
-
-              <p>
+              <h3>{publicPlayerName(p)}</h3>
+<p>
                 {[p.position, p.categoryLabel, p.currentClub]
                   .filter(Boolean)
                   .join(" • ")}
@@ -265,7 +261,7 @@ export default async function PlayersHome({
             </a>
           ))}
 
-          {!players.length ? (
+          {!catalogPlayers.length ? (
             <div className="catalog-empty">
               <h3>Nenhum atleta encontrado.</h3>
               <p>Tente remover um filtro ou buscar por outro termo.</p>
@@ -281,23 +277,28 @@ export default async function PlayersHome({
           <h2>Seu atleta também pode estar aqui.</h2>
 
           <p>
-            Crie a identidade esportiva do atleta e conheça os planos Simples e Premium.
+            Crie gratuitamente a identidade esportiva e publique o perfil
+            quando quiser.
           </p>
         </div>
 
         <div>
           <a className="btn" href="https://onzeup.com.br/cadastro">
-            Criar perfil
+            Criar perfil do atleta
           </a>
 
           <a
             className="players-secondary-cta"
             href="https://onzeup.com.br/player"
           >
-            Conhecer Simples e Premium →
+            Conhecer planos →
           </a>
         </div>
       </section>
+      <footer className="catalog-trust-footer">
+        Perfis públicos autorizados e gerenciados pelos responsáveis.
+        A 11UP respeita a privacidade e a proteção de dados de crianças e adolescentes.
+      </footer>
     </main>
   );
 }

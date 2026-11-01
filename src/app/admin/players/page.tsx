@@ -11,6 +11,7 @@ import {
   grantSimplePlayerCourtesy,
   endSimplePlayerCourtesy,
   updatePremiumPlayerGuardian,
+  setPlayerFeatured,
 } from "./actions";
 
 function isInactive(status: string) {
@@ -88,7 +89,11 @@ export default async function AdminPlayers({
 
       {query.saved ? (
         <div className="admin-success">
-          {query.saved === "deactivated"
+          {query.saved === "featured"
+            ? "Atleta incluído nos destaques da vitrine."
+            : query.saved === "feature_removed"
+              ? "Atleta removido dos destaques da vitrine."
+              : query.saved === "deactivated"
             ? "Player desativado. Ele saiu do catálogo e agora pode ser excluído definitivamente."
             : query.saved === "guardian"
               ? "Responsável do Premium atualizado. Os demais Players, o plano e os vínculos existentes foram preservados."
@@ -106,7 +111,13 @@ export default async function AdminPlayers({
 
       {query.error ? (
         <div className="notice error">
-          {query.error === "must_deactivate"
+          {query.error === "featured_limit"
+            ? "Já existem três atletas nos destaques da semana. Remova um antes de incluir outro."
+            : query.error === "featured_requires_public"
+            ? "Para aparecer em destaque, o perfil precisa estar ativo, público e visível no catálogo."
+            : query.error === "invalid_featured_date"
+              ? "Informe uma data futura válida ou deixe a data em branco."
+              : query.error === "must_deactivate"
             ? "Para excluir um Player, desative o perfil primeiro."
             : query.error === "invalid_email"
               ? "Informe um e-mail válido."
@@ -251,6 +262,41 @@ export default async function AdminPlayers({
                           </>
                         )}
 
+                        {!inactive && p.isPublic && p.directoryVisible ? (
+                          <details style={{ marginTop: 10, minWidth: 190 }}>
+                            <summary style={{ cursor: "pointer" }}>
+                              {p.isFeatured ? "Destaque na vitrine ✓" : "Destacar na vitrine"}
+                            </summary>
+
+                            <form action={setPlayerFeatured} style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                              <input type="hidden" name="playerId" value={p.id} />
+                              <input type="hidden" name="featured" value="true" />
+                              <label htmlFor={`featured-until-${p.id}`}>Exibir até (opcional)</label>
+                              <input
+                                id={`featured-until-${p.id}`}
+                                type="date"
+                                name="featuredUntil"
+                                defaultValue={p.featuredUntil ? p.featuredUntil.toISOString().slice(0, 10) : ""}
+                              />
+                              <p className="help">Sem data, o destaque permanece até você removê-lo.</p>
+                              <PendingSubmitButton pendingText="Salvando…" className="btn-secondary btn-small" type="submit">
+                                Salvar destaque
+                              </PendingSubmitButton>
+                            </form>
+
+                            {p.isFeatured ? (
+                              <form action={setPlayerFeatured} style={{ marginTop: 8 }}>
+                                <input type="hidden" name="playerId" value={p.id} />
+                                <input type="hidden" name="featured" value="false" />
+                                <AdminConfirmSubmit
+                                  label="Remover destaque"
+                                  className="btn-danger-v171 btn-small"
+                                  confirmText={`Remover ${p.nickname || p.name} dos destaques da vitrine?`}
+                                />
+                              </form>
+                            ) : null}
+                          </details>
+                        ) : null}
                         <details style={{ marginTop: 10, minWidth: 190 }}>
                           <summary style={{ cursor: "pointer" }}>Cortesia Player Simples</summary>
                           {p.isComplimentary && p.complimentaryPlan === "SIMPLE" ? (

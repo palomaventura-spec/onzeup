@@ -206,6 +206,83 @@ export async function grantSimplePlayerCourtesy(formData: FormData) {
   redirect(playerAdminUrl(playerId, "saved=simple_courtesy"));
 }
 
+export async function setPlayerFeatured(formData: FormData) {
+  await requireSuperAdmin();
+
+  const playerId = String(formData.get("playerId") || "").trim();
+  const featured = String(formData.get("featured") || "true") !== "false";
+  const untilRaw = String(formData.get("featuredUntil") || "").trim();
+
+  if (!playerId) redirect(playerAdminUrl(undefined, "error=missing"));
+
+  const player = await prisma.playerProfile.findUnique({
+    where: { id: playerId },
+    select: {
+      id: true,
+      slug: true,
+      isPublic: true,
+      directoryVisible: true,
+      planStatus: true,
+      isFeatured: true,
+    },
+  });
+
+  if (!player) redirect(playerAdminUrl(undefined, "error=not_found"));
+
+  if (
+    featured &&
+    (!player.isPublic || !player.directoryVisible || player.planStatus === "INACTIVE")
+  ) {
+    redirect(playerAdminUrl(playerId, "error=featured_requires_public"));
+  }
+
+  if (featured && !player.isFeatured) {
+    const totalDestaques = await prisma.playerProfile.count({
+      where: {
+        isFeatured: true,
+        isPublic: true,
+        directoryVisible: true,
+        planStatus: { not: "INACTIVE" },
+        OR: [
+          { featuredUntil: null },
+          { featuredUntil: { gt: new Date() } },
+        ],
+      },
+    });
+
+    if (totalDestaques >= 3) {
+      redirect(playerAdminUrl(playerId, "error=featured_limit"));
+    }
+  }
+  let featuredUntil: Date | null = null;
+
+  if (featured && untilRaw) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(untilRaw)) {
+      redirect(playerAdminUrl(playerId, "error=invalid_featured_date"));
+    }
+
+    featuredUntil = new Date(`${untilRaw}T23:59:59.999-03:00`);
+
+    if (!Number.isFinite(featuredUntil.getTime()) || featuredUntil <= new Date()) {
+      redirect(playerAdminUrl(playerId, "error=invalid_featured_date"));
+    }
+  }
+
+  await prisma.playerProfile.update({
+    where: { id: playerId },
+    data: {
+      isFeatured: featured,
+      featuredUntil: featured ? featuredUntil : null,
+    },
+  });
+
+  revalidatePath("/admin/players");
+  revalidatePath("/players");
+  revalidatePath(`/player/${player.slug}`);
+  revalidatePath(`/${player.slug}`);
+
+  redirect(playerAdminUrl(playerId, featured ? "saved=featured" : "saved=feature_removed"));
+}
 export async function endSimplePlayerCourtesy(formData: FormData) {
   await requireSuperAdmin();
   const playerId = String(formData.get("playerId") || "").trim();
