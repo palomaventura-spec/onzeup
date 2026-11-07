@@ -103,3 +103,46 @@
   .guardian-portal .player-editor-form textarea,
   .guardian-portal .player-editor-form select { font-size: 16px; min-height: 44px; }
 }
+
+
+/* PLAYER LIGHT V2 - ajustes finais de contraste */
+
+.guardian-portal .player-public-toggle {
+  background: #eef7db !important;
+  color: #182532 !important;
+  border: 1px solid #c9df9a !important;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.guardian-portal .player-public-toggle strong,
+.guardian-portal .player-public-toggle small,
+.guardian-portal .player-public-toggle span {
+  color: #344758 !important;
+}
+
+.guardian-portal .check-row,
+.guardian-portal .check-row strong,
+.guardian-portal .check-row small,
+.guardian-portal .check-row span {
+  color: #182532 !important;
+}
+
+.guardian-portal .player-photo-editor {
+  background: #ffffff !important;
+}
+
+.guardian-portal .player-photo-placeholder {
+  background: #eef2f5 !important;
+  color: #536879 !important;
+  border-color: #dce4ea !important;
+}
+
+.guardian-portal .player-preview-card .btn-secondary {
+  background: #f4f7fa !important;
+  color: #182532 !important;
+  border: 1px solid #dce4ea !important;
+  border-radius: 9px;
+  padding: 10px 14px;
+  text-decoration: none;
+}

@@ -132,7 +132,7 @@ export default async function GuardianPortal({
           <Link href={selected ? `/responsavel?player=${selected.id}` : "/responsavel"} className="btn-secondary btn-small">← Voltar à página inicial</Link>
           <span>{user.name}</span>
           <form action="/api/auth/logout" method="post">
-            <PendingSubmitButton pendingText="Saindoâ€¦" className="btn-secondary btn-small" type="submit">Sair</PendingSubmitButton>
+            <PendingSubmitButton pendingText="Saindo…" className="btn-secondary btn-small" type="submit">Sair</PendingSubmitButton>
           </form>
         </div>
       </header>
@@ -179,7 +179,7 @@ export default async function GuardianPortal({
               <strong>Contato da família</strong>
               <form action={saveGuardianProfile}>
                 <input name="phone" defaultValue={guardian?.phone || ""} placeholder="WhatsApp do responsável" />
-                <PendingSubmitButton pendingText="Salvandoâ€¦" className="btn-secondary btn-small">Salvar contato</PendingSubmitButton>
+                <PendingSubmitButton pendingText="Salvando…" className="btn-secondary btn-small">Salvar contato</PendingSubmitButton>
               </form>
             </div>
           </aside>
@@ -219,7 +219,7 @@ export default async function GuardianPortal({
                 <form action={createPlayerPremiumAsaas}>
                   <input type="hidden" name="playerId" value={selected.id} />
                   <strong>R$ 69,90/mês</strong>
-                  <PendingSubmitButton pendingText="Processando pagamentoâ€¦" className="btn">Assinar com cartao</PendingSubmitButton></form><form action={createPlayerPremiumPixAsaas}><input type="hidden" name="playerId" value={selected.id} /><PendingSubmitButton pendingText="Processando pagamentoâ€¦" className="btn-secondary">Pagar mensalidade via Pix</PendingSubmitButton>
+                  <PendingSubmitButton pendingText="Processando pagamento…" className="btn">Assinar com cartao</PendingSubmitButton></form><form action={createPlayerPremiumPixAsaas}><input type="hidden" name="playerId" value={selected.id} /><PendingSubmitButton pendingText="Processando pagamento…" className="btn-secondary">Pagar mensalidade via Pix</PendingSubmitButton>
                 </form>
               </section>
             ) : null}
@@ -244,7 +244,7 @@ export default async function GuardianPortal({
 
                 <div className="form">
                   <label>Nome completo <small className="field-help">Dado cadastral. Não é exibido no perfil público por padrão.</small><input name="name" required defaultValue={selected?.name || ""} placeholder="Ex.: João Silva" /></label>
-                  <label>Apelido / nome esportivo <small className="field-help">Ã‰ o nome principal exibido publicamente. Preencha para identificar o atleta na pÃ¡gina.</small><input name="nickname" defaultValue={selected?.nickname || ""} placeholder="Ex.: JS10" /></label>
+                  <label>Apelido / nome esportivo <small className="field-help">É o nome principal exibido publicamente. Preencha para identificar o atleta na página.</small><input name="nickname" defaultValue={selected?.nickname || ""} placeholder="Ex.: JS10" /></label>
                   <label>Link público do perfil <small className="field-help">Use o apelido ou nome do atleta. Nunca informe endereço, telefone ou dados da família.</small><input name="publicSlug" defaultValue={selected?.slug || ""} placeholder="joao-silva" /></label>
 
                   <div className="two-field-row">
@@ -334,7 +334,7 @@ export default async function GuardianPortal({
               </label>
 <label className="check-row"><input type="checkbox" name="publicationConsent" defaultChecked={false} /><span>Autorizo expressamente a publicação dos dados esportivos, imagens e vídeos deste atleta menor sob minha responsabilidade. Sem esta autorização, o perfil permanecerá privado.</span></label>
 <label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público 11UP Players</span></label>
-<label className="check-row"><input type="checkbox" name="showDiaryStatsPublic" defaultChecked={selected?.showDiaryStatsPublic} disabled={!canEditPremium} /><span><strong>Exibir o painel visual da trajetÃ³ria</strong><small>Mostra na pÃ¡gina pÃºblica grÃ¡ficos com jogos, gols e assistÃªncias registrados pela famÃ­lia. Ã‰ uma funcionalidade Premium e sempre aparece identificada como registro particular, nÃ£o como dado oficial do clube.</small></span></label>
+<label className="check-row"><input type="checkbox" name="showDiaryStatsPublic" defaultChecked={selected?.showDiaryStatsPublic} disabled={!canEditPremium} /><span><strong>Exibir o painel visual da trajetória</strong><small>Mostra na página pública gráficos com jogos, gols e assistências registrados pela família. É uma funcionalidade Premium e sempre aparece identificada como registro particular, não como dado oficial do clube.</small></span></label>
 
               <div className="actions">
                 <PendingSubmitButton pendingText="Salvando perfil...">Salvar perfil</PendingSubmitButton>

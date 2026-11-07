@@ -40,3 +40,48 @@
 .page input:not([type="checkbox"]):not([type="radio"]),
 .page textarea, .page select { background: #fff; color: #182532; border-color: #cbd6df; color-scheme: light; }
 .page input::placeholder, .page textarea::placeholder { color: #758593; }
+
+
+/* PLAYER LIGHT V2 - diario e historico */
+
+.diaryRule {
+  background: #edf5ff;
+  color: #344758;
+  border-left-color: #80b7ee;
+}
+
+.diaryRule,
+.diaryHeading,
+.historyItem,
+.diaryItem {
+  border-bottom-color: #dce4ea;
+}
+
+.diaryStats strong {
+  background: #edf2f6;
+  color: #182532;
+  border: 1px solid #dce4ea;
+}
+
+.diaryMain span,
+.historyItem summary > div:first-child span,
+.personalTag {
+  color: #386da4;
+}
+
+.diaryMain p,
+.diaryMain small,
+.historyItem p,
+.diaryHeading p,
+.diaryDate {
+  color: #586979;
+}
+
+.entryForm summary,
+.form label {
+  color: #182532;
+}
+
+.entryForm summary:hover {
+  background: #f6f9fc;
+}
