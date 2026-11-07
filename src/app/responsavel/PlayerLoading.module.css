@@ -1,0 +1,23 @@
+﻿.surface {
+  min-height: 100dvh;
+  background: #f3f5f7;
+}
+
+.surface :global(.onzeup-page-loading) {
+  min-height: 100dvh;
+  background: #f3f5f7;
+  color: #17212b;
+}
+
+.surface :global(.onzeup-page-loading strong) {
+  color: #17212b;
+  font-weight: 800;
+}
+
+.surface :global(.onzeup-page-loading small) {
+  color: #64748b;
+}
+
+.surface :global(.onzeup-loading-mark span) {
+  background: #82b900;
+}

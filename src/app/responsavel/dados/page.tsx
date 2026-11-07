@@ -1,3 +1,4 @@
+import PlayerEditorNavigation from "@/components/PlayerEditorNavigation";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -168,6 +169,10 @@ export default async function PlayerDataPage({
             </p>
           </div>
         </section>
+
+        {selected ? (
+          <PlayerEditorNavigation playerId={selected.id} playerName={selected.nickname || selected.name} active="dados" />
+        ) : null}
 
         <div className="player-portal-layout">
           <aside className="player-profile-sidebar">

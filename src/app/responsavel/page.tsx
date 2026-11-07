@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowRight,
+  BarChart3,
   Bell,
   CalendarDays,
   ExternalLink,
@@ -179,6 +180,9 @@ export default async function GuardianPortal({
                   </div>
                 </div>
               </div>
+              <Link className={styles.publicPageLink} href={`/responsavel/dados?player=${selected.id}`}>
+                <UserRound size={16} aria-hidden="true" /> Editar atleta
+              </Link>
               {selected.isPublic ? (
                 <a
                   className={styles.publicPageLink}
@@ -300,6 +304,23 @@ export default async function GuardianPortal({
                     {selected.isPublic ? "Página publicada" : "Página privada"}
                     {" · Editar"}
                   </span>
+                </Link>
+
+                <Link
+                  className={styles.actionCard}
+                  href={`/responsavel/desempenho?player=${selected.id}`}
+                >
+                  <div className={styles.cardTop}>
+                    <span className={styles.iconBox}>
+                      <BarChart3 size={22} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                    <ArrowRight className={styles.cardArrow} size={20} aria-hidden="true" />
+                  </div>
+                  <div className={styles.actionCopy}>
+                    <h3>Diário de desempenho</h3>
+                    <p>Registre jogos, gols, assistências e acompanhe a evolução do atleta.</p>
+                  </div>
+                  <span className={styles.cardFooter}>Abrir diário</span>
                 </Link>
               </div>
             </section>

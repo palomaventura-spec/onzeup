@@ -1,0 +1,105 @@
+/* 11UP PLAYER LIGHT v1 - apenas area interna guardian-portal */
+.guardian-portal {
+  color-scheme: light;
+  --pl-bg: #f3f5f7;
+  --pl-paper: #ffffff;
+  --pl-text: #182532;
+  --pl-muted: #586979;
+  --pl-border: #dce4ea;
+  --pl-accent: #9ddb16;
+  background: var(--pl-bg) !important;
+  color: var(--pl-text) !important;
+  min-height: 100vh;
+}
+.guardian-portal .guardian-portal-nav {
+  background: #fff !important;
+  border-bottom: 1px solid var(--pl-border) !important;
+  color: var(--pl-text) !important;
+}
+.guardian-portal .guardian-portal-nav .player-brand,
+.guardian-portal .guardian-portal-nav > div > span,
+.guardian-portal .player-welcome h1,
+.guardian-portal .player-editor-head h2,
+.guardian-portal .player-editor-area h2,
+.guardian-portal .player-editor-area h3,
+.guardian-portal .player-profile-sidebar strong {
+  color: var(--pl-text) !important;
+}
+.guardian-portal .player-brand span { color: #719d0b !important; }
+.guardian-portal .player-brand b { color: #586979 !important; }
+.guardian-portal .player-welcome p,
+.guardian-portal .muted,
+.guardian-portal .field-help,
+.guardian-portal .player-profile-sidebar small,
+.guardian-portal .player-editor-section p,
+.guardian-portal .guardian-contact-card p {
+  color: var(--pl-muted) !important;
+}
+.guardian-portal .page-eyebrow,
+.guardian-portal .player-sidebar-title { color: #5a8104 !important; }
+.guardian-portal .player-profile-sidebar,
+.guardian-portal .player-editor-area,
+.guardian-portal .player-editor-section,
+.guardian-portal .player-preview-card,
+.guardian-portal .guardian-contact-card,
+.guardian-portal .player-upgrade-card,
+.guardian-portal .player-club-links,
+.guardian-portal .player-photo-editor {
+  background: var(--pl-paper) !important;
+  color: var(--pl-text) !important;
+  border-color: var(--pl-border) !important;
+}
+.guardian-portal .player-editor-section,
+.guardian-portal .player-preview-card,
+.guardian-portal .player-club-links { border-radius: 14px; }
+.guardian-portal .player-switcher,
+.guardian-portal .player-quick-actions > *,
+.guardian-portal .player-editor-actions > *,
+.guardian-portal .btn-secondary,
+.guardian-portal .player-editor-form .btn-secondary {
+  background: #f5f7f9 !important;
+  color: var(--pl-text) !important;
+  border-color: var(--pl-border) !important;
+}
+.guardian-portal .player-switcher.active { background: #eef7db !important; border-color: #8bbd28 !important; }
+.guardian-portal .player-editor-form label,
+.guardian-portal .player-editor-area label,
+.guardian-portal .guardian-contact-card label { color: var(--pl-text) !important; }
+.guardian-portal input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.guardian-portal textarea,
+.guardian-portal select {
+  color-scheme: light;
+  background: #fff !important;
+  color: var(--pl-text) !important;
+  border: 1px solid #cbd6df !important;
+  border-radius: 10px;
+}
+.guardian-portal input::placeholder,
+.guardian-portal textarea::placeholder { color: #758593 !important; }
+.guardian-portal input:focus-visible,
+.guardian-portal textarea:focus-visible,
+.guardian-portal select:focus-visible,
+.guardian-portal a:focus-visible,
+.guardian-portal button:focus-visible { outline: 3px solid #8fbf2d; outline-offset: 2px; }
+.guardian-portal .btn:not(.btn-danger),
+.guardian-portal button.btn:not(.btn-danger) {
+  background: var(--pl-accent) !important;
+  color: #14200a !important;
+  border-color: var(--pl-accent) !important;
+  font-weight: 750;
+}
+.guardian-portal .player-plan-badge.premium,
+.guardian-portal .publication-status.public {
+  background: #eef7db !important; color: #4a7200 !important; border-color: #bddb77 !important;
+}
+.guardian-portal .publication-status.private { color: #556778 !important; }
+.guardian-portal hr { border-color: var(--pl-border) !important; }
+@media (max-width: 700px) {
+  .guardian-portal .guardian-portal-container { width: min(calc(100% - 24px), 620px); }
+  .guardian-portal .player-welcome { margin-bottom: 16px; }
+  .guardian-portal .player-welcome h1 { font-size: clamp(27px, 8vw, 36px); line-height: 1.12; }
+  .guardian-portal .player-editor-area { padding: 14px; }
+  .guardian-portal .player-editor-form input,
+  .guardian-portal .player-editor-form textarea,
+  .guardian-portal .player-editor-form select { font-size: 16px; min-height: 44px; }
+}

@@ -1,0 +1,27 @@
+.shell { margin:0 0 20px; padding:16px; border:1px solid #31434d; border-radius:16px; background:#101d26; color:#f6f9fc; }
+.heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.heading h2 { margin:3px 0 0; font-size:clamp(17px,3vw,21px); overflow-wrap:anywhere; color:#fff; }
+.overline { font-size:10px; font-weight:800; letter-spacing:.12em; color:#b6e85d; }
+.home { display:inline-flex; align-items:center; gap:6px; min-height:42px; padding:0 12px; border:1px solid #3e515a; border-radius:10px; color:inherit; text-decoration:none; white-space:nowrap; }
+.tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.tab { display:flex; align-items:center; justify-content:center; gap:8px; min-height:46px; padding:10px; border:1px solid #364a54; border-radius:10px; text-align:center; text-decoration:none; color:#d2dde5; font-size:13px; font-weight:700; }
+.tab:hover,.home:hover { border-color:#9ddb16; }
+.current { border-color:#9ddb16; background:#253618; color:#d2fa8e; }
+.hint { margin:12px 0 0; color:#aec0ca; font-size:12px; }
+.tab:focus-visible,.home:focus-visible { outline:3px solid #b6f35c; outline-offset:2px; }
+@media (max-width:620px) {
+  .shell { position:sticky; top:0; z-index:20; margin-inline:-6px; padding:12px; border-radius:12px; box-shadow:0 8px 18px #0005; }
+  .tabs { gap:5px; }
+  .tab { min-height:48px; padding:7px 4px; flex-direction:column; gap:3px; font-size:11px; }
+  .heading { margin-bottom:9px; }
+}
+
+
+/* 11UP PLAYER LIGHT v1 */
+.shell { background: #fff; color: #182532; border-color: #dce4ea; box-shadow: 0 4px 18px rgba(30,48,65,.05); }
+.heading h2 { color: #182532; }
+.overline { color: #567d0b; }
+.home, .tab { background: #fff; color: #344758; border-color: #dce4ea; }
+.current { background: #edf7d7; color: #375d00; border-color: #8dbb27; }
+.hint { color: #586979; }
+@media (max-width: 620px) { .shell { box-shadow: 0 5px 18px rgba(30,48,65,.10); } }

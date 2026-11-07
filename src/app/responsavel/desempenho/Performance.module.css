@@ -18,3 +18,25 @@
 @media (max-width: 760px) { .topbar { padding: 0 20px; }.container { width: min(100% - 28px, 1100px); padding-top: 25px; }.hero { display: block; }.playerSwitch { margin-top: 16px; }.section { padding: 16px; }.kpis,.officialGrid { grid-template-columns: 1fr 1fr; }.form { grid-template-columns: 1fr 1fr; }.diaryItem { grid-template-columns: 1fr auto 34px; }.diaryDate { grid-column: 1 / -1; }.diaryMain { min-width: 0; } }
 @media (max-width: 440px) { .topbar { min-height: 58px; }.brand { font-size: 18px; }.kpis,.officialGrid,.form { grid-template-columns: 1fr; }.diaryItem { gap: 10px; }.diaryStats { flex-direction: column; gap: 4px; }.diaryStats strong { text-align: center; }.sectionTitle h2 { font-size: 19px; } }
 
+
+
+/* 11UP PLAYER LIGHT v1 */
+.page { background: #f3f5f7; color: #182532; color-scheme: light; }
+.topbar { background: #fff; border-bottom-color: #dce4ea; }
+.brand, .backLink { color: #182532; }
+.brand b, .hero p, .sectionTitle p { color: #586979; }
+.eyebrow, .officialTag { color: #5b8208; }
+.playerSwitch a { background: #fff; border-color: #dce4ea; color: #344758; }
+.playerSwitch .switchActive { background: #edf7d7; border-color: #9ddb16; color: #436900; }
+.notice { background: #f3f9e9; border-color: #d3e4ba; color: #344758; }
+.section, .panel, .entryForm, .empty { background: #fff; border-color: #dce4ea; color: #182532; }
+.kpis article, .panel h3 { background: #f6f8fa; border-color: #dce4ea; color: #182532; }
+.kpis span, .reportItem span, .matchItem span, .muted { color: #586979; }
+.kpis strong, .entryForm summary { color: #182532; }
+.reportItem, .matchItem { border-bottom-color: #e2e8ed; }
+.reportItem small, .matchItem small { color: #567d0b; }
+.reportItem p { color: #435565; }
+.entryForm[open] summary { border-bottom-color: #dce4ea; }
+.page input:not([type="checkbox"]):not([type="radio"]),
+.page textarea, .page select { background: #fff; color: #182532; border-color: #cbd6df; color-scheme: light; }
+.page input::placeholder, .page textarea::placeholder { color: #758593; }

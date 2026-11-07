@@ -1,4 +1,5 @@
-import Link from "next/link";
+import PlayerEditorNavigation from "@/components/PlayerEditorNavigation";
+﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -13,12 +14,13 @@ import { hasEffectivePlayerPremium, reconcileExpiredPlayerPremiums, reconcileExp
 export default async function GuardianPortal({
   searchParams,
 }: {
-  searchParams: Promise<{ player?: string; new?: string; linkStatus?: string; count?: string }>;
+  searchParams: Promise<{ player?: string; new?: string; plan?: string; linkStatus?: string; count?: string }>;
 }) {
   const user = await requireUser();
   if (user.role !== "GUARDIAN") redirect("/dashboard");
 
   const query = await searchParams;
+  const requestedPlan = query.new === "1" && (query.plan === "SIMPLE" || query.plan === "PREMIUM") ? query.plan : "";
 
   const linkStatusMessage = (() => {
     switch (query.linkStatus) {
@@ -130,7 +132,7 @@ export default async function GuardianPortal({
           <Link href={selected ? `/responsavel?player=${selected.id}` : "/responsavel"} className="btn-secondary btn-small">← Voltar à página inicial</Link>
           <span>{user.name}</span>
           <form action="/api/auth/logout" method="post">
-            <PendingSubmitButton pendingText="Saindo…" className="btn-secondary btn-small" type="submit">Sair</PendingSubmitButton>
+            <PendingSubmitButton pendingText="Saindoâ€¦" className="btn-secondary btn-small" type="submit">Sair</PendingSubmitButton>
           </form>
         </div>
       </header>
@@ -144,6 +146,10 @@ export default async function GuardianPortal({
           </div>
           <Link className="btn" href="/responsavel/pagina?new=1">+ Novo perfil</Link>
         </section>
+
+        {selected ? (
+          <PlayerEditorNavigation playerId={selected.id} playerName={selected.nickname || selected.name} active="pagina" />
+        ) : null}
 
         <div className="player-portal-layout">
           <aside className="player-profile-sidebar">
@@ -173,7 +179,7 @@ export default async function GuardianPortal({
               <strong>Contato da família</strong>
               <form action={saveGuardianProfile}>
                 <input name="phone" defaultValue={guardian?.phone || ""} placeholder="WhatsApp do responsável" />
-                <PendingSubmitButton pendingText="Salvando…" className="btn-secondary btn-small">Salvar contato</PendingSubmitButton>
+                <PendingSubmitButton pendingText="Salvandoâ€¦" className="btn-secondary btn-small">Salvar contato</PendingSubmitButton>
               </form>
             </div>
           </aside>
@@ -183,11 +189,11 @@ export default async function GuardianPortal({
               <div>
                 <span className="page-eyebrow">{selected ? "EDITAR PERFIL" : "NOVO PERFIL"}</span>
                 <h2>{selected ? (selected.nickname || selected.name) : "Criar 11UP Player"}</h2>
-                {selected ? <span className={`player-plan-badge ${selected.plan === "PREMIUM" ? "premium" : "free"}`}>{selected.plan === "PREMIUM" ? "★ PREMIUM" : "SIMPLES"}</span> : null}
+                {selected ? <span className={`player-plan-badge ${selected.plan === "PREMIUM" ? "premium" : "free"}`}>{selected.plan === "PREMIUM" ? "PREMIUM" : "SIMPLES"}</span> : null}
               </div>
               <div className="player-editor-actions">
                 <span className={`publication-status ${selected?.isPublic ? "public" : "private"}`}>
-                  {selected?.isPublic ? "● Público" : "● Privado"}
+                  {selected?.isPublic ? "P\u00FAblico" : "Privado"}
                 </span>
                 <PlayerActions
                   url={selected ? `https://players.onzeup.com.br/${selected.slug}` : "#"}
@@ -213,13 +219,13 @@ export default async function GuardianPortal({
                 <form action={createPlayerPremiumAsaas}>
                   <input type="hidden" name="playerId" value={selected.id} />
                   <strong>R$ 69,90/mês</strong>
-                  <PendingSubmitButton pendingText="Processando pagamento…" className="btn">Assinar com cartao</PendingSubmitButton></form><form action={createPlayerPremiumPixAsaas}><input type="hidden" name="playerId" value={selected.id} /><PendingSubmitButton pendingText="Processando pagamento…" className="btn-secondary">Pagar mensalidade via Pix</PendingSubmitButton>
+                  <PendingSubmitButton pendingText="Processando pagamentoâ€¦" className="btn">Assinar com cartao</PendingSubmitButton></form><form action={createPlayerPremiumPixAsaas}><input type="hidden" name="playerId" value={selected.id} /><PendingSubmitButton pendingText="Processando pagamentoâ€¦" className="btn-secondary">Pagar mensalidade via Pix</PendingSubmitButton>
                 </form>
               </section>
             ) : null}
 
             <form className="player-editor-form" action={savePlayer}>
-              {selected ? <input type="hidden" name="id" value={selected.id} /> : null}
+              {selected ? <input type="hidden" name="id" value={selected.id} /> : null}{requestedPlan ? <input type="hidden" name="checkoutPlan" value={requestedPlan} /> : null}
 
               <div className="player-editor-grid">
                 <div className="player-photo-editor">
@@ -238,8 +244,8 @@ export default async function GuardianPortal({
 
                 <div className="form">
                   <label>Nome completo <small className="field-help">Dado cadastral. Não é exibido no perfil público por padrão.</small><input name="name" required defaultValue={selected?.name || ""} placeholder="Ex.: João Silva" /></label>
-                  <label>Apelido / nome esportivo <small className="field-help">É o nome principal exibido publicamente. Preencha para identificar o atleta na página.</small><input name="nickname" defaultValue={selected?.nickname || ""} placeholder="Ex.: JS10" /></label>
-                  <label>Endereço público <small className="field-help">Ex.: joao-silva</small><input name="slug" defaultValue={selected?.slug || ""} placeholder="joao-silva" /></label>
+                  <label>Apelido / nome esportivo <small className="field-help">Ã‰ o nome principal exibido publicamente. Preencha para identificar o atleta na pÃ¡gina.</small><input name="nickname" defaultValue={selected?.nickname || ""} placeholder="Ex.: JS10" /></label>
+                  <label>Link público do perfil <small className="field-help">Use o apelido ou nome do atleta. Nunca informe endereço, telefone ou dados da família.</small><input name="publicSlug" defaultValue={selected?.slug || ""} placeholder="joao-silva" /></label>
 
                   <div className="two-field-row">
                     <label>Ano de nascimento<input name="birthYear" type="number" defaultValue={selected?.birthYear || ""} placeholder="2015" /></label>
@@ -328,7 +334,7 @@ export default async function GuardianPortal({
               </label>
 <label className="check-row"><input type="checkbox" name="publicationConsent" defaultChecked={false} /><span>Autorizo expressamente a publicação dos dados esportivos, imagens e vídeos deste atleta menor sob minha responsabilidade. Sem esta autorização, o perfil permanecerá privado.</span></label>
 <label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público 11UP Players</span></label>
-<label className="check-row"><input type="checkbox" name="showDiaryStatsPublic" defaultChecked={selected?.showDiaryStatsPublic} disabled={!canEditPremium} /><span><strong>Exibir o painel visual da trajetória</strong><small>Mostra na página pública gráficos com jogos, gols e assistências registrados pela família. É uma funcionalidade Premium e sempre aparece identificada como registro particular, não como dado oficial do clube.</small></span></label>
+<label className="check-row"><input type="checkbox" name="showDiaryStatsPublic" defaultChecked={selected?.showDiaryStatsPublic} disabled={!canEditPremium} /><span><strong>Exibir o painel visual da trajetÃ³ria</strong><small>Mostra na pÃ¡gina pÃºblica grÃ¡ficos com jogos, gols e assistÃªncias registrados pela famÃ­lia. Ã‰ uma funcionalidade Premium e sempre aparece identificada como registro particular, nÃ£o como dado oficial do clube.</small></span></label>
 
               <div className="actions">
                 <PendingSubmitButton pendingText="Salvando perfil...">Salvar perfil</PendingSubmitButton>
@@ -348,9 +354,9 @@ export default async function GuardianPortal({
                   <p className="muted">O mesmo painel atende Simples e Premium. O layout público muda conforme o plano.</p>
                 </div>
                 <div>
-                  <Link className="btn-secondary" href="/gustavo-aguiar-free" target="_blank">Modelo Simples ↗</Link>
-                  <Link className="btn-secondary" href="/gustavo-aguiar" target="_blank">Modelo Premium ↗</Link>
-                  {selected.isPublic ? <a className="btn" href={`https://players.onzeup.com.br/${selected.slug}`} target="_blank">Abrir perfil publicado ↗</a> : null}
+                  <Link className="btn-secondary" href="/gustavo-aguiar-free" target="_blank">Modelo Simples</Link>
+                  <Link className="btn-secondary" href="/gustavo-aguiar" target="_blank">Modelo Premium</Link>
+                  {selected.isPublic ? <a className="btn" href={`https://players.onzeup.com.br/${selected.slug}`} target="_blank">Abrir perfil publicado</a> : null}
                 </div>
               </section>
             ) : null}
@@ -365,3 +371,4 @@ export default async function GuardianPortal({
     </main>
   );
 }
+

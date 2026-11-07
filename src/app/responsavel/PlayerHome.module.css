@@ -511,3 +511,54 @@
     transform: none;
   }
 }
+
+
+/* Ajuste visual do Diário de desempenho no portal do responsável */
+@media (min-width: 981px) {
+  .actionsGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .actionCard {
+    grid-column: span 2;
+  }
+
+  .actionCard:nth-child(5) {
+    order: 3;
+  }
+
+  .actionCard:nth-child(3),
+  .actionCard:nth-child(4) {
+    grid-column: span 3;
+  }
+
+  .actionCard:nth-child(3) {
+    order: 4;
+  }
+
+  .actionCard:nth-child(4) {
+    order: 5;
+  }
+}
+
+/* 11UP PLAYER LIGHT v1 */
+.portal { background: #f3f5f7; color: #182532; color-scheme: light; }
+.portal .topNav { background: #fff; border-bottom: 1px solid #dce4ea; }
+.portal .intro h1, .portal .playerDetails h2, .portal .actionsHeading h2, .portal .actionCopy h3, .portal .emptyState h2 { color: #182532; }
+.portal .subtitle, .portal .actionsHeading p, .portal .actionCopy p, .portal .emptyState p { color: #586979; }
+.portal .eyebrow, .portal .cardFooter { color: #567d0b; }
+.portal .navNotice, .portal .logoutButton, .portal .publicPageLink, .portal .switcherItem, .portal .addPlayer {
+  background: #fff; color: #182532; border-color: #dce4ea;
+}
+.portal .playerSummary, .portal .actionCard, .portal .emptyState {
+  background: #fff; color: #182532; border-color: #dce4ea;
+}
+.portal .actionCard:hover { background: #f8faed; border-color: #9ddb16; }
+.portal .linkPill { background: #ecf1f5; color: #344758; }
+.portal .planPill { background: #eef7db; color: #567d0b; }
+.portal .switcherActive { border-color: #92c222; background: #edf7d7; color: #3d6500; }
+.portal .iconBox { background: #eef7db; color: #638b0c; }
+.portal .cardArrow, .portal .switcherLabel { color: #536879; }
+.portal .cardFooter { border-top-color: #e5eaef; }
+.portal .primaryButton { background: #9ddb16; color: #182532; border-color: #9ddb16; }
+.portal .navNotice:hover, .portal .logoutButton:hover, .portal .publicPageLink:hover { background: #f2f8e5; }
