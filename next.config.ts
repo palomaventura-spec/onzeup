@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/gustavo-aguiar",
-        has: [{ type: "host", value: "players\\\\.onzeup\\\\.com\\\\.br" }],
+        has: [{ type: "host", value: "players[.]onzeup[.]com[.]br" }],
         destination: "/gustavo-g9",
         permanent: true,
       },
