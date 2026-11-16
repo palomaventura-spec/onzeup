@@ -224,7 +224,7 @@ export default async function GuardianPortal({
               </section>
             ) : null}
 
-            <form className="player-editor-form" action={savePlayer}>
+            <form key={`${selected?.id ?? "new"}:${selected?.slug ?? ""}:${Boolean(selected?.isPublic)}`} className="player-editor-form" action={savePlayer}>
               {selected ? <input type="hidden" name="id" value={selected.id} /> : null}{requestedPlan ? <input type="hidden" name="checkoutPlan" value={requestedPlan} /> : null}
 
               <div className="player-editor-grid">
@@ -332,9 +332,9 @@ export default async function GuardianPortal({
                   <small>Permite que o perfil seja acessado pelo endereço /player/...</small>
                 </span>
               </label>
-<label className="check-row"><input type="checkbox" name="publicationConsent" defaultChecked={false} /><span>Autorizo expressamente a publicação dos dados esportivos, imagens e vídeos deste atleta menor sob minha responsabilidade. Sem esta autorização, o perfil permanecerá privado.</span></label>
+<label className="check-row"><input type="checkbox" name="publicationConsent" defaultChecked={Boolean(selected?.isPublic)} /><span>Autorizo expressamente a publicação dos dados esportivos, imagens e vídeos deste atleta menor sob minha responsabilidade. Sem esta autorização, o perfil permanecerá privado.</span></label>
 <label className="check-row"><input type="checkbox" name="directoryVisible" defaultChecked={selected?.directoryVisible} /><span>Permitir que este atleta apareça no catálogo público 11UP Players</span></label>
-<label className="check-row"><input type="checkbox" name="showDiaryStatsPublic" defaultChecked={selected?.showDiaryStatsPublic} disabled={!canEditPremium} /><span><strong>Exibir o painel visual da trajetória</strong><small>Mostra na página pública gráficos com jogos, gols e assistências registrados pela família. É uma funcionalidade Premium e sempre aparece identificada como registro particular, não como dado oficial do clube.</small></span></label>
+<label className="check-row"><input type="checkbox" name="showDiaryStatsPublic" defaultChecked={selected?.showDiaryStatsPublic} disabled={!canEditPremium} /><span><strong>Exibir o painel visual da trajetória</strong><small>O card Gols do perfil p&uacute;blico soma o Hist&oacute;rico e os jogos do Di&aacute;rio, mesmo com o gr&aacute;fico oculto.</small><small>Mostra na página pública gráficos com jogos, gols e assistências registrados pela família. É uma funcionalidade Premium e sempre aparece identificada como registro particular, não como dado oficial do clube.</small></span></label>
 
               <div className="actions">
                 <PendingSubmitButton pendingText="Salvando perfil...">Salvar perfil</PendingSubmitButton>
@@ -355,8 +355,8 @@ export default async function GuardianPortal({
                 </div>
                 <div>
                   <Link className="btn-secondary" href="/gustavo-aguiar-free" target="_blank">Modelo Simples</Link>
-                  <Link className="btn-secondary" href="/gustavo-aguiar" target="_blank">Modelo Premium</Link>
-                  {selected.isPublic ? <a className="btn" href={`https://players.onzeup.com.br/${selected.slug}`} target="_blank">Abrir perfil publicado</a> : null}
+                  <Link className="btn-secondary" href={selected ? `/player/${selected.slug}` : "/exemplos/player-premium"} target="_blank">Modelo Premium</Link>
+                  {selected.isPublic ? <a className="btn" href={`/player/${encodeURIComponent(selected.slug)}`} target="_blank" rel="noopener noreferrer">Abrir perfil neste ambiente</a> : null}
                 </div>
               </section>
             ) : null}

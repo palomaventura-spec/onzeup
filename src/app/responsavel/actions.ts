@@ -198,6 +198,7 @@ export async function savePlayer(formData: FormData) {
 
   revalidatePath("/responsavel");
   revalidatePath("/responsavel/comunicacao");
+  revalidatePath("/responsavel/pagina");
   revalidatePath(`/player/${slug}`);
   revalidatePath(`/${slug}`);
   revalidatePath("/players");
@@ -689,7 +690,9 @@ export async function createPlayerDiaryEntry(formData: FormData) {
   });
 
   revalidatePath("/responsavel");
-  revalidatePath(`/responsavel/desempenho?player=${player.id}`);
+  revalidatePath("/responsavel/desempenho");
+  revalidatePath("/player/[slug]", "page");
+  revalidatePath("/[slug]", "page");
 }
 
 export async function deletePlayerDiaryEntry(formData: FormData) {
@@ -710,7 +713,9 @@ export async function deletePlayerDiaryEntry(formData: FormData) {
   });
 
   revalidatePath("/responsavel");
-  revalidatePath(`/responsavel/desempenho?player=${playerId}`);
+  revalidatePath("/responsavel/desempenho");
+  revalidatePath("/player/[slug]", "page");
+  revalidatePath("/[slug]", "page");
 }
 
 export async function savePlayerHistoryPeriod(formData: FormData) {

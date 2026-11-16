@@ -123,8 +123,8 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
         include: { athlete: { include: { organization: true, category: true } } },
       },
       diaryEntries: {
+        where: { entryType: "MATCH" },
         orderBy: { occurredAt: "asc" },
-        take: 100,
         select: { occurredAt: true, goals: true, assists: true },
       },
       historyPeriods: {
@@ -147,9 +147,15 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
   const publicName = player.nickname?.trim() || "Atleta 11UP";
   const instagramUrl = instagramProfile(player.instagram);
 
+  const useDiaryGoals = (player.diaryEntries.length > 0 || player.historyPeriods.length > 0);
+  const publicGoals = useDiaryGoals
+    ? player.historyPeriods.reduce((sum, period) => sum + period.goals, 0)
+      + player.diaryEntries.reduce((sum, entry) => sum + entry.goals, 0)
+    : player.goals;
+
   const statItems = [
     { label: "Jogos", value: player.matches },
-    { label: "Gols", value: player.goals },
+    { label: "Gols", value: publicGoals },
     { label: "Assistências", value: player.assists },
     { label: "Conquistas", value: player.titles },
   ].filter((item) => item.value !== null && item.value !== undefined);
