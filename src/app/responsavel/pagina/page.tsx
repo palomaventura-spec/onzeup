@@ -14,7 +14,7 @@ import { hasEffectivePlayerPremium, reconcileExpiredPlayerPremiums, reconcileExp
 export default async function GuardianPortal({
   searchParams,
 }: {
-  searchParams: Promise<{ player?: string; new?: string; plan?: string; linkStatus?: string; count?: string }>;
+  searchParams: Promise<{ player?: string; new?: string; plan?: string; linkStatus?: string; count?: string; profileSave?: string }>;
 }) {
   const user = await requireUser();
   if (user.role !== "GUARDIAN") redirect("/dashboard");
@@ -201,6 +201,23 @@ export default async function GuardianPortal({
                 />
               </div>
             </div>
+
+            {query.profileSave === "saved" && selected ? (
+              <p role="status">
+                {selected.isPublic
+                  ? "Perfil salvo e publicado."
+                  : "Perfil salvo como privado."}
+              </p>
+            ) : null}
+            {query.profileSave === "consent-required" ? (
+              <p role="alert">{"Marque a autoriza\u00e7\u00e3o para publicar o perfil. As altera\u00e7\u00f5es ainda n\u00e3o foram salvas."}</p>
+            ) : null}
+            {query.profileSave === "trial-expired" ? (
+              <p role="alert">{"O per\u00edodo de teste terminou. Confira a assinatura ou a cortesia antes de publicar."}</p>
+            ) : null}
+            {query.profileSave === "not-saved" ? (
+              <p role="alert">{"N\u00e3o foi poss\u00edvel salvar este perfil. Reabra o atleta e tente novamente."}</p>
+            ) : null}
 
             {linkStatusMessage ? (
               <div className={`player-link-status-notice ${linkStatusMessage.type}`}>

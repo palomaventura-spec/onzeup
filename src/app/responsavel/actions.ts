@@ -105,6 +105,31 @@ export async function savePlayer(formData: FormData) {
     : null;
   const effectivePremium = currentPlayer ? hasEffectivePlayerPremium(currentPlayer) : true;
 
+  const wantsPublic = formData.get("isPublic") === "on";
+  const hasConsent = formData.get("publicationConsent") === "on";
+  const returnToEditor = (result: string, playerId = id) => {
+    const query = new URLSearchParams({ profileSave: result });
+    if (playerId) query.set("player", playerId);
+    else query.set("new", "1");
+    redirect(`/responsavel/pagina?${query}`);
+  };
+
+  if (wantsPublic && !hasConsent) returnToEditor("consent-required");
+
+  const now = new Date();
+  const hasValidCourtesy = currentPlayer?.isComplimentary
+    && (!currentPlayer.complimentaryUntil || currentPlayer.complimentaryUntil >= now);
+  const expiredTrial = currentPlayer?.planStatus === "TRIAL_EXPIRED"
+    || (currentPlayer?.planStatus === "TRIAL"
+      && currentPlayer.trialEndsAt !== null
+      && currentPlayer.trialEndsAt < now);
+
+  if (wantsPublic && expiredTrial && !hasValidCourtesy) {
+    returnToEditor("trial-expired");
+  }
+
+  const publishProfile = wantsPublic && hasConsent;
+  let savedPlayerId = id;
   const data = {
     name,
     nickname: clean(formData.get("nickname")) || null,
@@ -172,18 +197,19 @@ export async function savePlayer(formData: FormData) {
         }),
     // O plano e o status são gerenciados exclusivamente pelas rotinas de
     // assinatura/cortesia, não pelo formulário de edição do perfil.
-    isPublic: formData.get("isPublic") === "on" && formData.get("publicationConsent") === "on",
-    directoryVisible: formData.get("isPublic") === "on" && formData.get("publicationConsent") === "on" && formData.get("directoryVisible") === "on",
+    isPublic: publishProfile,
+    directoryVisible: publishProfile && formData.get("directoryVisible") === "on",
     // O painel visual usa somente registros particulares e exige autorização
     // separada para não apresentar o diário como dado oficial do Club.
-    showDiaryStatsPublic: formData.get("isPublic") === "on" && formData.get("publicationConsent") === "on" && formData.get("showDiaryStatsPublic") === "on",
+    showDiaryStatsPublic: publishProfile && formData.get("showDiaryStatsPublic") === "on",
   };
 
   if (id) {
-    await prisma.playerProfile.updateMany({
+    const result = await prisma.playerProfile.updateMany({
       where: { id, guardianId: guardian.id },
       data,
     });
+    if (result.count !== 1) returnToEditor("not-saved");
   } else {
     const trialStartedAt = new Date();
     const trialEndsAt = new Date(trialStartedAt);
@@ -192,7 +218,7 @@ export async function savePlayer(formData: FormData) {
       trialEndsAt.getDate() + PLAYER_TRIAL_DAYS
     );
 
-    await prisma.playerProfile.create({
+    const createdPlayer = await prisma.playerProfile.create({
       data: {
         ...data,
         guardianId: guardian.id,
@@ -202,7 +228,9 @@ export async function savePlayer(formData: FormData) {
         trialEndsAt,
         premiumUntil: null,
       },
+      select: { id: true },
     });
+    savedPlayerId = createdPlayer.id;
   }
 
   revalidatePath("/responsavel");
@@ -211,6 +239,7 @@ export async function savePlayer(formData: FormData) {
   revalidatePath(`/player/${slug}`);
   revalidatePath(`/${slug}`);
   revalidatePath("/players");
+  returnToEditor("saved", savedPlayerId);
 }
 
 export async function deletePlayer(formData: FormData) {
