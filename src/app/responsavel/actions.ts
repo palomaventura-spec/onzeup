@@ -76,7 +76,16 @@ export async function savePlayer(formData: FormData) {
   const name = clean(formData.get("name"));
   if (!name) return;
 
-  let slug = safeSlug(clean(formData.get("slug")) || clean(formData.get("nickname")) || name);
+  const requestedPublicSlug =
+    clean(formData.get("publicSlug")) || clean(formData.get("slug"));
+  const nicknameOrName = clean(formData.get("nickname")) || name;
+  const looksLikeAddress =
+    /^(rua|r|avenida|av|alameda|travessa|estrada|rodovia|praca|largo)\b/i.test(
+      requestedPublicSlug
+    );
+  let slug = safeSlug(
+    requestedPublicSlug && !looksLikeAddress ? requestedPublicSlug : nicknameOrName
+  );
   if (!slug) slug = `player-${Date.now()}`;
 
   const existingSlug = await prisma.playerProfile.findFirst({

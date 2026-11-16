@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/gustavo-aguiar",
+        has: [{ type: "host", value: "players\\\\.onzeup\\\\.com\\\\.br" }],
+        destination: "/gustavo-g9",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return {
       beforeFiles: [

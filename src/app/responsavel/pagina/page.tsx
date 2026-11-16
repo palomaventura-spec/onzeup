@@ -355,7 +355,7 @@ export default async function GuardianPortal({
                 </div>
                 <div>
                   <Link className="btn-secondary" href="/gustavo-aguiar-free" target="_blank">Modelo Simples</Link>
-                  <Link className="btn-secondary" href="/gustavo-aguiar" target="_blank">Modelo Premium</Link>
+                  <Link className="btn-secondary" href="https://players.onzeup.com.br/gustavo-g9" target="_blank">Modelo Premium</Link>
                   {selected.isPublic ? <a className="btn" href={`https://players.onzeup.com.br/${selected.slug}`} target="_blank">Abrir perfil publicado</a> : null}
                 </div>
               </section>
